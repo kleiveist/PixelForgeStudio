@@ -861,6 +861,8 @@ gegen Kategorie und Untertyp geprüft.
   "projectName": "Dorfschmied",
   "currentStep": "character-motion",
   "baseProfileId": "base_world_32_80",
+  "sourceAssetProfileId": "asset_npc_blacksmith_001",
+  "overrides": {},
   "category": "character",
   "subtype": "npc",
   "answers": {},
@@ -876,6 +878,15 @@ Drafts der frühen Routen `wizard/project` und `wizard/category` dürfen
 Basisprofil, Kategorie, Untertyp und Antworten noch auslassen. Ab
 `wizard/profile` ist die Kategorieauswahl vorhanden; `wizard/editor` und
 `wizard/review` verlangen zusätzlich ein Basisprofil und einen Projektnamen.
+Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
+und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
+Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale
+Quell-ID ist keine harte Exportreferenz, damit ein Draft portabel bleibt.
+Beim Resume wird der Snapshot erneut gegen die aktuellen Basis-/Kategorie-
+Referenzen und Locks aufgelöst. Ein Konflikt öffnet Recovery und überschreibt
+den gespeicherten Draft nicht; ein gelöschtes Quell-Asset allein ist dagegen
+kein Fehler. Schema-ungültige laufende Formwerte sind reiner Sessionzustand und
+werden nie in dieses persistierte Modell geschrieben.
 
 ---
 

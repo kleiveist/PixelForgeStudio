@@ -247,6 +247,57 @@ describe("V2-Zod-Verträge", () => {
     ).toThrow();
   });
 
+  it("bewahrt optionale technische Asset-Overrides in ausgewählten Drafts", () => {
+    const draft = parseWizardDraft({
+      ...wizardDraftInput,
+      sourceAssetProfileId: "asset_blacksmith_001",
+      overrides: {
+        tileSize: 48,
+        lightingDefaults: {
+          policy: "warmInterior",
+          notes: "Warm light from the forge."
+        }
+      }
+    });
+
+    expect(draft).toMatchObject({
+      sourceAssetProfileId: "asset_blacksmith_001",
+      overrides: {
+        tileSize: 48,
+        lightingDefaults: {
+          policy: "warmInterior",
+          notes: "Warm light from the forge."
+        }
+      }
+    });
+    expect(parseWizardDraft(wizardDraftInput)).not.toHaveProperty("overrides");
+    expect(() =>
+      parseWizardDraft({
+        ...wizardDraftInput,
+        overrides: { tileSize: 2 }
+      })
+    ).toThrow();
+  });
+
+  it("behandelt die Quellprofil-ID im Export als portable Provenienz", () => {
+    const bundle = parseExportBundle({
+      ...exportBundleInput,
+      assetProfiles: [],
+      wizardDrafts: [
+        {
+          ...wizardDraftInput,
+          sourceAssetProfileId: "asset_not_in_bundle",
+          overrides: { tileSize: 48 }
+        }
+      ]
+    });
+
+    expect(bundle.wizardDrafts[0]).toMatchObject({
+      sourceAssetProfileId: "asset_not_in_bundle",
+      overrides: { tileSize: 48 }
+    });
+  });
+
   it("hält stabile IDs unabhängig von umbenennbaren Anzeigenamen", () => {
     const original = parseBaseProfile(baseProfileInput);
     const renamed = parseBaseProfile({ ...baseProfileInput, name: "Umbenanntes Weltprofil" });

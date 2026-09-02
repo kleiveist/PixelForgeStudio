@@ -7,17 +7,28 @@ import {
   type ReactNode
 } from "react";
 import type { AssetCategory } from "../../domain/assets";
-import type { StableId } from "../../schemas";
+import type { StableId, WizardDraft } from "../../schemas";
 import {
   INITIAL_WIZARD_SESSION_STATE,
+  selectWizardSessionDirty,
   wizardSessionReducer,
+  type WizardDraftActivationMode,
+  type WizardRawCoreFormValues,
   type WizardSessionState
 } from "./wizardSessionState";
 
 export interface WizardSessionContextValue extends WizardSessionState {
+  readonly draftDirty: boolean;
   readonly requestNewAsset: (category: AssetCategory | null) => void;
   readonly requestProfile: (assetProfileId: StableId) => void;
   readonly requestResume: (draftId: StableId) => void;
+  readonly activateDraft: (
+    draft: WizardDraft,
+    mode: WizardDraftActivationMode
+  ) => void;
+  readonly captureRawCoreFormValues: (
+    values: WizardRawCoreFormValues
+  ) => void;
   readonly clearProfileRequest: (assetProfileId: StableId) => void;
 }
 
@@ -58,6 +69,20 @@ export function WizardSessionProvider({
     });
   }, []);
 
+  const activateDraft = useCallback(
+    (draft: WizardDraft, mode: WizardDraftActivationMode) => {
+      dispatch({ type: "draftActivated", draft, mode });
+    },
+    []
+  );
+
+  const captureRawCoreFormValues = useCallback(
+    (values: WizardRawCoreFormValues) => {
+      dispatch({ type: "rawCoreFormValuesCaptured", values });
+    },
+    []
+  );
+
   const clearProfileRequest = useCallback((assetProfileId: StableId) => {
     dispatch({ type: "profileRequestCleared", assetProfileId });
   }, []);
@@ -65,12 +90,23 @@ export function WizardSessionProvider({
   const value = useMemo<WizardSessionContextValue>(
     () => ({
       ...state,
+      draftDirty: selectWizardSessionDirty(state),
       requestNewAsset,
       requestProfile,
       requestResume,
+      activateDraft,
+      captureRawCoreFormValues,
       clearProfileRequest
     }),
-    [clearProfileRequest, requestNewAsset, requestProfile, requestResume, state]
+    [
+      activateDraft,
+      captureRawCoreFormValues,
+      clearProfileRequest,
+      requestNewAsset,
+      requestProfile,
+      requestResume,
+      state
+    ]
   );
 
   return (

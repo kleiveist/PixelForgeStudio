@@ -7,58 +7,44 @@ import { BRAND } from "../config";
 import { APP_VIEW_IDS, type AppView } from "../domain/navigation";
 import type { AssetCategory } from "../domain/assets";
 import { PlaceholderView } from "../features/app-views/PlaceholderView";
+import { WizardView, type WizardStorage } from "../features/wizard";
 import { ProfileLibraryView } from "../features/profiles";
 import {
   DashboardView,
   type DashboardViewProps
 } from "../features/dashboard/DashboardView";
-import { getDashboardCategory } from "../features/dashboard/dashboardCatalog";
 import type { DashboardStorage } from "../features/dashboard/dashboardData";
 import type { StableId } from "../schemas";
 import { useNavigation } from "../store/navigation";
 import { useSettings } from "../store/settings";
-import { useWizardSession, type WizardStartIntent } from "../store/wizard";
+import { useWizardSession } from "../store/wizard";
 import { APP_VIEW_DEFINITIONS } from "./appViewConfig";
 import styles from "./AppShell.module.css";
 
 interface ActiveViewProps {
   readonly activeBaseProfileId: StableId | null;
+  readonly createDraftId?: () => string;
+  readonly now?: () => string;
   readonly onOpenProfile: (profileId: StableId) => void;
   readonly onProfileDeleted: (profileId: StableId) => void;
   readonly onResumeDraft: (draftId: StableId) => void;
   readonly onSelectBaseProfile: DashboardViewProps["onSelectBaseProfile"];
   readonly onStartNewAsset: (category: AssetCategory | null) => void;
-  readonly startIntent: WizardStartIntent | null;
-  readonly storageAdapter: DashboardStorage;
+  readonly sessionRevision: number;
+  readonly storageAdapter: DashboardStorage & WizardStorage;
   readonly view: AppView;
-}
-
-function wizardNotice(startIntent: WizardStartIntent | null) {
-  if (!startIntent) return undefined;
-
-  switch (startIntent.kind) {
-    case "newAsset":
-      return startIntent.category
-        ? {
-            label: "Startkategorie",
-            value: getDashboardCategory(startIntent.category).label
-          }
-        : { label: "Neues Asset", value: "Kategorieauswahl offen" };
-    case "profile":
-      return { label: "Profilstart", value: startIntent.assetProfileId };
-    case "resume":
-      return { label: "Entwurf fortsetzen", value: startIntent.draftId };
-  }
 }
 
 function ActiveView({
   activeBaseProfileId,
+  createDraftId,
+  now,
   onOpenProfile,
   onProfileDeleted,
   onResumeDraft,
   onSelectBaseProfile,
   onStartNewAsset,
-  startIntent,
+  sessionRevision,
   storageAdapter,
   view
 }: ActiveViewProps) {
@@ -85,12 +71,20 @@ function ActiveView({
     );
   }
 
-  const notice = view === "wizard" ? wizardNotice(startIntent) : undefined;
+  if (view === "wizard") {
+    return (
+      <WizardView
+        key={`wizard-session-${sessionRevision}`}
+        storageAdapter={storageAdapter}
+        {...(now ? { now } : {})}
+        {...(createDraftId ? { createDraftId } : {})}
+      />
+    );
+  }
 
   return (
     <PlaceholderView
       definition={APP_VIEW_DEFINITIONS[view]}
-      {...(notice ? { notice } : {})}
       view={view}
     />
   );
@@ -98,11 +92,15 @@ function ActiveView({
 
 export interface AppShellProps {
   readonly activeBaseProfileId: StableId | null;
-  readonly storageAdapter: DashboardStorage;
+  readonly createDraftId?: () => string;
+  readonly now?: () => string;
+  readonly storageAdapter: DashboardStorage & WizardStorage;
 }
 
 export function AppShell({
   activeBaseProfileId,
+  createDraftId,
+  now,
   storageAdapter
 }: AppShellProps) {
   const { activeView, navigate } = useNavigation();
@@ -111,12 +109,13 @@ export function AppShell({
     requestProfile,
     requestResume,
     clearProfileRequest,
-    startIntent
+    sessionRevision
   } = useWizardSession();
   const { setActiveBaseProfile } = useSettings();
   const activeDefinition = APP_VIEW_DEFINITIONS[activeView];
   const mainRef = useRef<HTMLElement>(null);
   const previousViewRef = useRef(activeView);
+  const previousWizardSessionRevisionRef = useRef(sessionRevision);
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -127,11 +126,17 @@ export function AppShell({
 
   useEffect(() => {
     document.title = `${activeDefinition.label} · ${BRAND.productName}`;
-    if (previousViewRef.current !== activeView) {
+    const viewChanged = previousViewRef.current !== activeView;
+    const wizardSessionChanged =
+      activeView === "wizard" &&
+      previousWizardSessionRevisionRef.current !== sessionRevision;
+
+    if (viewChanged || wizardSessionChanged) {
       mainRef.current?.focus();
-      previousViewRef.current = activeView;
     }
-  }, [activeDefinition.label, activeView]);
+    previousViewRef.current = activeView;
+    previousWizardSessionRevisionRef.current = sessionRevision;
+  }, [activeDefinition.label, activeView, sessionRevision]);
 
   const startNewAsset = useCallback(
     (category: AssetCategory | null) => {
@@ -229,12 +234,14 @@ export function AppShell({
         >
           <ActiveView
             activeBaseProfileId={activeBaseProfileId}
+            {...(createDraftId ? { createDraftId } : {})}
+            {...(now ? { now } : {})}
             onOpenProfile={openProfile}
             onProfileDeleted={clearProfileRequest}
             onResumeDraft={resumeDraft}
             onSelectBaseProfile={setActiveBaseProfile}
             onStartNewAsset={startNewAsset}
-            startIntent={startIntent}
+            sessionRevision={sessionRevision}
             storageAdapter={storageAdapter}
             view={activeView}
           />

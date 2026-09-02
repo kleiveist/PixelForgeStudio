@@ -40,6 +40,12 @@
 - immutable Assetprofil-Mutationen mit validiertem Gesamtgraph-Write, kollisionssicheren Duplikaten und referenzerhaltendem Leaf-only-Löschen eingeführt
 - fehlgeschlagene oder teilweise Storage-Writes fail-closed behandelt und Invalid-/Unavailable-/Leer-/Filterleerzustände getrennt dargestellt
 - relevante Profilkartendaten, Dialogfokus, Keyboard-Laden, Filterpersistenz und CRUD-Fehlerpfade mit Domain-, Provider- und RTL-Tests abgesichert
+- generische, flow-konfigurierte React-Hook-Form-Wizard-Engine mit externen Step-Komponenten, Draft-Mapping, schrittweisen Zod-Resolvern, semantischem Fortschritt und fokusgeführter Vor-/Zurück-Navigation ergänzt
+- validen 300-ms-Draft-Autosave, sofortige Schritt-Persistenz sowie exaktes schreibfreies Resume mit sichtbaren Fail-closed-Recovery-Zuständen umgesetzt
+- aktiven Wizard-Draft, strukturelle Dirty-Baseline, ungültigen transienten Formularsnapshot und transienten/persistierten Sessionstatus über Ansichtswechsel und fokussierte Same-View-Neustarts hinweg im Context/Reducer abgesichert
+- profilbasierte Wizard-Starts mit Elternreferenzen, Kategorieantworten, optionaler Asset-Provenienz und verlustfreiem technischem Override-Snapshot ergänzt
+- portable Profil-Snapshots beim Resume erneut gegen aktuelle Locks geprüft und Quellprofil-Provenienz von der technischen Auflösung entkoppelt
+- responsive technische Wizard-Zusammenfassung eingeführt, die portable, capability-relevante Profilwerte darstellt
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

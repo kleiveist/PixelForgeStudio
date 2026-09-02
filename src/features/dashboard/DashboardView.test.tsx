@@ -26,22 +26,16 @@ import {
   MATERIAL_BADGE_LABELS
 } from "./dashboardCatalog";
 
-vi.mock("../app-views/PlaceholderView", async () => {
+vi.mock("../wizard", async () => {
   const { useWizardSession } = await import("../../store/wizard");
 
   return {
-    PlaceholderView({
-      definition,
-      view
-    }: Readonly<{
-      definition: Readonly<{ title: string }>;
-      view: string;
-    }>) {
+    WizardView() {
       const { startIntent } = useWizardSession();
 
       return (
         <section>
-          <h1 id={`${view}-view-title`}>{definition.title}</h1>
+          <h1 id="wizard-view-title">Neue Assets geführt aufsetzen.</h1>
           <output data-testid="wizard-start-intent">
             {JSON.stringify(startIntent)}
           </output>

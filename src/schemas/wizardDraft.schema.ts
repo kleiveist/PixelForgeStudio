@@ -13,6 +13,7 @@ import {
 } from "./categoryData.schema";
 import { validateCategoryDataCapabilities } from "./categoryData.refinement";
 import {
+  BaseProfileOverridesSchema,
   IsoDateTimeSchema,
   SchemaVersionSchema,
   StableIdSchema,
@@ -36,7 +37,9 @@ const EarlyWizardDraftSchema = WizardDraftMetadataSchema.extend({
 const SelectedWizardDraftCommonSchema = WizardDraftMetadataSchema.extend({
   route: z.enum(["wizard/profile", "wizard/editor", "wizard/review"]),
   baseProfileId: StableIdSchema.optional(),
-  categoryProfileId: StableIdSchema.optional()
+  categoryProfileId: StableIdSchema.optional(),
+  sourceAssetProfileId: StableIdSchema.optional(),
+  overrides: BaseProfileOverridesSchema.optional()
 });
 
 const SelectedWizardDraftSchema = z.discriminatedUnion("category", [

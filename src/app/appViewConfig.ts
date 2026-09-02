@@ -32,8 +32,8 @@ export const APP_VIEW_DEFINITIONS: Readonly<
     title: "Neue Assets geführt aufsetzen.",
     eyebrow: "Geführter Abfragekatalog",
     description:
-      "Der Wizard wird die Asset-Kategorie zuerst klären und danach ausschließlich relevante Fragen zeigen.",
-    nextStep: "Schritte, Resume und Validierung folgen mit der Wizard Engine."
+      "Die wiederaufnehmbare Wizard Engine validiert jeden Schritt und sichert gültige Änderungen lokal.",
+    nextStep: "Kategorie- und Capability-Routing folgt in der nächsten Phase."
   },
   review: {
     label: "Prüfung",

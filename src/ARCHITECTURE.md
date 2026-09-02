@@ -23,8 +23,9 @@
   - `legacy-v1/`: namespaced compatibility port of the V1 defaults, state
     whitelist, prompt builder, validation, and frame/canvas metrics
 - `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
-  Kategorie-Dashboard, `profiles/` die kategorisierte Assetprofilbibliothek;
-  Wizard-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
+  Kategorie-Dashboard, `profiles/` die kategorisierte Assetprofilbibliothek
+  und `wizard/` die deklarative RHF-/Zod-Wizard-Grundlage; Review-/Output-
+  Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -43,8 +44,9 @@
   complete validated app-settings envelope and effective theme state;
   `profiles/` owns the validated profile-library UI state, filters, and
   mutation boundary; `navigation/` owns only the current top-level view;
-  `wizard/` currently owns only the transient typed start intent, not
-  persisted draft contents
+  `wizard/` owns Startintent, aktiven validierten Draft, Dirty-Baseline und
+  Persistenzstatus, während React Hook Form Eigentümer der aktuellen
+  Formularwerte bleibt
 - `styles/`: globale semantische Light-/Dark-Tokens, System-Fallback und
   Reset-/Grundregeln
 - `test/`: gemeinsames Vitest-/Testing-Library-Setup
@@ -196,10 +198,37 @@ button semantics. Loading records the existing profile start intent without a
 write. Deletion uses a named confirmation dialog, retains parent profiles, and
 clears only a matching transient Wizard profile request after success.
 
-`store/wizard/index.ts` currently exposes a deliberately small transient
-handoff contract: `newAsset` carries an optional category, `profile` an
-AssetProfile ID and `resume` a WizardDraft ID. It is separate from the Zod
-`WizardDraft` schema because selecting a dashboard category must not invent a
-subtype or persist an incomplete editor state. Prompt 11 will own Wizard form
-state and autosave; it should consume this start intent rather than introduce a
-second dashboard-to-Wizard channel.
+`store/wizard/index.ts` exposes the transient handoff contract (`newAsset`,
+`profile`, `resume`) plus the view-persistent Wizard session. Its reducer keeps
+an active validated Draft and a structural baseline distinct. Invalid raw core
+form values stay in a separate transient snapshot, so they survive a view
+unmount without entering persistence or weakening `WizardDraftSchema`. The
+activation modes `hydrate-transient`, `hydrate-persisted`, `edit` and `saved`
+make Dirty- und Persistenzstatus explicit; each new start increments a session
+revision so same-view restarts remount the form and refocus main content.
+
+`features/wizard/GuidedWizardEngine.tsx` owns only generic RHF navigation,
+progress, validation focus, Dirty state and persistence timing. The external
+`WIZARD_CORE_FLOW` binds step components, Zod schemas, RHF field paths, Draft
+mapping and summary presentation. Prompt 11 intentionally contains only
+`project` and the prepared `category` handoff; Prompt 12 composes its category,
+subtype and capability steps into that flow rather than branching the engine.
+
+`features/wizard/wizardLifecycle.ts` creates blank drafts, resolves profile
+starts against the current provider graph, updates route/step metadata and
+validates exact Resume IDs plus required Base/Category references and current
+lock compatibility of the stored override snapshot. Unknown future/older step
+IDs fall back in memory with a visible notice and are not silently written.
+Selected drafts can carry optional AssetProfile provenance and an asset-
+override snapshot; resolution and summary use the portable snapshot rather
+than treating provenance as a hard or live configuration reference.
+
+`features/wizard/WizardView.tsx` replaces the Wizard placeholder. Initial,
+profile-based and resumed hydration perform no writes. Its thin `WizardEngine`
+adapter supplies the current product flow to `GuidedWizardEngine`, including a
+dynamic Zod resolver, semantic progress, focus-managed forward/back navigation
+and a 300-ms valid-change autosave. Navigation writes its new step immediately;
+invalid or unavailable writes retain raw session data and the last successful
+baseline. Recovery never deletes or overwrites the stored slot. The adjacent
+technical summary displays the portable, capability-relevant snapshot and
+omits world-grid geometry for resolved free-composition artwork.

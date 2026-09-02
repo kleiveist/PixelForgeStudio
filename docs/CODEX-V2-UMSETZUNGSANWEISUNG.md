@@ -347,6 +347,31 @@ Umgesetzter Vertrag seit Prompt 10:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 11
+
+- `project` und `category` sind stabile, deklarativ konfigurierte Core-Schritte
+  mit eigenem Zod-Schema und RHF-Feldpfaden.
+- Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
+  Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
+  Draft-Mapping und Zusammenfassung bereit und ist die Erweiterungsgrenze.
+- Der Kategorie-Core-Schritt ist nur die Erweiterungsstelle. Untertyp-,
+  Capability- und Spezialeditorfragen werden erst durch Prompt 12 ergänzt.
+- Neue und profilbasierte Starts sind zunächst flüchtig; Resume übernimmt nur
+  die exakt angeforderte validierte Draft-ID.
+- Mount, Profil-Hydration und Resume schreiben nicht. Gültige Änderungen werden
+  nach 300 ms gespeichert, Navigation sichert den Zielschritt sofort.
+- Der Session-Reducer unterscheidet aktive Version und strukturelle Baseline,
+  sodass Dirty- und Persistenzstatus auch nach einem View-Wechsel wahr bleiben.
+  Schema-ungültige sichtbare Core-Werte liegen separat und ausschließlich
+  transient vor, bis sie wieder einen validen Draft ergeben.
+- Fehlende Referenzen, beschädigte Daten und nicht verfügbarer Storage führen
+  in einen sichtbaren Recovery-Zustand, ohne bestehende Daten zu löschen oder
+  zu überschreiben.
+- Profilstarts bewahren Kategorie, Untertyp, Antworten, Eltern-IDs, optionale
+  Asset-Provenienz und den technischen Asset-Override-Snapshot.
+- Resume und technische Zusammenfassung lösen diesen portablen Snapshot gegen
+  aktuelle Elternprofile und Locks auf; die Quell-ID bleibt reine Provenienz.
+
 ---
 
 # 8. Capability-System

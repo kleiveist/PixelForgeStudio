@@ -58,7 +58,8 @@ V1 inventarisieren ✓
 → App Shell, sechs Views und Browsernavigation ✓
 → kategoriebasiertes Dashboard und lokales Icon-System ✓
 → kategorisierte Profilbibliothek und sicheres Assetprofil-CRUD ✓
-→ Wizard/Editormodell
+→ geführte RHF/Zod-Wizard-Engine mit Autosave und Resume ✓
+→ Kategorie-Routing und spezialisiertes Editormodell
 → Prompt Engine 2.0
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
@@ -139,12 +140,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 10 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 11 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 11 — Wizard Engine mit React Hook Form
+→ Prompt 12 — Kategorie-Routing und dynamische Fragen
 ```
 
 Danach immer genau:
@@ -162,7 +163,11 @@ startet neue Assets über neun fachliche Kategorien, zeigt validierte letzte
 Profile, Favoriten, Basisprofile und einen lokalen Entwurf und verwendet eigene
 SVG-React-Icons. Die aktive Profilbibliothek bietet Suche, kombinierbare
 Filter, Kategorie-/Compatibility-Gruppen und sichere Assetprofilaktionen. Die
-eigentliche Wizard Engine und Editoren folgen in ihren vorgesehenen Phasen.
+aktive Wizard Engine trennt die generische RHF-Navigation und Persistenz von
+einer deklarativen, produktspezifischen Flow-Definition. Sie bietet
+Zod-Validierung, sichtbaren Fortschritt, Dirty-/Autosave-Status, exaktes Resume
+und eine technische Zusammenfassung. Dynamische Kategoriepfade und
+Spezialeditoren folgen in ihren vorgesehenen Phasen.
 
 ## Legacy-V1 lokal prüfen
 
@@ -261,6 +266,19 @@ duplizieren oder löschen ein Assetprofil nach ausdrücklicher Bestätigung.
 Mutationen werden erst nach erneuter Zod-Prüfung und erfolgreichem,
 vollständigem Best-Effort-Gesamtgraph-Write mit Rollback-Versuch sichtbar
 übernommen.
+
+Die Wizard-Grundlage unter `src/features/wizard/` trennt deklarative
+Schrittdefinitionen, pure Draft-Lifecycle-Funktionen und React-Darstellung.
+Der appweite `src/store/wizard/`-Reducer hält Startintent, aktiven Draft,
+Dirty-Baseline, ungültige transiente Core-Formwerte und Persistenzstatus über
+Ansichtswechsel hinweg; React Hook Form bleibt Eigentümer der sichtbaren
+Eingaben. Gültige Änderungen werden verzögert über den injizierten
+Storage-Adapter gesichert, bewusste Schrittnavigation sofort. Initialer Start,
+Profil-Hydration, Resume und sichere Recovery-Zustände schreiben nichts.
+Gespeicherte Override-Snapshots werden beim Resume erneut gegen aktuelle Locks
+geprüft und bleiben unabhängig von einer optionalen Quellprofil-Provenienz.
+Die vom Dashboard kommende Kategorie ist bis Prompt 12 nur ein flüchtiger
+Startkontext und erfindet weder Untertyp noch Capability-Daten.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

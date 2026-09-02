@@ -187,6 +187,25 @@ describe("application shell navigation", () => {
     expect(navigation.pushedViews).toEqual(["wizard", "profiles"]);
   });
 
+  it("moves focus to main when a new session replaces the open Wizard", async () => {
+    const user = userEvent.setup();
+    const navigation = new MemoryNavigation({
+      status: "valid",
+      view: "wizard"
+    });
+    renderStudio(navigation);
+
+    const newAssetLink = screen.getByRole("link", { name: "Neues Asset" });
+    newAssetLink.focus();
+    await user.keyboard("{Enter}");
+
+    expect(screen.getByRole("main")).toHaveFocus();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Projekt" })
+    ).toBeVisible();
+    expect(navigation.pushedViews).toEqual([]);
+  });
+
   it("carries a dashboard category into the visible Wizard handoff", async () => {
     const user = userEvent.setup();
     const navigation = new MemoryNavigation({
@@ -201,8 +220,12 @@ describe("application shell navigation", () => {
       })
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent("Startkategorie");
-    expect(screen.getByRole("status")).toHaveTextContent("Textur / Material");
+    expect(screen.getByText("Neues Asset · Textur / Material")).toBeVisible();
+    expect(
+      screen.getByRole("complementary", {
+        name: "Technische Zusammenfassung"
+      })
+    ).toHaveTextContent("Textur / Material");
     expect(navigation.pushedViews).toEqual(["wizard"]);
     expect(storage.mutations).toEqual([]);
   });

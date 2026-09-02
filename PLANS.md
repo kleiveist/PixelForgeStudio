@@ -4,8 +4,8 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Abgeschlossene Aufgabe:** Prompt 10 — kategorisierte Profilbibliothek
-- **Nächste Aufgabe:** Prompt 11 — Wizard Engine mit React Hook Form
+- **Abgeschlossene Aufgabe:** Prompt 11 — Wizard Engine mit React Hook Form
+- **Nächste Aufgabe:** Prompt 12 — Kategorie-Routing und dynamische Fragen
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
 ## Aktuelle Agentenübergabe
@@ -314,6 +314,88 @@
 - Prompt 11 baut noch keine großen Kategorieeditoren ein; deren Routing und
   Capability-bedingte Felder folgen in Prompt 12.
 
+## Ausführungsplan Prompt 11
+
+1. Den vorhandenen `WizardStartIntent` um einen aktiven, validierten
+   Session-Draft ergänzen, ohne React Hook Form als Eigentümer der aktuellen
+   Eingabewerte zu ersetzen. Ein neuer Start verwirft nur den flüchtigen
+   Sessionstand, nicht ungefragt den persistierten Draft-Slot.
+2. Eine deklarative Core-Step-Konfiguration mit stabilen IDs,
+   schrittbezogenen Zod-Schemas und RHF-Feldpfaden anlegen. Prompt 11 enthält
+   nur Projektstart und die vorbereitete Asset-Grundlage; Untertyp- und
+   Capability-Routing bleiben Prompt 12 vorbehalten.
+3. Neue, Profil- und Resume-Starts über pure Lifecycle-Funktionen auflösen.
+   Resume akzeptiert ausschließlich die exakt angeforderte Draft-ID; Profil-
+   starts verwenden den aktuellen `ProfileLibraryProvider` und bewahren
+   technische Asset-Overrides im Draft-Snapshot.
+4. Die echte Wizard-Ansicht mit semantischem Fortschritt, Vor/Zurück,
+   Pflichtfeldfokus, Dirty-/Autosave-Status und einer dauerhaft sichtbaren,
+   fachlich wahrheitsgetreuen technischen Zusammenfassung aufbauen.
+5. Autosave nur nach einer gültigen Benutzeränderung oder bewusster
+   Schrittnavigation auslösen. Mount, Profil-Hydration und Resume bleiben
+   schreibfrei; Invalid-/Unavailable-Fehler überschreiben keinen letzten
+   gültigen Draft.
+6. Pure Lifecycle-/Step-Tests und RTL-Nutzerflüsse für Navigation,
+   Pflichtfeldfehler, Autosave, Resume, Recovery, StrictMode und technische
+   Relevanz ergänzen; danach Dokumentation, `npm run verify`, Diff-Review und
+   separaten Prompt-11-Commit ausführen.
+
+## Ergebnis Prompt 11
+
+1. Der `wizard`-Platzhalter ist durch die generische React-Hook-Form-Engine
+   `GuidedWizardEngine` ersetzt. Navigation, Fortschritt, Fokus, Dirty State und
+   Persistenz sind von der externen `WIZARD_CORE_FLOW`-Definition getrennt.
+   Deren zwei stabile Core-Schritte `project` und `category` besitzen eigene
+   Komponenten, Zod-Schrittschemas und tatsächlich genutzte RHF-Feldpfade;
+   große Kategorieeditoren sind nicht in die Engine eingebaut.
+2. Fortschrittsanzeige, Vor/Zurück, fokussierte Pflichtfeldfehler, sichtbarer
+   Dirty-/Save-Status und eine responsive technische Seitenzusammenfassung
+   sind semantisch und tastaturbedienbar umgesetzt. Die Zusammenfassung zeigt
+   nur bekannte fachlich relevante Werte und keine opaken Compatibility Keys.
+3. Neue Starts bleiben zunächst flüchtig. Profilstarts werden gegen den
+   aktuellen `ProfileLibraryProvider` aufgelöst und bewahren Eltern-IDs,
+   Kategorie, Untertyp, Antworten, optionale Quellprovenienz sowie einen
+   validierten Asset-Override-Snapshot. Konflikte starten keinen Ersatzdraft.
+4. Resume akzeptiert ausschließlich die exakt angeforderte Draft-ID und prüft
+   bei selektierten Drafts ihre Base-/Category-Referenzen sowie den portablen
+   Override-Snapshot gegen aktuelle Locks. Unbekannte Step-IDs fallen nur in
+   der Session auf einen sicheren Core-Schritt zurück; fehlende, beschädigte,
+   widersprüchliche oder nicht verfügbare Daten bleiben unangetastet und führen
+   in einen sichtbaren Recovery-Zustand.
+5. Der Wizard-Reducer hält aktiven Draft, strukturelle Baseline, ungültige
+   transiente Core-Formwerte und expliziten transienten/persistierten Status
+   über View-Unmounts hinweg. Jeder neue Start erhöht die Session-Revision,
+   setzt dadurch auch innerhalb der offenen Wizard-Ansicht eine frische Session
+   auf und verschiebt den Fokus wieder auf den neuen Hauptinhalt.
+6. Ein gültiger Benutzer-Edit wird nach 300 ms lokal gesichert; bewusste
+   Navigation schreibt den neuen Step unmittelbar. Mount, Profil-Hydration und
+   Resume schreiben nichts. Fehlgeschlagene Writes verschieben die Baseline
+   nicht, zeigen den Fehler und erhalten die Eingaben als dirty Sessionstand.
+7. Schema-, Step-, Lifecycle-, Reducer-, Provider- und RTL-Tests decken
+   Navigation, Pflichtfelder, Autosave, Resume, Recovery, Session-Neustart,
+   Profil-Snapshots, StrictMode und technische Relevanz ab.
+
+## Übergabe an Prompt 12
+
+- Erweitere `WIZARD_CORE_FLOW` mit typisierten Formwerten, Step-Komponenten,
+  Zod-Schemas, Feldpfaden und Draft-Mapping. Baue Kategorie-, Untertyp- und
+  Capability-Schritte nicht als Sonderfälle in `GuidedWizardEngine` ein.
+- Die Dashboard-Kategorie ist bis zur verbindlichen Auswahl nur
+  `categoryHint`. Prompt 12 überführt sie zusammen mit einem gewählten Untertyp
+  und gültigen initialen Antworten in die selektierte Draft-Union; frühe Drafts
+  erfinden weiterhin keine Kategorie- oder Capability-Daten.
+- Sichtbarkeit von Richtungen, Animation, Tileability, Character Scale und
+  freier Komposition muss ausschließlich aus `resolveCapabilities()` folgen.
+  Insbesondere darf ein nicht-directional Asset keine 4/8-Auswahl erhalten.
+- Profil- und Resume-Drafts behalten `sourceAssetProfileId`, `overrides`,
+  Elternreferenzen und bestehende Antworten. Ein Kategorienwechsel muss
+  irrelevante Felder kontrolliert entfernen oder bewusst in einer getrennten
+  Rückkehrhistorie halten.
+- Nutze weiter den einzigen `WizardSessionProvider`- und Draft-Storage-Pfad und
+  erweitere dessen transienten Rohwert-Snapshot typisiert um neue Core-Felder.
+  Hydration bleibt schreibfrei; nur gültige Benutzeränderungen oder bewusste
+  Navigation dürfen die persistierte Baseline verschieben.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -351,7 +433,7 @@
 | 7 | App Shell + Navigation | React-App-Struktur und Views | abgeschlossen |
 | 8 | Dashboard | Kategorie- und Profilkarten | abgeschlossen |
 | 9 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | abgeschlossen |
-| 10 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | offen |
+| 10 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | abgeschlossen |
 | 11 | Kategorie-Routing | Capability-gesteuerte Fragen | offen |
 | 12 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | offen |
 | 13 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | offen |

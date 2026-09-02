@@ -162,6 +162,17 @@ Die URL verwendet `?view=…`, damit Fragmentanker für Skip-Links und spätere
 In-Page-Ziele frei bleiben. `startView` ist nur der validierte Startfallback und
 wird beim normalen Ansichtswechsel nicht als „zuletzt besucht“ überschrieben.
 
+Seit Prompt 11 hält ein eigener `WizardSessionProvider` den aktiven validierten
+Draft, seine strukturelle Dirty-Baseline, einen nicht persistierten Rohwert-
+Snapshot für schema-ungültige Core-Eingaben und den Persistenzstatus über
+Ansichtswechsel hinweg. React Hook Form bleibt Eigentümer der sichtbaren
+Formularwerte. `GuidedWizardEngine` ist generisch; die externe Flow-Definition
+liefert Step-Komponenten, Zod-Schemas, relevante RHF-Feldpfade, Draft-Mapping
+und Zusammenfassung. Profil- und Resume-Hydration schreiben nicht. Gültige
+Benutzeränderungen werden verzögert, bewusste Schrittwechsel sofort über den
+schmalen Draft-Storage-Port persistiert. Kategorie-/Capability-Routing
+erweitert den Flow erst in Prompt 12.
+
 ## Speicherung
 
 V2 benutzt lokale Namespaces, z. B.:
