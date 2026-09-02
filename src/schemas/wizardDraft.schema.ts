@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  ASSET_SUBTYPES,
-  resolveCapabilities,
-  type AssetCategory,
-  type AssetSubtype
-} from "../domain/assets";
+import { ASSET_SUBTYPES } from "../domain/assets";
 import {
   ArtworkAnswersSchema,
   BuildingAnswersSchema,
@@ -16,94 +11,103 @@ import {
   TextureAnswersSchema,
   TilesetAnswersSchema
 } from "./categoryData.schema";
+import { validateCategoryDataCapabilities } from "./categoryData.refinement";
 import {
   IsoDateTimeSchema,
-  ProfileNameSchema,
   SchemaVersionSchema,
   StableIdSchema,
   ValidationMessagesSchema
 } from "./common.schema";
 
-const WizardDraftCommonSchema = z.strictObject({
+const WizardDraftMetadataSchema = z.strictObject({
   schemaVersion: SchemaVersionSchema,
   kind: z.literal("wizardDraft"),
   draftId: StableIdSchema,
-  projectName: ProfileNameSchema,
-  route: z.enum([
-    "wizard/project",
-    "wizard/category",
-    "wizard/profile",
-    "wizard/editor",
-    "wizard/review"
-  ]),
+  projectName: z.string().trim().max(120),
   currentStep: z.string().min(1).max(100),
-  baseProfileId: StableIdSchema,
-  categoryProfileId: StableIdSchema.optional(),
   validation: ValidationMessagesSchema,
   savedAt: IsoDateTimeSchema
 });
 
-const WizardDraftUnionSchema = z.discriminatedUnion("category", [
-  WizardDraftCommonSchema.extend({
+const EarlyWizardDraftSchema = WizardDraftMetadataSchema.extend({
+  route: z.enum(["wizard/project", "wizard/category"])
+});
+
+const SelectedWizardDraftCommonSchema = WizardDraftMetadataSchema.extend({
+  route: z.enum(["wizard/profile", "wizard/editor", "wizard/review"]),
+  baseProfileId: StableIdSchema.optional(),
+  categoryProfileId: StableIdSchema.optional()
+});
+
+const SelectedWizardDraftSchema = z.discriminatedUnion("category", [
+  SelectedWizardDraftCommonSchema.extend({
     category: z.literal("character"),
     subtype: z.enum(ASSET_SUBTYPES.character),
     answers: CharacterAnswersSchema
   }),
-  WizardDraftCommonSchema.extend({
+  SelectedWizardDraftCommonSchema.extend({
     category: z.literal("movingObject"),
     subtype: z.enum(ASSET_SUBTYPES.movingObject),
     answers: MovingObjectAnswersSchema
   }),
-  WizardDraftCommonSchema.extend({
+  SelectedWizardDraftCommonSchema.extend({
     category: z.literal("staticObject"),
     subtype: z.enum(ASSET_SUBTYPES.staticObject),
     answers: StaticObjectAnswersSchema
   }),
-  WizardDraftCommonSchema.extend({
+  SelectedWizardDraftCommonSchema.extend({
     category: z.literal("texture"),
     subtype: z.enum(ASSET_SUBTYPES.texture),
     answers: TextureAnswersSchema
   }),
-  WizardDraftCommonSchema.extend({
+  SelectedWizardDraftCommonSchema.extend({
     category: z.literal("nature"),
     subtype: z.enum(ASSET_SUBTYPES.nature),
     answers: NatureAnswersSchema
   }),
-  WizardDraftCommonSchema.extend({
+  SelectedWizardDraftCommonSchema.extend({
     category: z.literal("building"),
     subtype: z.enum(ASSET_SUBTYPES.building),
     answers: BuildingAnswersSchema
   }),
-  WizardDraftCommonSchema.extend({
+  SelectedWizardDraftCommonSchema.extend({
     category: z.literal("tileset"),
     subtype: z.enum(ASSET_SUBTYPES.tileset),
     answers: TilesetAnswersSchema
   }),
-  WizardDraftCommonSchema.extend({
+  SelectedWizardDraftCommonSchema.extend({
     category: z.literal("item"),
     subtype: z.enum(ASSET_SUBTYPES.item),
     answers: ItemAnswersSchema
   }),
-  WizardDraftCommonSchema.extend({
+  SelectedWizardDraftCommonSchema.extend({
     category: z.literal("artwork"),
     subtype: z.enum(ASSET_SUBTYPES.artwork),
     answers: ArtworkAnswersSchema
   })
 ]);
 
-export const WizardDraftSchema = WizardDraftUnionSchema.superRefine((value, context) => {
-  const answers = value.answers as Readonly<Record<string, unknown>>;
-  if (
-    answers.directionCount !== undefined &&
-    !resolveCapabilities(value.category as AssetCategory, value.subtype as AssetSubtype).directional
-  ) {
-    context.addIssue({
-      code: "custom",
-      path: ["answers", "directionCount"],
-      message: "Direction counts are only valid for directional asset subtypes."
-    });
-  }
-});
+export const WizardDraftSchema = z
+  .union([EarlyWizardDraftSchema, SelectedWizardDraftSchema])
+  .superRefine((value, context) => {
+    if (!("category" in value)) return;
+
+    validateCategoryDataCapabilities(value, "answers", context);
+    if (!value.projectName) {
+      context.addIssue({
+        code: "custom",
+        path: ["projectName"],
+        message: "A project name is required after category selection."
+      });
+    }
+    if (value.route !== "wizard/profile" && value.baseProfileId === undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["baseProfileId"],
+        message: "Editor and review drafts require a base profile."
+      });
+    }
+  });
 
 export function parseWizardDraft(input: unknown): WizardDraft {
   return WizardDraftSchema.parse(input);

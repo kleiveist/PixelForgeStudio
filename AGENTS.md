@@ -43,8 +43,16 @@ Die vorhandenen HTML/CSS/JavaScript-Dateien sind **Legacy V1**. Sie dürfen wäh
 9. Diff auf Regressionen, tote Legacy-Pfade und versehentliche Default-Änderungen prüfen.
 10. Aufgabe mit geänderten Dateien, Tests, Risiken und einem englischen Emoji-Commitvorschlag abschließen.
 11. Nicht selbstständig mit der nächsten Aufgabe fortfahren.
+12. Wenn eine fortlaufende Umsetzung ausdrücklich beauftragt ist, jeden
+    abgeschlossenen Prompt separat committen, bevor der nächste beginnt. Das
+    Commitformat lautet `<emoji> <englischer Conventional-Commit-Text>`.
+13. Für die Übergabe an weitere Agenten den aktuellen und nächsten Prompt in
+    `PLANS.md` sowie neue öffentliche Modulgrenzen in `src/ARCHITECTURE.md`
+    dokumentieren.
 
 Keine Commits oder Pushes ausführen, außer der konkrete Auftrag verlangt dies.
+Ein Auftrag zur fortlaufenden Abarbeitung der nummerierten Promptserie gilt als
+Commitfreigabe für diese getrennten Phasen, nicht als Pushfreigabe.
 
 ## Zielbefehle nach der React-Migration
 

@@ -7,6 +7,24 @@
 - **Aktive Aufgabe:** Prompt 04 abgeschlossen; Prompt 05 noch nicht gestartet
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
+## Aktuelle Agentenübergabe
+
+- Öffentliche V2-Taxonomie: `src/domain/assets/index.ts`
+- Öffentliche Zod-Vertragsgrenze: `src/schemas/index.ts`
+- Persistierte und importierte Daten immer als `unknown` an die dortigen
+  `parse*`-Funktionen übergeben; keine parallelen handgeschriebenen Profiltypen.
+- Prompt 05 baut auf `BaseProfile`, `CategoryProfile`, `AssetProfile`, den
+  Basiswerten/Locks und `resolveCapabilities()` auf. Zielmodul ist
+  `src/domain/profiles/`.
+- `pixelDensity` bleibt der kanonische Feldname. Einen gespeicherten
+  `compatibilityKey` nie blind übernehmen, sondern aus den aufgelösten,
+  tatsächlich relevanten Werten neu berechnen und validieren.
+- `characterHeight` bei Kategorien ohne `scaledCharacter` weder in den
+  Compatibility Key noch still in fachliche Overrides einfließen lassen.
+- Referenzintegrität von Exportpaketen sowie `legacyData` und
+  `migratedFromVersion` werden mit Storage/Migration in Prompt 06 ergänzt.
+- Vor Prompt 05 zuerst `npm run verify` und einen sauberen Git-Status prüfen.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`

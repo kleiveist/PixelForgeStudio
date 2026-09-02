@@ -714,6 +714,7 @@ Basisprofil
   "iconId": "world-grid",
   "values": {
     "pixelDensity": "modernHd",
+    "styleProfile": "both",
     "tileSize": 32,
     "characterHeight": 80,
     "perspectiveType": "threeQuarter",
@@ -721,12 +722,18 @@ Basisprofil
     "cameraDirection": "southToNorth",
     "projectionType": "orthographic",
     "outlineStyle": "softSelective",
+    "paletteMode": "byProfile",
     "backgroundMode": "transparent",
     "alphaPadding": 8,
-    "nearestNeighbor": true
+    "nearestNeighbor": true,
+    "lightingDefaults": {
+      "policy": "adaptive",
+      "notes": "Keep the world-space light direction stable."
+    }
   },
   "locks": {
     "pixelDensity": true,
+    "styleProfile": true,
     "tileSize": true,
     "characterHeight": true,
     "perspectiveType": true,
@@ -734,12 +741,46 @@ Basisprofil
     "projectionType": true,
     "outlineStyle": true
   },
-  "createdAt": "ISO-DATE",
-  "updatedAt": "ISO-DATE"
+  "createdAt": "2026-09-02T12:00:00.000Z",
+  "updatedAt": "2026-09-02T12:00:00.000Z"
 }
 ```
 
-## 12.2 Asset-Profil
+`pixelDensity` ist der kanonische V2-Feldname für die Pixelart-Auflösung.
+
+## 12.2 Kategorieprofil
+
+```json
+{
+  "schemaVersion": 2,
+  "kind": "categoryProfile",
+  "id": "category_npc_80",
+  "name": "NPCs 80 px",
+  "baseProfileId": "base_world_32_80",
+  "category": "character",
+  "subtype": "npc",
+  "iconId": "character-npc",
+  "capabilities": {
+    "movable": true,
+    "directional": true,
+    "animated": true,
+    "scaledCharacter": true,
+    "transparent": true
+  },
+  "overrides": {},
+  "defaults": {
+    "role": "villager",
+    "animationAction": "walk",
+    "directionCount": 8,
+    "framesPerDirection": 5
+  },
+  "tags": ["npc", "80px"],
+  "createdAt": "2026-09-02T12:00:00.000Z",
+  "updatedAt": "2026-09-02T12:00:00.000Z"
+}
+```
+
+## 12.3 Asset-Profil
 
 ```json
 {
@@ -772,18 +813,26 @@ Basisprofil
   },
   "tags": ["npc", "village", "craft", "leather", "80px"],
   "favorite": false,
-  "createdAt": "ISO-DATE",
-  "updatedAt": "ISO-DATE"
+  "createdAt": "2026-09-02T12:00:00.000Z",
+  "updatedAt": "2026-09-02T12:00:00.000Z"
 }
 ```
 
-## 12.3 Workspace
+Der gespeicherte `compatibilityKey` ist ein abgeleiteter Snapshot. Prompt 05
+berechnet ihn deterministisch neu; Importdaten dürfen ihn nicht als
+vertrauenswürdige Quelle vorgeben. Fehlende Capability-Felder werden beim
+Parsen mit `false` materialisiert und der vollständige Snapshot anschließend
+gegen Kategorie und Untertyp geprüft.
+
+## 12.4 Wizard-Draft
 
 ```json
 {
   "schemaVersion": 2,
+  "kind": "wizardDraft",
   "route": "wizard/editor",
   "draftId": "draft_001",
+  "projectName": "Dorfschmied",
   "currentStep": "character-motion",
   "baseProfileId": "base_world_32_80",
   "category": "character",
@@ -793,9 +842,14 @@ Basisprofil
     "errors": [],
     "warnings": []
   },
-  "savedAt": "ISO-DATE"
+  "savedAt": "2026-09-02T12:00:00.000Z"
 }
 ```
+
+Drafts der frühen Routen `wizard/project` und `wizard/category` dürfen
+Basisprofil, Kategorie, Untertyp und Antworten noch auslassen. Ab
+`wizard/profile` ist die Kategorieauswahl vorhanden; `wizard/editor` und
+`wizard/review` verlangen zusätzlich ein Basisprofil und einen Projektnamen.
 
 ---
 

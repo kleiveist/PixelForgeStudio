@@ -35,3 +35,8 @@ resolver whether direction, animation, scale, or other question groups apply.
 `schemas/index.ts` is the public validation boundary. Persisted and imported
 values enter its parse functions as `unknown`; exported TypeScript types are
 inferred from the corresponding Zod schemas rather than maintained separately.
+
+Prompt 05 adds the framework-free `domain/profiles/` resolution layer. It must
+derive compatibility keys from resolved relevant values, never trust an
+imported key, and ignore `characterHeight` for assets without the
+`scaledCharacter` capability.

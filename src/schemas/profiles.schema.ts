@@ -18,6 +18,7 @@ import {
   TextureAnswersSchema,
   TilesetAnswersSchema
 } from "./categoryData.schema";
+import { validateCategoryDataCapabilities } from "./categoryData.refinement";
 import {
   AssetCapabilitiesSchema,
   BaseProfileLocksSchema,
@@ -112,7 +113,7 @@ const AssetProfileCommonSchema = z.strictObject({
   name: ProfileNameSchema,
   baseProfileId: StableIdSchema,
   categoryProfileId: StableIdSchema.optional(),
-  compatibilityKey: z.string().min(1).max(500),
+  compatibilityKey: z.string().trim().min(1).max(500),
   iconId: IconIdSchema,
   badgeIconIds: z.array(IconIdSchema).max(12).readonly(),
   capabilities: AssetCapabilitiesSchema,
@@ -194,36 +195,14 @@ function validateResolvedCapabilities(
   }
 }
 
-function validateDirectionAnswers(
-  value: Readonly<{
-    category: AssetCategory;
-    subtype: AssetSubtype;
-    answers?: Readonly<Record<string, unknown>>;
-    defaults?: Readonly<Record<string, unknown>>;
-  }>,
-  context: z.RefinementCtx
-): void {
-  const categoryData = value.answers ?? value.defaults;
-  if (
-    categoryData?.directionCount !== undefined &&
-    !resolveCapabilities(value.category, value.subtype).directional
-  ) {
-    context.addIssue({
-      code: "custom",
-      path: [value.answers === undefined ? "defaults" : "answers", "directionCount"],
-      message: "Direction counts are only valid for directional asset subtypes."
-    });
-  }
-}
-
 export const CategoryProfileSchema = CategoryProfileUnionSchema.superRefine((value, context) => {
   validateResolvedCapabilities(value, context);
-  validateDirectionAnswers(value, context);
+  validateCategoryDataCapabilities(value, "defaults", context);
 });
 
 export const AssetProfileSchema = AssetProfileUnionSchema.superRefine((value, context) => {
   validateResolvedCapabilities(value, context);
-  validateDirectionAnswers(value, context);
+  validateCategoryDataCapabilities(value, "answers", context);
 });
 
 export function parseBaseProfile(input: unknown): BaseProfile {

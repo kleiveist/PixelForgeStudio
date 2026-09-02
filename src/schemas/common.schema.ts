@@ -40,6 +40,7 @@ export const AssetCapabilitiesSchema = z.strictObject(capabilityShape).readonly(
 
 const baseProfileValuesShape = {
   pixelDensity: z.enum(["classicHd", "modernHd", "ultraHd"]),
+  styleProfile: z.enum(["classic", "dark", "both"]),
   tileSize: z.number().int().min(8).max(512),
   characterHeight: z.number().int().min(16).max(1024).optional(),
   perspectiveType: z.enum(["topdown", "threeQuarter", "isometric", "side"]),
@@ -75,6 +76,7 @@ export const BaseProfileOverridesSchema = z
 
 const baseProfileLocksShape = {
   pixelDensity: z.boolean(),
+  styleProfile: z.boolean(),
   tileSize: z.boolean(),
   characterHeight: z.boolean(),
   perspectiveType: z.boolean(),

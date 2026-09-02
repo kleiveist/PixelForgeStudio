@@ -20,6 +20,7 @@ const baseProfileInput = {
   iconId: "world-grid",
   values: {
     pixelDensity: "modernHd",
+    styleProfile: "both",
     tileSize: 32,
     characterHeight: 80,
     perspectiveType: "threeQuarter",
@@ -38,6 +39,7 @@ const baseProfileInput = {
   },
   locks: {
     pixelDensity: true,
+    styleProfile: true,
     tileSize: true,
     characterHeight: true,
     perspectiveType: true,
@@ -139,6 +141,20 @@ const wizardDraftInput = {
   savedAt: timestamp
 } as const;
 
+const exportBundleInput = {
+  schemaVersion: 2,
+  formatVersion: 2,
+  kind: "exportBundle",
+  application: "PixelForge Prompt Studio",
+  bundleId: "bundle_profiles_001",
+  exportedAt: timestamp,
+  baseProfiles: [baseProfileInput],
+  categoryProfiles: [categoryProfileInput],
+  assetProfiles: [assetProfileInput],
+  appSettings: appSettingsInput,
+  wizardDrafts: [wizardDraftInput]
+} as const;
+
 describe("V2-Zod-Verträge", () => {
   it("parst alle sechs V2-Verträge aus unknown", () => {
     const unknownBaseProfile: unknown = baseProfileInput;
@@ -152,19 +168,7 @@ describe("V2-Zod-Verträge", () => {
     const assetProfile = parseAssetProfile(unknownAssetProfile);
     const settings = parseAppSettings(unknownSettings);
     const draft = parseWizardDraft(unknownDraft);
-    const bundle = parseExportBundle({
-      schemaVersion: 2,
-      formatVersion: 2,
-      kind: "exportBundle",
-      application: "PixelForge Prompt Studio",
-      bundleId: "bundle_profiles_001",
-      exportedAt: timestamp,
-      baseProfiles: [unknownBaseProfile],
-      categoryProfiles: [unknownCategoryProfile],
-      assetProfiles: [unknownAssetProfile],
-      appSettings: unknownSettings,
-      wizardDrafts: [unknownDraft]
-    });
+    const bundle = parseExportBundle(exportBundleInput);
 
     expect(baseProfile.values.tileSize).toBe(32);
     expect(categoryProfile.category).toBe("character");
@@ -178,12 +182,79 @@ describe("V2-Zod-Verträge", () => {
     expect(bundle.assetProfiles).toHaveLength(1);
   });
 
+  it("parst jede der neun kategorienabhängigen Antwortvarianten", () => {
+    const categoryData = [
+      {
+        category: "character",
+        subtype: "npc",
+        answers: { directionCount: 8, animationAction: "walk", framesPerDirection: 5 }
+      },
+      {
+        category: "movingObject",
+        subtype: "cart",
+        answers: {
+          purpose: "wearable",
+          directionCount: 4,
+          animationType: "move",
+          framesPerDirection: 4
+        }
+      },
+      { category: "staticObject", subtype: "door", answers: { animationType: "openClose" } },
+      { category: "texture", subtype: "wood", answers: { seamless: true } },
+      { category: "nature", subtype: "tree", answers: { animationType: "wind" } },
+      { category: "building", subtype: "gate", answers: { modular: true } },
+      {
+        category: "tileset",
+        subtype: "animatedTile",
+        answers: { animationType: "water" }
+      },
+      { category: "item", subtype: "clothing", answers: { wearPosition: "body" } },
+      { category: "artwork", subtype: "scene", answers: { composition: "scene" } }
+    ] as const;
+
+    expect(categoryData.map((data) => AssetCategoryDataSchema.parse(data).category)).toEqual([
+      "character",
+      "movingObject",
+      "staticObject",
+      "texture",
+      "nature",
+      "building",
+      "tileset",
+      "item",
+      "artwork"
+    ]);
+  });
+
+  it("speichert frühe Wizard-Schritte ohne vorweggenommene Profil- oder Kategorieauswahl", () => {
+    const earlyDraft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_new_project_001",
+      projectName: "",
+      route: "wizard/project",
+      currentStep: "project",
+      validation: { errors: [], warnings: [] },
+      savedAt: timestamp
+    });
+
+    expect(earlyDraft.route).toBe("wizard/project");
+    expect(earlyDraft).not.toHaveProperty("baseProfileId");
+    expect(earlyDraft).not.toHaveProperty("category");
+    expect(() => parseWizardDraft({ ...wizardDraftInput, projectName: "" })).toThrow();
+    expect(() =>
+      parseWizardDraft({ ...wizardDraftInput, baseProfileId: undefined })
+    ).toThrow();
+  });
+
   it("hält stabile IDs unabhängig von umbenennbaren Anzeigenamen", () => {
     const original = parseBaseProfile(baseProfileInput);
     const renamed = parseBaseProfile({ ...baseProfileInput, name: "Umbenanntes Weltprofil" });
 
     expect(renamed.id).toBe(original.id);
     expect(renamed.name).not.toBe(original.name);
+    expect(() =>
+      parseBaseProfile({ ...baseProfileInput, id: "Weltprofil aus Anzeigename" })
+    ).toThrow();
   });
 
   it("weist fehlende Pflichtfelder zurück", () => {
@@ -210,10 +281,29 @@ describe("V2-Zod-Verträge", () => {
     expect(() =>
       parseAssetProfile({ ...assetProfileInput, category: "texture", subtype: "npc" })
     ).toThrow();
+    expect(() =>
+      parseCategoryProfile({ ...categoryProfileInput, category: "vehicle", subtype: "cart" })
+    ).toThrow();
+    expect(() =>
+      parseWizardDraft({ ...wizardDraftInput, category: "vehicle", subtype: "cart" })
+    ).toThrow();
+    expect(() =>
+      parseExportBundle({
+        ...exportBundleInput,
+        assetProfiles: [{ ...assetProfileInput, category: "vehicle", subtype: "cart" }]
+      })
+    ).toThrow();
   });
 
   it("weist inkompatible Schema- und Formatversionen zurück", () => {
     expect(() => parseBaseProfile({ ...baseProfileInput, schemaVersion: 1 })).toThrow();
+    expect(() =>
+      parseCategoryProfile({ ...categoryProfileInput, schemaVersion: 1 })
+    ).toThrow();
+    expect(() => parseAssetProfile({ ...assetProfileInput, schemaVersion: 1 })).toThrow();
+    expect(() => parseAppSettings({ ...appSettingsInput, schemaVersion: 1 })).toThrow();
+    expect(() => parseWizardDraft({ ...wizardDraftInput, schemaVersion: 1 })).toThrow();
+    expect(() => parseExportBundle({ ...exportBundleInput, schemaVersion: 1 })).toThrow();
     expect(() =>
       parseExportBundle({
         schemaVersion: 2,
@@ -269,6 +359,58 @@ describe("V2-Zod-Verträge", () => {
     ).toThrow();
   });
 
+  it("prüft Capability-abhängige Antworten an jeder öffentlichen Kategoriegrenze", () => {
+    const invalidCategoryData = [
+      {
+        category: "movingObject",
+        subtype: "floatingCrystal",
+        answers: { directionCount: 8 }
+      },
+      {
+        category: "movingObject",
+        subtype: "floatingCrystal",
+        answers: { framesPerDirection: 4 }
+      },
+      {
+        category: "movingObject",
+        subtype: "cart",
+        answers: { directionCount: 4, framesPerDirection: 4 }
+      },
+      { category: "staticObject", subtype: "barrel", answers: { animationType: "openClose" } },
+      { category: "item", subtype: "questItem", answers: { wearPosition: "body" } },
+      { category: "building", subtype: "house", answers: { modular: true } }
+    ];
+
+    for (const data of invalidCategoryData) {
+      expect(AssetCategoryDataSchema.safeParse(data).success).toBe(false);
+    }
+
+    const crystalCapabilities = {
+      movable: true,
+      animated: true,
+      transparent: true,
+      footprint: true
+    };
+    expect(() =>
+      parseCategoryProfile({
+        ...categoryProfileInput,
+        id: "category_floating_crystal",
+        category: "movingObject",
+        subtype: "floatingCrystal",
+        capabilities: crystalCapabilities,
+        defaults: { directionCount: 8 }
+      })
+    ).toThrow();
+    expect(() =>
+      parseWizardDraft({
+        ...wizardDraftInput,
+        category: "movingObject",
+        subtype: "floatingCrystal",
+        answers: { directionCount: 8 }
+      })
+    ).toThrow();
+  });
+
   it("weist manipulierte Capability-Snapshots zurück", () => {
     const result = AssetProfileSchema.safeParse({
         ...assetProfileInput,
@@ -283,5 +425,8 @@ describe("V2-Zod-Verträge", () => {
         message: expect.stringContaining('Capability "directional" does not match')
       })
     );
+    expect(() =>
+      parseAssetProfile({ ...assetProfileInput, compatibilityKey: "   " })
+    ).toThrow();
   });
 });

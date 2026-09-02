@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ASSET_SUBTYPES } from "../domain/assets";
+import { validateCategoryDataCapabilities } from "./categoryData.refinement";
 import { DirectionCountSchema, FootprintSchema } from "./common.schema";
 
 const sharedAnswersShape = {
@@ -177,17 +178,21 @@ export const ArtworkCategoryDataSchema = z.strictObject({
   answers: ArtworkAnswersSchema
 });
 
-export const AssetCategoryDataSchema = z.discriminatedUnion("category", [
-  CharacterCategoryDataSchema,
-  MovingObjectCategoryDataSchema,
-  StaticObjectCategoryDataSchema,
-  TextureCategoryDataSchema,
-  NatureCategoryDataSchema,
-  BuildingCategoryDataSchema,
-  TilesetCategoryDataSchema,
-  ItemCategoryDataSchema,
-  ArtworkCategoryDataSchema
-]);
+export const AssetCategoryDataSchema = z
+  .discriminatedUnion("category", [
+    CharacterCategoryDataSchema,
+    MovingObjectCategoryDataSchema,
+    StaticObjectCategoryDataSchema,
+    TextureCategoryDataSchema,
+    NatureCategoryDataSchema,
+    BuildingCategoryDataSchema,
+    TilesetCategoryDataSchema,
+    ItemCategoryDataSchema,
+    ArtworkCategoryDataSchema
+  ])
+  .superRefine((value, context) => {
+    validateCategoryDataCapabilities(value, "answers", context);
+  });
 
 export type CharacterAnswers = z.infer<typeof CharacterAnswersSchema>;
 export type MovingObjectAnswers = z.infer<typeof MovingObjectAnswersSchema>;
