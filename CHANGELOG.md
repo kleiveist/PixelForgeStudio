@@ -10,6 +10,8 @@
 - bytegenaue Vitest-Parität über Legacy-Referenz, synthetische Storage-Fixtures und SHA-256-Promptsignaturen abgesichert
 - typsicheren V2-Katalog für neun Asset-Kategorien, ihre Untertypen und elf Pflicht-Capabilities ergänzt
 - Richtungsoptionen zentral auf `directional` Assets begrenzt und Animation unabhängig davon modelliert
+- Zod-Verträge für Base-, Kategorie- und Assetprofile, App-Einstellungen, Wizard-Entwürfe und Exportpakete ergänzt
+- kategoriefremde Antworten, unbekannte Versionen und manipulierte Capability-Snapshots an der Parsegrenze abgesichert
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

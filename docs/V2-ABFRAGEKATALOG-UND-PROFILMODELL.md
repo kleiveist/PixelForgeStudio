@@ -1,3 +1,7 @@
+<!-- PYGINDEX:NAVIGATION START -->
+[Zur Übersicht](index.md)
+<!-- PYGINDEX:NAVIGATION END -->
+
 # PixelForge Prompt Studio V2 — Abfragekatalog und Profilmodell
 
 ## 1. Zweck

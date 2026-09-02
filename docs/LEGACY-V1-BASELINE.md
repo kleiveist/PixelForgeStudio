@@ -1,3 +1,7 @@
+<!-- PYGINDEX:NAVIGATION START -->
+[Zur Übersicht](index.md)
+<!-- PYGINDEX:NAVIGATION END -->
+
 # PixelForge Prompt Studio — Legacy-V1-Migrationsbaseline
 
 ## Status und Zweck

@@ -1,3 +1,7 @@
+<!-- PYGINDEX:NAVIGATION START -->
+[Zur Übersicht](index.md)
+<!-- PYGINDEX:NAVIGATION END -->
+
 # Codex-Promptkatalog — PixelForge Prompt Studio V2 (React + TypeScript)
 
 ## Verwendung

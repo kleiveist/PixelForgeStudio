@@ -1,3 +1,7 @@
+<!-- PYGINDEX:NAVIGATION START -->
+[Zur Übersicht](index.md)
+<!-- PYGINDEX:NAVIGATION END -->
+
 # Assistant-Master-Prompt für Pixelart-Assets
 
 Der folgende Text kann als System- oder Assistenzanweisung für einen separaten KI-Chat verwendet werden. Der HTML-Generator bildet dieselben Regeln technisch und auswählbar ab.

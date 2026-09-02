@@ -1,5 +1,15 @@
 # PixelForge Prompt Studio — Codex V2 React/TypeScript Paket ⚙️
 
+<!-- PYGINDEX:README START -->
+## Dokumentation
+- [Dokumentationsübersicht](docs/index.md)
+
+## Projektdateien
+- [AGENTS.md — PixelForge Prompt Studio V2](AGENTS.md)
+- [Changelog](CHANGELOG.md)
+- [PixelForge Prompt Studio V2 — React/TypeScript-Ausführungsplan](PLANS.md)
+<!-- PYGINDEX:README END -->
+
 Dieses Repository enthält drei aufeinander abgestimmte Bereiche:
 
 1. das aktive **V2-Grundgerüst mit React, TypeScript und Vite**,
@@ -41,7 +51,8 @@ V1 inventarisieren ✓
 → React/TS/Vite aufsetzen ✓
 → Fachlogik nach TypeScript portieren ✓
 → Kategorien und Capabilities typisieren ✓
-→ V2-Datenmodell + Migration
+→ V2-Datenverträge mit Zod absichern ✓
+→ Profilvererbung + Migration
 → neues Dashboard/Wizard/Editormodell
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -123,12 +134,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 03 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 04 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 04 — Zod-Schemas und V2-Profilmodell
+→ Prompt 05 — Profilvererbung, Locks und Compatibility Key
 ```
 
 Danach immer genau:
@@ -192,6 +203,11 @@ V2-Regeln das historische Migrationsverhalten nicht unbemerkt verändern.
 Das V2-Capability-System unter `src/domain/assets/` trennt Bewegung,
 Richtungsansichten und Animation. Die UI kann dadurch 4/8 Richtungen nur für
 tatsächlich `directional` Assets anbieten.
+
+Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
+Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
+werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
+aus den Schemas abgeleitet.
 
 ## Datenschutz
 

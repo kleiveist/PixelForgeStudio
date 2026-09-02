@@ -4,7 +4,7 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktive Aufgabe:** Prompt 03 abgeschlossen; Prompt 04 noch nicht gestartet
+- **Aktive Aufgabe:** Prompt 04 abgeschlossen; Prompt 05 noch nicht gestartet
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
 ## Erfasster Legacy-Ist-Stand
@@ -37,7 +37,7 @@
 | 0 | Baseline + Migrationsinventar | V1-Verhalten, Storage-Keys und Promptregeln dokumentiert | abgeschlossen |
 | 1 | React/TS/Vite-Grundgerüst | Vite React-TS, npm, strict TS, Testsetup | abgeschlossen |
 | 2 | Legacy-Domain extrahieren | Defaults, Prompt-, Validierungs- und Metriklogik als frameworkfreies TypeScript | abgeschlossen |
-| 3 | Zod-Schemas + V2-Domainmodell | Kategorien und Capabilities abgeschlossen; Profile und Schemas folgen | in Arbeit |
+| 3 | Zod-Schemas + V2-Domainmodell | Kategorien, Profile, Capabilities und Importverträge typisiert | abgeschlossen |
 | 4 | Profilauflösung + Locks | Vererbung und Compatibility Key | offen |
 | 5 | Storage V2 + V1-Migration | validierte Persistenz mit Backup | offen |
 | 6 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | offen |

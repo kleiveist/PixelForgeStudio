@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ASSET_CAPABILITY_IDS, type AssetCapability } from "../domain/assets";
+import type { AssetCapability } from "../domain/assets";
 
 export const V2_SCHEMA_VERSION = 2 as const;
 export const SchemaVersionSchema = z.literal(V2_SCHEMA_VERSION);
@@ -111,10 +111,6 @@ export const ValidationMessagesSchema = z
     warnings: z.array(z.string().min(1).max(500)).max(100)
   })
   .readonly();
-
-export function hasEveryCapabilityKey(value: Readonly<Record<string, unknown>>): boolean {
-  return ASSET_CAPABILITY_IDS.every((capability) => capability in value);
-}
 
 export type StableId = z.infer<typeof StableIdSchema>;
 export type AssetCapabilitiesData = z.infer<typeof AssetCapabilitiesSchema>;

@@ -1,3 +1,7 @@
+<!-- PYGINDEX:NAVIGATION START -->
+[Zur Übersicht](index.md)
+<!-- PYGINDEX:NAVIGATION END -->
+
 # Codex-Umsetzungsanweisung — PixelForge Prompt Studio V2
 
 ## 0. Zweck und Priorität
