@@ -10,10 +10,15 @@ export interface WizardSessionState {
   readonly startIntent: WizardStartIntent | null;
 }
 
-export type WizardSessionAction = Readonly<{
-  type: "startRequested";
-  intent: WizardStartIntent;
-}>;
+export type WizardSessionAction =
+  | Readonly<{
+      type: "startRequested";
+      intent: WizardStartIntent;
+    }>
+  | Readonly<{
+      type: "profileRequestCleared";
+      assetProfileId: StableId;
+    }>;
 
 export const INITIAL_WIZARD_SESSION_STATE: WizardSessionState = Object.freeze({
   startIntent: null
@@ -23,6 +28,14 @@ export function wizardSessionReducer(
   state: WizardSessionState,
   action: WizardSessionAction
 ): WizardSessionState {
-  if (state.startIntent === action.intent) return state;
-  return { startIntent: action.intent };
+  switch (action.type) {
+    case "startRequested":
+      if (state.startIntent === action.intent) return state;
+      return { startIntent: action.intent };
+    case "profileRequestCleared":
+      return state.startIntent?.kind === "profile" &&
+        state.startIntent.assetProfileId === action.assetProfileId
+        ? { startIntent: null }
+        : state;
+  }
 }

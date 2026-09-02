@@ -4,8 +4,8 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Abgeschlossene Aufgabe:** Prompt 09 — Dashboard und Icon-System
-- **Nächste Aufgabe:** Prompt 10 — kategorisierte Profilbibliothek
+- **Abgeschlossene Aufgabe:** Prompt 10 — kategorisierte Profilbibliothek
+- **Nächste Aufgabe:** Prompt 11 — Wizard Engine mit React Hook Form
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
 ## Aktuelle Agentenübergabe
@@ -37,7 +37,8 @@
   Collection-Envelopes. Reads liefern `valid | empty | invalid | unavailable`
   und werfen bei korruptem Browser-Storage nicht.
 - `writeProfileLibrary()` validiert Profile, Referenzen, Locks und neu
-  berechnete Compatibility Keys vor einem atomaren Best-Effort-Write.
+  berechnete Compatibility Keys vor einem Best-Effort-Gesamtwrite mit
+  Rollback-Versuch.
 - `migrateLegacyV1Storage()` sichert die exakten V1-Rohstrings zuerst, belässt
   die V1-Keys unverändert und markiert den Backup-Status erst nach allen
   Profilwrites als `completed`. Ein `prepared`-Backup wird deterministisch
@@ -99,6 +100,19 @@
 - `ViewLink` aus `src/components/navigation/index.ts` ist die gemeinsame
   zugängliche Link-Grenze für Shell und Dashboard. Ein `onNavigate` kann einen
   fachlichen Startintent setzen, bevor die bestehende View-Navigation läuft.
+- Öffentliche immutable Assetprofil-Mutationen liegen in
+  `src/domain/profiles/index.ts`. Favorisieren verändert nur
+  Organisationsmetadaten; Duplikate erhalten neue ID/Zeit, aber dieselbe
+  validierte Elternkette und denselben effektiven Compatibility Key; Löschen
+  entfernt nie Base-/Kategorieprofile kaskadierend.
+- `src/store/profiles/index.ts` ist die React-Grenze für die geladene
+  Gesamtbibliothek, Profilfilter und Mutationen. Der Provider übernimmt einen
+  Kandidaten erst nach Zod-Prüfung und erfolgreichem Best-Effort-
+  `writeProfileLibrary()` mit Rollback-Versuch; Fehler bleiben fail-closed
+  sichtbar.
+- `src/features/profiles/profileLibraryData.ts` filtert und gruppiert
+  aufgelöste Profile rein. Compatibility Keys bleiben opak und stammen aus
+  `resolveProfile()`, nicht blind aus dem gespeicherten Snapshot.
 
 ## Ergebnis Prompt 07
 
@@ -220,6 +234,86 @@
   Profilketten nicht still beschädigen. Prompt 10 erhält eigene RTL-Tests für
   Filter, Gruppierung, Favorit und Laden.
 
+## Ausführungsplan Prompt 10
+
+1. Frameworkfreie, immutable Bibliotheksoperationen für Favorisieren,
+   Duplizieren und Löschen von Assetprofilen anlegen; Basis- und
+   Kategorieprofile bleiben dabei unveränderte Referenzen der gültigen Kette.
+2. Einen `ProfileLibraryProvider` mit Context + Reducer als einzige UI-
+   Mutationsgrenze einführen. Jede Kandidatenbibliothek wird vor dem
+   Best-Effort-`writeProfileLibrary()` mit Rollback-Versuch erneut mit Zod
+   validiert; Fehler bleiben sichtbar und verändern den Bibliotheksgraphen im
+   Provider nicht.
+3. Aus der vorhandenen Profilauflösung ein gemeinsames Präsentationsmodell
+   ableiten und darüber Suche, Kategorie-, Basisprofil- und Favoritenfilter
+   sowie eine opake Gruppierung nach dem neu berechneten Compatibility Key
+   implementieren.
+4. Den `profiles`-Platzhalter durch eine responsive Profilbibliothek mit
+   Filterleiste, Ergebnisstatus, relevanten Kerndaten und getrennten Aktionen
+   für Laden, Favorisieren, Duplizieren und bestätigt Löschen ersetzen.
+5. Pure Mutationen/Selektoren und Nutzerflüsse mit Vitest beziehungsweise RTL
+   prüfen, inklusive Keyboard, kombinierter Filter, Storage-Ausfall,
+   ID-Kollision und abgebrochener Löschung.
+6. Architektur-, Änderungs- und Agentenübergabe aktualisieren, anschließend
+   `npm run verify` und `git diff --check` ausführen und Prompt 10 separat
+   committen.
+
+## Ergebnis Prompt 10
+
+1. Die echte Profilbibliothek ersetzt ausschließlich die `profiles`-
+   Platzhalteransicht und bietet eine beschriftete Suche, Kategorie-,
+   Basisprofil- und Favoritenfilter sowie umschaltbare Kategorie- oder
+   technische Compatibility-Gruppierung.
+2. Alle Kartendaten entstehen aus der bestehenden Profilauflösung. Gleiche
+   effektive Werte gruppieren auch über verschiedene Base-IDs zusammen;
+   Figurenhöhe erscheint nur für `scaledCharacter`, Tile-/Weltkameraangaben
+   nicht bei freier Artwork-Komposition.
+3. Assetprofilkarten sind nicht selbst interaktiv, sondern besitzen getrennte
+   native Aktionen für Laden, Favorisieren, Duplizieren und Löschen. Laden
+   setzt den bestehenden typisierten Profilintent und bleibt schreibfrei.
+4. Pure Bibliotheksoperationen ändern immutable ausschließlich das Zielblatt.
+   Duplikate erhalten eine neue validierte ID, neue Zeitstempel und keine
+   geerbte V1-Migrationsprovenienz; Elternreferenzen und Compatibility bleiben
+   erhalten. Basis-/Kategorieprofil-CRUD bleibt den späteren Editor- und
+   Konvertierungsphasen vorbehalten.
+5. Jede Mutation validiert und schreibt den vollständigen Profilgraphen über
+   den zentralen Adapter. Ungültige, nicht verfügbare oder teilweise
+   fehlgeschlagene Writes verändern weder Bibliotheksgraph noch sichtbare
+   Karten; der Context veröffentlicht dazu eine Fehlermeldung. Löschung erfolgt
+   erst nach einem zugänglichen Bestätigungsdialog.
+6. Profilfilter leben im appweiten Reducer und bleiben beim Navigieren erhalten.
+   Ein erfolgreich gelöschtes Asset entfernt außerdem ausschließlich einen
+   exakt passenden flüchtigen Profilstartintent.
+7. Domain-, Selector-, Reducer-, Provider- und RTL-Tests decken Filter,
+   Gruppierung, relevante 32-/80-px-Fakten, Keyboard-Laden, Favoriten,
+   Duplikation, Dialogfokus, Referenzerhalt sowie Storage-Fehler ab.
+
+## Übergabe an Prompt 11
+
+- Ersetze ausschließlich den `wizard`-Platzhalter durch die wiederverwendbare
+  Engine; Dashboard, Profilbibliothek und ihre IDs/Überschriften bleiben stabil.
+- Der Wizard konsumiert `WizardStartIntent` aus `src/store/wizard/index.ts`:
+  `newAsset` darf noch keinen Untertyp erfinden, `profile` muss die ID gegen
+  den aktuellen `ProfileLibraryProvider` auflösen und `resume` den validierten
+  Draft über den Storage-Adapter laden.
+- Die Profilbibliothek ist jetzt der appweite autoritative UI-Stand. Neue
+  Profil-Save-Flows dürfen den Adapter nicht direkt umgehen, sondern müssen
+  später eine validierte Provider-Aktion ergänzen, damit dessen Ref nicht
+  veraltet.
+- Der `storageAdapter` ist innerhalb eines App-Lifecycles eine stabile
+  Abhängigkeit. Prompt 10 synchronisiert weder Adapterwechsel noch parallele
+  externe/localStorage-Tab-Writes; Import und Restore müssen deshalb über eine
+  Provider-Hydration laufen, bevor sie eigene Bibliothekswrites auslösen.
+- Filterzustand und Profilmutationsmeldung gehören nicht in React Hook Form.
+  Die Wizard Engine besitzt stattdessen ihren temporären Formularzustand,
+  deklarative Step-Konfiguration, Zod-Schrittschemas, Dirty State sowie den
+  einzigen Draft-Autosave-Pfad.
+- Autosave darf ausschließlich einen vollständigen, für die aktuelle Route
+  gültigen `WizardDraft` schreiben. Fehlende/gelöschte Profil- oder Draft-IDs
+  benötigen einen sichtbaren, nicht abstürzenden Wiederherstellungszustand.
+- Prompt 11 baut noch keine großen Kategorieeditoren ein; deren Routing und
+  Capability-bedingte Felder folgen in Prompt 12.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -256,7 +350,7 @@
 | 6 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | abgeschlossen |
 | 7 | App Shell + Navigation | React-App-Struktur und Views | abgeschlossen |
 | 8 | Dashboard | Kategorie- und Profilkarten | abgeschlossen |
-| 9 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | offen |
+| 9 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | abgeschlossen |
 | 10 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | offen |
 | 11 | Kategorie-Routing | Capability-gesteuerte Fragen | offen |
 | 12 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | offen |

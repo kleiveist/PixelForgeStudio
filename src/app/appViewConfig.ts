@@ -21,11 +21,11 @@ export const APP_VIEW_DEFINITIONS: Readonly<
   },
   profiles: {
     label: "Profile",
-    title: "Profile zentral organisieren.",
+    title: "Produktionsprofile sicher organisieren.",
     eyebrow: "Profilbibliothek",
     description:
-      "Basis-, Kategorie- und Assetprofile erhalten hier eine gemeinsame, verlässliche Arbeitsfläche.",
-    nextStep: "Suche, Filter und Profilaktionen folgen in der Profilbibliothek."
+      "Assetprofile erhalten hier eine kategorisierte, verlässliche Arbeitsfläche auf ihrer gültigen Profilkette.",
+    nextStep: "Suche, Filter, Compatibility-Gruppen und Profilaktionen sind aktiv."
   },
   wizard: {
     label: "Wizard",

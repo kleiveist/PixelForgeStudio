@@ -7,6 +7,7 @@ import { BRAND } from "../config";
 import { APP_VIEW_IDS, type AppView } from "../domain/navigation";
 import type { AssetCategory } from "../domain/assets";
 import { PlaceholderView } from "../features/app-views/PlaceholderView";
+import { ProfileLibraryView } from "../features/profiles";
 import {
   DashboardView,
   type DashboardViewProps
@@ -23,6 +24,7 @@ import styles from "./AppShell.module.css";
 interface ActiveViewProps {
   readonly activeBaseProfileId: StableId | null;
   readonly onOpenProfile: (profileId: StableId) => void;
+  readonly onProfileDeleted: (profileId: StableId) => void;
   readonly onResumeDraft: (draftId: StableId) => void;
   readonly onSelectBaseProfile: DashboardViewProps["onSelectBaseProfile"];
   readonly onStartNewAsset: (category: AssetCategory | null) => void;
@@ -52,6 +54,7 @@ function wizardNotice(startIntent: WizardStartIntent | null) {
 function ActiveView({
   activeBaseProfileId,
   onOpenProfile,
+  onProfileDeleted,
   onResumeDraft,
   onSelectBaseProfile,
   onStartNewAsset,
@@ -68,6 +71,16 @@ function ActiveView({
         onOpenProfile={onOpenProfile}
         onResumeDraft={onResumeDraft}
         onSelectBaseProfile={onSelectBaseProfile}
+      />
+    );
+  }
+
+  if (view === "profiles") {
+    return (
+      <ProfileLibraryView
+        onLoadProfile={onOpenProfile}
+        onProfileDeleted={onProfileDeleted}
+        onStartNewAsset={() => onStartNewAsset(null)}
       />
     );
   }
@@ -97,6 +110,7 @@ export function AppShell({
     requestNewAsset,
     requestProfile,
     requestResume,
+    clearProfileRequest,
     startIntent
   } = useWizardSession();
   const { setActiveBaseProfile } = useSettings();
@@ -216,6 +230,7 @@ export function AppShell({
           <ActiveView
             activeBaseProfileId={activeBaseProfileId}
             onOpenProfile={openProfile}
+            onProfileDeleted={clearProfileRequest}
             onResumeDraft={resumeDraft}
             onSelectBaseProfile={setActiveBaseProfile}
             onStartNewAsset={startNewAsset}

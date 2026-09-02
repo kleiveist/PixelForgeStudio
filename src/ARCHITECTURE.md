@@ -10,7 +10,8 @@
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
   - `profiles/`: validated profile-chain resolution, base-lock enforcement,
-    structured diagnostics, normalized overrides, and compatibility keys
+    structured diagnostics, normalized overrides, compatibility keys, and
+    immutable AssetProfile leaf mutations
   - `json/`: canonical JSON serialization and semantic equality for stable
     import comparisons, fingerprints, and idempotent migration decisions
   - `migration/`: deterministic, framework-free V1-to-V2 profile
@@ -22,8 +23,8 @@
   - `legacy-v1/`: namespaced compatibility port of the V1 defaults, state
     whitelist, prompt builder, validation, and frame/canvas metrics
 - `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
-  Kategorie-Dashboard samt reinem Read-Model, während Profile-/Wizard-/Output-
-  Flächen bis zu ihren jeweiligen Phasen bewusst Platzhalter bleiben
+  Kategorie-Dashboard, `profiles/` die kategorisierte Assetprofilbibliothek;
+  Wizard-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -40,8 +41,10 @@
   `services/index.ts`
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
   complete validated app-settings envelope and effective theme state;
-  `navigation/` owns only the current top-level view; `wizard/` currently owns
-  only the transient typed start intent, not persisted draft contents
+  `profiles/` owns the validated profile-library UI state, filters, and
+  mutation boundary; `navigation/` owns only the current top-level view;
+  `wizard/` currently owns only the transient typed start intent, not
+  persisted draft contents
 - `styles/`: globale semantische Light-/Dark-Tokens, System-Fallback und
   Reset-/Grundregeln
 - `test/`: gemeinsames Vitest-/Testing-Library-Setup
@@ -69,6 +72,13 @@ production profile; lock conflicts may expose only an explicitly named safe
 `partialProfile`. Category defaults and asset answers remain correlated by the
 category discriminant.
 
+The same public profile API exposes immutable AssetProfile leaf operations.
+Favorite changes preserve the content-oriented `updatedAt`; duplicates retain
+their parent references and effective compatibility while receiving a fresh
+identity and shedding V1-only provenance. Deletion never cascades into Base or
+Category profiles. Every resulting graph is validated again at the React
+mutation boundary before persistence.
+
 Compatibility keys use the `pf2-compat-v1__` format and are always recomputed
 from effective values. They exclude profile metadata and omit
 `characterHeight` unless `scaledCharacter` applies. Free-composition artwork
@@ -81,7 +91,13 @@ the key is for grouping, never for security or data integrity.
 `KeyValueStorage`; `createBrowserV2StorageAdapter()` is the browser composition
 root. Reads return a discriminated `valid | empty | invalid | unavailable`
 result. Profile writes use versioned namespace envelopes and validate the
-complete Base→Category→Asset graph before a best-effort atomic write.
+complete Base→Category→Asset graph before a best-effort write with a rollback
+attempt. If browser storage also rejects that rollback, the adapter reports
+`unavailable` but cannot guarantee atomicity. `ProfileLibraryProvider` is the
+sole in-app mutation owner and assumes its adapter identity remains stable for
+the app lifecycle. Future import or restore paths must rehydrate that provider
+instead of writing beside its in-memory graph; cross-tab synchronization is
+not part of Prompt 10.
 
 `services/v1Migration.ts` reads both V1 keys independently, writes their exact
 raw strings to a `prepared` backup before parsing, transforms valid sources,
@@ -159,6 +175,26 @@ through the narrow `DashboardStorage` port (`readProfileLibrary` + `readDraft`)
 and never accesses `localStorage`. Category, profile and draft starts are
 write-free; only an explicit base-profile selection delegates a validated
 AppSettings update to the existing Settings provider.
+
+`features/profiles/profileLibraryData.ts` reuses that resolved presentation
+projection, searches the complete source tag set, combines category, Base and
+favorite filters with AND semantics, and groups visible cards either in
+canonical category order or by the newly resolved compatibility key. The key
+remains an opaque grouping identifier and is never parsed or displayed.
+
+`store/profiles/index.ts` is the React-facing profile-library boundary. Its
+Context/Reducer stays mounted above changing views, so non-persisted filters
+survive navigation. Favorite, duplicate and delete commands operate on the
+latest in-memory ref, validate the complete candidate with Zod, then delegate
+one full-graph write to the storage adapter. The reducer adopts it only after a
+successful write; invalid and unavailable results leave the previous graph
+untouched and expose a typed visible notice.
+
+`features/profiles/ProfileLibraryView.tsx` is the real `profiles` view. Cards
+are non-interactive articles with separate native controls, avoiding nested
+button semantics. Loading records the existing profile start intent without a
+write. Deletion uses a named confirmation dialog, retains parent profiles, and
+clears only a matching transient Wizard profile request after success.
 
 `store/wizard/index.ts` currently exposes a deliberately small transient
 handoff contract: `newAsset` carries an optional category, `profile` an

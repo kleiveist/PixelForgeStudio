@@ -50,4 +50,25 @@ describe("wizard start session", () => {
       startIntent: { kind: "resume", draftId }
     });
   });
+
+  it("clears only a matching transient profile request", () => {
+    const profileId = StableIdSchema.parse("asset_blacksmith_001");
+    const requested = wizardSessionReducer(INITIAL_WIZARD_SESSION_STATE, {
+      type: "startRequested",
+      intent: { kind: "profile", assetProfileId: profileId }
+    });
+
+    expect(
+      wizardSessionReducer(requested, {
+        type: "profileRequestCleared",
+        assetProfileId: StableIdSchema.parse("asset_other")
+      })
+    ).toBe(requested);
+    expect(
+      wizardSessionReducer(requested, {
+        type: "profileRequestCleared",
+        assetProfileId: profileId
+      })
+    ).toEqual({ startIntent: null });
+  });
 });

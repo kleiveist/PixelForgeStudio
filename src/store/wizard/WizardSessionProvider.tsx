@@ -18,6 +18,7 @@ export interface WizardSessionContextValue extends WizardSessionState {
   readonly requestNewAsset: (category: AssetCategory | null) => void;
   readonly requestProfile: (assetProfileId: StableId) => void;
   readonly requestResume: (draftId: StableId) => void;
+  readonly clearProfileRequest: (assetProfileId: StableId) => void;
 }
 
 export interface WizardSessionProviderProps {
@@ -57,9 +58,19 @@ export function WizardSessionProvider({
     });
   }, []);
 
+  const clearProfileRequest = useCallback((assetProfileId: StableId) => {
+    dispatch({ type: "profileRequestCleared", assetProfileId });
+  }, []);
+
   const value = useMemo<WizardSessionContextValue>(
-    () => ({ ...state, requestNewAsset, requestProfile, requestResume }),
-    [requestNewAsset, requestProfile, requestResume, state]
+    () => ({
+      ...state,
+      requestNewAsset,
+      requestProfile,
+      requestResume,
+      clearProfileRequest
+    }),
+    [clearProfileRequest, requestNewAsset, requestProfile, requestResume, state]
   );
 
   return (

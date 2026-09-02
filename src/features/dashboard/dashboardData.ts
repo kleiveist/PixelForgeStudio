@@ -31,6 +31,8 @@ export interface DashboardProfileSummary {
   readonly categoryLabel: string;
   readonly subtypeLabel: string;
   readonly baseProfileName: string;
+  readonly baseProfileId: StableId;
+  readonly compatibilityKey: string;
   readonly facts: readonly string[];
   readonly tags: readonly string[];
   readonly materials: readonly MaterialBadgeId[];
@@ -133,7 +135,7 @@ const materialBadgeIconMap: Readonly<Record<string, MaterialBadgeId>> = {
   "material-leather": "leather"
 };
 
-function compareUpdatedAtThenId(
+export function compareUpdatedAtThenId(
   left: Readonly<{ updatedAt: string; id: StableId }>,
   right: Readonly<{ updatedAt: string; id: StableId }>
 ): number {
@@ -255,7 +257,7 @@ function profileMaterials(profile: AssetProfile): readonly MaterialBadgeId[] {
   return MATERIAL_BADGE_IDS.filter((material) => selected.has(material));
 }
 
-function resolveProfileSummary(
+export function resolveProfileSummary(
   profile: AssetProfile,
   library: ProfileLibrary
 ): DashboardProfileSummary | null {
@@ -283,6 +285,8 @@ function resolveProfileSummary(
     categoryLabel: getDashboardCategory(profile.category).label,
     subtypeLabel: formatSubtypeLabel(profile.subtype),
     baseProfileName: baseProfile.name,
+    baseProfileId: baseProfile.id,
+    compatibilityKey: result.profile.compatibilityKey,
     facts: profileFacts(result.profile),
     tags: profile.tags.slice(0, 4),
     materials: profileMaterials(profile),

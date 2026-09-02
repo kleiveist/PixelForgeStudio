@@ -54,6 +54,11 @@
   --color-success: #236a2c;
   --color-success-wash: rgb(35 106 44 / 9%);
   --color-success-line: rgb(35 106 44 / 36%);
+  --color-danger-text: #8c2525;
+  --color-danger-wash: rgb(164 45 45 / 9%);
+  --color-danger-wash-strong: rgb(164 45 45 / 17%);
+  --color-danger-line: rgb(140 37 37 / 58%);
+  --color-dialog-backdrop: rgb(20 29 24 / 58%);
   --color-focus: #176fc1;
   --color-selection: #286e31;
   --color-selection-text: #ffffff;
@@ -102,6 +107,11 @@
   --color-success: #9ce888;
   --color-success-wash: rgb(156 232 136 / 9%);
   --color-success-line: rgb(156 232 136 / 30%);
+  --color-danger-text: #ffb5ac;
+  --color-danger-wash: rgb(255 125 113 / 10%);
+  --color-danger-wash-strong: rgb(255 125 113 / 18%);
+  --color-danger-line: rgb(255 181 172 / 52%);
+  --color-dialog-backdrop: rgb(0 0 0 / 72%);
   --color-focus: #84c9ff;
   --color-selection: #91e875;
   --color-selection-text: #10200d;
@@ -147,6 +157,11 @@
     --color-success: #9ce888;
     --color-success-wash: rgb(156 232 136 / 9%);
     --color-success-line: rgb(156 232 136 / 30%);
+    --color-danger-text: #ffb5ac;
+    --color-danger-wash: rgb(255 125 113 / 10%);
+    --color-danger-wash-strong: rgb(255 125 113 / 18%);
+    --color-danger-line: rgb(255 181 172 / 52%);
+    --color-dialog-backdrop: rgb(0 0 0 / 72%);
     --color-focus: #84c9ff;
     --color-selection: #91e875;
     --color-selection-text: #10200d;

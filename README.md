@@ -57,7 +57,8 @@ V1 inventarisieren ✓
 → Brand, Design Tokens und Light/Dark/System ✓
 → App Shell, sechs Views und Browsernavigation ✓
 → kategoriebasiertes Dashboard und lokales Icon-System ✓
-→ Profilbibliothek/Wizard/Editormodell
+→ kategorisierte Profilbibliothek und sicheres Assetprofil-CRUD ✓
+→ Wizard/Editormodell
 → Prompt Engine 2.0
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
@@ -138,12 +139,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 09 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 10 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 10 — Profilbibliothek
+→ Prompt 11 — Wizard Engine mit React Hook Form
 ```
 
 Danach immer genau:
@@ -159,8 +160,9 @@ Reload über `?view=…`; Zurück/Vorwärts wird über die History API synchroni
 während der Fragmentanker für den Skip-Link frei bleibt. Das aktive Dashboard
 startet neue Assets über neun fachliche Kategorien, zeigt validierte letzte
 Profile, Favoriten, Basisprofile und einen lokalen Entwurf und verwendet eigene
-SVG-React-Icons. Die Profilbibliothek, eigentliche Wizard Engine und Editoren
-folgen in ihren vorgesehenen Phasen.
+SVG-React-Icons. Die aktive Profilbibliothek bietet Suche, kombinierbare
+Filter, Kategorie-/Compatibility-Gruppen und sichere Assetprofilaktionen. Die
+eigentliche Wizard Engine und Editoren folgen in ihren vorgesehenen Phasen.
 
 ## Legacy-V1 lokal prüfen
 
@@ -249,6 +251,16 @@ Entwurf über einen injizierten Storage-Port, löst effektive Profilwerte auf un
 blendet technisch irrelevante Angaben aus. Kategorie-, Profil- und
 Entwurfsaktionen übergeben lediglich einen flüchtigen typisierten Startintent
 an den Wizard; Prompt 09 schreibt deshalb weder Profile noch Drafts.
+
+Die Profilbibliothek unter `src/features/profiles/` durchsucht und filtert
+Assetprofile, gruppiert sie wahlweise nach Kategorie oder ihrem neu
+aufgelösten, für die UI opaken Compatibility Key und zeigt technische Werte
+nur bei fachlicher Relevanz. Separate Kartenaktionen laden, favorisieren,
+duplizieren oder löschen ein Assetprofil nach ausdrücklicher Bestätigung.
+`src/store/profiles/` hält Bibliothek und Filter über Ansichtswechsel hinweg;
+Mutationen werden erst nach erneuter Zod-Prüfung und erfolgreichem,
+vollständigem Best-Effort-Gesamtgraph-Write mit Rollback-Versuch sichtbar
+übernommen.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

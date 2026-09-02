@@ -285,10 +285,40 @@ Umgesetzter Vertrag seit Prompt 09:
 - Ein vorhandenes Basisprofil kann im Dashboard ausdrücklich als aktives
   Produktionsfundament gewählt werden; die validierten AppSettings werden
   dabei gespeichert und ein Storage-Ausfall sichtbar als Sitzungswahl
-  behandelt. Bearbeitung, Suche, Filter und Profil-CRUD bleiben Prompt 10.
+  behandelt. Die Bearbeitung technischer Basiswerte bleibt dem Basisprofil-
+  Editor vorbehalten.
 - Alle Kategorie- und Materialgrafiken sind lokale dekorative SVG-React-
   Komponenten mit sichtbaren Textlabels; die Kartenraster wechseln responsiv
   von drei über zwei auf eine Spalte.
+
+Umgesetzter Vertrag seit Prompt 10:
+
+- Die Profilbibliothek verwaltet Assetprofile als Blätter der validierten
+  Base→Category→Asset-Kette. Basisprofile dienen als Filter und bleiben bis
+  zum eigenen Editor unverändert; beim Löschen eines Assets werden Eltern nie
+  kaskadierend entfernt.
+- Suche, Kategorie-, Basisprofil- und Favoritenfilter sowie der
+  Gruppierungsmodus liegen im appweiten Profile-Context/Reducer und bleiben
+  beim Ansichtswechsel erhalten.
+- Kategoriegruppen folgen der kanonischen Taxonomie. Technische Gruppen
+  verwenden ausschließlich den von `resolveProfile()` neu berechneten
+  Compatibility Key; sein internes Format wird in der UI weder angezeigt noch
+  zerlegt.
+- Karten zeigen wirksame, capability-relevante Werte. Figurenhöhe erscheint
+  nur für skalierte Figuren; freie Artworks erhalten keine erzwungenen Tile-
+  oder Weltkameradaten.
+- Favorisieren verändert Organisationsmetadaten, nicht das fachliche
+  `updatedAt`. Ein Duplikat erhält neue ID/Zeitstempel und verliert isolierte
+  V1-Migrationsprovenienz, behält aber Elternreferenzen und technische
+  Kompatibilität.
+- Kandidatenbibliotheken passieren Zod und danach ausschließlich den
+  Best-Effort-`writeProfileLibrary()`-Pfad mit Rollback-Versuch. Erst
+  `status: 'ok'` aktualisiert den Bibliotheksgraphen und die Karten;
+  Invalid-/Unavailable-/Teilwrite-Fehler aktualisieren nur die sichtbare
+  Fehlermeldung und bleiben für die Fachdaten fail-closed.
+- Löschen benötigt einen benannten Bestätigungsdialog. Nach erfolgreicher
+  Löschung wird ein exakt passender flüchtiger Wizard-Profilintent verworfen,
+  damit kein bereits entfernter Einstieg weitergetragen wird.
 
 ---
 

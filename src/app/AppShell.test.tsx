@@ -114,7 +114,9 @@ describe("application shell navigation", () => {
     const { storage } = renderStudio(navigation, "profiles");
 
     expect(
-      screen.getByRole("heading", { name: "Profile zentral organisieren." })
+      screen.getByRole("heading", {
+        name: "Produktionsprofile sicher organisieren."
+      })
     ).toBeVisible();
     expect(currentPrimaryLink()).toHaveAccessibleName("Profile");
     expect(navigation.replacedViews).toEqual(["profiles"]);

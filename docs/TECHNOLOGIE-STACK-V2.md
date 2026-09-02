@@ -145,6 +145,16 @@ React Context + Reducer verwaltet mindestens:
 
 Die Profilauflösung selbst ist eine pure Domain-Funktion und gehört nicht in den Reducer.
 
+Seit Prompt 10 hält `ProfileLibraryProvider` den validierten Gesamtgraphen,
+Profilfilter und sichtbare Mutationsresultate über Ansichtswechsel hinweg. Pure
+Assetprofil-Operationen werden vor der Übernahme erneut als vollständige
+Bibliothek mit Zod geprüft und ausschließlich über `writeProfileLibrary()`
+persistiert. Fehlgeschlagene Writes lassen Bibliotheksgraph und Karten
+unverändert; nur der sichtbare Mutationsstatus im Reducer wechselt auf den
+konkreten Fehler. Der injizierte Storage-Adapter bleibt über einen
+App-Lifecycle stabil. Spätere Import-/Restore-Flows müssen den Provider
+rehydrieren, statt parallel direkt in dieselben Namespaces zu schreiben.
+
 Die Top-Level-Navigation nutzt seit Prompt 08 bewusst keine Router-Abhängigkeit.
 Ein injizierbarer Adapter kapselt `history.pushState`, `history.replaceState`
 und `popstate`; der aktuelle View-State liegt in einem eigenen Context/Reducer.

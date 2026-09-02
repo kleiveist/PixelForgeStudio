@@ -6,6 +6,13 @@ export {
   resolveProfile,
   type ResolveProfileInput
 } from "./profileResolution";
+export {
+  createDuplicateProfileName,
+  deleteAssetProfile,
+  duplicateAssetProfile,
+  toggleAssetProfileFavorite,
+  type AssetProfileLibraryChange
+} from "./profileLibrary";
 export type {
   ProfileOverrideLevel,
   ProfileResolutionConflict,

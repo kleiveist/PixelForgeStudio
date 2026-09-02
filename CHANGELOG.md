@@ -34,6 +34,12 @@
 - reines Dashboard-Read-Model mit effektiver Profilauflösung, deterministischen Recent-/Favorite-Limits und capability-relevanten Kartenwerten eingeführt
 - typisierten flüchtigen Wizard-Startintent für Kategorie-, Profil- und Resume-Einstiege ergänzt; Dashboard-Aktionen bleiben ohne vorgezogene Persistenz
 - ehrliche Empty-/Invalid-/Unavailable-Zustände, native Tastaturinteraktionen und responsive Drei-/Zwei-/Ein-Spalten-Raster für das Dashboard abgesichert
+- kategorisierte Profilbibliothek mit Suche, kombinierbaren Kategorie-/Basis-/Favoritenfiltern und erhaltener Filterauswahl über Ansichtswechsel ergänzt
+- wählbare Gruppierung nach Asset-Kategorie oder neu aufgelöstem, opak behandeltem Compatibility Key umgesetzt
+- separate zugängliche Profilaktionen für Wizard-Laden, Favorisieren, Duplizieren und bestätigt Löschen ergänzt
+- immutable Assetprofil-Mutationen mit validiertem Gesamtgraph-Write, kollisionssicheren Duplikaten und referenzerhaltendem Leaf-only-Löschen eingeführt
+- fehlgeschlagene oder teilweise Storage-Writes fail-closed behandelt und Invalid-/Unavailable-/Leer-/Filterleerzustände getrennt dargestellt
+- relevante Profilkartendaten, Dialogfokus, Keyboard-Laden, Filterpersistenz und CRUD-Fehlerpfade mit Domain-, Provider- und RTL-Tests abgesichert
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt
