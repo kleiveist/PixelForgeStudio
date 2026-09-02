@@ -1,5 +1,6 @@
 export {
   AppSettingsSchema,
+  ThemePreferenceSchema,
   parseAppSettings,
   type AppSettings
 } from "./appSettings.schema";

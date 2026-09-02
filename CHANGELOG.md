@@ -21,6 +21,11 @@
 - alle 18 V1-Assettypen explizit migriert und den fehlenden V2-Item-Untertyp `weapon` ergänzt
 - isolierte Migrationsprovenienz über `migratedFromVersion` und JSON-validiertes `legacyData` ergänzt
 - V2-JSON-Roundtrip, abhängigkeitsschließende Teil-Exporte und sichtbare Importkonflikte ohne stilles Überschreiben umgesetzt
+- zentrale, frameworkunabhängige Marken- und Theme-Verträge ergänzt; der stabile Exportformat-Identifier bleibt vom visuellen Branding getrennt
+- validierten Settings-Context mit purem Reducer, lokal persistierter Light-/Dark-/System-Präferenz und live beobachteter Systemdarstellung umgesetzt
+- aufgelöstes `data-theme="light|dark"` am Dokument-Root sowie fehlertolerante Fallbacks für korrupte oder nicht verfügbare Einstellungen ergänzt
+- eigenständig gestaltete Light-/Dark-Tokenpaletten, kontraststarke Fokus-/Control-Tokens und Reduced-Motion-Grundregeln eingeführt
+- zugänglichen Theme-Umschalter und wiederverwendbare `Badge`-/`Surface`-Basiskomponenten mit CSS Modules ergänzt
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

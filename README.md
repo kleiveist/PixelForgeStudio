@@ -54,6 +54,7 @@ V1 inventarisieren ✓
 → V2-Datenverträge mit Zod absichern ✓
 → Profilvererbung, Locks und Compatibility Key ✓
 → validierte Speicherung + Migration ✓
+→ Brand, Design Tokens und Light/Dark/System ✓
 → neues Dashboard/Wizard/Editormodell
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -135,12 +136,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 06 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 07 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 07 — Brand, Design Tokens und Light/Dark/System
+→ Prompt 08 — App Shell und Navigation
 ```
 
 Danach immer genau:
@@ -150,8 +151,9 @@ Aufgabe → implementieren → testen → Diff prüfen → committen → nächst
 ```
 
 Das Root-Projekt ist bereits die aktive Vite-/React-/TypeScript-Anwendung. Die
-aktuelle App-Shell ist absichtlich minimal; Dashboard, Wizard und Fachlogik
-für die Produktoberfläche folgen erst in ihren vorgesehenen Phasen.
+aktuelle App-Shell zeigt bereits das neue visuelle Fundament und den lokal
+persistierten Light-/Dark-/System-Umschalter; Navigation, Dashboard, Wizard und
+Fachlogik für die Produktoberfläche folgen erst in ihren vorgesehenen Phasen.
 
 ## Legacy-V1 lokal prüfen
 
@@ -186,6 +188,7 @@ Voraussetzung: Node.js 20.19+ beziehungsweise 22.12+ und npm 10+.
 src/
 ├── app/
 ├── components/
+├── config/
 ├── domain/
 ├── features/
 ├── schemas/
@@ -225,6 +228,13 @@ jedem Parse ein unverändertes Rohdaten-Backup an, kann vorbereitete Läufe
 deterministisch fortsetzen und lässt die ursprünglichen V1-Keys bestehen.
 JSON-Pakete prüfen Referenzen und Compatibility Keys; ID-Konflikte werden ohne
 explizite Ersetzungsentscheidung nicht überschrieben.
+
+Die zentrale Markenidentität liegt unter `src/config/`, die pure
+Theme-Auflösung unter `src/domain/theme/` und der globale Settings-State unter
+`src/store/settings/`. Die gespeicherte Präferenz kann `light`, `dark` oder
+`system` sein; am Dokument-Root steht immer nur das wirksame
+`data-theme="light|dark"`. Systemänderungen werden live übernommen, ohne die
+gespeicherten App-Einstellungen zu verändern.
 
 ## Datenschutz
 

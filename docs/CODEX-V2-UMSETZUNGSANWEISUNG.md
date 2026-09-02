@@ -79,6 +79,7 @@ Node.js mindestens 20.19; bei höherer Vite-Anforderung gilt die Template-Anford
 src/
 ├── app/          React bootstrap, providers, navigation
 ├── components/   wiederverwendbare UI-Komponenten
+├── config/       zentrale Marken- und stabile Protokollkonfiguration
 ├── domain/       frameworkfreie Fachlogik
 ├── features/     Dashboard, Profile, Wizard, Editoren, Output
 ├── schemas/      Zod-Schemas und abgeleitete Typen
@@ -185,6 +186,21 @@ Umsetzung:
 - Einstellung lokal speichern
 - Theme-Wechsel ohne Reload
 - CSS Modules für komponentenspezifische Styles
+
+Implementierte Modulgrenzen:
+
+- `src/config/index.ts` exportiert sichtbares Branding; der separate
+  `EXPORT_APPLICATION_ID` bleibt als Dateiformat-Discriminator stabil.
+- `src/domain/theme/index.ts` löst die gespeicherte Präferenz pure zu einem
+  wirksamen Light-/Dark-Modus auf.
+- `src/store/settings/index.ts` stellt den Context/Reducer-Vertrag bereit und
+  bindet validierte App-Einstellungen über einen injizierten Storage-Port an.
+- `src/components/theme/ThemeSwitcher.tsx` bietet die zugängliche Radiogruppe;
+  `src/components/ui/` enthält die ersten wiederverwendbaren CSS-Module-Primitives.
+
+`system` wird nie als `data-theme` geschrieben. Änderungen der
+`prefers-color-scheme`-Media-Query verändern nur den wirksamen Modus, nicht die
+persistierte Präferenz oder deren `updatedAt`.
 
 ## Icon-System
 

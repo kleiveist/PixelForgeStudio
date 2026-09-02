@@ -1,7 +1,10 @@
 # V2 source architecture
 
-- `app/`: bootstrap-nahe App-Komponenten und spätere Provider/Navigation
-- `components/`: wiederverwendbare UI und lokale SVG-Icons
+- `app/`: bootstrap-nahe App-Komponenten und spätere Navigation
+- `components/`: wiederverwendbare CSS-Module-Oberflächen, Theme-Control und
+  lokale SVG-Icons
+- `config/`: zentrale sichtbare `BRAND`-Konfiguration sowie bewusst stabiler,
+  davon getrennter Exportformat-Identifier
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
@@ -11,6 +14,8 @@
     import comparisons, fingerprints, and idempotent migration decisions
   - `migration/`: deterministic, framework-free V1-to-V2 profile
     transformation and source fingerprinting
+  - `theme/`: pure preference-to-effective-theme resolution without browser
+    or React dependencies
   - `legacy-v1/`: namespaced compatibility port of the V1 defaults, state
     whitelist, prompt builder, validation, and frame/canvas metrics
 - `features/`: Dashboard, Profile, Wizard, Editoren und Output als getrennte Features
@@ -27,8 +32,10 @@
     integrity, migration backup, and completion-marker contracts
 - `services/`: injectable storage port, JSON profile transfer, and V1 storage
   migration orchestration; public exports live in `services/index.ts`
-- `store/`: Contexts, Reducer, Actions und Selectors
-- `styles/`: globale semantische Tokens und Reset-/Grundregeln
+- `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
+  complete validated app-settings envelope and effective theme state
+- `styles/`: globale semantische Light-/Dark-Tokens, System-Fallback und
+  Reset-/Grundregeln
 - `test/`: gemeinsames Vitest-/Testing-Library-Setup
 
 V1 liegt unverändert unter `legacy/v1/` und darf nur als Referenz,
@@ -82,3 +89,22 @@ and recomputed Compatibility Keys. Existing identical IDs are skipped;
 different payloads are returned as visible conflicts unless replacement is
 explicitly requested. UI settings and draft payloads roundtrip in the bundle
 contract but profile import does not silently apply them to the local UI state.
+
+`config/brand.ts` is the single source for visible product copy. The separate
+`EXPORT_APPLICATION_ID` remains stable because it is a persisted wire-format
+discriminator and must not change during a visual rebrand.
+
+`domain/theme/index.ts` is the framework-free theme API. It distinguishes the
+persisted `light | dark | system` preference from the resolved `light | dark`
+mode. `store/settings/index.ts` is the React-facing settings boundary:
+`SettingsProvider` loads and preserves the full Zod-validated `AppSettings`
+object, persists only explicit user changes through the injected storage port,
+and observes `prefers-color-scheme` only while System is selected. It writes
+the resolved mode to `document.documentElement.dataset.theme`; media changes
+never mutate storage or `updatedAt`. `main.tsx` creates the browser adapter once
+at the composition root.
+
+`components/ui/index.ts` exposes the first reusable CSS-Module primitives,
+`Badge` and `Surface`. `components/theme/ThemeSwitcher.tsx` is a native,
+keyboard-operable radio group. All component colors, spacing, focus rings,
+control sizes, radii, shadows, and motion timings come from `styles/tokens.css`.

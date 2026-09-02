@@ -4,7 +4,7 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktive Aufgabe:** Prompt 06 abgeschlossen; Prompt 07 noch nicht gestartet
+- **Aktive Aufgabe:** Prompt 07 abgeschlossen; Prompt 08 noch nicht gestartet
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
 ## Aktuelle Agentenübergabe
@@ -49,8 +49,36 @@
   `inspectProfileImport()` und `importProfileBundle()`. Teil-Exporte schließen
   Base-/Category-Abhängigkeiten ein. Gleiche IDs mit gleichen Daten sind No-op;
   abweichende Daten benötigen die explizite Strategie `replaceExisting`.
-- Prompt 07 bindet Theme-Einstellungen später über den Storage-Adapter an;
-  Persistenz- oder Migrationslogik gehört nicht in Theme-Komponenten.
+- Öffentliche Brand-Konfiguration: `src/config/index.ts`. Sichtbare Texte
+  verwenden `BRAND`; `EXPORT_APPLICATION_ID` bleibt als persistierter
+  Protokollwert unabhängig von späterem Rebranding stabil.
+- Öffentliche Theme-Domain: `src/domain/theme/index.ts`. `ThemePreference`
+  (`light | dark | system`) und `ResolvedTheme` (`light | dark`) dürfen nicht
+  vermischt werden.
+- Öffentliche Settings-Grenze: `src/store/settings/index.ts`.
+  `SettingsProvider` erhält einen schmalen `readSettings`/`writeSettings`-Port,
+  bewahrt das vollständige AppSettings-Objekt und schreibt nur nach expliziter
+  Nutzeraktion. System-Mediaevents ändern weder Storage noch `updatedAt`.
+- `main.tsx` erzeugt den Browser-Storage-Adapter einmalig am Composition Root.
+  Komponenten greifen weiterhin niemals direkt auf `localStorage` zu.
+- Am `<html>`-Root steht ausschließlich das aufgelöste
+  `data-theme="light|dark"`; die Präferenz `system` bleibt im Settings-State.
+- Wiederverwendbare Basiskomponenten werden über `src/components/ui/index.ts`
+  exportiert. Komponentenfarben und Maße stammen aus `styles/tokens.css`.
+
+## Ergebnis Prompt 07
+
+1. Die zentrale `BRAND`-Konfiguration und eine pure Auflösung von
+   `light | dark | system` wurden als öffentliche, UI-unabhängige Verträge angelegt.
+2. Ein React-Settings-Provider mit typisiertem Context/Reducer lädt validierte
+   App-Einstellungen über den vorhandenen Storage-Adapter und persistiert
+   ausschließlich explizite Änderungen ohne Reload.
+3. Die wirksame Systempräferenz wird über `prefers-color-scheme` beobachtet und
+   als aufgelöstes `data-theme="light|dark"` am Dokument-Root angewandt.
+4. Semantische Light-/Dark-Tokens, globale Grundregeln, zugänglicher
+   Theme-Schalter und wiederverwendbare CSS-Module-Basiskomponenten sind aktiv.
+5. Gespeicherte Einstellungen, Theme-Wechsel, Systemwechsel, StrictMode und
+   degradierte Storage-Pfade sind mit Vitest/React Testing Library abgedeckt.
 
 ## Erfasster Legacy-Ist-Stand
 
@@ -85,7 +113,7 @@
 | 3 | Zod-Schemas + V2-Domainmodell | Kategorien, Profile, Capabilities und Importverträge typisiert | abgeschlossen |
 | 4 | Profilauflösung + Locks | Vererbung und Compatibility Key | abgeschlossen |
 | 5 | Storage V2 + V1-Migration | validierte Persistenz mit Backup | abgeschlossen |
-| 6 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | offen |
+| 6 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | abgeschlossen |
 | 7 | App Shell + Navigation | React-App-Struktur und Views | offen |
 | 8 | Dashboard | Kategorie- und Profilkarten | offen |
 | 9 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | offen |

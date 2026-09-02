@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BRAND, EXPORT_APPLICATION_ID } from "../config";
 import { jsonValuesEqual } from "../domain/json";
 import {
   ExportBundleSchema,
@@ -140,7 +141,7 @@ export function createProfileExportBundle(
     schemaVersion: 2,
     formatVersion: 2,
     kind: "exportBundle",
-    application: "PixelForge Prompt Studio",
+    application: EXPORT_APPLICATION_ID,
     bundleId: input.bundleId,
     exportedAt: input.exportedAt,
     baseProfiles,
@@ -173,7 +174,7 @@ export function parseExportBundleJson(json: string): ParsedExportBundleJson {
     return {
       status: "invalid",
       reason: "schemaValidation",
-      message: "Import does not match the PixelForge V2 export schema.",
+      message: `Import does not match the ${BRAND.shortName} ${BRAND.versionLabel} export schema.`,
       issues: toIssues(result.error)
     };
   }

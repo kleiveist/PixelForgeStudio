@@ -17,7 +17,7 @@ body {
   margin: 0;
   color: var(--color-text);
   background:
-    radial-gradient(circle at 75% 12%, var(--color-page-glow), transparent 30rem),
+    radial-gradient(circle at 76% 10%, var(--color-page-glow), transparent 31rem),
     var(--color-page);
   font-family: var(--font-sans);
   font-synthesis: none;
@@ -25,11 +25,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+#root {
+  min-height: 100vh;
+}
+
 button,
 input,
 select,
 textarea {
+  color: inherit;
   font: inherit;
+}
+
+button:not(:disabled),
+summary {
+  cursor: pointer;
 }
 
 a,
@@ -38,14 +48,19 @@ summary {
   -webkit-tap-highlight-color: transparent;
 }
 
+img,
+svg {
+  max-width: 100%;
+}
+
 :focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 4px;
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
 }
 
 ::selection {
-  color: var(--color-ink-inverse);
-  background: var(--color-accent);
+  color: var(--color-selection-text);
+  background: var(--color-selection);
 }
 
 @media (prefers-reduced-motion: reduce) {

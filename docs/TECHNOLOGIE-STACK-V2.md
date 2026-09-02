@@ -178,6 +178,14 @@ Storage- und Parsefehler bis in React durchzuwerfen.
 - Systemmodus wird über `prefers-color-scheme` aufgelöst
 - keine Inline-Styles für normale Layout-/Designaufgaben
 
+Implementierter Vertrag: `SettingsProvider` aus `src/store/settings/` hält das
+vollständige validierte `AppSettings`-Objekt und persistiert eine Theme-Wahl nur
+nach expliziter Nutzeraktion über den injizierten Storage-Adapter. Die
+Präferenz `system` bleibt gespeichert, während am `<html>`-Element immer nur
+das wirksame `data-theme="light|dark"` steht. Media-Query-Änderungen aktualisieren
+die Oberfläche live, verändern aber weder Storage noch `updatedAt`. Vor dem
+React-Start bietet `tokens.css` für den Systemmodus einen CSS-Media-Fallback.
+
 ## Tests
 
 Vitest testet Domain- und Infrastrukturcode. React Testing Library testet Benutzerverhalten.

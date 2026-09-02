@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EXPORT_APPLICATION_ID } from "../config";
 import { AppSettingsSchema } from "./appSettings.schema";
 import {
   IsoDateTimeSchema,
@@ -18,7 +19,7 @@ export const ExportBundleSchema = z
     schemaVersion: SchemaVersionSchema,
     formatVersion: z.literal(2),
     kind: z.literal("exportBundle"),
-    application: z.literal("PixelForge Prompt Studio"),
+    application: z.literal(EXPORT_APPLICATION_ID),
     bundleId: StableIdSchema,
     exportedAt: IsoDateTimeSchema,
     baseProfiles: z.array(BaseProfileSchema).max(500).readonly(),
