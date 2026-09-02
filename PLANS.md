@@ -4,7 +4,8 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktive Aufgabe:** Prompt 08 abgeschlossen; Prompt 09 noch nicht gestartet
+- **Abgeschlossene Aufgabe:** Prompt 09 — Dashboard und Icon-System
+- **Nächste Aufgabe:** Prompt 10 — kategorisierte Profilbibliothek
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
 ## Aktuelle Agentenübergabe
@@ -81,6 +82,23 @@
 - `App` benötigt Storage- und Navigation-Adapter. `main.tsx` erzeugt beide
   Browseradapter einmalig; Tests verwenden `MemoryStorage` und
   `MemoryNavigation`.
+- Öffentliche Dashboard-Metadaten und reine Read-Model-Projektion liegen in
+  `src/features/dashboard/dashboardCatalog.ts` und `dashboardData.ts`. Die
+  Kategorien werden exhaustiv aus `ASSET_CATEGORY_IDS` abgeleitet; UI-Code
+  pflegt keine zweite Taxonomie.
+- Das Dashboard liest `ProfileLibrary` und `WizardDraft` ausschließlich über
+  den schmalen `DashboardStorage`-Port. Anzeigen, Kategorie-, Profil- und
+  Draft-Start schreiben nichts; nur eine ausdrückliche Basisprofilwahl
+  aktualisiert validierte AppSettings über den Settings-Provider.
+- Öffentliche lokale Kategorie-/Materialicons werden über
+  `src/components/icons/index.ts` exportiert. Sie sind dekorativ; sichtbare
+  Kategorien und Materialien behalten immer Textlabels.
+- `src/store/wizard/index.ts` exportiert den flüchtigen `WizardStartIntent`
+  (`newAsset | profile | resume`). Dieser Übergabestatus ist noch kein
+  persistierter `WizardDraft`; dessen Autosave bleibt Prompt 11 vorbehalten.
+- `ViewLink` aus `src/components/navigation/index.ts` ist die gemeinsame
+  zugängliche Link-Grenze für Shell und Dashboard. Ein `onNavigate` kann einen
+  fachlichen Startintent setzen, bevor die bestehende View-Navigation läuft.
 
 ## Ergebnis Prompt 07
 
@@ -139,6 +157,69 @@
 - Prompt 09 ersetzt ausschließlich den Dashboard-Platzhalter. Profile und
   Wizard-Inhalte bleiben ihren eigenen Folgephasen vorbehalten.
 
+## Ausführungsplan Prompt 09
+
+1. Exhaustive Dashboard-Metadaten für die neun bestehenden Asset-Kategorien
+   sowie lokale Kategorie- und Material-SVG-Komponenten anlegen.
+2. Einen kleinen typisierten Wizard-Start-Intent für neue Kategorien,
+   Profilstarts und Resume einführen, ohne `WizardDraft` vorzeitig zu schreiben.
+3. Profilbibliothek und einzelnen Draft über einen injizierten Read-Port laden;
+   letzte Profile, Favoriten, Basisprofile und relevante Kartenwerte rein
+   selektieren und Fehler-/Leerzustände abbilden.
+4. Das Phase-08-Fundament durch Hero, Aktionen, 3×3-Kategorieraster,
+   Material-Vorlagen, Profilbereiche, Basisprofilübersicht und Resume ersetzen.
+5. Kategorie→Wizard, Profil-/Draft-Start, Tastatur, Sortierung, Relevanz,
+   Icons, Storage-Degradation und Shell-Regressionen testen.
+6. Architektur- und Agentenübergabe aktualisieren, `npm run verify` sowie
+   `git diff --check` ausführen und Prompt 09 separat committen.
+
+## Ergebnis Prompt 09
+
+1. Das Dashboard ersetzt den technischen Phase-08-Platzhalter durch einen
+   produktorientierten Hero, die Aktionen „Neues Asset“/„Profil laden“, neun
+   große Asset-Karten, Materialsprache sowie getrennte Bereiche für letzte
+   Profile, Favoriten, eine Basisprofil-Schnellauswahl und einen fortsetzbaren
+   Entwurf.
+2. Alle neun Kategorien verwenden die bestehende Domain-Taxonomie und eigene
+   lokale SVG-React-Icons. Holz, Stein, Schnee, Eis, Metall, Stoff und Leder
+   besitzen ebenfalls textbegleitete lokale Materialicons.
+3. Ein reines Dashboard-Read-Model löst gespeicherte Profile über die
+   Base→Category→Asset-Kette auf, sortiert letzte/Favoriten deterministisch und
+   zeigt Tile-, Figuren-, Perspektiv-, tatsächlich konfigurierte Bewegungs-/
+   Animations- und Materialdaten nur dort, wo sie fachlich relevant sind.
+4. Leere, beschädigte und nicht verfügbare Storage-Zustände bleiben getrennt
+   sichtbar; korrupte Daten werden weder ersetzt noch still bereinigt. Das
+   Dashboard erfindet keine Demo-Profile.
+5. Kategorie-, Profil- und Draft-Einstiege erzeugen einen typisierten,
+   flüchtigen Wizard-Startintent. Ein allgemeiner Neustart entfernt eine alte
+   Kategorieauswahl; Persistenz und eigentliche Wizard-Schritte folgen später.
+6. Kategorie- und Profilkarten sind native Tastaturziele, alle Bereiche
+   semantisch beschriftet und die Kartenraster wechseln responsiv von drei über
+   zwei auf eine Spalte. Focus- und Reduced-Motion-Regeln sind enthalten.
+7. Pure Selector-/Storage-Port-Tests und RTL-Integrationstests decken alle
+   Kategorien, relevante Kartenwerte, Sortierung, Favoriten, Icons, Keyboard,
+   Resume sowie Fehlerzustände ab.
+
+## Übergabe an Prompt 10
+
+- Ersetze ausschließlich die `profiles`-Platzhalteransicht; Dashboard und
+  `dashboard-view-title` bleiben stabil.
+- Die Profilbibliothek verwendet dieselben validierten `ProfileLibrary`-
+  Verträge und `resolveProfile()` statt Kartenwerte neu zu berechnen. Bei
+  Bedarf darf die reine Projektion aus `dashboardData.ts` in einen neutraleren
+  gemeinsamen Selector extrahiert werden.
+- Kategorie-Labels und Icons kommen aus `dashboardCatalog.ts` beziehungsweise
+  `CategoryIcon`; keine zweite Kategorienliste oder Remote-Iconquelle anlegen.
+- Profil laden setzt denselben `{ kind: "profile", assetProfileId }`-Intent
+  wie eine Dashboard-Karte und navigiert danach in den Wizard.
+- Suchen, Kategorie-/Basisfilter, Compatibility-Key-Gruppierung, Favorisieren,
+  Duplizieren und Löschen gehören jetzt in Prompt 10. Mutationen müssen die
+  komplette Bibliothek über `writeProfileLibrary()` validieren und sichtbare
+  Storage-Fehler liefern.
+- Löschen benötigt eine ausdrückliche Bestätigung und darf referenzierte
+  Profilketten nicht still beschädigen. Prompt 10 erhält eigene RTL-Tests für
+  Filter, Gruppierung, Favorit und Laden.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -174,7 +255,7 @@
 | 5 | Storage V2 + V1-Migration | validierte Persistenz mit Backup | abgeschlossen |
 | 6 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | abgeschlossen |
 | 7 | App Shell + Navigation | React-App-Struktur und Views | abgeschlossen |
-| 8 | Dashboard | Kategorie- und Profilkarten | offen |
+| 8 | Dashboard | Kategorie- und Profilkarten | abgeschlossen |
 | 9 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | offen |
 | 10 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | offen |
 | 11 | Kategorie-Routing | Capability-gesteuerte Fragen | offen |

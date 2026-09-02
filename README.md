@@ -56,7 +56,8 @@ V1 inventarisieren ✓
 → validierte Speicherung + Migration ✓
 → Brand, Design Tokens und Light/Dark/System ✓
 → App Shell, sechs Views und Browsernavigation ✓
-→ neues Dashboard/Wizard/Editormodell
+→ kategoriebasiertes Dashboard und lokales Icon-System ✓
+→ Profilbibliothek/Wizard/Editormodell
 → Prompt Engine 2.0
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
@@ -137,12 +138,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 08 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 09 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 09 — Dashboard und Icon-System
+→ Prompt 10 — Profilbibliothek
 ```
 
 Danach immer genau:
@@ -155,8 +156,11 @@ Das Root-Projekt ist bereits die aktive Vite-/React-/TypeScript-Anwendung. Die
 persistente App-Shell stellt Dashboard, Profile, Wizard, Prüfung, Ausgabe und
 Einstellungen als typisierte Ansichten bereit. Nutzerwechsel laufen ohne
 Reload über `?view=…`; Zurück/Vorwärts wird über die History API synchronisiert,
-während der Fragmentanker für den Skip-Link frei bleibt. Das kategoriebasierte
-Dashboard, Wizard und weitere Fachlogik folgen in ihren vorgesehenen Phasen.
+während der Fragmentanker für den Skip-Link frei bleibt. Das aktive Dashboard
+startet neue Assets über neun fachliche Kategorien, zeigt validierte letzte
+Profile, Favoriten, Basisprofile und einen lokalen Entwurf und verwendet eigene
+SVG-React-Icons. Die Profilbibliothek, eigentliche Wizard Engine und Editoren
+folgen in ihren vorgesehenen Phasen.
 
 ## Legacy-V1 lokal prüfen
 
@@ -238,6 +242,19 @@ Theme-Auflösung unter `src/domain/theme/` und der globale Settings-State unter
 `system` sein; am Dokument-Root steht immer nur das wirksame
 `data-theme="light|dark"`. Systemänderungen werden live übernommen, ohne die
 gespeicherten App-Einstellungen zu verändern.
+
+Das Dashboard unter `src/features/dashboard/` leitet seine neun Karten direkt
+aus der Domain-Taxonomie ab. Sein reines Read-Model liest Profilbibliothek und
+Entwurf über einen injizierten Storage-Port, löst effektive Profilwerte auf und
+blendet technisch irrelevante Angaben aus. Kategorie-, Profil- und
+Entwurfsaktionen übergeben lediglich einen flüchtigen typisierten Startintent
+an den Wizard; Prompt 09 schreibt deshalb weder Profile noch Drafts.
+
+Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
+Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die
+zugängliche Informationsquelle. Dashboard-Raster und Aktionen sind mit CSS
+Modules für drei, zwei und eine Spalte ausgelegt und verwenden die semantischen
+Light-/Dark-Tokens.
 
 ## Datenschutz
 

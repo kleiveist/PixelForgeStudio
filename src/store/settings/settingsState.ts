@@ -1,6 +1,10 @@
 import type { ResolvedTheme, ThemePreference } from "../../domain/theme";
 import { resolveThemePreference } from "../../domain/theme";
-import { parseAppSettings, type AppSettings } from "../../schemas";
+import {
+  parseAppSettings,
+  type AppSettings,
+  type StableId
+} from "../../schemas";
 
 export type SettingsPersistence =
   | Readonly<{ status: "ready" }>
@@ -21,7 +25,8 @@ export type SettingsAction =
       systemTheme: ResolvedTheme;
       persistence: SettingsPersistence;
     }>
-  | Readonly<{ type: "systemThemeChanged"; systemTheme: ResolvedTheme }>;
+  | Readonly<{ type: "systemThemeChanged"; systemTheme: ResolvedTheme }>
+  | Readonly<{ type: "settingsChanged"; settings: AppSettings }>;
 
 export function createDefaultAppSettings(updatedAt: string): AppSettings {
   return parseAppSettings({
@@ -43,6 +48,14 @@ export function withThemePreference(
   return parseAppSettings({ ...settings, theme, updatedAt });
 }
 
+export function withActiveBaseProfile(
+  settings: AppSettings,
+  activeBaseProfileId: StableId | null,
+  updatedAt: string
+): AppSettings {
+  return parseAppSettings({ ...settings, activeBaseProfileId, updatedAt });
+}
+
 export function settingsReducer(
   state: SettingsState,
   action: SettingsAction
@@ -58,6 +71,12 @@ export function settingsReducer(
       return action.systemTheme === state.systemTheme
         ? state
         : { ...state, systemTheme: action.systemTheme };
+    case "settingsChanged":
+      return {
+        ...state,
+        settings: action.settings,
+        persistence: { status: "ready" }
+      };
   }
 }
 

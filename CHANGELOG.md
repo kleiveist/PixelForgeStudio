@@ -29,6 +29,11 @@
 - responsive React-App-Shell mit Header, Primärnavigation, globalen Aktionen und sechs klar getrennten Hauptansichten umgesetzt
 - Query-basierte interne Navigation ohne Router-Abhängigkeit ergänzt; gültige URL-Ansichten gewinnen vor `startView`, fehlende oder ungültige Werte werden ohne zusätzlichen History-Eintrag repariert
 - Browser-Zurück/Vorwärts, aktive Ansicht, Tastaturbedienung, Skip-Link-Kompatibilität und StrictMode-Subscription mit injizierbarem Navigation-Adapter abgesichert
+- technischen Dashboard-Platzhalter durch einen produktorientierten Hero, neun Asset-Karten, letzte Profile, Favoriten, persistierte Basisprofil-Schnellauswahl und Draft-Resume ersetzt
+- exhaustive Kategorie-Metadaten sowie eigene lokale SVG-React-Icons für alle neun Asset-Arten und Material-Badges für Holz, Stein, Schnee, Eis, Metall, Stoff und Leder ergänzt
+- reines Dashboard-Read-Model mit effektiver Profilauflösung, deterministischen Recent-/Favorite-Limits und capability-relevanten Kartenwerten eingeführt
+- typisierten flüchtigen Wizard-Startintent für Kategorie-, Profil- und Resume-Einstiege ergänzt; Dashboard-Aktionen bleiben ohne vorgezogene Persistenz
+- ehrliche Empty-/Invalid-/Unavailable-Zustände, native Tastaturinteraktionen und responsive Drei-/Zwei-/Ein-Spalten-Raster für das Dashboard abgesichert
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

@@ -1,67 +1,105 @@
-import { useEffect, useRef, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { ForgeMarkIcon } from "../components/icons/ForgeMarkIcon";
+import { ViewLink } from "../components/navigation";
 import { ThemeSwitcher } from "../components/theme";
 import { Badge } from "../components/ui";
 import { BRAND } from "../config";
 import { APP_VIEW_IDS, type AppView } from "../domain/navigation";
+import type { AssetCategory } from "../domain/assets";
 import { PlaceholderView } from "../features/app-views/PlaceholderView";
-import { DashboardView } from "../features/dashboard/DashboardView";
+import {
+  DashboardView,
+  type DashboardViewProps
+} from "../features/dashboard/DashboardView";
+import { getDashboardCategory } from "../features/dashboard/dashboardCatalog";
+import type { DashboardStorage } from "../features/dashboard/dashboardData";
+import type { StableId } from "../schemas";
 import { useNavigation } from "../store/navigation";
+import { useSettings } from "../store/settings";
+import { useWizardSession, type WizardStartIntent } from "../store/wizard";
 import { APP_VIEW_DEFINITIONS } from "./appViewConfig";
 import styles from "./AppShell.module.css";
 
-interface AppViewLinkProps {
-  readonly children: ReactNode;
-  readonly className: string | undefined;
-  readonly indicateCurrent?: boolean;
+interface ActiveViewProps {
+  readonly activeBaseProfileId: StableId | null;
+  readonly onOpenProfile: (profileId: StableId) => void;
+  readonly onResumeDraft: (draftId: StableId) => void;
+  readonly onSelectBaseProfile: DashboardViewProps["onSelectBaseProfile"];
+  readonly onStartNewAsset: (category: AssetCategory | null) => void;
+  readonly startIntent: WizardStartIntent | null;
+  readonly storageAdapter: DashboardStorage;
   readonly view: AppView;
 }
 
-function shouldHandleInternally(event: MouseEvent<HTMLAnchorElement>): boolean {
-  return (
-    !event.defaultPrevented &&
-    event.button === 0 &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.shiftKey
-  );
+function wizardNotice(startIntent: WizardStartIntent | null) {
+  if (!startIntent) return undefined;
+
+  switch (startIntent.kind) {
+    case "newAsset":
+      return startIntent.category
+        ? {
+            label: "Startkategorie",
+            value: getDashboardCategory(startIntent.category).label
+          }
+        : { label: "Neues Asset", value: "Kategorieauswahl offen" };
+    case "profile":
+      return { label: "Profilstart", value: startIntent.assetProfileId };
+    case "resume":
+      return { label: "Entwurf fortsetzen", value: startIntent.draftId };
+  }
 }
 
-function AppViewLink({
-  children,
-  className,
-  indicateCurrent = false,
+function ActiveView({
+  activeBaseProfileId,
+  onOpenProfile,
+  onResumeDraft,
+  onSelectBaseProfile,
+  onStartNewAsset,
+  startIntent,
+  storageAdapter,
   view
-}: AppViewLinkProps) {
-  const { activeView, hrefFor, navigate } = useNavigation();
+}: ActiveViewProps) {
+  if (view === "dashboard") {
+    return (
+      <DashboardView
+        activeBaseProfileId={activeBaseProfileId}
+        storageAdapter={storageAdapter}
+        onStartNewAsset={onStartNewAsset}
+        onOpenProfile={onOpenProfile}
+        onResumeDraft={onResumeDraft}
+        onSelectBaseProfile={onSelectBaseProfile}
+      />
+    );
+  }
+
+  const notice = view === "wizard" ? wizardNotice(startIntent) : undefined;
 
   return (
-    <a
-      aria-current={indicateCurrent && activeView === view ? "page" : undefined}
-      className={className}
-      href={hrefFor(view)}
-      onClick={(event) => {
-        if (!shouldHandleInternally(event)) return;
-        event.preventDefault();
-        navigate(view);
-      }}
-    >
-      {children}
-    </a>
+    <PlaceholderView
+      definition={APP_VIEW_DEFINITIONS[view]}
+      {...(notice ? { notice } : {})}
+      view={view}
+    />
   );
 }
 
-function ActiveView({ view }: Readonly<{ view: AppView }>) {
-  if (view === "dashboard") return <DashboardView />;
-
-  return (
-    <PlaceholderView definition={APP_VIEW_DEFINITIONS[view]} view={view} />
-  );
+export interface AppShellProps {
+  readonly activeBaseProfileId: StableId | null;
+  readonly storageAdapter: DashboardStorage;
 }
 
-export function AppShell() {
-  const { activeView } = useNavigation();
+export function AppShell({
+  activeBaseProfileId,
+  storageAdapter
+}: AppShellProps) {
+  const { activeView, navigate } = useNavigation();
+  const {
+    requestNewAsset,
+    requestProfile,
+    requestResume,
+    startIntent
+  } = useWizardSession();
+  const { setActiveBaseProfile } = useSettings();
   const activeDefinition = APP_VIEW_DEFINITIONS[activeView];
   const mainRef = useRef<HTMLElement>(null);
   const previousViewRef = useRef(activeView);
@@ -81,6 +119,30 @@ export function AppShell() {
     }
   }, [activeDefinition.label, activeView]);
 
+  const startNewAsset = useCallback(
+    (category: AssetCategory | null) => {
+      requestNewAsset(category);
+      navigate("wizard");
+    },
+    [navigate, requestNewAsset]
+  );
+
+  const openProfile = useCallback(
+    (profileId: StableId) => {
+      requestProfile(profileId);
+      navigate("wizard");
+    },
+    [navigate, requestProfile]
+  );
+
+  const resumeDraft = useCallback(
+    (draftId: StableId) => {
+      requestResume(draftId);
+      navigate("wizard");
+    },
+    [navigate, requestResume]
+  );
+
   return (
     <>
       <a
@@ -94,7 +156,7 @@ export function AppShell() {
       <div className={styles.shell}>
         <header className={styles.header}>
           <div className={styles.topbar}>
-            <AppViewLink className={styles.brand} view="dashboard">
+            <ViewLink className={styles.brand} view="dashboard">
               <span className={styles.mark} aria-hidden="true">
                 <ForgeMarkIcon />
               </span>
@@ -103,7 +165,7 @@ export function AppShell() {
                 <small>Prompt Studio</small>
               </span>
               <span className={styles.visuallyHidden}> – Startseite</span>
-            </AppViewLink>
+            </ViewLink>
 
             <div className={styles.headerTools}>
               <Badge tone="accent">{BRAND.versionLabel} · Workspace</Badge>
@@ -116,26 +178,30 @@ export function AppShell() {
               <ul className={styles.navigationList}>
                 {APP_VIEW_IDS.map((view) => (
                   <li key={view}>
-                    <AppViewLink
+                    <ViewLink
                       className={styles.navigationLink}
                       indicateCurrent
                       view={view}
                     >
                       {APP_VIEW_DEFINITIONS[view].label}
-                    </AppViewLink>
+                    </ViewLink>
                   </li>
                 ))}
               </ul>
             </nav>
 
             <nav className={styles.quickNavigation} aria-label="Schnellaktionen">
-              <AppViewLink className={styles.secondaryAction} view="profiles">
+              <ViewLink className={styles.secondaryAction} view="profiles">
                 Profile öffnen
-              </AppViewLink>
-              <AppViewLink className={styles.primaryAction} view="wizard">
+              </ViewLink>
+              <ViewLink
+                className={styles.primaryAction}
+                view="wizard"
+                onNavigate={() => requestNewAsset(null)}
+              >
                 <span aria-hidden="true">＋</span>
                 Neues Asset
-              </AppViewLink>
+              </ViewLink>
             </nav>
           </div>
         </header>
@@ -147,7 +213,16 @@ export function AppShell() {
           aria-labelledby={`${activeView}-view-title`}
           tabIndex={-1}
         >
-          <ActiveView view={activeView} />
+          <ActiveView
+            activeBaseProfileId={activeBaseProfileId}
+            onOpenProfile={openProfile}
+            onResumeDraft={resumeDraft}
+            onSelectBaseProfile={setActiveBaseProfile}
+            onStartNewAsset={startNewAsset}
+            startIntent={startIntent}
+            storageAdapter={storageAdapter}
+            view={activeView}
+          />
         </main>
 
         <footer className={styles.footer}>

@@ -15,7 +15,7 @@ import {
   type ResolvedTheme,
   type ThemePreference
 } from "../../domain/theme";
-import type { AppSettings } from "../../schemas";
+import type { AppSettings, StableId } from "../../schemas";
 import type {
   StorageMutationResult,
   V2StorageAdapter
@@ -24,6 +24,7 @@ import {
   createDefaultAppSettings,
   selectResolvedTheme,
   settingsReducer,
+  withActiveBaseProfile,
   withThemePreference,
   type SettingsPersistence,
   type SettingsState
@@ -35,6 +36,9 @@ export interface SettingsContextValue {
   readonly resolvedTheme: ResolvedTheme;
   readonly persistence: SettingsPersistence;
   readonly setThemePreference: (theme: ThemePreference) => void;
+  readonly setActiveBaseProfile: (
+    profileId: StableId | null
+  ) => StorageMutationResult;
 }
 
 export type SettingsStorage = Pick<
@@ -199,15 +203,44 @@ export function SettingsProvider({
     [mediaQuery, now, storageAdapter]
   );
 
+  const setActiveBaseProfile = useCallback(
+    (profileId: StableId | null): StorageMutationResult => {
+      const currentSettings = settingsRef.current;
+      if (profileId === currentSettings.activeBaseProfileId) {
+        return { status: "ok" };
+      }
+
+      const nextSettings = withActiveBaseProfile(
+        currentSettings,
+        profileId,
+        now()
+      );
+      const result = storageAdapter.writeSettings(nextSettings);
+      if (result.status === "invalid") return result;
+
+      settingsRef.current = nextSettings;
+      dispatch({ type: "settingsChanged", settings: nextSettings });
+      return result;
+    },
+    [now, storageAdapter]
+  );
+
   const value = useMemo<SettingsContextValue>(
     () => ({
       settings: state.settings,
       themePreference: state.settings.theme,
       resolvedTheme,
       persistence: state.persistence,
+      setActiveBaseProfile,
       setThemePreference
     }),
-    [resolvedTheme, setThemePreference, state.persistence, state.settings]
+    [
+      resolvedTheme,
+      setActiveBaseProfile,
+      setThemePreference,
+      state.persistence,
+      state.settings
+    ]
   );
 
   return (

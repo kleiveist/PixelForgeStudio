@@ -265,6 +265,31 @@ Profilkarten zeigen mindestens:
 - Bewegungs-/Richtungsstatus, falls relevant
 - Änderungsdatum
 
+Umgesetzter Vertrag seit Prompt 09:
+
+- Die neun Kategorie-Karten werden exhaustiv aus der öffentlichen
+  `AssetCategory`-Taxonomie erzeugt und starten den Wizard mit einem typisierten
+  `{ kind: 'newAsset', category }`-Intent.
+- Profilkarten und ein valider lokaler Entwurf verwenden getrennte
+  `profile`-/`resume`-Intents. Ein allgemeiner „Neues Asset“-Start setzt eine
+  zuvor gewählte Kategorie zurück.
+- Das Dashboard liest ausschließlich über einen injizierten
+  `readProfileLibrary`-/`readDraft`-Port und verändert beim Anzeigen oder
+  Öffnen keine persistierten Daten.
+- Effektive Kartendaten werden mit der Profilauflösung berechnet. Tile,
+  Figurenhöhe und Perspektive erscheinen nur, wenn sie fachlich relevant sind;
+  Richtung, Bewegung und Animation zeigen tatsächliche Antworten statt bloßes
+  Capability-Potenzial.
+- Leere, beschädigte und nicht verfügbare lokale Daten werden getrennt und ohne
+  automatisch erzeugte Demo-Profile dargestellt.
+- Ein vorhandenes Basisprofil kann im Dashboard ausdrücklich als aktives
+  Produktionsfundament gewählt werden; die validierten AppSettings werden
+  dabei gespeichert und ein Storage-Ausfall sichtbar als Sitzungswahl
+  behandelt. Bearbeitung, Suche, Filter und Profil-CRUD bleiben Prompt 10.
+- Alle Kategorie- und Materialgrafiken sind lokale dekorative SVG-React-
+  Komponenten mit sichtbaren Textlabels; die Kartenraster wechseln responsiv
+  von drei über zwei auf eine Spalte.
+
 ---
 
 # 7. Geführter Wizard

@@ -13,11 +13,11 @@ export const APP_VIEW_DEFINITIONS: Readonly<
 > = {
   dashboard: {
     label: "Dashboard",
-    title: "Ein Studio, das sich deiner Arbeitsumgebung anpasst.",
+    title: "Pixelart-Produktion beginnt mit der richtigen Asset-Art.",
     eyebrow: "Produktionszentrale",
     description:
       "Dein Einstieg in Profile, geführte Asset-Erstellung und konsistente Prompt-Pakete.",
-    nextStep: "Das kategoriebasierte Dashboard folgt in Phase 09."
+    nextStep: "Wähle eine Kategorie oder setze ein vorhandenes Profil fort."
   },
   profiles: {
     label: "Profile",

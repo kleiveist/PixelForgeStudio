@@ -2,6 +2,7 @@ export {
   createDefaultAppSettings,
   selectResolvedTheme,
   settingsReducer,
+  withActiveBaseProfile,
   withThemePreference,
   type SettingsAction,
   type SettingsPersistence,

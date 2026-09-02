@@ -156,7 +156,7 @@ describe("application shell navigation", () => {
     ).toBeVisible();
     expect(
       screen.queryByRole("heading", {
-        name: "Ein Studio, das sich deiner Arbeitsumgebung anpasst."
+        name: "Pixelart-Produktion beginnt mit der richtigen Asset-Art."
       })
     ).not.toBeInTheDocument();
     expect(currentPrimaryLink()).toBe(outputLink);
@@ -183,6 +183,26 @@ describe("application shell navigation", () => {
     await user.click(screen.getByRole("link", { name: "Profile öffnen" }));
     expect(currentPrimaryLink()).toHaveAccessibleName("Profile");
     expect(navigation.pushedViews).toEqual(["wizard", "profiles"]);
+  });
+
+  it("carries a dashboard category into the visible Wizard handoff", async () => {
+    const user = userEvent.setup();
+    const navigation = new MemoryNavigation({
+      status: "valid",
+      view: "dashboard"
+    });
+    const { storage } = renderStudio(navigation);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Textur / Material als neues Asset erstellen"
+      })
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("Startkategorie");
+    expect(screen.getByRole("status")).toHaveTextContent("Textur / Material");
+    expect(navigation.pushedViews).toEqual(["wizard"]);
+    expect(storage.mutations).toEqual([]);
   });
 
   it("follows back and forward notifications without adding history entries", () => {
@@ -352,7 +372,7 @@ describe("application shell navigation", () => {
       />
     );
     const heading = screen.getByRole("heading", {
-      name: "Ein Studio, das sich deiner Arbeitsumgebung anpasst."
+      name: "Pixelart-Produktion beginnt mit der richtigen Asset-Art."
     });
 
     await user.click(

@@ -114,13 +114,13 @@ describe("PixelForge visual foundation", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /ein studio, das sich deiner arbeitsumgebung anpasst/i
+        name: /pixelart-produktion beginnt mit der richtigen asset-art/i
       })
     ).toBeVisible();
     expect(screen.getByText(BRAND.tagline, { exact: false })).toBeVisible();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "App Shell bereit"
-    );
+    expect(
+      screen.getByRole("region", { name: "Was möchtest du erschaffen?" })
+    ).toBeVisible();
     expect(
       screen.getByRole("group", { name: "Darstellung" })
     ).toBeVisible();
@@ -176,7 +176,7 @@ describe("PixelForge visual foundation", () => {
     const now = () => "2026-09-02T20:00:00.000Z";
     const rendered = render(<App storageAdapter={adapter} now={now} />);
     const heading = screen.getByRole("heading", {
-      name: /ein studio, das sich deiner arbeitsumgebung anpasst/i
+      name: /pixelart-produktion beginnt mit der richtigen asset-art/i
     });
 
     await user.click(screen.getByRole("radio", { name: "Dunkel" }));

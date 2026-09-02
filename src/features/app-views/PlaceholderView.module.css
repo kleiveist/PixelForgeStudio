@@ -60,6 +60,32 @@
   line-height: 1.7;
 }
 
+.notice {
+  width: fit-content;
+  max-width: 100%;
+  margin: var(--space-5) 0 0;
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text);
+  background: var(--color-accent-wash);
+  border: 1px solid var(--color-accent-line);
+  border-radius: var(--radius-sm);
+}
+
+.notice span {
+  color: var(--color-accent-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.notice strong {
+  overflow-wrap: anywhere;
+}
+
 .handoff {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

@@ -2,8 +2,8 @@
 
 - `app/`: Composition, persistente App Shell, View-Metadaten und semantische
   Haupt-/Schnellnavigation
-- `components/`: wiederverwendbare CSS-Module-Oberflächen, Theme-Control und
-  lokale SVG-Icons
+- `components/`: wiederverwendbare CSS-Module-Oberflächen, Theme-Control,
+  View-Links und lokale SVG-Icons
 - `config/`: zentrale sichtbare `BRAND`-Konfiguration sowie bewusst stabiler,
   davon getrennter Exportformat-Identifier
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
@@ -21,8 +21,9 @@
     canonical serialization
   - `legacy-v1/`: namespaced compatibility port of the V1 defaults, state
     whitelist, prompt builder, validation, and frame/canvas metrics
-- `features/`: getrennte View-Flächen; aktuell Dashboard-Fundament und bewusst
-  funktionslose Platzhalter für die kommenden Profile-/Wizard-/Output-Phasen
+- `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
+  Kategorie-Dashboard samt reinem Read-Model, während Profile-/Wizard-/Output-
+  Flächen bis zu ihren jeweiligen Phasen bewusst Platzhalter bleiben
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -39,7 +40,8 @@
   `services/index.ts`
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
   complete validated app-settings envelope and effective theme state;
-  `navigation/` owns only the current top-level view
+  `navigation/` owns only the current top-level view; `wizard/` currently owns
+  only the transient typed start intent, not persisted draft contents
 - `styles/`: globale semantische Light-/Dark-Tokens, System-Fallback und
   Reset-/Grundregeln
 - `test/`: gemeinsames Vitest-/Testing-Library-Setup
@@ -132,3 +134,36 @@ precedence is a valid URL view followed by the already validated
 settings are absent or invalid. Navigation never persists the current view or
 changes `updatedAt`. `main.tsx` creates one browser adapter, while tests inject
 `MemoryNavigation` and can inspect pushes, replacements and live subscribers.
+
+`components/navigation/index.ts` exposes `ViewLink`, the shared semantic anchor
+for shell and feature navigation. It preserves real hrefs plus modifier/new-tab
+behavior. Its optional `onNavigate` hook records a domain intent before the
+navigation context changes the active view; it must not be used for unrelated
+side effects.
+
+`features/dashboard/dashboardCatalog.ts` is the UI metadata companion to the
+public asset taxonomy. Its record is exhaustive over `AssetCategory`, and its
+render order is derived from `ASSET_CATEGORY_IDS`; the dashboard therefore
+cannot silently omit a newly added category. `CategoryIcon` and
+`MaterialBadge` map these stable IDs to local decorative SVG components with
+visible German text beside them.
+
+`features/dashboard/dashboardData.ts` is a pure projection boundary. It accepts
+structured `StorageReadResult` values, resolves every card through
+`resolveProfile()`, applies deterministic updated-at/ID ordering and emits only
+capability-relevant facts. Free-composition artwork omits Tile and world-
+perspective facts; figures alone show character scale, and direction, movement
+and animation badges describe configured answers rather than capability
+potential. Unknown badge IDs are ignored safely. The React view reads this model
+through the narrow `DashboardStorage` port (`readProfileLibrary` + `readDraft`)
+and never accesses `localStorage`. Category, profile and draft starts are
+write-free; only an explicit base-profile selection delegates a validated
+AppSettings update to the existing Settings provider.
+
+`store/wizard/index.ts` currently exposes a deliberately small transient
+handoff contract: `newAsset` carries an optional category, `profile` an
+AssetProfile ID and `resume` a WizardDraft ID. It is separate from the Zod
+`WizardDraft` schema because selecting a dashboard category must not invent a
+subtype or persist an incomplete editor state. Prompt 11 will own Wizard form
+state and autosave; it should consume this start intent rather than introduce a
+second dashboard-to-Wizard channel.

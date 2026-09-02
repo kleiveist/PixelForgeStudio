@@ -12,10 +12,18 @@ interface PlaceholderViewDefinition {
 
 export interface PlaceholderViewProps {
   readonly definition: PlaceholderViewDefinition;
+  readonly notice?: Readonly<{
+    label: string;
+    value: string;
+  }>;
   readonly view: Exclude<AppView, "dashboard">;
 }
 
-export function PlaceholderView({ definition, view }: PlaceholderViewProps) {
+export function PlaceholderView({
+  definition,
+  notice,
+  view
+}: PlaceholderViewProps) {
   return (
     <Surface
       as="section"
@@ -28,6 +36,12 @@ export function PlaceholderView({ definition, view }: PlaceholderViewProps) {
         <p className={styles.eyebrow}>{definition.eyebrow}</p>
         <h1 id={`${view}-view-title`}>{definition.title}</h1>
         <p className={styles.description}>{definition.description}</p>
+        {notice ? (
+          <p className={styles.notice} role="status">
+            <span>{notice.label}</span>
+            <strong>{notice.value}</strong>
+          </p>
+        ) : null}
       </div>
 
       <Surface className={styles.handoff} tone="soft" role="note">
