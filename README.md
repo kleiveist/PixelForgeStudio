@@ -40,6 +40,7 @@ Die Migration läuft kontrolliert:
 V1 inventarisieren ✓
 → React/TS/Vite aufsetzen ✓
 → Fachlogik nach TypeScript portieren ✓
+→ Kategorien und Capabilities typisieren ✓
 → V2-Datenmodell + Migration
 → neues Dashboard/Wizard/Editormodell
 → Prompt Engine 2.0
@@ -122,12 +123,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 02 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 03 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 03 — Kategorien, Untertypen und Capabilities
+→ Prompt 04 — Zod-Schemas und V2-Profilmodell
 ```
 
 Danach immer genau:
@@ -187,6 +188,10 @@ Die Prompt-Engine und Profilauflösung bleiben frameworkfreies TypeScript. React
 Die bytegenau kompatible V1-Fachlogik ist bereits unter
 `src/domain/legacy-v1/` portiert. Sie bleibt klar namespaced, damit kommende
 V2-Regeln das historische Migrationsverhalten nicht unbemerkt verändern.
+
+Das V2-Capability-System unter `src/domain/assets/` trennt Bewegung,
+Richtungsansichten und Animation. Die UI kann dadurch 4/8 Richtungen nur für
+tatsächlich `directional` Assets anbieten.
 
 ## Datenschutz
 

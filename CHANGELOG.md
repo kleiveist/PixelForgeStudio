@@ -8,6 +8,8 @@
 - minimale responsive V2-App-Shell mit CSS Modules, semantischen Tokens und lokalem SVG-Signet ergänzt
 - V1-Defaults, State-Whitelist, Promptaufbau, Validierung und technische Metriken als frameworkfreie Strict-TypeScript-Domain portiert
 - bytegenaue Vitest-Parität über Legacy-Referenz, synthetische Storage-Fixtures und SHA-256-Promptsignaturen abgesichert
+- typsicheren V2-Katalog für neun Asset-Kategorien, ihre Untertypen und elf Pflicht-Capabilities ergänzt
+- Richtungsoptionen zentral auf `directional` Assets begrenzt und Animation unabhängig davon modelliert
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt
