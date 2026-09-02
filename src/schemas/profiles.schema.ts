@@ -26,6 +26,8 @@ import {
   BaseProfileValuesSchema,
   IconIdSchema,
   IsoDateTimeSchema,
+  LegacyDataSchema,
+  MigratedFromVersionSchema,
   ProfileNameSchema,
   SchemaVersionSchema,
   StableIdSchema,
@@ -40,6 +42,7 @@ export const BaseProfileSchema = z.strictObject({
   iconId: IconIdSchema,
   values: BaseProfileValuesSchema,
   locks: BaseProfileLocksSchema,
+  migratedFromVersion: MigratedFromVersionSchema.optional(),
   createdAt: IsoDateTimeSchema,
   updatedAt: IsoDateTimeSchema
 });
@@ -54,6 +57,7 @@ const CategoryProfileCommonSchema = z.strictObject({
   capabilities: AssetCapabilitiesSchema,
   overrides: BaseProfileOverridesSchema,
   tags: TagsSchema,
+  migratedFromVersion: MigratedFromVersionSchema.optional(),
   createdAt: IsoDateTimeSchema,
   updatedAt: IsoDateTimeSchema
 });
@@ -120,6 +124,8 @@ const AssetProfileCommonSchema = z.strictObject({
   overrides: BaseProfileOverridesSchema,
   tags: TagsSchema,
   favorite: z.boolean(),
+  migratedFromVersion: MigratedFromVersionSchema.optional(),
+  legacyData: LegacyDataSchema.optional(),
   createdAt: IsoDateTimeSchema,
   updatedAt: IsoDateTimeSchema
 });
@@ -203,6 +209,13 @@ export const CategoryProfileSchema = CategoryProfileUnionSchema.superRefine((val
 export const AssetProfileSchema = AssetProfileUnionSchema.superRefine((value, context) => {
   validateResolvedCapabilities(value, context);
   validateCategoryDataCapabilities(value, "answers", context);
+  if ((value.migratedFromVersion === 1) !== (value.legacyData !== undefined)) {
+    context.addIssue({
+      code: "custom",
+      path: value.legacyData === undefined ? ["legacyData"] : ["migratedFromVersion"],
+      message: "Migrated asset profiles require both migratedFromVersion and legacyData."
+    });
+  }
 });
 
 export function parseBaseProfile(input: unknown): BaseProfile {

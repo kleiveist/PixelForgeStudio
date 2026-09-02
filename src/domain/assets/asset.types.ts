@@ -127,6 +127,7 @@ export const ASSET_SUBTYPES = Object.freeze({
     "animatedTile"
   ] as const),
   item: Object.freeze([
+    "weapon",
     "tool",
     "clothing",
     "armorPiece",

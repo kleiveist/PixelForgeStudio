@@ -265,3 +265,29 @@ erhaltendes Zielverhalten:
 
 Alle Fixture-Namen, Zeitpunkte und Motive sind statisch und erfunden. Sie
 enthalten keine Browserdaten und keine exportierten Nutzerprofile.
+
+## Implementierte V2-Startmigration
+
+Prompt 06 überführt die beiden oben inventarisierten Storage-Keys über
+`src/services/v1Migration.ts`. Vor dem ersten Parse werden ihre exakten
+Rohstrings in `pixelforge:v2:migration-backup` mit Status `prepared` gesichert.
+Die ursprünglichen V1-Keys bleiben unverändert. Erst nach validierter
+Base→Category→Asset-Persistenz wird der Marker `completed` geschrieben; ein
+unterbrochener Lauf verwendet denselben Backupdatensatz und dieselben
+deterministischen IDs erneut.
+
+Die pure Transformation unter `src/domain/migration/` deckt alle 18
+V1-Assettypen tabellarisch ab. Der zuvor fehlende Waffenfall besitzt dafür den
+eigenen V2-Untertyp `item/weapon`. Generische V1-Typen wie `building`, `plant`
+oder `rock` erhalten einen dokumentierten Fallback und einen Hinweis, aber
+keine erfundenen Materialien, Zwecke oder Ausgabeformen. 4/8 Richtungen werden
+nur bei kanonisch `directional` Assets übernommen. Insbesondere bleiben die
+80-px-Figurenhöhe und das alte 4×2-Layout eines Einzelgebäudes ausschließlich
+in dessen `legacyData` und beeinflussen weder Base-Werte noch Promptdaten.
+
+Vitest deckt das exakte Backup vor allen Profilwrites, beide synthetischen
+Fixtures, alle Asset-Zuordnungen, korrupte Quellen, Storage-Ausfälle,
+Wiederaufnahme aus `prepared`, begrenzte Diagnostik, Zod-/Resolver-Validität
+und idempotente Folgeläufe ab. V2-JSON-Tests ergänzen Roundtrip,
+Abhängigkeitsschluss, kaputte Referenzen, veraltete Compatibility Keys,
+kanonische Gleichheit und sichtbare ID-Konflikte.

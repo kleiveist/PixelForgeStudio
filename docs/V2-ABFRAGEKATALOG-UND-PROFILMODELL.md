@@ -885,28 +885,57 @@ Empfohlene lokale Schlüssel:
 
 ```text
 pixelforge:v2:settings
-pixelforge:v2:workspace
+pixelforge:v2:draft
 pixelforge:v2:base-profiles
 pixelforge:v2:category-profiles
 pixelforge:v2:asset-profiles
 pixelforge:v2:migration-backup
 ```
 
-Der sichtbare Markenname darf später geändert werden; die Speicher-Schlüssel sollten danach aus Stabilitätsgründen nicht umbenannt werden.
+Der sichtbare Markenname darf später geändert werden; die Speicher-Schlüssel sollten danach aus Stabilitätsgründen nicht umbenannt werden. Die Profilbereiche verwenden versionierte Collection-Envelopes. UI-Code greift ausschließlich über den zentralen Storage-Adapter zu; Profilbereiche werden als validierter Gesamtgraph geschrieben.
 
 ---
 
 # 14. V1-Migration
 
 1. V1-Autosave und V1-Presets erkennen.
-2. Originaldaten unverändert als Migrationssicherung speichern.
+2. Beide vorhandenen Rohstrings vor dem Parsen unverändert in einem
+   `prepared`-Migrationsbackup speichern.
 3. Aus den bisherigen globalen Feldern ein Standard-Basisprofil erzeugen.
 4. `assetType` in V2-Hauptkategorie und Untertyp übersetzen.
-5. Capabilities aus Kategorie und bisherigem `outputMode` ableiten.
+5. Capabilities ausschließlich aus V2-Kategorie und -Untertyp ableiten;
+   `outputMode` verändert keine Capability.
 6. Acht Richtungen nur übernehmen, wenn das Asset richtungsabhängig beweglich ist.
-7. Nicht relevante Felder als `legacyData` sichern, aber nicht in neue Prompts einmischen.
+7. Den normalisierten Ursprungszustand, Quelle, Fingerprint und Hinweise als
+   JSON-validiertes `legacyData` sichern, aber nie in neue Prompts einmischen.
 8. Konvertierte Profile mit `migratedFromVersion: 1` markieren.
-9. Migration mehrfach ausführbar und idempotent gestalten.
+9. Erst nach validierten Profilwrites das Backup auf `completed` setzen.
+10. `prepared` deterministisch wiederaufnehmen; `completed` bei späteren
+    Startläufen als autoritativen No-op behandeln.
+
+Explizite V1-Assetzuordnung:
+
+| V1 `assetType` | V2 Kategorie / Untertyp |
+|---|---|
+| `hero`, `npc`, `enemy`, `boss`, `creature` | `character` / gleichnamiger Untertyp |
+| `building` | `building/house` (generischer Fallback mit Hinweis) |
+| `interiorObject` | `staticObject/furniture` (Fallback mit Hinweis) |
+| `outdoorObject` | `staticObject/decoration` (Fallback mit Hinweis) |
+| `plant` | `nature/bush` (Fallback mit Hinweis) |
+| `tree` | `nature/tree` |
+| `rock` | `staticObject/decoration` (Fallback mit Hinweis) |
+| `ruin` | `building/ruin` |
+| `weapon` | `item/weapon` |
+| `armor` | `item/armorPiece` |
+| `consumable` | `item/consumable` |
+| `questItem` | `item/questItem` |
+| `groundTile` | `tileset/groundTile` |
+| `wallElement` | `tileset/wallTile` |
+
+Die Fallbacks raten keine zusätzlichen Materialien, Zwecke oder
+Darstellungsformen. Nicht exakt abbildbare Werte bleiben im `legacyData` und
+erzeugen einen sichtbaren Migrationshinweis. V1-Kamera-Constraint-Flags werden
+nicht als V2-Vererbungslocks umgedeutet.
 
 ---
 

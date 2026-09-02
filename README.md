@@ -53,7 +53,7 @@ V1 inventarisieren ✓
 → Kategorien und Capabilities typisieren ✓
 → V2-Datenverträge mit Zod absichern ✓
 → Profilvererbung, Locks und Compatibility Key ✓
-→ validierte Speicherung + Migration
+→ validierte Speicherung + Migration ✓
 → neues Dashboard/Wizard/Editormodell
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -135,12 +135,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 05 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 06 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 06 — Storage V2 und V1-Migration
+→ Prompt 07 — Brand, Design Tokens und Light/Dark/System
 ```
 
 Danach immer genau:
@@ -216,6 +216,15 @@ Referenz- und Override-Konflikte strukturiert und berechnet den versionierten
 Compatibility Key neu. Gespeicherte oder importierte Keys werden nicht als
 vertrauenswürdige Quelle verwendet; Figurenhöhe fließt ausschließlich bei
 `scaledCharacter` ein.
+
+Die öffentliche Persistenz- und Transfergrenze liegt unter `src/services/`.
+Alle V2-Namespaces werden über einen injizierbaren Adapter gelesen und vor dem
+Schreiben mit Zod validiert. Korrupte oder nicht verfügbare Browser-Speicher
+erzeugen strukturierte Ergebnisse statt Abstürze. Die V1-Migration legt vor
+jedem Parse ein unverändertes Rohdaten-Backup an, kann vorbereitete Läufe
+deterministisch fortsetzen und lässt die ursprünglichen V1-Keys bestehen.
+JSON-Pakete prüfen Referenzen und Compatibility Keys; ID-Konflikte werden ohne
+explizite Ersetzungsentscheidung nicht überschrieben.
 
 ## Datenschutz
 

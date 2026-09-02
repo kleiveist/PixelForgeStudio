@@ -43,6 +43,8 @@ export {
   FootprintSchema,
   IconIdSchema,
   IsoDateTimeSchema,
+  LegacyDataSchema,
+  MigratedFromVersionSchema,
   ProfileNameSchema,
   SchemaVersionSchema,
   StableIdSchema,
@@ -53,6 +55,7 @@ export {
   type BaseProfileLocks,
   type BaseProfileOverrides,
   type BaseProfileValues,
+  type LegacyData,
   type StableId
 } from "./common.schema";
 export {
@@ -60,6 +63,19 @@ export {
   parseExportBundle,
   type ExportBundle
 } from "./exportBundle.schema";
+export {
+  LegacyV1AutosaveSchema,
+  LegacyV1ExportSchema,
+  LegacyV1PresetSchema,
+  LegacyV1PresetsSchema,
+  LegacyV1StatePatchSchema,
+  LegacyV1StateSchema,
+  parseLegacyV1State,
+  type LegacyV1Autosave,
+  type LegacyV1Export,
+  type LegacyV1Preset,
+  type ValidatedLegacyV1State
+} from "./legacyV1.schema";
 export {
   AssetProfileSchema,
   BaseProfileSchema,
@@ -71,6 +87,19 @@ export {
   type BaseProfile,
   type CategoryProfile
 } from "./profiles.schema";
+export {
+  AssetProfileCollectionSchema,
+  BaseProfileCollectionSchema,
+  CategoryProfileCollectionSchema,
+  MigrationBackupSchema,
+  PersistedAppSettingsSchema,
+  ProfileLibrarySchema,
+  validateProfileGraph,
+  WizardDraftCollectionSchema,
+  type MigrationBackup,
+  type ProfileLibrary,
+  type WizardDraftCollection
+} from "./storage.schema";
 export {
   parseWizardDraft,
   WizardDraftSchema,

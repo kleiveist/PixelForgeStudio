@@ -149,7 +149,7 @@ function cloneProfileValue(value: ProfileValue): ProfileValue {
   });
 }
 
-function profileValuesEqual(left: ProfileValue, right: ProfileValue): boolean {
+export function profileValuesEqual(left: ProfileValue, right: ProfileValue): boolean {
   if (isLightingValue(left) && isLightingValue(right)) {
     return (
       left.policy === right.policy &&

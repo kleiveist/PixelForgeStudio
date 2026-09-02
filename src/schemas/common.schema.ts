@@ -114,8 +114,12 @@ export const ValidationMessagesSchema = z
   })
   .readonly();
 
+export const MigratedFromVersionSchema = z.literal(1);
+export const LegacyDataSchema = z.record(z.string(), z.json()).readonly();
+
 export type StableId = z.infer<typeof StableIdSchema>;
 export type AssetCapabilitiesData = z.infer<typeof AssetCapabilitiesSchema>;
 export type BaseProfileValues = z.infer<typeof BaseProfileValuesSchema>;
 export type BaseProfileOverrides = z.infer<typeof BaseProfileOverridesSchema>;
 export type BaseProfileLocks = z.infer<typeof BaseProfileLocksSchema>;
+export type LegacyData = z.infer<typeof LegacyDataSchema>;

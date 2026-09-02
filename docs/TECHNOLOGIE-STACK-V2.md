@@ -160,6 +160,15 @@ pixelforge:v2:migration-backup
 
 Persistierte Daten werden immer über Zod validiert. Korrupte oder inkompatible Daten dürfen die App nicht unbrauchbar machen.
 
+Der implementierte Einstiegspunkt ist `src/services/index.ts`. Komponenten
+verwenden ausschließlich den dort exportierten Browser-Adapter; direkter
+`localStorage`-Zugriff bleibt auf dessen Composition Root beschränkt. Die drei
+Profil-Namespaces speichern jeweils ein `schemaVersion: 2`-Envelope und dürfen
+nur gemeinsam über `writeProfileLibrary()` verändert werden, damit
+Referenzen, Locks und Compatibility Keys als Gesamtgraph gültig bleiben.
+Adapter-Reads liefern `valid`, `empty`, `invalid` oder `unavailable` statt
+Storage- und Parsefehler bis in React durchzuwerfen.
+
 ## Styling
 
 - `src/styles/tokens.css`: globale semantische Design-Tokens

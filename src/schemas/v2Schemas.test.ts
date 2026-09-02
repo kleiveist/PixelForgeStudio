@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AssetCategoryDataSchema,
   AssetProfileSchema,
+  ProfileLibrarySchema,
   parseAppSettings,
   parseAssetProfile,
   parseBaseProfile,
@@ -428,5 +429,63 @@ describe("V2-Zod-Verträge", () => {
     expect(() =>
       parseAssetProfile({ ...assetProfileInput, compatibilityKey: "   " })
     ).toThrow();
+  });
+
+  it("validiert Locks und Pflichtwerte auch für noch unreferenzierte Kategorieprofile", () => {
+    expect(
+      ProfileLibrarySchema.safeParse({
+        baseProfiles: [baseProfileInput],
+        categoryProfiles: [
+          { ...categoryProfileInput, overrides: { tileSize: 64 } }
+        ],
+        assetProfiles: []
+      }).success
+    ).toBe(false);
+
+    expect(
+      ProfileLibrarySchema.safeParse({
+        baseProfiles: [
+          {
+            ...baseProfileInput,
+            values: {
+              ...baseProfileInput.values,
+              lightingDefaults: { policy: "custom", notes: "alpha  beta" }
+            },
+            locks: { lightingDefaults: true }
+          }
+        ],
+        categoryProfiles: [
+          {
+            ...categoryProfileInput,
+            overrides: {
+              lightingDefaults: { policy: "custom", notes: "alpha beta" }
+            }
+          }
+        ],
+        assetProfiles: []
+      }).success
+    ).toBe(true);
+
+    const baseWithoutCharacterHeight = {
+      ...baseProfileInput,
+      id: "base_without_character_height",
+      values: Object.fromEntries(
+        Object.entries(baseProfileInput.values).filter(([key]) => key !== "characterHeight")
+      ),
+      locks: {}
+    };
+    expect(
+      ProfileLibrarySchema.safeParse({
+        baseProfiles: [baseWithoutCharacterHeight],
+        categoryProfiles: [
+          {
+            ...categoryProfileInput,
+            id: "category_without_character_height",
+            baseProfileId: baseWithoutCharacterHeight.id
+          }
+        ],
+        assetProfiles: []
+      }).success
+    ).toBe(false);
   });
 });

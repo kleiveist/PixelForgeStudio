@@ -7,6 +7,10 @@
     direction-option guards
   - `profiles/`: validated profile-chain resolution, base-lock enforcement,
     structured diagnostics, normalized overrides, and compatibility keys
+  - `json/`: canonical JSON serialization and semantic equality for stable
+    import comparisons, fingerprints, and idempotent migration decisions
+  - `migration/`: deterministic, framework-free V1-to-V2 profile
+    transformation and source fingerprinting
   - `legacy-v1/`: namespaced compatibility port of the V1 defaults, state
     whitelist, prompt builder, validation, and frame/canvas metrics
 - `features/`: Dashboard, Profile, Wizard, Editoren und Output als getrennte Features
@@ -17,7 +21,12 @@
   - `profiles.schema.ts`: base, category, and asset profile contracts
   - `appSettings.schema.ts`, `wizardDraft.schema.ts`,
     `exportBundle.schema.ts`: remaining persisted/imported V2 contracts
-- `services/`: Storage-, Import-, Export- und Migrationsadapter
+  - `legacyV1.schema.ts`: defensive whitelist and normalization boundary for
+    raw, autosave, preset, and export-shaped V1 input
+  - `storage.schema.ts`: versioned collection envelopes, profile-graph
+    integrity, migration backup, and completion-marker contracts
+- `services/`: injectable storage port, JSON profile transfer, and V1 storage
+  migration orchestration; public exports live in `services/index.ts`
 - `store/`: Contexts, Reducer, Actions und Selectors
 - `styles/`: globale semantische Tokens und Reset-/Grundregeln
 - `test/`: gemeinsames Vitest-/Testing-Library-Setup
@@ -52,7 +61,24 @@ also omits tile and world-camera geometry. Lighting-note text is canonicalized
 and represented by a compact deterministic, non-cryptographic fingerprint;
 the key is for grouping, never for security or data integrity.
 
-Prompt 06 adds adapters under `services/` for validated local storage,
-V1 migration, backup, and JSON roundtrips. Adapter inputs begin as `unknown`,
-cross the Zod boundary, then use the profile resolver; React components must
-not access storage directly.
+`services/storageAdapter.ts` is the only V2 module allowed to access browser
+`localStorage`. `createV2StorageAdapter()` accepts an injected
+`KeyValueStorage`; `createBrowserV2StorageAdapter()` is the browser composition
+root. Reads return a discriminated `valid | empty | invalid | unavailable`
+result. Profile writes use versioned namespace envelopes and validate the
+complete Base→Category→Asset graph before a best-effort atomic write.
+
+`services/v1Migration.ts` reads both V1 keys independently, writes their exact
+raw strings to a `prepared` backup before parsing, transforms valid sources,
+then writes the `completed` marker last. IDs derive from technical values and
+source slots, so a prepared migration can converge safely after interruption.
+Legacy keys are never deleted. V1 constraint flags remain isolated provenance
+instead of being misinterpreted as V2 inheritance locks.
+
+`services/profileTransfer.ts` owns the V2 JSON boundary. Selected exports add
+their referenced Base/Category profiles automatically. Bundle parsing checks
+schema/format/application, duplicate IDs, graph references, resolver conflicts,
+and recomputed Compatibility Keys. Existing identical IDs are skipped;
+different payloads are returned as visible conflicts unless replacement is
+explicitly requested. UI settings and draft payloads roundtrip in the bundle
+contract but profile import does not silently apply them to the local UI state.

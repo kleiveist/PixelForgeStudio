@@ -436,6 +436,20 @@ Pflicht:
 
 IndexedDB ist nicht Teil des V2-Kerns.
 
+Implementierter Infrastrukturvertrag:
+
+- `src/services/storageAdapter.ts` kapselt den einzigen direkten
+  Browser-`localStorage`-Zugriff hinter einem injizierbaren `KeyValueStorage`.
+- Profil-Namespaces sind versionierte Collection-Envelopes und werden nur als
+  vollständige, referenziell gültige Bibliothek geschrieben.
+- `src/services/profileTransfer.ts` validiert JSON-Pakete erst strukturell mit
+  Zod und danach fachlich mit dem Profilresolver. Ein gleicher ID/Payload ist
+  ein No-op; ein abweichender Payload bleibt bis zur expliziten
+  `replaceExisting`-Entscheidung ein sichtbarer Konflikt.
+- Profilimporte geben mitgelieferte App-Einstellungen und Wizard-Drafts als
+  `workspaceData` an den Aufrufer zurück. Sie werden nicht still in den
+  laufenden UI-Zustand übernommen.
+
 ---
 
 # 13. Spezialeditoren
@@ -703,15 +717,26 @@ Ziel-`package.json` mindestens:
 1. Legacy-Storage-Keys inventarisieren.
 2. Legacy-Promptdefaults als Fixtures sichern.
 3. V2-Schemas implementieren.
-4. V1-Config in `unknown` einlesen.
-5. V1-Form validieren / defensiv normalisieren.
-6. Backup schreiben.
-7. Werte in Base/Category/AssetProfile transformieren.
-8. V2-Schemas validieren.
-9. erst danach V2 speichern.
-10. Migrationsstatus markieren.
+4. Beide V1-Storagewerte als exakte Rohstrings einlesen.
+5. Einen `prepared`-Backupdatensatz **vor** `JSON.parse` und vor jedem
+   Profilwrite speichern; V1-Keys niemals löschen oder verändern.
+6. Autosave und Presets unabhängig als `unknown` validieren und defensiv
+   normalisieren, damit eine korrupte Quelle gültige Quellen nicht blockiert.
+7. Werte deterministisch in Base/Category/AssetProfile transformieren;
+   Capabilities ausschließlich aus V2-Kategorie und -Untertyp berechnen.
+8. `outputMode` nur als gewünschte Ausgabe interpretieren und 4/8 Richtungen
+   ausschließlich bei `directional=true` übernehmen.
+9. Alle V2-Schemas, Referenzen, Locks und neu berechneten Compatibility Keys
+   validieren und erst danach die drei Profil-Namespaces schreiben.
+10. Den Backupstatus zuletzt auf `completed` setzen. Ein liegengebliebener
+    `prepared`-Datensatz wird mit denselben IDs wiederaufgenommen.
 
-Die Migration muss idempotent sein oder zuverlässig erkennen, dass sie bereits ausgeführt wurde.
+Ein `completed`-Backup ist der autoritative Migrationsmarker und macht weitere
+Startläufe zum No-op. Die normalisierten V1-Daten und Transformationshinweise
+bleiben ausschließlich im `legacyData` des Assetprofils; sie sind keine
+Prompt-Eingaben. Manuelle V1-Dateiimporte werden über dieselbe pure
+Transformation vorbereitet, gehören aber nicht zur automatischen
+localStorage-Startmigration.
 
 ---
 

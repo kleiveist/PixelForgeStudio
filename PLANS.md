@@ -4,7 +4,7 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktive Aufgabe:** Prompt 05 abgeschlossen; Prompt 06 noch nicht gestartet
+- **Aktive Aufgabe:** Prompt 06 abgeschlossen; Prompt 07 noch nicht gestartet
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
 ## Aktuelle Agentenübergabe
@@ -27,12 +27,30 @@
   tatsächlich relevanten Werten neu berechnen und validieren.
 - `characterHeight` bei Kategorien ohne `scaledCharacter` weder in den
   Compatibility Key noch still in fachliche Overrides einfließen lassen.
-- Referenzintegrität von Exportpaketen sowie `legacyData` und
-  `migratedFromVersion` werden mit Storage/Migration in Prompt 06 ergänzt.
-- Prompt 06 verwendet den Resolver erst **nach** Zod-Parsing. Storage-Lookups
-  dürfen fehlende Base-/Kategorie-Referenzen als `undefined` übergeben und
-  müssen Konfliktergebnisse sichtbar bzw. fehlertolerant behandeln.
-- Vor Prompt 06 zuerst `npm run verify` und einen sauberen Git-Status prüfen.
+- Öffentliche Infrastrukturgrenze: `src/services/index.ts`. UI-Code verwendet
+  `createBrowserV2StorageAdapter()`; nur dieser Adapter greift direkt auf
+  `window.localStorage` zu. Tests und Domain-Aufrufer injizieren den schmalen
+  `KeyValueStorage`-Port.
+- Kanonische V2-Keys stehen in `V2_STORAGE_KEYS`; `pixelforge:v2:draft` ist der
+  einzige Draft-Key. Profil-Namespaces enthalten versionierte
+  Collection-Envelopes. Reads liefern `valid | empty | invalid | unavailable`
+  und werfen bei korruptem Browser-Storage nicht.
+- `writeProfileLibrary()` validiert Profile, Referenzen, Locks und neu
+  berechnete Compatibility Keys vor einem atomaren Best-Effort-Write.
+- `migrateLegacyV1Storage()` sichert die exakten V1-Rohstrings zuerst, belässt
+  die V1-Keys unverändert und markiert den Backup-Status erst nach allen
+  Profilwrites als `completed`. Ein `prepared`-Backup wird deterministisch
+  wiederaufgenommen; ein `completed`-Backup macht Folgeläufe zu einem No-op.
+- Migrierte Profile tragen `migratedFromVersion: 1`; nur das AssetProfile trägt
+  das isolierte, JSON-validierte `legacyData`. Diese Provenienz wird weder vom
+  Resolver noch später von der Prompt Engine ausgewertet.
+- Öffentliche JSON-Übertragung: `createProfileExportBundle()`,
+  `serializeExportBundle()`, `parseExportBundleJson()`,
+  `inspectProfileImport()` und `importProfileBundle()`. Teil-Exporte schließen
+  Base-/Category-Abhängigkeiten ein. Gleiche IDs mit gleichen Daten sind No-op;
+  abweichende Daten benötigen die explizite Strategie `replaceExisting`.
+- Prompt 07 bindet Theme-Einstellungen später über den Storage-Adapter an;
+  Persistenz- oder Migrationslogik gehört nicht in Theme-Komponenten.
 
 ## Erfasster Legacy-Ist-Stand
 
@@ -66,7 +84,7 @@
 | 2 | Legacy-Domain extrahieren | Defaults, Prompt-, Validierungs- und Metriklogik als frameworkfreies TypeScript | abgeschlossen |
 | 3 | Zod-Schemas + V2-Domainmodell | Kategorien, Profile, Capabilities und Importverträge typisiert | abgeschlossen |
 | 4 | Profilauflösung + Locks | Vererbung und Compatibility Key | abgeschlossen |
-| 5 | Storage V2 + V1-Migration | validierte Persistenz mit Backup | offen |
+| 5 | Storage V2 + V1-Migration | validierte Persistenz mit Backup | abgeschlossen |
 | 6 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | offen |
 | 7 | App Shell + Navigation | React-App-Struktur und Views | offen |
 | 8 | Dashboard | Kategorie- und Profilkarten | offen |

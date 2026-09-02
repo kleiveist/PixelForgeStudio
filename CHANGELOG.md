@@ -15,6 +15,12 @@
 - frameworkfreie Base→Category→Asset-Profilauflösung mit wirksamer Lock-Durchsetzung ergänzt
 - strukturierte Referenz-, Pflichtwert- und Override-Konflikte sowie normalisierte Vererbungshinweise ergänzt
 - versionierten deterministischen Compatibility Key eingeführt; irrelevante Figurenhöhe wird bei Nicht-Figuren ausgeschlossen
+- injizierbaren V2-Storage-Adapter mit sechs kanonischen Namespaces, versionierten Collection-Envelopes und strukturierten Fehlerresultaten ergänzt
+- referenzielle Profilbibliotheks- und Exportvalidierung einschließlich Locks und neu berechneter Compatibility Keys ergänzt
+- exaktes V1-Rohdaten-Backup, deterministische Base-/Category-/Asset-Migration und idempotenten `prepared`/`completed`-Wiederanlauf umgesetzt
+- alle 18 V1-Assettypen explizit migriert und den fehlenden V2-Item-Untertyp `weapon` ergänzt
+- isolierte Migrationsprovenienz über `migratedFromVersion` und JSON-validiertes `legacyData` ergänzt
+- V2-JSON-Roundtrip, abhängigkeitsschließende Teil-Exporte und sichtbare Importkonflikte ohne stilles Überschreiben umgesetzt
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

@@ -2,6 +2,7 @@ export {
   createCompatibilityKey
 } from "./compatibilityKey";
 export {
+  profileValuesEqual,
   resolveProfile,
   type ResolveProfileInput
 } from "./profileResolution";
