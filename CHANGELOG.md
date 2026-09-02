@@ -12,6 +12,9 @@
 - Richtungsoptionen zentral auf `directional` Assets begrenzt und Animation unabhängig davon modelliert
 - Zod-Verträge für Base-, Kategorie- und Assetprofile, App-Einstellungen, Wizard-Entwürfe und Exportpakete ergänzt
 - kategoriefremde Antworten, unbekannte Versionen und manipulierte Capability-Snapshots an der Parsegrenze abgesichert
+- frameworkfreie Base→Category→Asset-Profilauflösung mit wirksamer Lock-Durchsetzung ergänzt
+- strukturierte Referenz-, Pflichtwert- und Override-Konflikte sowie normalisierte Vererbungshinweise ergänzt
+- versionierten deterministischen Compatibility Key eingeführt; irrelevante Figurenhöhe wird bei Nicht-Figuren ausgeschlossen
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

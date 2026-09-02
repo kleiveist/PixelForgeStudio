@@ -52,7 +52,8 @@ V1 inventarisieren ✓
 → Fachlogik nach TypeScript portieren ✓
 → Kategorien und Capabilities typisieren ✓
 → V2-Datenverträge mit Zod absichern ✓
-→ Profilvererbung + Migration
+→ Profilvererbung, Locks und Compatibility Key ✓
+→ validierte Speicherung + Migration
 → neues Dashboard/Wizard/Editormodell
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -134,12 +135,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 04 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 05 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 05 — Profilvererbung, Locks und Compatibility Key
+→ Prompt 06 — Storage V2 und V1-Migration
 ```
 
 Danach immer genau:
@@ -150,7 +151,7 @@ Aufgabe → implementieren → testen → Diff prüfen → committen → nächst
 
 Das Root-Projekt ist bereits die aktive Vite-/React-/TypeScript-Anwendung. Die
 aktuelle App-Shell ist absichtlich minimal; Dashboard, Wizard und Fachlogik
-folgen erst in ihren vorgesehenen Phasen.
+für die Produktoberfläche folgen erst in ihren vorgesehenen Phasen.
 
 ## Legacy-V1 lokal prüfen
 
@@ -208,6 +209,13 @@ Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
 Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
 werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
 aus den Schemas abgeleitet.
+
+Die öffentliche Profilauflösung unter `src/domain/profiles/` führt validierte
+Base-, Kategorie- und Assetprofile zusammen. Sie setzt Locks durch, meldet
+Referenz- und Override-Konflikte strukturiert und berechnet den versionierten
+Compatibility Key neu. Gespeicherte oder importierte Keys werden nicht als
+vertrauenswürdige Quelle verwendet; Figurenhöhe fließt ausschließlich bei
+`scaledCharacter` ein.
 
 ## Datenschutz
 

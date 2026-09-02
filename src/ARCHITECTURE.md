@@ -5,6 +5,8 @@
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
+  - `profiles/`: validated profile-chain resolution, base-lock enforcement,
+    structured diagnostics, normalized overrides, and compatibility keys
   - `legacy-v1/`: namespaced compatibility port of the V1 defaults, state
     whitelist, prompt builder, validation, and frame/canvas metrics
 - `features/`: Dashboard, Profile, Wizard, Editoren und Output als getrennte Features
@@ -36,7 +38,21 @@ resolver whether direction, animation, scale, or other question groups apply.
 values enter its parse functions as `unknown`; exported TypeScript types are
 inferred from the corresponding Zod schemas rather than maintained separately.
 
-Prompt 05 adds the framework-free `domain/profiles/` resolution layer. It must
-derive compatibility keys from resolved relevant values, never trust an
-imported key, and ignore `characterHeight` for assets without the
-`scaledCharacter` capability.
+`domain/profiles/index.ts` is the public framework-free profile API.
+`resolveProfile()` accepts already validated profile objects and returns a
+discriminated success/conflict result. Reference failures never expose a
+production profile; lock conflicts may expose only an explicitly named safe
+`partialProfile`. Category defaults and asset answers remain correlated by the
+category discriminant.
+
+Compatibility keys use the `pf2-compat-v1__` format and are always recomputed
+from effective values. They exclude profile metadata and omit
+`characterHeight` unless `scaledCharacter` applies. Free-composition artwork
+also omits tile and world-camera geometry. Lighting-note text is canonicalized
+and represented by a compact deterministic, non-cryptographic fingerprint;
+the key is for grouping, never for security or data integrity.
+
+Prompt 06 adds adapters under `services/` for validated local storage,
+V1 migration, backup, and JSON roundtrips. Adapter inputs begin as `unknown`,
+cross the Zod boundary, then use the profile resolver; React components must
+not access storage directly.

@@ -356,10 +356,14 @@ Ein gelockter Base-Wert darf im Kind nicht überschrieben werden. Die UI bietet 
 Deterministisch aus technisch relevanten Parametern, z. B.:
 
 ```text
-modern-hd|tile32|char80|three-quarter|ortho|cam60|soft-outline
+pf2-compat-v1__modern-hd__tile-32__char-80__three-quarter-60__orthographic__outline-soft-selective__...
 ```
 
 Nur relevante Werte einbeziehen. `characterHeight` darf z. B. bei reinen Texturen nicht künstlich die Kompatibilität trennen.
+
+Das Format ist intern versioniert und für die UI undurchsichtig. Gespeicherte
+Schlüssel werden aus den wirksamen Werten neu berechnet; die vollständige
+kanonische Dimensionsreihenfolge steht im Abfragekatalog.
 
 ---
 

@@ -4,7 +4,7 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktive Aufgabe:** Prompt 04 abgeschlossen; Prompt 05 noch nicht gestartet
+- **Aktive Aufgabe:** Prompt 05 abgeschlossen; Prompt 06 noch nicht gestartet
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
 ## Aktuelle Agentenübergabe
@@ -13,9 +13,15 @@
 - Öffentliche Zod-Vertragsgrenze: `src/schemas/index.ts`
 - Persistierte und importierte Daten immer als `unknown` an die dortigen
   `parse*`-Funktionen übergeben; keine parallelen handgeschriebenen Profiltypen.
-- Prompt 05 baut auf `BaseProfile`, `CategoryProfile`, `AssetProfile`, den
-  Basiswerten/Locks und `resolveCapabilities()` auf. Zielmodul ist
-  `src/domain/profiles/`.
+- Öffentliche Profilauflösung: `src/domain/profiles/index.ts`. Der Aufrufer
+  übergibt bereits validierte Profile an `resolveProfile()` und verzweigt über
+  `status: "resolved" | "conflict"`; Konfliktergebnisse besitzen kein
+  produktiv nutzbares `profile`.
+- `createCompatibilityKey()` erzeugt ausschließlich aus aufgelösten,
+  relevanten Werten einen versionierten `pf2-compat-v1__...`-Schlüssel.
+- Lock-, Referenz- und Pflichtwertfehler sind strukturierte Konflikte.
+  Redundante, irrelevante und veraltete Overrides/Keys sind strukturierte
+  Hinweise. `characterHeight` wird ohne `scaledCharacter` entfernt.
 - `pixelDensity` bleibt der kanonische Feldname. Einen gespeicherten
   `compatibilityKey` nie blind übernehmen, sondern aus den aufgelösten,
   tatsächlich relevanten Werten neu berechnen und validieren.
@@ -23,7 +29,10 @@
   Compatibility Key noch still in fachliche Overrides einfließen lassen.
 - Referenzintegrität von Exportpaketen sowie `legacyData` und
   `migratedFromVersion` werden mit Storage/Migration in Prompt 06 ergänzt.
-- Vor Prompt 05 zuerst `npm run verify` und einen sauberen Git-Status prüfen.
+- Prompt 06 verwendet den Resolver erst **nach** Zod-Parsing. Storage-Lookups
+  dürfen fehlende Base-/Kategorie-Referenzen als `undefined` übergeben und
+  müssen Konfliktergebnisse sichtbar bzw. fehlertolerant behandeln.
+- Vor Prompt 06 zuerst `npm run verify` und einen sauberen Git-Status prüfen.
 
 ## Erfasster Legacy-Ist-Stand
 
@@ -56,7 +65,7 @@
 | 1 | React/TS/Vite-Grundgerüst | Vite React-TS, npm, strict TS, Testsetup | abgeschlossen |
 | 2 | Legacy-Domain extrahieren | Defaults, Prompt-, Validierungs- und Metriklogik als frameworkfreies TypeScript | abgeschlossen |
 | 3 | Zod-Schemas + V2-Domainmodell | Kategorien, Profile, Capabilities und Importverträge typisiert | abgeschlossen |
-| 4 | Profilauflösung + Locks | Vererbung und Compatibility Key | offen |
+| 4 | Profilauflösung + Locks | Vererbung und Compatibility Key | abgeschlossen |
 | 5 | Storage V2 + V1-Migration | validierte Persistenz mit Backup | offen |
 | 6 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | offen |
 | 7 | App Shell + Navigation | React-App-Struktur und Views | offen |

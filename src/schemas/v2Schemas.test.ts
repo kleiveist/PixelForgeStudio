@@ -89,7 +89,7 @@ const assetProfileInput = {
   baseProfileId: "base_world_32_80",
   categoryProfileId: "category_npc_80",
   compatibilityKey:
-    "modern-hd__tile-32__char-80__three-quarter-60__orthographic__outline-soft-selective",
+    "pf2-compat-v1__modern-hd__tile-32__char-80__three-quarter-60__orthographic__outline-soft-selective__camera-south-to-north__style-both__palette-by-profile__nearest-neighbor-on__background-transparent__alpha-padding-8__light-adaptive__light-notes-44-6bbb7cc7c856862a",
   category: "character",
   subtype: "npc",
   iconId: "character-npc",

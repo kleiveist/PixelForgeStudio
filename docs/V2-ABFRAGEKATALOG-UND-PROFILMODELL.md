@@ -163,14 +163,40 @@ Basisprofil
 Ein deterministischer Schlüssel gruppiert technisch kompatible Profile, beispielsweise:
 
 ```text
-modern-hd__tile-32__char-80__three-quarter-60__orthographic__outline-soft-selective
+pf2-compat-v1__modern-hd__tile-32__char-80__three-quarter-60__orthographic__outline-soft-selective__camera-south-to-north__style-both__palette-by-profile__nearest-neighbor-on__background-transparent__alpha-padding-8__light-adaptive__light-notes-44-6bbb7cc7c856862a
 ```
 
 Für eine Textur ohne Figurenmaßstab wird der irrelevante Teil ausgelassen:
 
 ```text
-modern-hd__tile-32__surface-flat__outline-soft-selective
+pf2-compat-v1__modern-hd__tile-32__three-quarter-60__orthographic__outline-soft-selective__camera-south-to-north__style-both__palette-by-profile__nearest-neighbor-on__light-adaptive__light-notes-44-6bbb7cc7c856862a
 ```
+
+Das Format ist versioniert, besitzt intern eine feste Serialisierungsreihenfolge
+und wird nicht von der UI zerlegt. Für die Aufnahme von Dimensionen gelten:
+
+- immer: Pixelstil, Stilprofil, Outline, Palette, Nearest-Neighbor und
+  Lichtprofil;
+- für nicht freie Kompositionen: Tilegröße, Perspektive, Kamerawinkel,
+  Kamerarichtung und Projektion;
+- Figurenhöhe ausschließlich bei `scaledCharacter`;
+- Hintergrundmodus nur bei transparentfähigen Assets und Alpha-Rand nur bei
+  tatsächlich transparentem Hintergrund.
+
+Freie Artworks ignorieren Tile- und Weltkamerageometrie. Lichtnotizen werden
+vor der Schlüsselbildung bezüglich Zeilenenden, Unicode und bedeutungslosem
+Whitespace normalisiert und als kompakter FNV-1a-64-Fingerprint aufgenommen.
+Dieser nicht-kryptografische Fingerprint dient nur der stabilen Gruppierung,
+nicht der Sicherheit oder Datenintegrität.
+
+`resolveProfile()` verarbeitet die Ebenen Base → Kategorie → Asset. Ein
+abweichender Override auf einem gesperrten Basiswert bleibt wirkungslos und
+wird als strukturierter Konflikt ausgegeben. Gleichwertige Overrides werden
+als redundant, `characterHeight` bei nicht skalierten Kategorien als
+irrelevant gemeldet und aus normalisierten Overrides entfernt. Kategorie-
+Defaults werden mit definierten Asset-Antworten zusammengeführt; das Asset
+gewinnt. Referenz- und Klassifikationsfehler liefern kein produktiv nutzbares
+Profil.
 
 ## 6.3 Regeln für Profilkarten
 
@@ -789,7 +815,7 @@ Basisprofil
   "kind": "assetProfile",
   "name": "Dorfschmied mit Lederschürze",
   "baseProfileId": "base_world_32_80",
-  "compatibilityKey": "modern-hd__tile-32__char-80__three-quarter-60__orthographic__outline-soft-selective",
+  "compatibilityKey": "pf2-compat-v1__modern-hd__tile-32__char-80__three-quarter-60__orthographic__outline-soft-selective__camera-south-to-north__style-both__palette-by-profile__nearest-neighbor-on__background-transparent__alpha-padding-8__light-adaptive__light-notes-44-6bbb7cc7c856862a",
   "category": "character",
   "subtype": "npc",
   "iconId": "character-npc",
@@ -818,9 +844,9 @@ Basisprofil
 }
 ```
 
-Der gespeicherte `compatibilityKey` ist ein abgeleiteter Snapshot. Prompt 05
-berechnet ihn deterministisch neu; Importdaten dürfen ihn nicht als
-vertrauenswürdige Quelle vorgeben. Fehlende Capability-Felder werden beim
+Der gespeicherte `compatibilityKey` ist ein abgeleiteter Snapshot.
+`resolveProfile()` berechnet ihn deterministisch neu; Importdaten dürfen ihn
+nicht als vertrauenswürdige Quelle vorgeben. Fehlende Capability-Felder werden beim
 Parsen mit `false` materialisiert und der vollständige Snapshot anschließend
 gegen Kategorie und Untertyp geprüft.
 
