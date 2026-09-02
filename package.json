@@ -1,0 +1,47 @@
+{
+  "name": "pixelforge-prompt-studio",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Lokales Produktionsstudio für konsistente Pixelart-Prompts.",
+  "scripts": {
+    "dev": "vite",
+    "start": "vite --open",
+    "preview": "vite preview",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "check:legacy": "node legacy/v1/scripts/check.mjs",
+    "test:legacy": "node --test legacy/v1/tests/*.test.mjs",
+    "dev:legacy": "node legacy/v1/scripts/dev-server.mjs",
+    "build:legacy": "node legacy/v1/scripts/build.mjs",
+    "verify": "npm run typecheck && npm run check:legacy && npm run test:legacy && npm run test:run && npm run build"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0",
+    "npm": ">=10"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-hook-form": "^7.87.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  },
+  "license": "MIT"
+}

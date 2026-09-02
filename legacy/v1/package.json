@@ -1,0 +1,19 @@
+{
+  "name": "pixelart-prompt-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Lokaler Prompt-Generator für konsistente moderne High-Resolution-Pixelart-Assets.",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "start": "node scripts/dev-server.mjs --open",
+    "check": "node scripts/check.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "build": "node scripts/build.mjs",
+    "verify": "npm run check && npm test && npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
