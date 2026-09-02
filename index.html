@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Modularer Prompt-Generator für konsistente moderne High-Resolution-Pixelart-Assets."
+    />
+    <meta name="color-scheme" content="dark" />
+    <title>Pixelart Prompt Studio</title>
+    <link rel="icon" href="./public/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./src/styles/main.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero__content">
+          <div class="hero__mark" aria-hidden="true">P</div>
+          <div>
+            <p class="eyebrow">ASSET-PRODUKTION · VERSION 1.0</p>
+            <h1>Pixelart Prompt Studio</h1>
+            <p class="hero__subtitle">
+              Konsistente moderne Pixelart-Prompts mit fester 3/4-RPG-Kamera,
+              zwei getrennten Fantasy-Profilen und technischen Sprite-Regeln.
+            </p>
+          </div>
+        </div>
+        <div class="hero__badges" aria-label="Aktive Projektstandards">
+          <span>32×32 Tiles</span>
+          <span>80 px Figuren</span>
+          <span>8 Richtungen</span>
+          <span>Transparent</span>
+        </div>
+      </header>
+
+      <section class="preset-bar" aria-label="Preset-Verwaltung">
+        <div class="preset-bar__group preset-bar__group--grow">
+          <label class="sr-only" for="preset-name">Preset-Name</label>
+          <input id="preset-name" type="text" placeholder="Preset-Name …" />
+          <button id="save-preset" class="button button--primary" type="button">Preset speichern</button>
+        </div>
+        <div class="preset-bar__group preset-bar__group--grow">
+          <label class="sr-only" for="preset-select">Gespeichertes Preset</label>
+          <select id="preset-select"></select>
+          <button id="load-preset" class="button" type="button">Laden</button>
+          <button id="delete-preset" class="button button--danger" type="button">Löschen</button>
+        </div>
+        <div class="preset-bar__group">
+          <button id="import-config" class="button" type="button">JSON importieren</button>
+          <input id="import-file" class="sr-only" type="file" accept="application/json,.json" />
+          <button id="export-json" class="button" type="button">JSON exportieren</button>
+        </div>
+      </section>
+
+      <main class="workspace">
+        <aside class="configuration-panel" aria-label="Prompt-Konfiguration">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">EINGABE</p>
+              <h2>Asset konfigurieren</h2>
+            </div>
+            <button id="reset-defaults" class="button button--ghost button--small" type="button">
+              Standardwerte
+            </button>
+          </div>
+
+          <form id="generator-form" novalidate>
+            <div id="form-sections"></div>
+          </form>
+        </aside>
+
+        <section class="result-panel" aria-label="Generierte Prompts">
+          <div class="result-toolbar">
+            <div>
+              <p class="eyebrow">AUSGABE</p>
+              <div class="result-toolbar__title-row">
+                <h2>Prompt-Pakete</h2>
+                <span id="output-count" class="count-badge">0 Prompt-Pakete</span>
+              </div>
+            </div>
+            <div class="result-toolbar__actions">
+              <button id="regenerate" class="button button--primary" type="button">Neu erzeugen</button>
+              <button id="copy-all" class="button" type="button">Alles kopieren</button>
+              <button id="export-text" class="button" type="button">TXT exportieren</button>
+            </div>
+          </div>
+
+          <div class="status-strip">
+            <div id="metrics" class="metrics" aria-label="Berechnete technische Maße"></div>
+            <div id="autosave-status" class="autosave-status" aria-live="polite"></div>
+          </div>
+
+          <div id="validation-panel" class="validation-panel" aria-live="polite"></div>
+          <div id="outputs" class="outputs"></div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <p>
+          Lokale Webanwendung ohne externe Dienste. Presets und letzter Arbeitsstand werden nur im Browser gespeichert.
+        </p>
+        <p>Keine direkte Nennung bestehender Spiele, Marken oder Künstler in den erzeugten Prompts.</p>
+      </footer>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <noscript>
+      <div class="noscript">Für den Generator muss JavaScript aktiviert sein.</div>
+    </noscript>
+
+    <script type="module" src="./src/js/main.js"></script>
+  </body>
+</html>
