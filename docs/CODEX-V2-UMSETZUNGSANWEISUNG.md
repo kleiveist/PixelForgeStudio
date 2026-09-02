@@ -151,6 +151,21 @@ Die Anwendung benötigt diese Hauptansichten:
 
 Für V2 ist kein externer Router vorgeschrieben. Eine kleine interne Navigation ist ausreichend, solange Browser-Zurück/Vorwärts sinnvoll funktioniert. Keine Router-Bibliothek nur aus Gewohnheit hinzufügen.
 
+Umgesetzter Vertrag seit Prompt 08:
+
+- Die sechs Shell-Ansichten sind `dashboard`, `profiles`, `wizard`, `review`,
+  `output` und `settings`.
+- Der Query-Key `?view=…` hält Routen von Fragmentankern wie `#main-content`
+  getrennt und funktioniert ohne serverseitige Rewrite-Regeln.
+- Eine gültige URL-Ansicht hat Vorrang vor dem validierten `startView`; fehlende
+  oder ungültige Werte werden per History-Replace kanonisiert.
+- Explizite Nutzerwechsel erzeugen einen History-Push, `popstate` synchronisiert
+  nur den View-State. Normale Navigation schreibt keine App-Einstellungen.
+- Browserzugriff liegt im injizierbaren Adapter unter `src/services/`, der
+  React-Context unter `src/store/navigation/`.
+- Basisprofil- und Kategorieeditoren werden in ihren späteren Phasen innerhalb
+  des Wizard-Zweigs aufgebaut und sind daher keine zusätzlichen Shell-Routen.
+
 ---
 
 # 5. Rebranding und Designsystem

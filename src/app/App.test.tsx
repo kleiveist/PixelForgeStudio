@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -10,7 +10,21 @@ import {
   createV2StorageAdapter
 } from "../services";
 import { MemoryStorage } from "../test/memoryStorage";
-import { App } from "./App";
+import { MemoryNavigation } from "../test/memoryNavigation";
+import { App as StudioApp, type AppProps } from "./App";
+
+type ThemeTestAppProps = Omit<AppProps, "navigationAdapter">;
+
+function App(props: ThemeTestAppProps) {
+  const [navigationAdapter] = useState(
+    () =>
+      new MemoryNavigation({
+        status: "valid",
+        view: "dashboard"
+      })
+  );
+  return <StudioApp {...props} navigationAdapter={navigationAdapter} />;
+}
 
 type MediaChangeListener = (event: MediaQueryListEvent) => void;
 
@@ -105,7 +119,7 @@ describe("PixelForge visual foundation", () => {
     ).toBeVisible();
     expect(screen.getByText(BRAND.tagline, { exact: false })).toBeVisible();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Visuelles Fundament bereit"
+      "App Shell bereit"
     );
     expect(
       screen.getByRole("group", { name: "Darstellung" })

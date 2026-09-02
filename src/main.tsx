@@ -2,7 +2,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/App";
 import { BRAND } from "./config";
-import { createBrowserV2StorageAdapter } from "./services";
+import {
+  createBrowserNavigationAdapter,
+  createBrowserV2StorageAdapter
+} from "./services";
 import "./styles/tokens.css";
 import "./styles/globals.css";
 
@@ -13,9 +16,13 @@ if (!rootElement) {
 }
 
 const storageAdapter = createBrowserV2StorageAdapter();
+const navigationAdapter = createBrowserNavigationAdapter();
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App storageAdapter={storageAdapter} />
+    <App
+      navigationAdapter={navigationAdapter}
+      storageAdapter={storageAdapter}
+    />
   </StrictMode>
 );

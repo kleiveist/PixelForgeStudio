@@ -145,6 +145,13 @@ React Context + Reducer verwaltet mindestens:
 
 Die Profilauflösung selbst ist eine pure Domain-Funktion und gehört nicht in den Reducer.
 
+Die Top-Level-Navigation nutzt seit Prompt 08 bewusst keine Router-Abhängigkeit.
+Ein injizierbarer Adapter kapselt `history.pushState`, `history.replaceState`
+und `popstate`; der aktuelle View-State liegt in einem eigenen Context/Reducer.
+Die URL verwendet `?view=…`, damit Fragmentanker für Skip-Links und spätere
+In-Page-Ziele frei bleiben. `startView` ist nur der validierte Startfallback und
+wird beim normalen Ansichtswechsel nicht als „zuletzt besucht“ überschrieben.
+
 ## Speicherung
 
 V2 benutzt lokale Namespaces, z. B.:

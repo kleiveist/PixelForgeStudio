@@ -1,6 +1,7 @@
 # V2 source architecture
 
-- `app/`: bootstrap-nahe App-Komponenten und spätere Navigation
+- `app/`: Composition, persistente App Shell, View-Metadaten und semantische
+  Haupt-/Schnellnavigation
 - `components/`: wiederverwendbare CSS-Module-Oberflächen, Theme-Control und
   lokale SVG-Icons
 - `config/`: zentrale sichtbare `BRAND`-Konfiguration sowie bewusst stabiler,
@@ -16,9 +17,12 @@
     transformation and source fingerprinting
   - `theme/`: pure preference-to-effective-theme resolution without browser
     or React dependencies
+  - `navigation/`: six stable top-level view IDs plus pure query parsing and
+    canonical serialization
   - `legacy-v1/`: namespaced compatibility port of the V1 defaults, state
     whitelist, prompt builder, validation, and frame/canvas metrics
-- `features/`: Dashboard, Profile, Wizard, Editoren und Output als getrennte Features
+- `features/`: getrennte View-Flächen; aktuell Dashboard-Fundament und bewusst
+  funktionslose Platzhalter für die kommenden Profile-/Wizard-/Output-Phasen
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -30,10 +34,12 @@
     raw, autosave, preset, and export-shaped V1 input
   - `storage.schema.ts`: versioned collection envelopes, profile-graph
     integrity, migration backup, and completion-marker contracts
-- `services/`: injectable storage port, JSON profile transfer, and V1 storage
-  migration orchestration; public exports live in `services/index.ts`
+- `services/`: injectable storage and navigation ports, JSON profile transfer,
+  and V1 storage migration orchestration; public exports live in
+  `services/index.ts`
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
-  complete validated app-settings envelope and effective theme state
+  complete validated app-settings envelope and effective theme state;
+  `navigation/` owns only the current top-level view
 - `styles/`: globale semantische Light-/Dark-Tokens, System-Fallback und
   Reset-/Grundregeln
 - `test/`: gemeinsames Vitest-/Testing-Library-Setup
@@ -108,3 +114,21 @@ at the composition root.
 `Badge` and `Surface`. `components/theme/ThemeSwitcher.tsx` is a native,
 keyboard-operable radio group. All component colors, spacing, focus rings,
 control sizes, radii, shadows, and motion timings come from `styles/tokens.css`.
+
+`domain/navigation/index.ts` is the public, framework-free view contract. The
+same `APP_VIEW_IDS` tuple validates `AppSettings.startView`, preventing schema
+and UI routes from drifting. Routing uses a query parameter (`?view=…`) rather
+than the fragment so the accessible `#main-content` skip target remains usable.
+
+`services/navigationAdapter.ts` is the only module that talks to browser
+History for top-level navigation. `pushView()` is reserved for an explicit
+user transition, `replaceView()` canonicalizes a missing or invalid route, and
+`subscribe()` observes `popstate` without creating another entry. Link hrefs
+preserve unrelated query parameters and remove obsolete fragments.
+
+`store/navigation/index.ts` is the React-facing navigation boundary. Initial
+precedence is a valid URL view followed by the already validated
+`settings.startView`; the Settings default supplies `dashboard` when persisted
+settings are absent or invalid. Navigation never persists the current view or
+changes `updatedAt`. `main.tsx` creates one browser adapter, while tests inject
+`MemoryNavigation` and can inspect pushes, replacements and live subscribers.

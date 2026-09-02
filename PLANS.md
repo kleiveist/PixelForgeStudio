@@ -4,7 +4,7 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktive Aufgabe:** Prompt 07 abgeschlossen; Prompt 08 noch nicht gestartet
+- **Aktive Aufgabe:** Prompt 08 abgeschlossen; Prompt 09 noch nicht gestartet
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
 ## Aktuelle Agentenübergabe
@@ -65,6 +65,22 @@
   `data-theme="light|dark"`; die Präferenz `system` bleibt im Settings-State.
 - Wiederverwendbare Basiskomponenten werden über `src/components/ui/index.ts`
   exportiert. Komponentenfarben und Maße stammen aus `styles/tokens.css`.
+- Öffentliche View-Taxonomie: `src/domain/navigation/index.ts`. Die sechs IDs
+  `dashboard | profiles | wizard | review | output | settings` sind zugleich
+  die einzige Quelle für `AppSettings.startView`.
+- Öffentliche Navigationsinfrastruktur: `NavigationAdapter` und
+  `createBrowserNavigationAdapter()` aus `src/services/index.ts`. Die Route
+  liegt im Query-Key `?view=…`; Fragmentanker bleiben für In-Page-Navigation
+  wie `#main-content` frei.
+- Öffentliche React-Navigationsgrenze: `src/store/navigation/index.ts`.
+  Gültige URL-Ansicht gewinnt vor `settings.startView`; fehlende oder ungültige
+  Werte werden mit `replaceView()` kanonisiert, Nutzerwechsel mit `pushView()`.
+- Normale Navigation verändert AppSettings und `updatedAt` nicht. Browser-
+  History-Events aktualisieren ausschließlich den View-State und erzeugen
+  selbst keinen neuen History-Eintrag.
+- `App` benötigt Storage- und Navigation-Adapter. `main.tsx` erzeugt beide
+  Browseradapter einmalig; Tests verwenden `MemoryStorage` und
+  `MemoryNavigation`.
 
 ## Ergebnis Prompt 07
 
@@ -79,6 +95,49 @@
    Theme-Schalter und wiederverwendbare CSS-Module-Basiskomponenten sind aktiv.
 5. Gespeicherte Einstellungen, Theme-Wechsel, Systemwechsel, StrictMode und
    degradierte Storage-Pfade sind mit Vitest/React Testing Library abgedeckt.
+
+## Ausführungsplan Prompt 08
+
+1. Einen frameworkfreien, typisierten View-Vertrag mit Query-Parsing und einen
+   injizierbaren Browser-/Memory-Navigationsadapter anlegen.
+2. Navigation per Context und Reducer aufbauen; gültige URL-Ansichten haben
+   Vorrang, andernfalls gilt die gespeicherte `startView`.
+3. Semantische App Shell mit Header, Primärnavigation, globalen Aktionen,
+   Hauptbereich, View-Platzhaltern und responsivem Layout umsetzen.
+4. Navigation, aktive Ansicht, History-Synchronisation, ungültige URLs und
+   StrictMode-Lifecycle mit Vitest und Testing Library absichern.
+5. Architektur- und Übergabedokumentation aktualisieren, vollständig
+   verifizieren und Prompt 08 separat committen.
+
+## Ergebnis Prompt 08
+
+1. Sechs Top-Level-Ansichten besitzen einen gemeinsamen typisierten Vertrag,
+   den auch das Zod-Schema der gespeicherten Startansicht verwendet.
+2. Ein injizierbarer Query-/History-Adapter trennt Browserzugriffe vom React-
+   State und lässt echte Links, modifizierte Klicks und Zurück/Vorwärts zu.
+3. Der Navigation-Context löst initial `gültige URL → startView`, repariert
+   fehlende oder ungültige Routen per Replace und verhindert Same-View-Pushes.
+4. Die responsive, zugängliche App Shell enthält Branding, sechs primäre Ziele,
+   zwei globale Aktionen, Theme-Steuerung, fokussierbares Main-Landmark und
+   genau eine aktive View mit aktualisiertem Dokumenttitel.
+5. Das bisherige visuelle Fundament lebt als Dashboard-Platzhalter weiter;
+   Profile, Wizard, Prüfung, Ausgabe und Einstellungen haben bewusst nur
+   vorbereitete Flächen, damit Prompt 09 und Folgephasen nicht vorgezogen sind.
+6. Pure Domain-/Reducer-Tests, Browseradapter-Tests und RTL-Interaktionstests
+   decken URL-Priorität, Fallback, Tastatur, History und StrictMode ab.
+
+## Übergabe an Prompt 09
+
+- `src/features/dashboard/DashboardView.tsx` ist die gezielte Austauschgrenze
+  für Hero, letzte Profile, Favoriten und neun Kategorie-Karten.
+- Top-Level-IDs, `?view=…`-Protokoll und `NavigationProvider` bleiben stabil;
+  eine Kategorieauswahl ergänzt nur den fachlichen Wizard-Startzustand.
+- Das Dashboard behält `dashboard-view-title`, damit Main-Landmark,
+  Dokumenttitel und bestehende Shell-Tests stabil bleiben.
+- Neue Kategorie- und Material-Icons gehören als lokale SVG-React-Komponenten
+  unter `src/components/icons/`; keine Icon-Abhängigkeit hinzufügen.
+- Prompt 09 ersetzt ausschließlich den Dashboard-Platzhalter. Profile und
+  Wizard-Inhalte bleiben ihren eigenen Folgephasen vorbehalten.
 
 ## Erfasster Legacy-Ist-Stand
 
@@ -114,7 +173,7 @@
 | 4 | Profilauflösung + Locks | Vererbung und Compatibility Key | abgeschlossen |
 | 5 | Storage V2 + V1-Migration | validierte Persistenz mit Backup | abgeschlossen |
 | 6 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | abgeschlossen |
-| 7 | App Shell + Navigation | React-App-Struktur und Views | offen |
+| 7 | App Shell + Navigation | React-App-Struktur und Views | abgeschlossen |
 | 8 | Dashboard | Kategorie- und Profilkarten | offen |
 | 9 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | offen |
 | 10 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | offen |
@@ -162,7 +221,6 @@
 
 ## Noch lokal zu entscheiden
 
-- ob Navigation zunächst als eigener View-State oder mit einem kleinen Router umgesetzt wird; keine Router-Abhängigkeit ohne Bedarf
 - genaue Sheet-Layoutoptionen für mehrere Aktionen
 - Rückkehrhistorie beim Kategorienwechsel
 - Umfang einer grafischen Frame-/Canvas-Vorschau

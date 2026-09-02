@@ -29,3 +29,7 @@ export {
   type MigrationCounts,
   type MigrationIssue
 } from "./v1Migration";
+export {
+  createBrowserNavigationAdapter,
+  type NavigationAdapter
+} from "./navigationAdapter";

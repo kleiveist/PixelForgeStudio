@@ -26,6 +26,9 @@
 - aufgelöstes `data-theme="light|dark"` am Dokument-Root sowie fehlertolerante Fallbacks für korrupte oder nicht verfügbare Einstellungen ergänzt
 - eigenständig gestaltete Light-/Dark-Tokenpaletten, kontraststarke Fokus-/Control-Tokens und Reduced-Motion-Grundregeln eingeführt
 - zugänglichen Theme-Umschalter und wiederverwendbare `Badge`-/`Surface`-Basiskomponenten mit CSS Modules ergänzt
+- responsive React-App-Shell mit Header, Primärnavigation, globalen Aktionen und sechs klar getrennten Hauptansichten umgesetzt
+- Query-basierte interne Navigation ohne Router-Abhängigkeit ergänzt; gültige URL-Ansichten gewinnen vor `startView`, fehlende oder ungültige Werte werden ohne zusätzlichen History-Eintrag repariert
+- Browser-Zurück/Vorwärts, aktive Ansicht, Tastaturbedienung, Skip-Link-Kompatibilität und StrictMode-Subscription mit injizierbarem Navigation-Adapter abgesichert
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

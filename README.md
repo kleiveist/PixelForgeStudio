@@ -55,6 +55,7 @@ V1 inventarisieren ✓
 → Profilvererbung, Locks und Compatibility Key ✓
 → validierte Speicherung + Migration ✓
 → Brand, Design Tokens und Light/Dark/System ✓
+→ App Shell, sechs Views und Browsernavigation ✓
 → neues Dashboard/Wizard/Editormodell
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -136,12 +137,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 07 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 08 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 08 — App Shell und Navigation
+→ Prompt 09 — Dashboard und Icon-System
 ```
 
 Danach immer genau:
@@ -151,9 +152,11 @@ Aufgabe → implementieren → testen → Diff prüfen → committen → nächst
 ```
 
 Das Root-Projekt ist bereits die aktive Vite-/React-/TypeScript-Anwendung. Die
-aktuelle App-Shell zeigt bereits das neue visuelle Fundament und den lokal
-persistierten Light-/Dark-/System-Umschalter; Navigation, Dashboard, Wizard und
-Fachlogik für die Produktoberfläche folgen erst in ihren vorgesehenen Phasen.
+persistente App-Shell stellt Dashboard, Profile, Wizard, Prüfung, Ausgabe und
+Einstellungen als typisierte Ansichten bereit. Nutzerwechsel laufen ohne
+Reload über `?view=…`; Zurück/Vorwärts wird über die History API synchronisiert,
+während der Fragmentanker für den Skip-Link frei bleibt. Das kategoriebasierte
+Dashboard, Wizard und weitere Fachlogik folgen in ihren vorgesehenen Phasen.
 
 ## Legacy-V1 lokal prüfen
 
