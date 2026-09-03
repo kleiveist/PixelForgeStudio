@@ -13,9 +13,14 @@ import {
   getDefaultMovingObjectClass
 } from "../../domain/moving-objects";
 import {
+  getDefaultTextureMaterialType,
+  type TextureSubtype
+} from "../../domain/textures";
+import {
   BaseProfileValuesSchema,
   CharacterAnswersSchema,
   MovingObjectAnswersSchema,
+  TextureAnswersSchema,
   type BaseProfileValues
 } from "../../schemas";
 
@@ -81,6 +86,8 @@ const MovingObjectAnimationFramesSchema = z
   )
   .optional();
 
+const textureAnswerShape = TextureAnswersSchema.unwrap().shape;
+
 export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
   category: z.enum(ASSET_CATEGORY_IDS).optional(),
@@ -142,13 +149,24 @@ export const WizardCoreFormSchema = z.strictObject({
   movingObjectShadowMode: movingObjectAnswerShape.shadowMode,
   movingObjectExtraDetails: movingObjectAnswerShape.extraDetails,
   movingObjectAnimationFrames: MovingObjectAnimationFramesSchema,
+  textureMaterialType: textureAnswerShape.materialType,
+  textureUsage: textureAnswerShape.usage,
+  textureDescription: textureAnswerShape.subjectDescription,
+  textureStructure: textureAnswerShape.structure,
+  textureCondition: textureAnswerShape.condition,
+  textureSurface: textureAnswerShape.surface,
+  textureMoisture: textureAnswerShape.moisture,
+  textureIcing: textureAnswerShape.icing,
+  textureLighting: textureAnswerShape.lighting,
+  textureOrientation: textureAnswerShape.orientation,
+  textureExtraDetails: textureAnswerShape.extraDetails,
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
     .enum(CHARACTER_ANIMATION_ACTION_IDS)
     .optional(),
   animationType: AnimationTypeSchema.optional(),
   movementType: movingObjectAnswerShape.movementType,
-  seamless: z.boolean().optional(),
+  seamless: textureAnswerShape.seamless,
   tileableAxes: z.enum(["horizontal", "vertical", "both", "none"]).optional()
 });
 
@@ -160,6 +178,7 @@ export type WizardCoreStepId =
   | "baseProfile"
   | "characterDetails"
   | "movingObjectDetails"
+  | "textureDetails"
   | "directions"
   | "animation"
   | "tileability";
@@ -261,6 +280,21 @@ export const WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS = Object.freeze([
   "movingObjectLightingBehavior",
   "movingObjectShadowMode",
   "movingObjectExtraDetails"
+] as const satisfies readonly WizardCoreFieldPath[]);
+
+export const WIZARD_TEXTURE_DETAIL_FIELD_PATHS = Object.freeze([
+  "textureMaterialType",
+  "textureUsage",
+  "textureDescription",
+  "seamless",
+  "textureStructure",
+  "textureCondition",
+  "textureSurface",
+  "textureMoisture",
+  "textureIcing",
+  "textureLighting",
+  "textureOrientation",
+  "textureExtraDetails"
 ] as const satisfies readonly WizardCoreFieldPath[]);
 
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
@@ -449,6 +483,15 @@ function validateCapabilityFields(
       );
     }
   }
+  for (const field of WIZARD_TEXTURE_DETAIL_FIELD_PATHS) {
+    if (values[field] !== undefined && category !== "texture") {
+      addFieldIssue(
+        context,
+        field,
+        "Textur- und Materialdaten gehören nicht zur gewählten Asset-Kategorie."
+      );
+    }
+  }
   if (
     values.movingObjectAnimationFrames !== undefined &&
     (category !== "movingObject" || !capabilities.animated)
@@ -500,6 +543,18 @@ function validateCapabilityFields(
       );
     }
   }
+  if (
+    category === "texture" &&
+    values.textureMaterialType !== undefined &&
+    values.textureMaterialType !==
+      getDefaultTextureMaterialType(selection.subtype as TextureSubtype)
+  ) {
+    addFieldIssue(
+      context,
+      "textureMaterialType",
+      "Der Materialtyp passt nicht zum gewählten Textur-Untertyp."
+    );
+  }
   if (values.animationType !== undefined) {
     const allowedAnimationTypes = ANIMATION_TYPES_BY_CATEGORY[category];
     if (
@@ -516,7 +571,8 @@ function validateCapabilityFields(
   }
   if (
     values.seamless !== undefined &&
-    (category !== "texture" || !capabilities.tileable)
+    category === "texture" &&
+    !capabilities.tileable
   ) {
     addFieldIssue(
       context,
@@ -613,6 +669,17 @@ export const WizardMovingObjectDetailsStepSchema =
       );
     }
   });
+export const WizardTextureDetailsStepSchema =
+  WizardCoreFormSchema.superRefine((values, context) => {
+    refineSelectedValues(values, context, undefined, true);
+    if (values.category !== undefined && values.category !== "texture") {
+      addFieldIssue(
+        context,
+        "category",
+        "Der Textur-Editor ist nur für Texturen und Materialien verfügbar."
+      );
+    }
+  });
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) =>
     refineSelectedValues(values, context, "directional", true)
@@ -688,6 +755,15 @@ export const WIZARD_CORE_STEPS = Object.freeze([
     schema: WizardMovingObjectDetailsStepSchema
   }),
   Object.freeze({
+    id: "textureDetails",
+    route: "wizard/editor",
+    title: "Textur und Material",
+    description:
+      "Beschreibe Material, Einsatz, Kachelbarkeit, Oberfläche, Zustand und Beleuchtung der Textur.",
+    fieldPaths: WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
+    schema: WizardTextureDetailsStepSchema
+  }),
+  Object.freeze({
     id: "directions",
     route: "wizard/editor",
     title: "Richtungen",
@@ -718,7 +794,7 @@ export const WIZARD_CORE_STEPS = Object.freeze([
     title: "Kachelbarkeit",
     description:
       "Definiere die Wiederholbarkeit nur für Assets mit Tileability-Capability.",
-    fieldPaths: Object.freeze(["seamless", "tileableAxes"] as const),
+    fieldPaths: Object.freeze(["tileableAxes"] as const),
     schema: WizardTileabilityStepSchema
   })
 ] as const satisfies readonly WizardCoreStep[]);

@@ -63,6 +63,7 @@ V1 inventarisieren ✓
 → Basisprofilwahl, Vererbung, Locks, Anlage und Duplikation ✓
 → Character-/NPC-Editor mit Aktions- und Frame-Modell ✓
 → Moving-Object-Editor mit Produktions- und Sequenzmodell ✓
+→ Texture-/Material-Editor mit Kachel- und Oberflächenmodell ✓
 → weitere spezialisierte Editormodelle
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -130,12 +131,11 @@ die zur Capability passenden Fragen und Editoren.
 
 ## Spezialisierte Editoren
 
-Character-/NPC- und Moving-Object-Editor sind als getrennte React-Features
-umgesetzt. Weitere geplante Features sind:
+Character-/NPC-, Moving-Object- und Texture-/Material-Editor sind als
+getrennte React-Features umgesetzt. Weitere geplante Features sind:
 
-- Static Object
-- Texture/Material
 - Nature/Tree
+- Static Object
 - Building
 - Tileset
 - Item/Equipment
@@ -165,14 +165,26 @@ gespeichert. Bestehende Ein-Sequenz-Daten bleiben beim Lesen kompatibel.
 Ein Karren kann dadurch Richtungen und Animation besitzen; ein pulsierender
 schwebender Kristall bleibt animiert, erhält aber keine Richtungsfrage.
 
+Der eigene `textureDetails`-Schritt bildet Materialtyp, Einsatz, die
+dreiwertige Nahtlosigkeitsentscheidung „nicht festgelegt / ja / nein“,
+Struktur, Zustand, Oberflächenaufbau und -richtung, Feuchtigkeit, Vereisung,
+Materiallicht, Beschreibung und Zusatzdetails ab. Der Materialtyp folgt
+read-only aus dem gewählten Untertyp; die wirksame Tilegröße bleibt ebenfalls
+read-only in der zentralen technischen Base→Category→Asset-Kette und wird
+nicht in `TextureAnswers` dupliziert. Der Holzfall erhält konkrete
+Produktionshinweise, aber ebenso wie jede andere Textur keinerlei Figuren-,
+Kleidungs-, Bewegungs- oder Richtungsfragen. Weil dieser Fachschritt die
+dreiwertige Nahtlosigkeitsentscheidung selbst besitzt, überspringen Texturen
+den generischen `tileability`-Schritt.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 15 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 16 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 16 — Texture/Material Editor
+→ Prompt 17 — Nature/Tree Editor
 ```
 
 Danach immer genau:
@@ -194,8 +206,8 @@ aktive Wizard Engine trennt die generische RHF-Navigation und Persistenz von
 einer deklarativen, produktspezifischen Flow-Definition. Sie bietet
 Zod-Validierung, sichtbaren Fortschritt, Dirty-/Autosave-Status, exaktes Resume
 und eine technische Zusammenfassung. Der stabile Einstieg lautet
-`Projekt → Hauptkategorie/Untertyp → Basisprofil → Character- oder
-Moving-Object-Details, falls relevant → Capability-Schritte`.
+`Projekt → Hauptkategorie/Untertyp → Basisprofil → Character-, Moving-Object-
+oder Texture-Details, falls relevant → Capability-Schritte`.
 Der Basisprofil-Schritt zeigt wirksame Werte mit Quelle und Sperrstatus,
 normalisiert entsperrte Abweichungen zu minimalen Draft-Overrides und bietet
 bei Locks einen bewussten Wechsel, ein Duplikat oder eine neue Familie an.
@@ -216,6 +228,15 @@ Rohwerte, Autosave und exaktes Resume umfassen auch beide Moving-Object-
 Editoren; Zusammenfassung und Dashboard zeigen Klasse, Bewegung, Standfläche,
 Anker, Richtungen nur bei `directional`, Sequenzen mit Frames, Material und
 Zustand.
+Texture-Antworten nutzen dieselbe wirksame Base→Category→Asset-Auflösung und
+werden nur als nicht redundante lokale Abweichungen gespeichert. Ein
+Basiswechsel erhält die Fachwerte, ein Klassifikationswechsel bereinigt sie;
+Explicit Clear löst geerbte Kategorie-/Assetprovenienz und materialisiert die
+übrigen wirksamen Fach- und Technikwerte relativ zur Base. Mount, Profil-
+Hydration und Resume bleiben schreibfrei, gültige Nutzeränderungen nutzen den
+normalen Autosave. Zusammenfassung und Dashboard zeigen Material, Einsatz,
+Nahtlosigkeit, Tilegröße, Struktur, Zustand, Oberfläche, Feuchtigkeit,
+Vereisung und Licht, soweit tatsächlich gesetzt und relevant.
 Prompt-Erzeugung und Output-Flächen folgen erst in ihren späteren Phasen.
 
 ## Legacy-V1 lokal prüfen
@@ -283,6 +304,12 @@ Mechanik-, Material-, Zustands-, Licht- und Schattenoptionen sowie die
 kanonische Sequenzreihenfolge und zentralen Frame-Defaults. Die aus dem
 Untertyp abgeleitete Objektklasse verhindert widersprüchliche Klassifikation.
 
+Der öffentliche Texture-Katalog unter `src/domain/textures/` bündelt die
+readonly Material-, Einsatz-, Struktur-, Zustands-, Oberflächen-,
+Feuchtigkeits-, Vereisungs-, Licht- und Orientierungswerte. Die pure
+Untertypabbildung liefert den Materialtyp für UI und Schema-Prüfung, ohne ihn
+bei Hydration als Default in bestehende Daten zu schreiben.
+
 Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
 Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
 werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
@@ -295,6 +322,12 @@ die Objekthöhe auf 16–2048 px und jede eindeutige `animationSequences`-Sequen
 auf 1–16 Frames. Die bisherigen Felder `animationType` und
 `framesPerDirection` bleiben als schreibfreier Lesepfad erhalten; neue
 Moving-Object-Projektionen schreiben nur das kanonische Sequenzmodell.
+Das strikt additive `TextureAnswersSchema` hält die bisherigen Felder
+`usage`, `seamless`, `orientation`, `structure`, `condition`,
+`subjectDescription` und `extraDetails` lesbar und ergänzt Materialtyp,
+Oberfläche, Feuchtigkeit, Vereisung und Licht. Fehlende Werte bleiben fehlend;
+ein vorhandener Materialtyp muss zum Texture-Untertyp passen. `tileSize` und
+alle Figuren-/Richtungsdaten bleiben außerhalb dieses Fachschemas.
 
 Die öffentliche Profilauflösung unter `src/domain/profiles/` führt validierte
 Base-, Kategorie- und Assetprofile zusammen. Sie setzt Locks durch, meldet
@@ -330,6 +363,9 @@ und bleibt bei bestehenden Ein-Aktions-Daten abwärtslesbar. Moving-Object-
 Profile zeigen zusätzlich die tatsächliche Objektklasse, Bewegung, Standfläche,
 Anker, capability-gesteuerte Richtungen, Sequenz-/Frame-Paare, Material und
 Zustand; auch hier bleibt die alte Ein-Sequenz-Repräsentation lesbar.
+Texture-Profile zeigen die tatsächlich aufgelösten Material- und
+Oberflächenfakten einschließlich der zentralen wirksamen Tilegröße; sie leiten
+weder Richtungs- noch Figurenfakten aus bloßen Capabilities ab.
 
 Die Profilbibliothek unter `src/features/profiles/` durchsucht und filtert
 Assetprofile, gruppiert sie wahlweise nach Kategorie oder ihrem neu
@@ -376,6 +412,12 @@ Kategorie-/Assetverknüpfungen gelöst und alle übrigen wirksamen Fach- und
 Technikwerte relativ zur Base materialisiert. Dadurch stellt ein Resume den
 entfernten Wert nicht wieder her.
 
+Der Texture-Zweig verwendet denselben Vererbungs- und Detach-Vertrag für den
+`textureDetails`-Schritt. Die explizite Nahtlosigkeitsauswahl bewahrt auch
+`false` als fachliche Entscheidung; „nicht festgelegt“ bleibt dagegen
+`undefined`. Die zentrale Tilegröße wird nur über technische Overrides
+aufgelöst, während Texture-Fachantworten minimal projiziert werden.
+
 Der spezialisierte Character-/NPC-Editor unter
 `src/features/character-editor/` ist als eigener Wizard-Schritt direkt nach
 dem Basisprofil eingebunden. Er rendert nur Character-Fachfelder und blendet
@@ -395,6 +437,15 @@ verwaltet eine RHF-Map, die deterministisch in eindeutige
 Richtung bleibt ein eigener Capability-Schritt und erscheint etwa beim Karren,
 nicht jedoch beim animierten `floatingCrystal`. Beide Flächen nutzen denselben
 Rohzustand, Autosave- und schreibfreien Resume-Pfad wie der Wizard-Core.
+
+Der spezialisierte Texture-/Material-Editor unter
+`src/features/texture-editor/` ist im eigenen `textureDetails`-Schritt direkt
+nach der Basisprofilwahl eingebunden. `TextureMaterialEditor` zeigt den aus
+dem Untertyp abgeleiteten Materialtyp und die wirksame technische Tilegröße
+read-only, erfasst ausschließlich Texture-Fachwerte in React Hook Form und
+nutzt den gemeinsamen Rohzustands-, Autosave- und schreibfreien Resume-Pfad.
+Nahtlosigkeit ist bewusst dreiwertig; der Holz-Untertyp zeigt zusätzliche
+Materialhinweise, ohne Sonderdaten oder Richtungslogik einzuführen.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

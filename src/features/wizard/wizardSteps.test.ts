@@ -3,6 +3,7 @@ import {
   WIZARD_CORE_STEPS,
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
+  WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   WizardAnimationStepSchema,
   WizardBaseProfileStepSchema,
   WizardCategoryStepSchema,
@@ -10,6 +11,7 @@ import {
   WizardDirectionStepSchema,
   WizardMovingObjectDetailsStepSchema,
   WizardProjectStepSchema,
+  WizardTextureDetailsStepSchema,
   WizardTileabilityStepSchema,
   getWizardCoreFallbackStepId,
   getWizardCoreStep,
@@ -43,6 +45,7 @@ describe("wizard core steps", () => {
       "baseProfile",
       "characterDetails",
       "movingObjectDetails",
+      "textureDetails",
       "directions",
       "animation",
       "tileability"
@@ -66,6 +69,13 @@ describe("wizard core steps", () => {
       route: "wizard/editor",
       title: "Objekt und Bewegung"
     });
+    expect(getWizardCoreStep("textureDetails").fieldPaths).toBe(
+      WIZARD_TEXTURE_DETAIL_FIELD_PATHS
+    );
+    expect(getWizardCoreStep("textureDetails")).toMatchObject({
+      route: "wizard/editor",
+      title: "Textur und Material"
+    });
     expect(getWizardCoreStep("directions").fieldPaths).toEqual(["directionCount"]);
     expect(getWizardCoreStep("animation").fieldPaths).toEqual([
       "animationAction",
@@ -73,16 +83,34 @@ describe("wizard core steps", () => {
       "characterAnimationFrames",
       "movingObjectAnimationFrames"
     ]);
-    expect(getWizardCoreStep("tileability").fieldPaths).toEqual([
-      "seamless",
-      "tileableAxes"
-    ]);
+    expect(getWizardCoreStep("tileability").fieldPaths).toEqual(["tileableAxes"]);
     expect(getWizardCoreStepIndex("project")).toBe(0);
     expect(getWizardCoreStepIndex("category")).toBe(1);
     expect(getWizardCoreStepIndex("baseProfile")).toBe(2);
     expect(getWizardCoreStepIndex("characterDetails")).toBe(3);
     expect(getWizardCoreStepIndex("movingObjectDetails")).toBe(4);
-    expect(getWizardCoreStepIndex("directions")).toBe(5);
+    expect(getWizardCoreStepIndex("textureDetails")).toBe(5);
+    expect(getWizardCoreStepIndex("directions")).toBe(6);
+  });
+
+  it("owns the complete Texture answer boundary without duplicating technical tile size", () => {
+    expect(WIZARD_TEXTURE_DETAIL_FIELD_PATHS).toEqual([
+      "textureMaterialType",
+      "textureUsage",
+      "textureDescription",
+      "seamless",
+      "textureStructure",
+      "textureCondition",
+      "textureSurface",
+      "textureMoisture",
+      "textureIcing",
+      "textureLighting",
+      "textureOrientation",
+      "textureExtraDetails"
+    ]);
+    expect(WIZARD_TEXTURE_DETAIL_FIELD_PATHS).not.toContain("tileSize");
+    expect(WIZARD_TEXTURE_DETAIL_FIELD_PATHS).not.toContain("directionCount");
+    expect(WIZARD_TEXTURE_DETAIL_FIELD_PATHS).not.toContain("animationType");
   });
 
   it("declares the complete moving-object detail boundary without direction or animation fields", () => {
@@ -378,6 +406,54 @@ describe("wizard core steps", () => {
       WizardAnimationStepSchema.safeParse({
         ...crystal,
         movingObjectAnimationFrames: { pulse: 17 }
+      }).success
+    ).toBe(false);
+  });
+
+  it("validates Texture details against their material subtype without directions or animation", () => {
+    const wood = {
+      projectName: "Eichenplanken",
+      category: "texture" as const,
+      subtype: "wood" as const,
+      ...technicalValues,
+      textureMaterialType: "wood" as const,
+      textureUsage: "floor" as const,
+      textureDescription: "Breite Eichenplanken mit ruhiger Maserung",
+      seamless: true,
+      textureStructure: "medium" as const,
+      textureCondition: "old" as const,
+      textureSurface: "planked" as const,
+      textureMoisture: "dry" as const,
+      textureIcing: "none" as const,
+      textureLighting: "neutralEven" as const,
+      textureOrientation: "grainAligned" as const
+    };
+
+    expect(WizardTextureDetailsStepSchema.safeParse(wood).success).toBe(true);
+    expect(
+      WizardTextureDetailsStepSchema.safeParse({
+        ...wood,
+        textureMaterialType: "stone"
+      }).success
+    ).toBe(false);
+    expect(
+      WizardTextureDetailsStepSchema.safeParse({
+        ...wood,
+        category: "character",
+        subtype: "npc",
+        characterHeight: 80
+      }).success
+    ).toBe(false);
+    expect(
+      WizardTextureDetailsStepSchema.safeParse({
+        ...wood,
+        directionCount: 8
+      }).success
+    ).toBe(false);
+    expect(
+      WizardTextureDetailsStepSchema.safeParse({
+        ...wood,
+        animationType: "glow"
       }).success
     ).toBe(false);
   });

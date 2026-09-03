@@ -352,14 +352,14 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 15
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 16
 
 - `project`, `category`/`subtype`, `baseProfile`, `characterDetails`,
-  `movingObjectDetails` und die Capability-Schritte
+  `movingObjectDetails`, `textureDetails` und die Capability-Schritte
   sind stabil und deklarativ konfiguriert; jeder besitzt Zod-Schema und
   RHF-Feldpfade. Die Reihenfolge ist
-  `project → category/subtype → baseProfile → characterDetails oder
-  movingObjectDetails, falls relevant → Capability-Schritte`.
+  `project → category/subtype → baseProfile → characterDetails,
+  movingObjectDetails oder textureDetails, falls relevant → Capability-Schritte`.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
   Draft-Mapping, Zusammenfassung und optionale `isApplicable`-Prädikate bereit
@@ -467,7 +467,31 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   animierte `floatingCrystal` bietet Sequenzen, aber keine Richtungsfrage.
   Zusammenfassung und Dashboard zeigen Klasse, Bewegung, Standfläche, Anker,
   capability-gültige Richtungen, Sequenzen mit Frames, Material und Zustand.
-- Prompt 16 ergänzt als nächste Phase den Texture-/Material-Editor. Prompt 15
+- Der Texture-/Material-Editor ist ein eigener Fachschritt direkt nach der
+  Basisprofilwahl und erscheint nur für `texture`. Er erfasst Materialtyp,
+  Einsatz, Beschreibung, `seamless`, Struktur, Zustand, Oberfläche,
+  Feuchtigkeit, Vereisung, Licht, Orientierung und Zusatzdetails. Der
+  Holz-Untertyp zeigt materialbezogene Produktionshinweise.
+- Materialtyp und wirksame Tilegröße erscheinen read-only. Der Materialtyp
+  wird aus dem Untertyp abgeleitet; `tileSize` bleibt ein sperrbarer technischer
+  Wert der Base→Category→lokal-Kette und wird nicht in `TextureAnswers`
+  dupliziert. `seamless` unterscheidet bewusst `undefined`, `true` und `false`.
+- Texture-Felder bleiben vollständig in RHF und nutzen dieselbe
+  Draft↔Form-Projektion, den transienten Rohzustand, Dirty-Erkennung,
+  300-ms-Autosave und exaktes Resume. Hydration und Resume schreiben nicht;
+  Basiswechsel erhalten die Fachwerte, Klassifikationswechsel bereinigen sie.
+- Profilauflösung und Draft-Mapping führen Texture-Fachwerte
+  Base→Category→Asset zusammen und speichern nur nicht redundante lokale
+  Abweichungen. Explicit Clear löst Kategorie-/Assetprovenienz und
+  materialisiert alle übrigen wirksamen Fach- und Technikwerte relativ zur
+  Base, damit entfernte Defaults beim Resume nicht wiederkehren.
+- Zusammenfassung und Dashboard zeigen Materialtyp, Einsatz, Nahtlosigkeit,
+  zentrale Tilegröße, Struktur, Zustand, Oberfläche, Orientierung,
+  Feuchtigkeit, Vereisung und Licht nur als tatsächliche Texture-Fakten.
+  Texture-Flows enthalten keine Figuren-, Kleidungs-, Bewegungs- oder
+  Richtungsfragen und überspringen den generischen `tileability`-Schritt, weil
+  `textureDetails` die dreiwertige Nahtlosigkeit bereits besitzt.
+- Prompt 17 ergänzt als nächste Phase den Nature-/Tree-Editor. Prompt 16
   enthält weder Prompt Engine beziehungsweise Review-/Output-Erzeugung noch
   In-place-Mutation oder Reparenting einer bestehenden Basisfamilie.
 
@@ -783,6 +807,36 @@ Umgesetzt seit Prompt 15:
 - neutrale oder kontextuelle Beleuchtung
 - keine Figuren- oder Richtungsfragen
 
+Umgesetzt seit Prompt 16:
+
+- `src/domain/textures/` veröffentlicht stabile readonly Kataloge für
+  Materialtyp, Einsatz, Orientierung, Struktur, Zustand, Oberflächenaufbau,
+  Feuchtigkeit, Vereisung und Licht sowie die pure Abbildung vom Texture-
+  Untertyp zum Materialtyp. Beim bloßen Lesen werden keine Defaults ergänzt.
+- `TextureAnswersSchema` erweitert den bestehenden Schema-V2-Vertrag strikt
+  und additiv. Die bisherigen Felder bleiben lesbar; ein vorhandener
+  `materialType` muss zum Untertyp passen. `tileSize`, Figuren-, Kleidungs-,
+  Bewegungs- und Richtungsdaten sind keine Texture-Fachantworten.
+- `src/features/texture-editor/` rendert `TextureMaterialEditor` ausschließlich
+  im eigenen `textureDetails`-Schritt nach der Basisprofilwahl. Der Materialtyp
+  und die wirksame technische Tilegröße sind read-only, während alle
+  Fachfragen React Hook Form gehören.
+- `seamless` ist dreiwertig: „nicht festgelegt“ bleibt `undefined`, „ja“ wird
+  `true`, „nein“ wird als bewusstes `false` erhalten. Der Holzfall erhält
+  zusätzliche Hinweise zu Art, Maserung, Planken, Knoten, Schnitt, Lack und
+  Alter, ohne ein paralleles Datenschema zu erzeugen. Der generische
+  `tileability`-Schritt wird für Texturen nicht zusätzlich gerendert.
+- Texture-Antworten werden Base→Category→Asset aufgelöst und nur minimal lokal
+  projiziert. Basiswechsel erhalten sie, Klassifikationswechsel entfernen sie;
+  Explicit Clear löst die Elternprovenienz und materialisiert die übrigen
+  wirksamen Fach- und Technikwerte relativ zur Base.
+- Rohzustand, Dirty State, Autosave, schreibfreie Hydration und exaktes Resume
+  gelten auch für Texture-Felder. Zusammenfassung und Dashboard zeigen
+  ausschließlich tatsächlich gesetzte Material-, Kachel- und
+  Oberflächenfakten.
+- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
+  Prompts.
+
 ## 13.5 Nature / Tree
 
 - Pflanzentyp
@@ -945,6 +999,10 @@ Mit Vitest:
 - Moving-Object-Antwortgrenzen, eindeutige Sequenzlisten und Legacy-Lesbarkeit
 - Moving-Object-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
 - Karren als directional gegen animierten `floatingCrystal` ohne Richtungen
+- Texture-Kataloge, additive Antwortgrenzen und Untertyp-/Materialkonsistenz
+- Texture-Vererbung, minimaler Draft-Roundtrip, dreiwertiges `seamless` und
+  Explicit-Clear-Detach
+- technische Tilegröße ohne Duplikation in `TextureAnswers`
 - Migrationslogik
 - Promptmodule
 - Canvas-/Frame-Metriken
@@ -964,6 +1022,9 @@ Mit React Testing Library + user-event:
 - Moving-Object-Detailstep mit Footprint, Anker, Mechanik, Material und Zustand
 - mehrere Moving-Object-Sequenzen mit jeweils 1–16 Frames
 - Moving-Object-Autosave, schreibfreie Hydration/Resume sowie Summary/Dashboard
+- Texture-Detailstep mit Holzfall, Oberfläche, Feuchtigkeit, Vereisung und Licht
+- Texture-Autosave, schreibfreie Hydration/Resume, technischer Tilegröße sowie
+  Summary-/Dashboard-Fakten ohne Figuren- oder Richtungsfragen
 - Theme-Wechsel
 - Profil laden/speichern
 - Lock-Konfliktworkflow

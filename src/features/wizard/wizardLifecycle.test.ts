@@ -572,6 +572,68 @@ describe("wizard draft lifecycle", () => {
     });
   });
 
+  it("resumes the dedicated Texture-details step and rejects duplicate tileability routing", () => {
+    const library = createProfileLibraryFixture();
+    const base = library.baseProfiles[0];
+    if (!base) throw new Error("Expected a Base-profile fixture.");
+    const textureDraft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_texture_details",
+      projectName: "Eichenplanken",
+      route: "wizard/editor",
+      currentStep: "textureDetails",
+      baseProfileId: base.id,
+      category: "texture",
+      subtype: "wood",
+      answers: {
+        materialType: "wood",
+        seamless: true,
+        surface: "planked"
+      },
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+
+    expect(resolveWizardCoreStep(textureDraft)).toEqual({
+      stepId: "textureDetails",
+      usedFallback: false
+    });
+    expect(
+      validateWizardResume({
+        requestedDraftId: textureDraft.draftId,
+        draft: textureDraft,
+        profileLibrary: library
+      })
+    ).toEqual({ status: "ready", draft: textureDraft, notices: [] });
+
+    const obsoleteTileabilityDraft = parseWizardDraft({
+      ...textureDraft,
+      currentStep: "tileability"
+    });
+    expect(resolveWizardCoreStep(obsoleteTileabilityDraft)).toEqual({
+      stepId: "textureDetails",
+      usedFallback: true,
+      unknownStep: "tileability"
+    });
+    expect(
+      validateWizardResume({
+        requestedDraftId: obsoleteTileabilityDraft.draftId,
+        draft: obsoleteTileabilityDraft,
+        profileLibrary: library
+      })
+    ).toMatchObject({
+      status: "ready",
+      draft: { currentStep: "textureDetails" },
+      notices: [
+        {
+          unknownStep: "tileability",
+          fallbackStep: "textureDetails"
+        }
+      ]
+    });
+  });
+
   it("rejects malformed resume payloads before lifecycle handling", () => {
     const result = validateWizardResume({
       requestedDraftId: draftId,

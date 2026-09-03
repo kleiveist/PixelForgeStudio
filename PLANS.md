@@ -4,10 +4,37 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** keine — Prompt 15 ist abgeschlossen
-- **Nächste Aufgabe:** Prompt 16 — Texture/Material Editor
-- **Zuletzt abgeschlossen:** Prompt 15 — Moving Object Editor
+- **Aktuelle Aufgabe:** keine — Prompt 16 abgeschlossen
+- **Nächste Aufgabe:** Prompt 17 — Nature/Tree Editor
+- **Zuletzt abgeschlossen:** Prompt 16 — Texture/Material Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 16
+
+1. Eine frameworkfreie Texture-/Material-Domain mit stabilen Katalogen für
+   Materialart, Verwendung, Orientierung, Struktur, Zustand, Oberfläche,
+   Feuchtigkeit/Vereisung und Licht anlegen. Das bestehende strikte
+   `TextureAnswersSchema` wird additiv erweitert; vorhandene Schema-V2-Felder
+   bleiben ohne schreibende Migration lesbar.
+2. Tilegröße ausschließlich als zentralen, sperr- und vererbbaren technischen
+   Wert der Base→Category→Asset-Kette behandeln. Der Textur-Editor zeigt den
+   wirksamen Wert, erzeugt aber kein paralleles Texture-Antwortfeld.
+3. Einen eigenständigen responsiven `texture-editor` direkt nach der
+   Basisprofilwahl integrieren. Er enthält nur Materialfragen einschließlich
+   einer bewusst dreiwertigen Seamless-Auswahl; Character-, Moving-Object-,
+   Kleidungs-, Animations- und Richtungsfelder bleiben ausgeschlossen.
+4. Sämtliche Texture-Werte durch Form-Rohsnapshot, minimale
+   Base→Category→Asset-Projektion, Autosave, Profilstart und schreibfreies
+   Resume führen. Basiswechsel erhalten Fachantworten,
+   Klassifikationswechsel bereinigen sie und Explicit Clear verhindert das
+   Wiederkehren geerbter Werte.
+5. Summary und Dashboard um tatsächlich konfigurierte Material-, Einsatz-,
+   Seamless-, Struktur-, Zustands-, Oberflächen-, Feuchtigkeits- und
+   Lichtfakten ergänzen. Der Holz-End-to-End-Fall darf ausschließlich
+   relevante Texture-Daten erzeugen.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle- und RTL-Tests sowie die
+   Dokumentation ergänzen. Danach Vollverifikation, Abschlussaudit und den
+   separaten Prompt-16-Commit ausführen; Prompt 17 bleibt unangetastet.
 
 ## Ausführungsplan Prompt 15
 
@@ -706,6 +733,52 @@
 - Prompt Engine, Review-/Output-Workspace und alle Editoren ab Prompt 17
   bleiben späteren, getrennt zu committenden Phasen vorbehalten.
 
+## Ergebnis Prompt 16
+
+1. Eine öffentliche, frameworkfreie Texture-Domain definiert stabile Kataloge
+   für Materialart, Einsatz, Orientierung, Struktur, Zustand, Oberfläche,
+   Feuchtigkeit, Vereisung und Licht. Das additive strikte Schema hält alle
+   bisherigen V2-Texturdaten ohne schreibende Defaults lesbar und prüft die
+   Übereinstimmung von Materialtyp und Untertyp.
+2. Der eigene responsive Schritt `Textur und Material` folgt direkt auf die
+   Basisprofilwahl. Er zeigt den aus dem Untertyp abgeleiteten Materialtyp und
+   die zentral geerbte Tilegröße read-only; Nahtlosigkeit bleibt ausdrücklich
+   dreiwertig (`nicht festgelegt`, `ja`, `nein`).
+3. Texture besitzt den Seamless-Wert ausschließlich im Spezialeditor und
+   überspringt den generischen `tileability`-Schritt. Richtungs-, Animations-,
+   Bewegungs-, Kleidungs- und Figurenfelder erscheinen nicht; ältere Texture-
+   Drafts auf `tileability` werden beim Resume gezielt zu `textureDetails`
+   weitergeführt.
+4. Sämtliche Texture-Werte laufen durch Base→Category→Asset-Auflösung,
+   RHF-Rohsnapshot, minimale Draft-Projektion, Autosave und schreibfreies
+   Resume. Basiswechsel erhalten wirksame Fachdaten, Klassifikationswechsel
+   entfernen sie und Explicit Clear löst geerbte Provenienz zuverlässig.
+5. Wizard-Zusammenfassung und Dashboard zeigen nur tatsächlich konfigurierte
+   Material-, Einsatz-, Seamless-, Struktur-, Zustands-, Oberflächen-,
+   Feuchtigkeits-, Vereisungs-, Orientierungs- und Lichtfakten sowie die
+   zentrale Tilegröße.
+6. Domain-, Schema-, Routing-, Lifecycle-, Session-, Dashboard- und RTL-Tests
+   decken insbesondere das Holzprofil, Vererbung, Detach, Basiswechsel,
+   Bereinigung, Autosave, Resume und alte V2-Texturdaten ab.
+
+## Übergabe an Prompt 17
+
+- Ergänze ausschließlich den Nature-/Tree-Editor aus
+  `docs/CODEX-V2-PROMPTS.md`: Pflanzentyp und Art, Klimazone, Saison, Stamm,
+  Krone, Wurzeln, Moos, Pilze, Schnee, Ranken, Footprint beziehungsweise Basis,
+  Varianten sowie optional eine Windanimation.
+- Ein normaler Baum bleibt nicht-directional. Eine optionale Windanimation darf
+  den Animationsschritt aktivieren, aber niemals automatisch einen
+  Richtungsschritt erzeugen.
+- Zentrale technische Werte bleiben in der Base→Category→Asset-Kette und
+  werden im Nature-Editor nicht dupliziert. Neue Fachwerte müssen vollständig
+  durch minimale Vererbung, Explicit Clear, Basis-/Klassifikationswechsel,
+  Rohsnapshot, Autosave, schreibfreies Resume, Summary und Dashboard laufen.
+- Nutze mindestens einen vollständigen Baum-Flow als End-to-End-Fall und prüfe,
+  dass weder Texture-, Character- noch Moving-Object-Daten fortgeführt werden.
+- Static-Object-Editor, Prompt Engine, Review und Output bleiben späteren,
+  getrennt zu committenden Phasen vorbehalten.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -748,7 +821,7 @@
 | 12 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | abgeschlossen |
 | 13 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | abgeschlossen |
 | 14 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | abgeschlossen |
-| 15 | Textur-/Materialeditor | Material, Seamless, Oberfläche | offen |
+| 15 | Textur-/Materialeditor | Material, Seamless, Oberfläche | abgeschlossen |
 | 16 | Natur-/Baumeditor | Klima, Saison, Krone, Stamm etc. | offen |
 | 17 | Statische Objekte | Objektparameter ohne unnötige Bewegung | offen |
 | 18 | Gebäudeeditor | Architektur und Mappingparameter | offen |

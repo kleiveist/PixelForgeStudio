@@ -123,6 +123,17 @@ export interface WizardRawCoreFormValues {
       Record<NonNullable<MovingObjectAnswers["animationType"]>, number>
     >
   > | undefined;
+  readonly textureMaterialType?: TextureAnswers["materialType"];
+  readonly textureUsage?: TextureAnswers["usage"];
+  readonly textureDescription?: TextureAnswers["subjectDescription"];
+  readonly textureStructure?: TextureAnswers["structure"];
+  readonly textureCondition?: TextureAnswers["condition"];
+  readonly textureSurface?: TextureAnswers["surface"];
+  readonly textureMoisture?: TextureAnswers["moisture"];
+  readonly textureIcing?: TextureAnswers["icing"];
+  readonly textureLighting?: TextureAnswers["lighting"];
+  readonly textureOrientation?: TextureAnswers["orientation"];
+  readonly textureExtraDetails?: TextureAnswers["extraDetails"];
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:

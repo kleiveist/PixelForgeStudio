@@ -25,6 +25,17 @@ import {
   MOVING_OBJECT_MOVEMENT_TYPE_IDS,
   MOVING_OBJECT_SHADOW_MODE_IDS
 } from "../domain/moving-objects";
+import {
+  TEXTURE_CONDITION_IDS,
+  TEXTURE_ICING_IDS,
+  TEXTURE_LIGHTING_IDS,
+  TEXTURE_MATERIAL_TYPE_IDS,
+  TEXTURE_MOISTURE_IDS,
+  TEXTURE_ORIENTATION_IDS,
+  TEXTURE_STRUCTURE_IDS,
+  TEXTURE_SURFACE_IDS,
+  TEXTURE_USAGE_IDS
+} from "../domain/textures";
 import { validateCategoryDataCapabilities } from "./categoryData.refinement";
 import { DirectionCountSchema, FootprintSchema } from "./common.schema";
 
@@ -177,15 +188,16 @@ export const StaticObjectAnswersSchema = z
 export const TextureAnswersSchema = z
   .strictObject({
     ...sharedAnswersShape,
-    usage: z.enum(["floor", "wall", "roof", "surface", "clothing", "decor"]).optional(),
+    materialType: z.enum(TEXTURE_MATERIAL_TYPE_IDS).optional(),
+    usage: z.enum(TEXTURE_USAGE_IDS).optional(),
     seamless: z.boolean().optional(),
-    orientation: z
-      .enum(["horizontal", "vertical", "radial", "unordered", "grainAligned"])
-      .optional(),
-    structure: z.enum(["fine", "medium", "coarse"]).optional(),
-    condition: z
-      .enum(["new", "polished", "rough", "old", "wet", "frosted", "damaged", "dirty"])
-      .optional()
+    orientation: z.enum(TEXTURE_ORIENTATION_IDS).optional(),
+    structure: z.enum(TEXTURE_STRUCTURE_IDS).optional(),
+    condition: z.enum(TEXTURE_CONDITION_IDS).optional(),
+    surface: z.enum(TEXTURE_SURFACE_IDS).optional(),
+    moisture: z.enum(TEXTURE_MOISTURE_IDS).optional(),
+    icing: z.enum(TEXTURE_ICING_IDS).optional(),
+    lighting: z.enum(TEXTURE_LIGHTING_IDS).optional()
   })
   .readonly();
 

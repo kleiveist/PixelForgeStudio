@@ -31,6 +31,7 @@ import {
   type MovingObjectAnimationSequenceConfig,
   type MovingObjectAnswers,
   type ProfileLibrary,
+  type TextureAnswers,
   type WizardDraft
 } from "../../schemas";
 import { resolveWizardDraftSnapshot } from "./wizardLifecycle";
@@ -117,6 +118,21 @@ const MOVING_OBJECT_CONTROLLED_ANSWER_KEYS = new Set<string>([
   "directionCount"
 ]);
 
+const TEXTURE_CONTROLLED_ANSWER_KEYS = new Set<string>([
+  "materialType",
+  "usage",
+  "subjectDescription",
+  "seamless",
+  "structure",
+  "condition",
+  "surface",
+  "moisture",
+  "icing",
+  "lighting",
+  "orientation",
+  "extraDetails"
+]);
+
 const MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS = Object.freeze([
   ["movingObjectClass", "objectClass"],
   ["movingObjectPurpose", "purpose"],
@@ -135,6 +151,24 @@ const MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS = Object.freeze([
 ] as const satisfies readonly (readonly [
   keyof WizardCoreFormValues,
   keyof MovingObjectAnswers
+])[]);
+
+const TEXTURE_FIELD_MAPPINGS = Object.freeze([
+  ["textureMaterialType", "materialType"],
+  ["textureUsage", "usage"],
+  ["textureDescription", "subjectDescription"],
+  ["seamless", "seamless"],
+  ["textureStructure", "structure"],
+  ["textureCondition", "condition"],
+  ["textureSurface", "surface"],
+  ["textureMoisture", "moisture"],
+  ["textureIcing", "icing"],
+  ["textureLighting", "lighting"],
+  ["textureOrientation", "orientation"],
+  ["textureExtraDetails", "extraDetails"]
+] as const satisfies readonly (readonly [
+  keyof WizardCoreFormValues,
+  keyof TextureAnswers
 ])[]);
 
 const PROFILE_VALUE_KEYS = Object.freeze([
@@ -264,12 +298,14 @@ export function wizardStepIsApplicable(
       return selection?.category === "character";
     case "movingObjectDetails":
       return selection?.category === "movingObject";
+    case "textureDetails":
+      return selection?.category === "texture";
     case "directions":
       return capabilities.directional;
     case "animation":
       return capabilities.animated;
     case "tileability":
-      return capabilities.tileable;
+      return capabilities.tileable && selection?.category !== "texture";
   }
 }
 
@@ -514,6 +550,31 @@ function clearsInheritedMovingObjectDefault(
   return inheritedAnimations !== undefined && selectedAnimations === undefined;
 }
 
+function textureFormValue(
+  values: WizardCoreFormValues,
+  formField: keyof WizardCoreFormValues
+): unknown {
+  return values[formField];
+}
+
+function textureAnswerValue(
+  answers: TextureAnswers,
+  answerField: keyof TextureAnswers
+): unknown {
+  return answers[answerField];
+}
+
+function clearsInheritedTextureDefault(
+  values: WizardCoreFormValues,
+  defaults: TextureAnswers
+): boolean {
+  return TEXTURE_FIELD_MAPPINGS.some(
+    ([formField, answerField]) =>
+      textureAnswerValue(defaults, answerField) !== undefined &&
+      textureFormValue(values, formField) === undefined
+  );
+}
+
 export function createWizardCoreFormValues(
   draft: WizardDraft,
   categoryHint: AssetCategory | null = null,
@@ -524,6 +585,7 @@ export function createWizardCoreFormValues(
   };
   let resolvedCharacterAnswers: CharacterAnswers | undefined;
   let resolvedMovingObjectAnswers: MovingObjectAnswers | undefined;
+  let resolvedTextureAnswers: TextureAnswers | undefined;
 
   if (!("category" in draft)) {
     if (categoryHint !== null) values.category = categoryHint;
@@ -554,6 +616,8 @@ export function createWizardCoreFormValues(
       ) {
         resolvedMovingObjectAnswers =
           resolution.profile.categoryData.answers;
+      } else if (resolution.profile.categoryData.category === "texture") {
+        resolvedTextureAnswers = resolution.profile.categoryData.answers;
       }
     }
   }
@@ -600,7 +664,15 @@ export function createWizardCoreFormValues(
       addDefinedValue(values, "animationType", draft.answers.animationType);
       break;
     case "texture":
-      addDefinedValue(values, "seamless", draft.answers.seamless);
+      for (const [formField, answerField] of TEXTURE_FIELD_MAPPINGS) {
+        const value = textureAnswerValue(
+          resolvedTextureAnswers ?? draft.answers,
+          answerField
+        );
+        if (value !== undefined) {
+          (values as Record<string, unknown>)[formField] = value;
+        }
+      }
       break;
     case "nature":
       addDefinedValue(values, "animationType", draft.answers.animationType);
@@ -756,7 +828,8 @@ function controlledAnswers(
   selection: AssetSelection,
   capabilities: AssetCapabilities,
   inheritedCharacterDefaults: CharacterAnswers | undefined,
-  inheritedMovingObjectDefaults: MovingObjectAnswers | undefined
+  inheritedMovingObjectDefaults: MovingObjectAnswers | undefined,
+  inheritedTextureDefaults: TextureAnswers | undefined
 ): Record<string, unknown> {
   const sameSelection = selectionsMatch(draft, selection);
   if (!sameSelection) return {};
@@ -770,6 +843,8 @@ function controlledAnswers(
           !CHARACTER_CONTROLLED_ANSWER_KEYS.has(key)) &&
         (selection.category !== "movingObject" ||
           !MOVING_OBJECT_CONTROLLED_ANSWER_KEYS.has(key)) &&
+        (selection.category !== "texture" ||
+          !TEXTURE_CONTROLLED_ANSWER_KEYS.has(key)) &&
         value !== undefined
     )
   );
@@ -912,8 +987,19 @@ function controlledAnswers(
       }
       break;
     case "texture":
-      if (capabilities.tileable && values.seamless !== undefined) {
-        answers.seamless = values.seamless;
+      for (const [formField, answerField] of TEXTURE_FIELD_MAPPINGS) {
+        const value = textureFormValue(values, formField);
+        if (
+          value !== undefined &&
+          !optionalJsonValuesEqual(
+            value,
+            inheritedTextureDefaults === undefined
+              ? undefined
+              : textureAnswerValue(inheritedTextureDefaults, answerField)
+          )
+        ) {
+          answers[answerField] = value;
+        }
       }
       break;
     case "building":
@@ -962,6 +1048,7 @@ function selectedDraftRoute(
   if (
     stepId === "characterDetails" ||
     stepId === "movingObjectDetails" ||
+    stepId === "textureDetails" ||
     stepId === "directions" ||
     stepId === "animation" ||
     stepId === "tileability"
@@ -1108,8 +1195,17 @@ export function updateWizardDraftFromCoreForm(
       input.values,
       linkedCategoryProfile.defaults
     );
+  const detachTextureCategoryProfile =
+    selection.category === "texture" &&
+    linkedCategoryProfile?.category === "texture" &&
+    clearsInheritedTextureDefault(
+      input.values,
+      linkedCategoryProfile.defaults
+    );
   const detachCategoryProfile =
-    detachCharacterCategoryProfile || detachMovingObjectCategoryProfile;
+    detachCharacterCategoryProfile ||
+    detachMovingObjectCategoryProfile ||
+    detachTextureCategoryProfile;
   const retainedProfileLinks =
     profileLinksCanBeRetained && !detachCategoryProfile;
 
@@ -1151,6 +1247,11 @@ export function updateWizardDraftFromCoreForm(
     retainedCategoryProfile?.category === "movingObject"
       ? retainedCategoryProfile.defaults
       : undefined;
+  const inheritedTextureDefaults =
+    selection.category === "texture" &&
+    retainedCategoryProfile?.category === "texture"
+      ? retainedCategoryProfile.defaults
+      : undefined;
   const common = {
     schemaVersion: 2,
     kind: "wizardDraft",
@@ -1176,7 +1277,8 @@ export function updateWizardDraftFromCoreForm(
       selection,
       capabilities,
       inheritedCharacterDefaults,
-      inheritedMovingObjectDefaults
+      inheritedMovingObjectDefaults,
+      inheritedTextureDefaults
     )
   } as const;
 

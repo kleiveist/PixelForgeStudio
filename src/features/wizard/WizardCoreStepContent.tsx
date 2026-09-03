@@ -10,6 +10,10 @@ import {
   getDefaultMovingObjectClass,
   type MovingObjectSubtype
 } from "../../domain/moving-objects";
+import {
+  getDefaultTextureMaterialType,
+  type TextureSubtype
+} from "../../domain/textures";
 import type { ProfileLibrary } from "../../schemas";
 import {
   CharacterAnimationEditor,
@@ -20,6 +24,7 @@ import {
   MovingObjectAnimationEditor,
   MovingObjectDetailsEditor
 } from "../moving-object-editor";
+import { TextureMaterialEditor } from "../texture-editor";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import {
   DASHBOARD_CATEGORIES,
@@ -41,6 +46,7 @@ import {
 import {
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
+  WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   getWizardCoreStep,
   type WizardCoreFieldPath,
   type WizardCoreFormValues,
@@ -97,12 +103,12 @@ const CLASSIFICATION_FIELDS = [
   "subtype",
   ...WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   ...WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
+  ...WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   "characterAnimationFrames",
   "movingObjectAnimationFrames",
   "directionCount",
   "animationAction",
   "animationType",
-  "seamless",
   "tileableAxes"
 ] as const satisfies readonly WizardCoreFieldPath[];
 
@@ -227,6 +233,14 @@ function CategoryStep({ draft, form }: CoreStepProps) {
         form.setValue(
           "movingObjectClass",
           getDefaultMovingObjectClass(nextSubtype as MovingObjectSubtype),
+          { shouldDirty: true, shouldTouch: true, shouldValidate: true }
+        );
+      }
+      const textureSubtypes: readonly string[] = ASSET_SUBTYPES.texture;
+      if (category === "texture" && textureSubtypes.includes(nextSubtype)) {
+        form.setValue(
+          "textureMaterialType",
+          getDefaultTextureMaterialType(nextSubtype as TextureSubtype),
           { shouldDirty: true, shouldTouch: true, shouldValidate: true }
         );
       }
@@ -587,6 +601,34 @@ function MovingObjectDetailsStep({ form }: CoreStepProps) {
   );
 }
 
+function TextureDetailsStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
+  const knownTextureSubtypes: readonly string[] = ASSET_SUBTYPES.texture;
+
+  if (
+    category !== "texture" ||
+    subtype === undefined ||
+    !knownTextureSubtypes.includes(subtype)
+  ) {
+    return (
+      <section className={styles.changeWarning} role="alert">
+        <strong>Texturprofil nicht verfügbar</strong>
+        <p>
+          Kehre zur Bildart zurück und wähle einen gültigen Material-Untertyp.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <TextureMaterialEditor
+      form={form}
+      subtype={subtype as TextureSubtype}
+    />
+  );
+}
+
 function AnimationSelect({
   form,
   options
@@ -676,17 +718,6 @@ function TileabilityStep({ form }: CoreStepProps) {
 
   return (
     <div className={styles.capabilityQuestions}>
-      {category === "texture" ? (
-        <label className={styles.checkOption}>
-          <input type="checkbox" {...form.register("seamless")} />
-          <span>
-            <strong>Nahtlos kachelbar</strong>
-            <small>
-              Gegenüberliegende Kanten wiederholen sich ohne sichtbare Naht.
-            </small>
-          </span>
-        </label>
-      ) : null}
       {category === "tileset" ? (
         <div className={styles.fieldGroup}>
           <label htmlFor="wizard-tileable-axes">Kachelbare Achsen</label>
@@ -750,6 +781,7 @@ const STEP_COMPONENTS = {
   baseProfile: BaseProfileStep,
   characterDetails: CharacterDetailsStep,
   movingObjectDetails: MovingObjectDetailsStep,
+  textureDetails: TextureDetailsStep,
   directions: DirectionsStep,
   animation: AnimationStep,
   tileability: TileabilityStep
@@ -788,6 +820,14 @@ export const WIZARD_CORE_FLOW = Object.freeze({
         values: WizardCoreFormValues,
         context: WizardCoreFlowContext
       ) => wizardStepIsApplicable("movingObjectDetails", values, context.library)
+    }),
+    Object.freeze({
+      ...getWizardCoreStep("textureDetails"),
+      Component: STEP_COMPONENTS.textureDetails,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("textureDetails", values, context.library)
     }),
     Object.freeze({
       ...getWizardCoreStep("directions"),

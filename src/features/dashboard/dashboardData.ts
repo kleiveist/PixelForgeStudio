@@ -6,6 +6,19 @@ import type {
   MovingObjectMaterial
 } from "../../domain/moving-objects";
 import { getDefaultMovingObjectClass } from "../../domain/moving-objects";
+import {
+  getDefaultTextureMaterialType,
+  type TextureCondition,
+  type TextureIcing,
+  type TextureLighting,
+  type TextureMaterialType,
+  type TextureMoisture,
+  type TextureOrientation,
+  type TextureStructure,
+  type TextureSubtype,
+  type TextureSurface,
+  type TextureUsage
+} from "../../domain/textures";
 import { resolveProfile, type ResolvedProfile } from "../../domain/profiles";
 import type {
   AssetProfile,
@@ -136,6 +149,89 @@ const movingObjectConditionLabels: Readonly<
   used: "Gebraucht",
   damaged: "Beschädigt",
   improvised: "Provisorisch"
+};
+
+const textureMaterialLabels: Readonly<Record<TextureMaterialType, string>> = {
+  wood: "Holz",
+  stone: "Stein",
+  snow: "Schnee",
+  ice: "Eis",
+  earth: "Erde",
+  sand: "Sand",
+  grass: "Gras",
+  moss: "Moos",
+  metal: "Metall",
+  fabric: "Stoff",
+  leather: "Leder",
+  brick: "Ziegel",
+  paving: "Pflaster",
+  clay: "Lehm",
+  ceramic: "Keramik",
+  customMaterial: "Eigenes Material"
+};
+
+const textureUsageLabels: Readonly<Record<TextureUsage, string>> = {
+  floor: "Boden",
+  wall: "Wand",
+  roof: "Dach",
+  surface: "Objektoberfläche",
+  clothing: "Kleidung",
+  decor: "Dekor"
+};
+
+const textureStructureLabels: Readonly<Record<TextureStructure, string>> = {
+  fine: "Fein",
+  medium: "Mittel",
+  coarse: "Grob"
+};
+
+const textureConditionLabels: Readonly<Record<TextureCondition, string>> = {
+  new: "Neu",
+  polished: "Poliert",
+  rough: "Rau",
+  old: "Alt",
+  wet: "Nass",
+  frosted: "Frostig",
+  damaged: "Beschädigt",
+  dirty: "Verschmutzt"
+};
+
+const textureLightingLabels: Readonly<Record<TextureLighting, string>> = {
+  neutralEven: "Neutral beleuchtet",
+  contextual: "Kontextlicht",
+  worldAligned: "Weltlicht"
+};
+
+const textureSurfaceLabels: Readonly<Record<TextureSurface, string>> = {
+  continuous: "Durchgehend",
+  planked: "Planken",
+  jointed: "Mit Fugen",
+  cracked: "Rissig",
+  granular: "Körnig",
+  layered: "Geschichtet",
+  woven: "Gewebt",
+  organic: "Organisch"
+};
+
+const textureMoistureLabels: Readonly<Record<TextureMoisture, string>> = {
+  dry: "Trocken",
+  damp: "Feucht",
+  wet: "Nass"
+};
+
+const textureIcingLabels: Readonly<Record<TextureIcing, string>> = {
+  none: "Keine",
+  lightFrost: "Leichter Frost",
+  frosted: "Bereift",
+  iceCrusted: "Eiskruste"
+};
+
+const textureOrientationLabels: Readonly<Record<TextureOrientation, string>> = {
+  horizontal: "Horizontal",
+  vertical: "Vertikal",
+  radial: "Radial",
+  unordered: "Ungeordnet",
+  grainAligned: "Entlang der Maserung"
 };
 
 const animationLabels = {
@@ -287,7 +383,53 @@ function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
         ? []
         : [animationFact(animationType)];
     }
-    case "texture":
+    case "texture": {
+      const {
+        condition,
+        icing,
+        lighting,
+        materialType,
+        moisture,
+        orientation,
+        seamless,
+        structure,
+        surface,
+        usage
+      } = profile.categoryData.answers;
+      const resolvedMaterial =
+        materialType ??
+        getDefaultTextureMaterialType(profile.categoryData.subtype);
+      return [
+        `Material: ${textureMaterialLabels[resolvedMaterial]}`,
+        ...(usage === undefined
+          ? []
+          : [`Einsatz: ${textureUsageLabels[usage]}`]),
+        ...(seamless === undefined
+          ? []
+          : [seamless ? "Nahtlos kachelbar" : "Nicht nahtlos"]),
+        ...(structure === undefined
+          ? []
+          : [`Struktur: ${textureStructureLabels[structure]}`]),
+        ...(condition === undefined
+          ? []
+          : [`Zustand: ${textureConditionLabels[condition]}`]),
+        ...(surface === undefined
+          ? []
+          : [`Oberfläche: ${textureSurfaceLabels[surface]}`]),
+        ...(moisture === undefined
+          ? []
+          : [`Feuchtigkeit: ${textureMoistureLabels[moisture]}`]),
+        ...(icing === undefined
+          ? []
+          : [`Vereisung: ${textureIcingLabels[icing]}`]),
+        ...(orientation === undefined
+          ? []
+          : [`Ausrichtung: ${textureOrientationLabels[orientation]}`]),
+        ...(lighting === undefined
+          ? []
+          : [textureLightingLabels[lighting]])
+      ];
+    }
     case "building":
     case "item":
     case "artwork":
@@ -339,6 +481,13 @@ function profileMaterials(profile: AssetProfile): readonly MaterialBadgeId[] {
   const selected = new Set<MaterialBadgeId>();
   const subtypeMaterial = materialSubtypeMap[profile.subtype];
   if (subtypeMaterial) selected.add(subtypeMaterial);
+  if (profile.category === "texture") {
+    const material = materialSubtypeMap[
+      profile.answers.materialType ??
+        getDefaultTextureMaterialType(profile.subtype as TextureSubtype)
+    ];
+    if (material) selected.add(material);
+  }
 
   for (const iconId of profile.badgeIconIds) {
     const material = materialBadgeIconMap[iconId];

@@ -127,7 +127,18 @@ function createTextureProfile(
     subtype: selection.subtype,
     iconId: "texture-wood",
     capabilities: resolveCapabilities(selection.category, selection.subtype),
-    answers: { seamless: true, structure: "fine" }
+    answers: {
+      materialType: "wood",
+      usage: "floor",
+      seamless: true,
+      structure: "fine",
+      condition: "old",
+      surface: "planked",
+      moisture: "damp",
+      icing: "lightFrost",
+      lighting: "neutralEven",
+      orientation: "grainAligned"
+    }
   });
 }
 
@@ -356,9 +367,27 @@ describe("dashboard data", () => {
     expect(textureSummary).toMatchObject({
       categoryLabel: "Textur / Material",
       subtypeLabel: "Holz",
-      facts: ["Modern-HD", "32 px Tile", "3/4-RPG", "Stil A + B"],
+      facts: [
+        "Modern-HD",
+        "32 px Tile",
+        "3/4-RPG",
+        "Material: Holz",
+        "Einsatz: Boden",
+        "Nahtlos kachelbar",
+        "Struktur: Fein",
+        "Zustand: Alt",
+        "Oberfläche: Planken",
+        "Feuchtigkeit: Feucht",
+        "Vereisung: Leichter Frost",
+        "Ausrichtung: Entlang der Maserung",
+        "Neutral beleuchtet",
+        "Stil A + B"
+      ],
       materials: ["wood", "metal"]
     });
+    expect(textureSummary?.facts.join(" ")).not.toMatch(
+      /Richtung|Animation|Figur/
+    );
     expect(artworkSummary).toMatchObject({
       categoryLabel: "Artwork / Konzeptbild",
       subtypeLabel: "Szene",

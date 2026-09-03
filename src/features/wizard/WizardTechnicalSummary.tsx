@@ -18,6 +18,19 @@ import {
   type MovingObjectMovementType,
   type MovingObjectSubtype
 } from "../../domain/moving-objects";
+import {
+  getDefaultTextureMaterialType,
+  type TextureCondition,
+  type TextureIcing,
+  type TextureLighting,
+  type TextureMaterialType,
+  type TextureMoisture,
+  type TextureOrientation,
+  type TextureStructure,
+  type TextureSubtype,
+  type TextureSurface,
+  type TextureUsage
+} from "../../domain/textures";
 import type { ResolvedProfile } from "../../domain/profiles";
 import type {
   BaseProfile,
@@ -153,6 +166,89 @@ const MOVING_OBJECT_ANIMATION_LABELS: Readonly<
   interact: "Interaktion",
   openClose: "Öffnen / Schließen",
   pulse: "Pulsieren"
+};
+
+const TEXTURE_MATERIAL_LABELS: Readonly<Record<TextureMaterialType, string>> = {
+  wood: "Holz",
+  stone: "Stein",
+  snow: "Schnee",
+  ice: "Eis",
+  earth: "Erde",
+  sand: "Sand",
+  grass: "Gras",
+  moss: "Moos",
+  metal: "Metall",
+  fabric: "Stoff",
+  leather: "Leder",
+  brick: "Ziegel",
+  paving: "Pflaster",
+  clay: "Lehm",
+  ceramic: "Keramik",
+  customMaterial: "Eigenes Material"
+};
+
+const TEXTURE_USAGE_LABELS: Readonly<Record<TextureUsage, string>> = {
+  floor: "Boden",
+  wall: "Wand",
+  roof: "Dach",
+  surface: "Objektoberfläche",
+  clothing: "Kleidung",
+  decor: "Dekor"
+};
+
+const TEXTURE_STRUCTURE_LABELS: Readonly<Record<TextureStructure, string>> = {
+  fine: "Fein",
+  medium: "Mittel",
+  coarse: "Grob"
+};
+
+const TEXTURE_CONDITION_LABELS: Readonly<Record<TextureCondition, string>> = {
+  new: "Neu",
+  polished: "Poliert",
+  rough: "Rau",
+  old: "Alt",
+  wet: "Nass",
+  frosted: "Frostig",
+  damaged: "Beschädigt",
+  dirty: "Verschmutzt"
+};
+
+const TEXTURE_SURFACE_LABELS: Readonly<Record<TextureSurface, string>> = {
+  continuous: "Durchgehend",
+  planked: "Planken",
+  jointed: "Mit Fugen",
+  cracked: "Rissig",
+  granular: "Körnig",
+  layered: "Geschichtet",
+  woven: "Gewebt",
+  organic: "Organisch"
+};
+
+const TEXTURE_MOISTURE_LABELS: Readonly<Record<TextureMoisture, string>> = {
+  dry: "Trocken",
+  damp: "Feucht",
+  wet: "Nass"
+};
+
+const TEXTURE_ICING_LABELS: Readonly<Record<TextureIcing, string>> = {
+  none: "Keine Vereisung",
+  lightFrost: "Leichter Frost",
+  frosted: "Bereift",
+  iceCrusted: "Eiskruste"
+};
+
+const TEXTURE_LIGHTING_LABELS: Readonly<Record<TextureLighting, string>> = {
+  neutralEven: "Neutral und gleichmäßig",
+  contextual: "Kontextabhängig",
+  worldAligned: "An Weltlicht ausgerichtet"
+};
+
+const TEXTURE_ORIENTATION_LABELS: Readonly<Record<TextureOrientation, string>> = {
+  horizontal: "Horizontal",
+  vertical: "Vertikal",
+  radial: "Radial",
+  unordered: "Ungeordnet",
+  grainAligned: "Entlang der Maserung"
 };
 
 function characterAnimationSummary(
@@ -447,6 +543,77 @@ export function WizardTechnicalSummary({
                     formValues.movingObjectCondition
                   ]
                 }
+              />
+            ) : null}
+          </>
+        ) : null}
+        {selection?.category === "texture" ? (
+          <>
+            <SummaryFact
+              label="Material"
+              value={
+                TEXTURE_MATERIAL_LABELS[
+                  formValues.textureMaterialType ??
+                    getDefaultTextureMaterialType(
+                      selection.subtype as TextureSubtype
+                    )
+                ]
+              }
+            />
+            {formValues.textureUsage !== undefined ? (
+              <SummaryFact
+                label="Einsatz"
+                value={TEXTURE_USAGE_LABELS[formValues.textureUsage]}
+              />
+            ) : null}
+            {formValues.seamless !== undefined ? (
+              <SummaryFact
+                label="Kachelbarkeit"
+                value={formValues.seamless ? "Nahtlos" : "Nicht nahtlos"}
+              />
+            ) : null}
+            {formValues.textureStructure !== undefined ? (
+              <SummaryFact
+                label="Strukturgrad"
+                value={TEXTURE_STRUCTURE_LABELS[formValues.textureStructure]}
+              />
+            ) : null}
+            {formValues.textureSurface !== undefined ? (
+              <SummaryFact
+                label="Oberfläche"
+                value={TEXTURE_SURFACE_LABELS[formValues.textureSurface]}
+              />
+            ) : null}
+            {formValues.textureCondition !== undefined ? (
+              <SummaryFact
+                label="Zustand"
+                value={TEXTURE_CONDITION_LABELS[formValues.textureCondition]}
+              />
+            ) : null}
+            {formValues.textureMoisture !== undefined ? (
+              <SummaryFact
+                label="Feuchtigkeit"
+                value={TEXTURE_MOISTURE_LABELS[formValues.textureMoisture]}
+              />
+            ) : null}
+            {formValues.textureIcing !== undefined ? (
+              <SummaryFact
+                label="Vereisung"
+                value={TEXTURE_ICING_LABELS[formValues.textureIcing]}
+              />
+            ) : null}
+            {formValues.textureOrientation !== undefined ? (
+              <SummaryFact
+                label="Ausrichtung"
+                value={
+                  TEXTURE_ORIENTATION_LABELS[formValues.textureOrientation]
+                }
+              />
+            ) : null}
+            {formValues.textureLighting !== undefined ? (
+              <SummaryFact
+                label="Materiallicht"
+                value={TEXTURE_LIGHTING_LABELS[formValues.textureLighting]}
               />
             ) : null}
           </>

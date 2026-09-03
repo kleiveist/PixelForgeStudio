@@ -212,9 +212,10 @@ describe("wizard category routing", () => {
       subtype: "wood" as const
     };
     expect(wizardStepIsApplicable("characterDetails", wood, library)).toBe(false);
+    expect(wizardStepIsApplicable("textureDetails", wood, library)).toBe(true);
     expect(wizardStepIsApplicable("directions", wood, library)).toBe(false);
     expect(wizardStepIsApplicable("animation", wood, library)).toBe(false);
-    expect(wizardStepIsApplicable("tileability", wood, library)).toBe(true);
+    expect(wizardStepIsApplicable("tileability", wood, library)).toBe(false);
 
     const tree = {
       ...technicalValues,
@@ -548,14 +549,14 @@ describe("wizard category routing", () => {
         subtype: "wood",
         seamless: true
       },
-      stepId: "tileability",
+      stepId: "textureDetails",
       savedAt: "2026-09-04T10:05:00.000Z",
       context: context(library)
     });
 
     expect(changed).toMatchObject({
       route: "wizard/editor",
-      currentStep: "tileability",
+      currentStep: "textureDetails",
       category: "texture",
       subtype: "wood",
       answers: {},

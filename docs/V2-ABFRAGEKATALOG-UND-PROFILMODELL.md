@@ -97,13 +97,13 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 15
+## 4.3 Umgesetzter Einstieg bis Prompt 16
 
 Der aktuell implementierte Core-Flow lautet:
 
 ```text
 Projekt → Hauptkategorie/Untertyp → Basisprofil
-→ Character- oder Moving-Object-Details, falls relevant
+→ Character-, Moving-Object- oder Texture-Details, falls relevant
 → Capability-Schritte
 ```
 
@@ -113,8 +113,9 @@ erfolgreich neu angelegte Basisfamilie öffnet die nachfolgenden Richtungs-,
 Animations- oder Kachelbarkeitsfragen. Deren Sichtbarkeit stammt ausschließlich
 aus `resolveCapabilities()`. Für die Hauptkategorie `character` liegt zwischen
 Basisprofil und Capability-Schritten ein eigener Character-/NPC-Fachschritt.
-`movingObject` nutzt an derselben Stelle den eigenen
-`movingObjectDetails`-Schritt; alle anderen Kategorien überspringen beide.
+`movingObject` und `texture` nutzen an derselben Stelle ihre eigenen
+`movingObjectDetails`- beziehungsweise `textureDetails`-Schritte; alle anderen
+Kategorien überspringen diese drei Fachschritte.
 
 Der Basisprofil-Schritt zeigt für alle relevanten Produktionswerte den
 wirksamen Wert, seine Quelle (Basisprofil, Kategorieprofil oder lokaler Entwurf)
@@ -147,9 +148,24 @@ Kategorie-/Assetverknüpfungen gelöst und die übrigen wirksamen Fach- und
 Technikwerte relativ zur Base materialisiert. Summary und Dashboard zeigen
 nur tatsächlich konfigurierte, capability-gültige Moving-Object-Fakten.
 
-Prompt 16 ergänzt als nächste Phase den Texture-/Material-Editor.
+Der Texture-Schritt erfasst Materialtyp, Einsatz, Beschreibung, Nahtlosigkeit,
+Struktur, Zustand, Oberflächenaufbau und -richtung, Feuchtigkeit, Vereisung,
+Materiallicht und Zusatzdetails im gemeinsamen RHF-/Draft-/Autosave-/Resume-
+Pfad. Materialtyp und wirksame Tilegröße sind read-only; `tileSize` bleibt in
+der technischen Base→Category→Asset-Kette statt in `TextureAnswers`.
+Nahtlosigkeit unterscheidet „nicht festgelegt“, `true` und `false`.
+Klassifikationswechsel bereinigen Texture-Antworten, Basiswechsel erhalten sie.
+Explicit Clear löst geerbte Elternprovenienz und materialisiert die übrigen
+wirksamen Fach- und Technikwerte relativ zur Base. Holz erhält fokussierte
+Produktionshinweise; Figuren-, Kleidungs-, Bewegungs- und Richtungsfragen
+bleiben für Texturen vollständig aus. Der generische `tileability`-Schritt
+wird nicht zusätzlich angezeigt, weil `textureDetails` die dreiwertige
+Nahtlosigkeit bereits erfasst. Summary und Dashboard zeigen nur
+tatsächlich konfigurierte Material-, Kachel- und Oberflächenfakten.
+
+Prompt 17 ergänzt als nächste Phase den Nature-/Tree-Editor.
 Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
-Tabelle oben werden durch Prompt 15 noch nicht als fertig erklärt.
+Tabelle oben werden durch Prompt 16 noch nicht als fertig erklärt.
 
 ---
 
@@ -573,8 +589,8 @@ keine schreibende Migration beim bloßen Laden statt.
 | Material | Typ, Unterart, gewünschte Wirkung |
 | Verwendung | Boden, Wand, Dach, Objektoberfläche, Kleidung, Dekor |
 | Orientierung | horizontal, vertikal, radial, ungeordnet, Maserungsrichtung |
-| Kachelbarkeit | nahtlos ja/nein, ein Tile oder Testfläche |
-| Tilegröße | geerbt oder lokal, sofern nicht gesperrt |
+| Kachelbarkeit | nicht festgelegt / nahtlos ja / nahtlos nein |
+| Tilegröße | zentraler technischer Wert; im Texture-Editor read-only |
 | Struktur | fein, mittel, grob |
 | Elemente | Planken, Fugen, Risse, Knoten, Körnung, Schichtung |
 | Wiederholung | sichtbare Wiederholungsmuster vermeiden |
@@ -595,6 +611,40 @@ keine schreibende Migration beim bloßen Laden statt.
 | Metall | Metallart, Schmiedespuren, Rost, Politur, Kantenabrieb |
 | Stoff | Webart, Faltenmaßstab, Dicke, Muster, Ausfransung |
 | Gras | Halmlänge, Dichte, Trockenheit, Bodenanteil, Übergänge |
+
+### Implementierungsstand seit Prompt 16
+
+- `textureDetails` folgt direkt auf die Basisprofilwahl und erscheint
+  ausschließlich für `texture`. Der Materialtyp wird aus dem Untertyp
+  abgeleitet; Holz, Stein, Schnee, Eis, Erde, Sand, Gras, Moos, Metall, Stoff,
+  Leder, Ziegel, Pflaster, Lehm, Keramik und eigenes Material sind vollständig
+  im readonly Domain-Katalog enthalten.
+- `TextureAnswersSchema` bildet Einsatz, Beschreibung, `seamless`, Struktur,
+  Zustand, Oberflächenaufbau und -richtung, Feuchtigkeit, Vereisung, Licht und
+  Zusatzdetails strikt und additiv ab. Bestehende Schema-V2-Werte bleiben ohne
+  eager Defaults lesbar; ein vorhandener Materialtyp muss zum Untertyp passen.
+- `tileSize` bleibt außerhalb von `TextureAnswers` ein sperrbarer technischer
+  Base→Category→Asset-Wert. `TextureMaterialEditor` zeigt ihn ebenso wie den
+  Materialtyp read-only und führt Änderungen weiterhin über den
+  Basisprofil-Schritt.
+- `seamless` ist dreiwertig: eine fehlende Entscheidung bleibt `undefined`,
+  „ja“ wird `true`, und „nein“ bleibt als ausdrückliches `false` erhalten.
+  Holz zeigt zusätzliche Produktionshinweise zu Art, Maserung, Planken,
+  Knoten, Schnitt, Lack und Alter. Der generische `tileability`-Schritt wird
+  für Texturen nicht zusätzlich angezeigt.
+- Fachantworten werden Base→Category→Asset aufgelöst und nur als
+  nicht redundante lokale Abweichungen gespeichert. Ein Basiswechsel erhält
+  sie, ein Kategorie- oder Untertypwechsel entfernt sie. Explicit Clear löst
+  Kategorie-/Assetprovenienz und materialisiert die übrigen wirksamen Fach-
+  und Technikwerte relativ zur Base.
+- Transienter Rohzustand, Dirty State, 300-ms-Autosave, unmittelbare
+  Schritt-Persistenz und exaktes Resume gelten auch für Texture-Felder.
+  Initialisierung, Profil-Hydration und Resume schreiben nicht.
+- Zusammenfassung und Dashboard zeigen nur tatsächlich konfigurierte
+  Material-, Kachel- und Oberflächenfakten. Figuren-, Kleidungs-, Bewegungs-
+  und Richtungsfragen sind aus dem Texture-Flow ausgeschlossen.
+- Prompt Engine, Review-/Output-Erzeugung und die Ausgabeauswahl folgen in
+  späteren Phasen.
 
 ---
 
@@ -999,6 +1049,14 @@ einer Ebene gewinnt die kanonische Liste; eine explizite Repräsentation auf
 Asset-Ebene ersetzt die geerbte Category-Repräsentation als zusammengehörigen
 Animationswert.
 
+Für Texturen erweitert Prompt 16 den strikten Schema-V2-Vertrag additiv um
+`materialType`, `surface`, `moisture`, `icing` und `lighting`; die bisherigen
+Felder `usage`, `seamless`, `orientation`, `structure`, `condition`,
+`subjectDescription` und `extraDetails` bleiben unverändert lesbar. Fehlende
+Werte werden beim Laden nicht ergänzt. Ein gespeicherter Materialtyp muss zum
+Texture-Untertyp passen. `tileSize` bleibt ausschließlich im technischen
+Profilwert-/Override-Modell und wird nicht in Texture-Antworten dupliziert.
+
 ## 12.4 Wizard-Draft
 
 ```json
@@ -1044,6 +1102,10 @@ der Hydration nicht; auch Character-Resume bleibt schreibfrei.
 Für Moving Objects folgt stattdessen `movingObjectDetails`; seine Fachfelder
 und die getrennte Sequenz-/Frame-Auswahl gehören ebenfalls zum rohen
 Session-Snapshot, Autosave und exakten schreibfreien Resume.
+Für Texturen folgt `textureDetails`; seine Fachfelder einschließlich der
+dreiwertigen `seamless`-Entscheidung gehören ebenfalls zu Rohzustand, Autosave
+und schreibfreiem Resume. Der zentrale technische `tileSize` wird aus der
+Profilkette aufgelöst und nicht als Fachantwort gespeichert.
 Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
 und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
 Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale
@@ -1061,8 +1123,8 @@ persistierten Profile. Entsperrte Änderungen innerhalb derselben Familie
 werden beim nächsten gültigen Draft-Snapshot erneut auf minimale Overrides
 normalisiert.
 
-Das ausdrückliche Leeren eines vom Kategorieprofil geerbten Character- oder
-Moving-Object-Feldes löst Kategorie- und Assetprovenienz. Alle anderen
+Das ausdrückliche Leeren eines vom Kategorieprofil geerbten Character-,
+Moving-Object- oder Texture-Feldes löst Kategorie- und Assetprovenienz. Alle anderen
 wirksamen Fachantworten und technischen Werte werden relativ zur Base
 materialisiert, damit der entfernte Default nach Autosave und Resume nicht
 erneut erscheint.

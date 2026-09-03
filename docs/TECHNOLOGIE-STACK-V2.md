@@ -244,7 +244,30 @@ gelesen. Ein Karren kann 4/8 Richtungen erhalten; ein animierter
 Zusammenfassung und Dashboard zeigen nur tatsächlich konfigurierte und
 capability-gültige Moving-Object-Fakten.
 
-Prompt 16 ergänzt als nächste Phase den Texture-/Material-Editor. Prompt 15 nimmt
+Seit Prompt 16 folgt für `texture` direkt nach dem Basisprofil der eigene
+Schritt `textureDetails`. `TextureMaterialEditor` erfasst Materialtyp, Einsatz,
+Beschreibung, die dreiwertige Nahtlosigkeitsentscheidung, Struktur, Zustand,
+Oberflächenaufbau und -richtung, Feuchtigkeit, Vereisung, Materiallicht und
+Zusatzdetails vollständig in React Hook Form. Materialtyp und wirksame
+Tilegröße werden read-only aus Untertyp beziehungsweise technischer
+Base→Category→Asset-Vererbung dargestellt. `tileSize` wird deshalb nicht in
+`TextureAnswers` dupliziert. Der Fachschritt besitzt die dreiwertige
+Nahtlosigkeitsentscheidung selbst; der generische `tileability`-Schritt wird
+für Texturen nicht zusätzlich angezeigt.
+
+Der öffentliche Katalog unter `src/domain/textures/` und das strikt additive
+`TextureAnswersSchema` halten bestehende Schema-V2-Felder ohne eager Defaults
+lesbar. Texture-Werte werden wirksam Base→Category→Asset aufgelöst, als minimale
+lokale Abweichungen projiziert und bei Explicit Clear mit derselben
+Provenienzablösung wie Character und Moving Objects behandelt. Basiswechsel
+erhalten Texture-Fachwerte, Klassifikationswechsel bereinigen sie. Mount,
+Profil-Hydration und Resume bleiben schreibfrei; gültige Nutzeränderungen
+verwenden den gemeinsamen Autosave-Pfad. Holz erhält fokussierte
+Materialhinweise, aber keine Figuren-, Kleidungs-, Bewegungs- oder
+Richtungsfragen. Live-Zusammenfassung und Dashboard zeigen ausschließlich
+tatsächlich konfigurierte Texture- und zentrale Tile-Fakten.
+
+Prompt 17 ergänzt als nächste Phase den Nature-/Tree-Editor. Prompt 16 nimmt
 weder die Prompt Engine noch Review-/Output-Erzeugung oder weitere
 Spezialeditoren vorweg.
 
@@ -313,6 +336,14 @@ Pflichtbereiche:
 - eindeutige Moving-Object-Sequenzen, 1–16 Frames und Legacy-Lesbarkeit
 - Base→Category→Asset-Vererbung sowie Explicit-Clear-Detach für Moving Objects
 - Karren mit Richtungen gegen animierten `floatingCrystal` ohne Richtungen
+- Texture-Feldgrenzen, Untertyp/Materialtyp und additive Schema-V2-Lesbarkeit
+- dreiwertiges `seamless`, zentrale Tilegröße ohne Fachantwort-Duplikation und
+  Texture-Draft↔RHF-Roundtrip
+- Base→Category→Asset-Vererbung, minimale Projektion und
+  Explicit-Clear-Detach für Texturen
+- Holzprofil mit Material-, Oberflächen- und Kacheldaten, aber ohne Figuren-
+  oder Richtungsfragen
+- schreibfreie Texture-Hydration/Resume sowie Summary-/Dashboard-Projektion
 - 8 Richtungen nur bei richtungsabhängig beweglichen Assets
 - Speichern / Laden / Import / Export
 - Theme-Umschaltung

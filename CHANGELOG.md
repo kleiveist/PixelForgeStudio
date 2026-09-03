@@ -72,6 +72,12 @@
 - Karren als richtungsfähigen Bewegungsfall und pulsierende schwebende Kristalle als animierte, nicht richtungsabhängige Assets in Domain-, Schema-, Routing- und UI-Verhalten abgesichert
 - Moving-Object-Fachwerte in Base→Category→Asset-Auflösung, Rohzustand, Autosave, schreibfreies Resume, Live-Zusammenfassung und Dashboard-Aktivitätsprojektion integriert
 - explizites Leeren geerbter Moving-Object-Defaults dauerhaft abgebildet: Kategorie-/Assetprovenienz wird gelöst, übrige wirksame Fach- und Technikwerte werden relativ zur Base materialisiert
+- frameworkfreien Texture-/Material-Katalog für Materialtyp, Einsatz, Struktur, Zustand, Oberfläche, Feuchtigkeit, Vereisung, Licht und Orientierung ergänzt
+- strikt additives `TextureAnswersSchema` um die neuen Materialfelder erweitert, bestehende Schema-V2-Texture-Werte ohne eager Defaults lesbar gehalten und widersprüchliche Untertyp-/Materialkombinationen abgewiesen
+- eigenen `textureDetails`-Schritt mit fokussiertem `TextureMaterialEditor` direkt nach der Basisprofilwahl integriert; Materialtyp und zentrale Tilegröße werden read-only abgeleitet statt in Fachantworten dupliziert
+- Nahtlosigkeit als dreiwertige Entscheidung „nicht festgelegt / ja / nein“ modelliert, den redundanten generischen Tileability-Schritt für Texturen ausgeblendet und Texture-Fachwerte in Rohzustand, Base→Category→Asset-Auflösung, minimale Draft-Projektion, Autosave sowie schreibfreies Resume integriert
+- Holztexturen mit spezifischen Produktionshinweisen und alle Texturen ohne Figuren-, Kleidungs-, Bewegungs- oder Richtungsfragen umgesetzt
+- explizites Leeren geerbter Texture-Defaults dauerhaft abgebildet und tatsächliche Material-, Kachel- und Oberflächenfakten in Live-Zusammenfassung sowie Dashboard-Projektion ergänzt
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

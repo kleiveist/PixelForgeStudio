@@ -242,6 +242,9 @@ describe("profile library data", () => {
       "Modern-HD",
       "32 px Tile",
       "3/4-RPG",
+      "Material: Holz",
+      "Einsatz: Boden",
+      "Nahtlos kachelbar",
       "Stil A + B"
     ]);
     expect(stone.facts.join(" ")).not.toMatch(/96 px Figur|80 px Figur/);

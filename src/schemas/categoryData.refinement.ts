@@ -4,6 +4,7 @@ import {
   type AssetSelection
 } from "../domain/assets";
 import { getDefaultMovingObjectClass } from "../domain/moving-objects";
+import { getDefaultTextureMaterialType } from "../domain/textures";
 
 export type CategoryDataCarrier = AssetSelection;
 
@@ -31,6 +32,16 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
       addIssue(
         "objectClass",
         `Object class "${String(categoryData.objectClass)}" does not match moving-object subtype "${value.subtype}"; expected "${expectedClass}".`
+      );
+    }
+  }
+
+  if (value.category === "texture" && categoryData.materialType !== undefined) {
+    const expectedMaterialType = getDefaultTextureMaterialType(value.subtype);
+    if (categoryData.materialType !== expectedMaterialType) {
+      addIssue(
+        "materialType",
+        `Material type "${String(categoryData.materialType)}" does not match texture subtype "${value.subtype}"; expected "${expectedMaterialType}".`
       );
     }
   }

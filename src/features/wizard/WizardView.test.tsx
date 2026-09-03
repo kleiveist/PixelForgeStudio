@@ -1121,9 +1121,11 @@ describe("guided Wizard integration", () => {
     expect(storage.getItem(V2_STORAGE_KEYS.draft)).toBe(draftBeforeConflict);
   });
 
-  it("routes a wood texture to tileability without movement or direction", async () => {
+  it("routes a wood texture to its focused material editor without duplicate capability steps", async () => {
+    const storage = populatedStorage();
     const user = userEvent.setup();
-    const { adapter } = renderStudio();
+    const rendered = renderStudio({ storage });
+    const { adapter } = rendered;
 
     await user.type(projectNameInput(), "Eichenplanken");
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
@@ -1133,6 +1135,9 @@ describe("guided Wizard integration", () => {
       name: "Wizard-Fortschritt"
     });
     expect(within(progress).getByText("Basisprofil")).toBeVisible();
+    expect(
+      within(progress).queryByText("Textur und Material")
+    ).not.toBeInTheDocument();
     expect(within(progress).queryByText("Kachelbarkeit")).not.toBeInTheDocument();
     expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
     expect(
@@ -1141,24 +1146,87 @@ describe("guided Wizard integration", () => {
 
     await enterBaseProfileStep(user);
     await selectBaseProfile(user);
-    expect(within(progress).getByText("Kachelbarkeit")).toBeVisible();
+    expect(within(progress).getByText("Textur und Material")).toBeVisible();
+    expect(within(progress).queryByText("Kachelbarkeit")).not.toBeInTheDocument();
     expect(within(progress).queryByText("Figur und Rolle")).not.toBeInTheDocument();
+    expect(within(progress).queryByText("Objekt und Bewegung")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(
-      screen.getByRole("heading", { level: 2, name: "Kachelbarkeit" })
+      screen.getByRole("heading", { level: 2, name: "Textur und Material" })
     ).toBeVisible();
     expect(screen.queryByRole("radio", { name: /8 Richtungen/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Animationsart" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Rolle oder Beruf/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Bewegungsart/)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("checkbox", { name: /Nahtlos kachelbar/ }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Einsatzbereich" }),
+      "floor"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Nahtlos kachelbar?" }),
+      "true"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Strukturgrad" }),
+      "medium"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Oberflächenaufbau" }),
+      "planked"
+    );
     await waitFor(() =>
       expect(readValidDraft(adapter)).toMatchObject({
         category: "texture",
         subtype: "wood",
-        answers: { seamless: true }
+        answers: {
+          materialType: "wood",
+          usage: "floor",
+          seamless: true,
+          structure: "medium",
+          surface: "planked"
+        }
       })
     );
+    const summary = screen.getByRole("complementary", {
+      name: "Technische Zusammenfassung"
+    });
+    expect(within(summary).getByText("Material").nextElementSibling).toHaveTextContent(
+      "Holz"
+    );
+    expect(
+      within(summary).getByText("Kachelbarkeit").nextElementSibling
+    ).toHaveTextContent("Nahtlos");
+    expect(
+      within(summary).getByText("Strukturgrad").nextElementSibling
+    ).toHaveTextContent("Mittel");
+    expect(within(summary).queryByText("Richtungsset")).not.toBeInTheDocument();
+    expect(within(summary).queryByText("Animationen")).not.toBeInTheDocument();
+
+    rendered.unmount();
+    storage.mutations.splice(0);
+    renderStudio({ storage });
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Textur und Material" })
+    ).toBeVisible();
+    expect(screen.getByText("Holz", { selector: "output" })).toBeVisible();
+    expect(
+      screen.getByRole("combobox", { name: "Einsatzbereich" })
+    ).toHaveValue("floor");
+    expect(
+      screen.getByRole("combobox", { name: "Nahtlos kachelbar?" })
+    ).toHaveValue("true");
+    expect(
+      screen.getByRole("combobox", { name: "Strukturgrad" })
+    ).toHaveValue("medium");
+    expect(
+      screen.getByRole("combobox", { name: "Oberflächenaufbau" })
+    ).toHaveValue("planked");
+    expect(screen.queryByText("Richtungen")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bewegung und Animation")).not.toBeInTheDocument();
+    expect(storage.mutations).toEqual([]);
   });
 
   it("allows wind animation for a tree without exposing directions", async () => {
@@ -2204,7 +2272,7 @@ describe("guided Wizard integration", () => {
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(
-      screen.getByRole("heading", { level: 2, name: "Kachelbarkeit" })
+      screen.getByRole("heading", { level: 2, name: "Textur und Material" })
     ).toBeVisible();
   });
 

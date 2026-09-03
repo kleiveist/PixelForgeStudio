@@ -14,6 +14,9 @@
   - `moving-objects/`: Moving Object production catalogs, subtype-to-class
     mapping, canonical animation-sequence order, and frame defaults used only
     when a sequence is deliberately activated
+  - `textures/`: Texture/Material catalogs for material type, usage, structure,
+    condition, surface, moisture, icing, lighting, and orientation plus the
+    pure subtype-to-material mapping
   - `profiles/`: validated profile-chain resolution, base-lock enforcement,
     structured diagnostics, normalized overrides, compatibility keys,
     canonical BaseProfile defaults, immutable BaseProfile creation/duplication,
@@ -31,15 +34,15 @@
 - `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
   Kategorie-Dashboard, `profiles/` die kategorisierte Assetprofilbibliothek
   und `wizard/` die deklarative RHF-/Zod-Wizard-Grundlage;
-  `character-editor/` und `moving-object-editor/` enthalten die ersten
-  spezialisierten Asset-Editoren;
+  `character-editor/`, `moving-object-editor/` und `texture-editor/` enthalten
+  die ersten spezialisierten Asset-Editoren;
   Review-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
   - `categoryData.schema.ts`: strict category-specific answer contracts,
-    including additive Character/NPC and Moving Object catalogs with unique
-    per-action or per-sequence frames
+    including additive Character/NPC, Moving Object, and Texture/Material
+    catalogs with strict category-specific values
   - `profiles.schema.ts`: base, category, and asset profile contracts
   - `appSettings.schema.ts`, `wizardDraft.schema.ts`,
     `exportBundle.schema.ts`: remaining persisted/imported V2 contracts
@@ -88,6 +91,12 @@ subtype-to-object-class mapping. Detail fields receive no value during mere
 hydration.
 Schema and UI consume these exports instead of maintaining parallel literals.
 
+`domain/textures/index.ts` is the public, framework-free Texture/Material
+catalog API. It owns stable material, usage, orientation, structure, condition,
+surface, moisture, icing, and lighting IDs plus the exhaustive pure
+subtype-to-material mapping. That mapping is available to UI and validation,
+but profile hydration does not materialize missing values or write defaults.
+
 `schemas/index.ts` is the public validation boundary. Persisted and imported
 values enter its parse functions as `unknown`; exported TypeScript types are
 inferred from the corresponding Zod schemas rather than maintained separately.
@@ -102,6 +111,12 @@ each footprint axis to 1–64 tiles, `heightPixels` to 16–2048, and each uniqu
 `animationSequences` entry to 1–16 frames. Existing `animationType` plus
 `framesPerDirection` data remains readable; new UI writes use only the
 canonical sequence list and never migrate on hydration.
+`TextureAnswersSchema` remains strict and additive: all previous schema-v2
+fields stay readable, while optional `materialType`, `surface`, `moisture`,
+`icing`, and `lighting` extend the contract. A present material type must match
+the selected Texture subtype. Missing values stay absent, and technical
+`tileSize`, Character, clothing, motion, and direction fields are deliberately
+not part of Texture answers.
 
 `domain/profiles/index.ts` is the public framework-free profile API.
 `resolveProfile()` accepts already validated profile objects and returns a
@@ -115,6 +130,11 @@ independent keys. At the same profile level `animationSequences` wins over the
 legacy `animationType`/`framesPerDirection` pair; an explicit Asset-level
 representation replaces the inherited Category-level representation in either
 direction. Resolution remains pure and never rewrites stored data.
+
+Texture answers use the ordinary deterministic Base→Category→Asset merge: a
+defined Asset answer replaces the corresponding Category default without
+inventing absent values. The Wizard compares the effective inherited Texture
+snapshot before writing and stores only non-redundant local differences.
 
 The same public profile API exposes immutable BaseProfile and AssetProfile
 operations. A Base family can be created from the canonical defaults or copied
@@ -224,6 +244,10 @@ schema-version-2 profiles. Moving Object facts expose the resolved object
 class, movement, footprint, anchor, capability-valid direction count,
 animation sequences with frames, material, and condition. Canonical sequences
 win over the old singleton representation, which remains a read fallback.
+Texture facts expose the resolved material type, usage, three-state seamless
+decision, effective central tile size, structure, condition, surface,
+orientation, moisture, icing, and lighting only when applicable or explicitly
+configured. They never infer Character or direction facts for a texture.
 Unknown badge IDs are ignored safely. The React view
 reads this model through the narrow `DashboardStorage` port
 (`readProfileLibrary` + `readDraft`) and never accesses `localStorage`.
@@ -273,14 +297,15 @@ several RHF values programmatically calls it once to enter the same projection,
 Dirty-state and autosave path as a native control change. Product routing and
 Base-profile semantics remain outside the generic engine.
 
-`features/wizard/wizardCategoryRouting.ts` is the Prompt-15 boundary between
+`features/wizard/wizardCategoryRouting.ts` is the Prompt-16 boundary between
 core form values and the strict Draft union. It validates category/subtype
 pairs against the canonical taxonomy, resolves visibility only through
 `resolveCapabilities()`, preserves hidden answers for an unchanged selection,
 and creates clean answers when classification changes. The stable core flow is
-`project → category/subtype → baseProfile → characterDetails or
-movingObjectDetails, when applicable → directions | animation |
-tileability`, with the specialist and capability steps conditionally present.
+`project → category/subtype → baseProfile → characterDetails,
+movingObjectDetails, or textureDetails when applicable → directions |
+animation | tileability`, with specialist and capability steps conditionally
+present.
 A category-only choice remains a raw
 session value until a matching subtype makes it persistable; a classified
 pre-Base Draft remains on `wizard/profile`. The Draft mapper returns `null` for
@@ -293,12 +318,16 @@ Moving Object map as unique `animationSequences`; both old singleton forms
 hydrate without an eager write. A confirmed Base switch removes prior
 technical overrides and stale Category/Asset provenance while retaining the
 current category answers; a category or subtype switch purges them. Explicitly
-clearing an inherited optional Character or Moving Object default detaches
-Category/Asset provenance and materializes every other effective answer and
-technical override against the Base, so the parent value cannot reappear on
-Resume. Step schemas independently reject incomplete Base values and
-category-incompatible specialist or capability values, including partial
-Moving Object footprints and invalid subtype/object-class combinations.
+clearing an inherited optional Character, Moving Object, or Texture default
+detaches Category/Asset provenance and materializes every other effective
+answer and technical override against the Base, so the parent value cannot
+reappear on Resume. Texture `false` for `seamless` remains a deliberate value,
+whereas the unset UI choice maps to `undefined`. Step schemas independently
+reject incomplete Base values and category-incompatible specialist or
+capability values, including partial Moving Object footprints, invalid
+subtype/object-class combinations, and mismatched Texture material types.
+The generic `tileability` step is skipped for Texture because
+`textureDetails` already owns the explicit three-state seamless decision.
 
 `features/wizard/wizardLifecycle.ts` creates blank drafts, resolves profile
 starts against the current provider graph, updates route/step metadata and
@@ -323,6 +352,9 @@ technical summary displays the portable, capability-relevant snapshot. It adds
 the actual Character role, directions, selected actions with frame counts and
 silhouette when present, plus Moving Object class, movement, footprint, anchor,
 capability-valid directions, sequences with frames, material, and condition.
+Texture summaries add material, usage, seamless state, effective tile size,
+structure, condition, surface, orientation, moisture, icing, and lighting,
+without displaying direction or Character fields.
 World-grid geometry remains omitted for resolved free-composition artwork.
 
 `features/wizard/BaseProfileStep.tsx` is the Prompt-13 UI boundary. It presents
@@ -368,7 +400,19 @@ whereas animated `floatingCrystal` offers sequences without any direction
 control. Raw session state, delayed autosave, navigation writes, exact Resume,
 and write-free hydration are shared with the generic Wizard contract.
 
-Prompt 16 is the next phase and may add the Texture/Material editor. Prompt 15
-does not implement Prompt Engine modules, review/output generation, or any of
-the remaining specialist editors. It also does not add in-place Base-family
+`features/texture-editor/index.ts` is the public React boundary for Prompt 16.
+`TextureMaterialEditor` is mounted only as the dedicated `textureDetails` step
+after Base selection. It renders the subtype-derived material type and the
+effective inherited `tileSize` read-only, then owns only RHF-controlled
+Texture fields: usage, description, three-state seamless choice, structure,
+condition, surface, orientation, moisture, icing, lighting, and extra details.
+The wood route adds material-specific guidance without changing the data
+contract. Classification changes purge Texture answers, Base changes preserve
+them, and hydration/Resume remain write-free while deliberate valid edits use
+the shared autosave path. Texture does not render the generic `tileability`
+step or any Character, motion, animation, or direction controls.
+
+Prompt 17 is the next phase and may add the Nature/Tree editor. Prompt 16 does
+not implement Prompt Engine modules, review/output generation, or any of the
+remaining specialist editors. It also does not add in-place Base-family
 mutation or descendant reparenting.
