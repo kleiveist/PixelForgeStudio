@@ -108,6 +108,10 @@
 - Artwork-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte Artworkfakten in Live-Zusammenfassung und Dashboard ergänzt; `freeComposition` hält Weltgeometrie aus neuer Projektion und Compatibility Key heraus
 - Vitest-Zeitbudget für die auf 563 Tests angewachsene parallele Vollsuite auf 10 Sekunden stabilisiert, ohne Assertions oder Produktverhalten abzuschwächen
 - generischen Tileability-Schritt für Tilesets durch den strukturierten Fachschritt ersetzt, alte Drafts schreibfrei umgeleitet, Animation nur für animierte Tiles separat angeboten und alle Tilesets ohne 4/8-Richtungs- oder Figurenhöhenfrage gehalten
+- frameworkfreie Prompt Engine 2.0 mit zwölf fest geordneten puren TypeScript-Modulen für Basisprofil, Stil, Kategorie, Motiv, Materialien, Setting, Licht, Bewegung, Animation, Komposition, Negativregeln und Technik ergänzt
+- immutable Haupt-, Negativ-, Technik- und kombinierte Ausgaben aus validierten `ResolvedProfile`-Werten eingeführt; `both` erzeugt getrennte klassische und düstere Pakete, Sprachen und Dubletten werden kanonisch normalisiert
+- kategoriespezifische Promptregeln für alle neun Assetarten umgesetzt, Richtungssets strikt an `directional` gebunden und Kamera, Bodenanker sowie Weltlicht darin fixiert; freie Artworks bleiben ohne Spielraster-, Weltkamera-, Figuren-, Richtungs- und Animationsvorgaben
+- NPC, Holztextur, Winterbaum, Gebäude, bewegliches Objekt, Artwork, alle Kategorien, bilinguale Stilpakete, irrelevante Fremddaten und wiederverwendete Tileset-Atlasmetriken mit neun Engine-Tests abgesichert
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

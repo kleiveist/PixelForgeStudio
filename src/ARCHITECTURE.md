@@ -663,8 +663,29 @@ values continue through the shared strict Zod schemas and
 Base→Category→Asset resolver; Artwork type and game-specific technical values
 are never duplicated into `ArtworkAnswers`.
 
-Prompts 00 through 22 are complete. Prompt 23, the framework-free Prompt
-Engine 2.0, is the next phase. Prompt 22 does not implement prompt generation,
-review/output generation, conflict conversion, final accessibility polish, or
+`domain/prompt-engine/index.ts` is the framework-free public boundary for
+Prompt 23. `buildPromptPackages()` accepts only an already validated
+`ResolvedProfile` plus an optional canonical language selection. It returns
+immutable packages with `main`, `negative`, `technical`, and `combined`
+outputs. The inherited `styleProfile` selects one classic or dark package, or
+two separate packages for `both`; no React, browser, storage, or mutable
+singleton state enters this boundary.
+
+The engine executes twelve small builders in the exported
+`PROMPT_MODULE_IDS` order: base profile, style profile, category, subject,
+materials, setting, lighting, motion, animation, composition, negative rules,
+and technical specification. Each builder consumes the discriminated resolved
+category and central capabilities. Direction text and metrics therefore exist
+only for `directional`; animation is independent; a direction set fixes camera,
+ground anchor, and world light while only the subject rotates. Free Artwork
+omits game-grid, world-camera, character-scale, direction, and animation
+constraints. Tileset canvas values delegate to the existing pure atlas metric.
+Stable whitespace normalization and first-occurrence deduplication make output
+ordering deterministic without modifying profile data.
+
+Prompts 00 through 23 are complete. Prompt 24, the Review and Output
+Workspace, is the next phase and must consume this public engine boundary
+instead of rebuilding prompt rules in React. Prompt 23 does not implement UI,
+clipboard/export actions, profile conversion, final accessibility polish, or
 release cleanup. It also does not add in-place Base-family mutation or
 descendant reparenting.

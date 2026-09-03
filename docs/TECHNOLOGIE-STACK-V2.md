@@ -416,9 +416,20 @@ gemeinsamen Vertrag. `freeComposition` erzeugt keine neuen Weltgeometrie-
 Overrides; alte Werte bleiben verlustfrei lesbar, werden jedoch weder als
 relevant angezeigt noch in den Compatibility Key aufgenommen.
 
-Prompts 00 bis 22 sind abgeschlossen; Prompt 23 ergänzt als nächste Phase die
-Prompt Engine 2.0. Prompt 22 nimmt weder Prompt-Erzeugung noch Review-/
-Output-Erzeugung oder spätere Konflikt- und Release-Phasen vorweg.
+Seit Prompt 23 stellt `src/domain/prompt-engine/` eine frameworkfreie Strict-
+TypeScript-Engine bereit. `buildPromptPackages()` verarbeitet ausschließlich
+validierte `ResolvedProfile`-Werte und erzeugt immutable Haupt-, Negativ-,
+Technik- und kombinierte Ausgaben. Zwölf feste pure Module halten
+Kategorieinhalte getrennt, deduplizieren Regeln stabil und erzeugen für
+`styleProfile: both` eigenständige klassische und düstere Pakete. Sprache ist
+eine explizite, kanonisch deduplizierte Option.
+
+Capability-Gates begrenzen Richtungsregeln auf `directional` und halten
+Animation separat. Kamera, Bodenanker und Weltlicht bleiben im Richtungsset
+konstant; freie Artworks erhalten keine Weltgeometrie-, Figurenmaßstabs- oder
+Animationsregeln. Die technische Tileset-Ausgabe verwendet die bestehende
+pure Atlasmetrik. Prompts 00 bis 23 sind abgeschlossen; Prompt 24 ergänzt als
+nächste Phase die React-basierte Review-/Output-Oberfläche mit Copy und Export.
 
 ## Speicherung
 

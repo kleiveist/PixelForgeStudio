@@ -131,3 +131,19 @@ Jede Erzeugung liefert:
 2. **Negativprompt** – dynamisch aus den gewählten Einstellungen erzeugte Ausschlüsse
 3. **Technische Spezifikation** – Maße, Richtungen, Canvas, Anker und Exportregeln
 4. **Kombinierte Ausgabe** – alle drei Blöcke in einer kopierbaren Fassung
+
+## 9. Implementierung in V2
+
+Seit Prompt 23 erzeugt `src/domain/prompt-engine/` diese Pakete aus einem
+validierten `ResolvedProfile`. Zwölf pure, fest geordnete TypeScript-Module
+trennen globale Art Direction, Kategorieantworten, Licht, Bewegung,
+Animation, Komposition, Ausschlüsse und technische Fakten. Die Ausgabe ist
+deterministisch, immutable und ohne React-, Browser- oder Storage-Abhängigkeit.
+
+Richtungsmetriken werden ausschließlich bei `directional` erzeugt. Das
+Standardframe wird aus Motivmaß, transparentem Rand und Tile-Raster mit
+mindestens 128 × 128 px abgeleitet; daraus entstehen für vier Richtungen ein
+4×1- und für acht Richtungen ein 4×2-Canvas. Kamera, Bodenanker und Weltlicht
+bleiben konstant. Freie Artworks überspringen dagegen Spielraster,
+Weltkamera, Figurenmaßstab, Richtungsset und Animation vollständig. Die
+sichtbare Review-, Copy- und Exportintegration folgt in Prompt 24.

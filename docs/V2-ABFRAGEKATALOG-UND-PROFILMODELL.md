@@ -236,10 +236,10 @@ Antworten, Klassifikationswechsel bereinigen sie und Explicit Clear löst
 geerbte Provenienz. Summary und Dashboard zeigen nur kompakte tatsächliche
 Artwork-Fakten.
 
-Prompts 00 bis 22 sind abgeschlossen. Prompt 23 ergänzt als nächste Phase die
-Prompt Engine 2.0.
-Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
-Tabelle oben werden durch Prompt 22 noch nicht als fertig erklärt.
+Prompts 00 bis 23 sind abgeschlossen. Die Prompt Engine 2.0 erzeugt Material-,
+Setting-, Haupt-, Negativ-, Technik- und kombinierte Textblöcke bereits als
+pure Domain-Ausgabe. Die sichtbaren Review-/Output-Flächen, Copy- und
+Exportaktionen der Tabelle folgen separat mit Prompt 24.
 
 ---
 
@@ -1163,6 +1163,30 @@ Basisprofil
 | Gebäude | wechselnder Kamerawinkel, unlogische Fassade, verzerrter Footprint |
 | Tileset | nicht passende Kanten, sichtbare Wiederholung, falsches Raster |
 | Artwork | unerwünschte Schrift, Wasserzeichen, unklare Hauptkomposition |
+
+## 11.3 Implementierungsstand seit Prompt 23
+
+- `buildPromptPackages()` nimmt ein vollständig `ResolvedProfile` entgegen
+  und erzeugt pro gewünschter Sprache und wirksamer Stilvariante ein
+  unveränderliches Paket mit Hauptprompt, Negativprompt, technischer
+  Spezifikation und kombinierter Ausgabe.
+- Die kanonische Reihenfolge besteht aus `baseProfile`, `styleProfile`,
+  `category`, `subject`, `materials`, `setting`, `lighting`, `motion`,
+  `animation`, `composition`, `negativeRules` und `technicalSpec`.
+- Jeder Kategorie-Switch liest nur seinen diskriminierten Antworttyp.
+  Capability-Gates sind zusätzlich verbindlich: Richtungen nur bei
+  `directional`, Animation nur bei `animated`, Figurenhöhe nur bei
+  `scaledCharacter` und Footprint nur bei `footprint`.
+- 4 Richtungen verwenden `S, W, N, E` in einem 4×1-Layout; 8 Richtungen
+  verwenden `S, SW, W, NW, N, NE, E, SE` in einem 4×2-Layout. Kamera,
+  Bodenanker und Weltlicht bleiben fest, nur das Motiv rotiert.
+- Freie Artworks erhalten keine Spielraster-, Weltkamera-, Figurenmaßstabs-,
+  Richtungs- oder Animationsregeln. Texturen erhalten flache Materialregeln,
+  und Tileset-Atlaswerte stammen aus der bestehenden puren Metrik.
+- Stabile Textnormalisierung und First-occurrence-Deduplizierung verhindern
+  schwankende Reihenfolgen und doppelte Negativ-/Technikzeilen. Direkte Namen
+  bestehender Spiele, Marken, Figuren oder Kunstschaffender sind kein Teil der
+  Engine-Vorlagen.
 
 ---
 

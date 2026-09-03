@@ -70,7 +70,8 @@ V1 inventarisieren ✓
 → Tileset-Editor mit Kanten-, Seam-, Varianten- und Atlasmodell ✓
 → Item-/Equipment-Editor mit Material-, Funktions- und Lesbarkeitsmodell ✓
 → Artwork-Editor mit freier Komposition und Lichtdramaturgie ✓
-→ Prompt Engine 2.0 (nächste Phase)
+→ modulare Prompt Engine 2.0 mit vier Ausgaben ✓
+→ Review und Output Workspace (nächste Phase)
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
 ```
@@ -236,14 +237,23 @@ Artwork-Felder folgen demselben Base→Category→Asset-, Minimalprojektions-,
 Explicit-Clear-, Rohzustands-, Autosave- und schreibfreien Resume-Vertrag;
 Live-Zusammenfassung und Dashboard zeigen nur kompakte Artwork-Fakten.
 
+Die frameworkfreie Prompt Engine unter `src/domain/prompt-engine/` verarbeitet
+bereits aufgelöste Profile über zwölf feste, pure Module. Sie erzeugt
+deterministisch Hauptprompt, Negativprompt, technische Spezifikation und die
+kombinierte Ausgabe; `both` liefert getrennte klassische und düstere Pakete.
+Kategorie- und Capability-Gates verhindern Richtungsregeln bei statischen
+Assets und halten freie Artworks frei von Spielraster, Weltkamera,
+Figurenmaßstab und Animation. Die React-Ansicht für Review, Copy und Export
+folgt separat in Prompt 24.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 22 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 23 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 23 — Prompt Engine 2.0
+→ Prompt 24 — Review und Output Workspace
 ```
 
 Danach immer genau:

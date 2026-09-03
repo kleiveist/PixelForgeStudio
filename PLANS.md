@@ -4,10 +4,63 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** Prompt 22 — Artwork Editor (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 23 — Prompt Engine 2.0 (noch nicht begonnen)
-- **Zuletzt abgeschlossen:** Prompt 22 — Artwork Editor
+- **Aktuelle Aufgabe:** Prompt 23 — Prompt Engine 2.0 (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 24 — Review und Output Workspace (noch nicht begonnen)
+- **Zuletzt abgeschlossen:** Prompt 23 — Prompt Engine 2.0
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 23
+
+1. Einen frameworkfreien öffentlichen `domain/prompt-engine`-Vertrag für
+   aufgelöste Profile, gewünschte Sprache, getrennte Stilvarianten und die vier
+   stabilen Ausgaben definieren. `styleProfile: both` erzeugt getrennte
+   klassische und düstere Pakete; die kombinierte Ausgabe setzt ausschließlich
+   Hauptprompt, Negativprompt und technische Spezifikation zusammen.
+2. Die feste Modulreihenfolge `baseProfile`, `styleProfile`, `category`,
+   `subject`, `materials`, `setting`, `lighting`, `motion`, `animation`,
+   `composition`, `negativeRules`, `technicalSpec` als kleine pure
+   TypeScript-Builder implementieren.
+3. Alle neun diskriminierten Kategorieantworten ausschließlich in ihren
+   fachlich passenden Modulen abbilden. Richtungstext und Richtungsmetriken
+   erscheinen nur bei `directional`, Animation bleibt getrennt, und Kamera
+   sowie Weltlicht werden für Richtungssets ausdrücklich konstant gehalten.
+4. Technische Spezifikationen aus wirksamen Profilwerten und vorhandenen
+   Kategorieantworten erzeugen. Freie Artworks lassen Tile-, Weltkamera-,
+   Figuren-, Sprite-, Richtungs- und Animationsregeln aus; Tilesets verwenden
+   die bestehende pure Atlasmetrik statt einer zweiten Berechnung.
+5. Globale und kategoriespezifische Negativregeln dynamisch zusammensetzen,
+   Dubletten stabil entfernen und ausschließlich allgemeine Stilmerkmale statt
+   direkter Spiel-, Marken-, Figuren- oder Künstlerreferenzen verwenden.
+6. Struktur- und Snapshot-Tests mindestens für NPC, Holztextur, Winterbaum,
+   Gebäude, bewegliches Objekt und Artwork sowie ergänzende Guards für alle
+   Kategorien, Sprache, Stilpakete und deterministische Unveränderlichkeit
+   hinzufügen. Danach Dokumentation, `npm run verify`, `git diff --check`,
+   Abschlussaudit und separaten Prompt-23-Commit ausführen; Prompt 24 bleibt
+   unangetastet.
+
+## Ergebnis Prompt 23
+
+1. `src/domain/prompt-engine/index.ts` veröffentlicht den frameworkfreien
+   Vertrag `buildPromptPackages()` für bereits validierte und aufgelöste
+   Profile. Ein Paket enthält getrennt `main`, `negative`, `technical` und
+   `combined`; `styleProfile: both` ergibt bewusst zwei Stilpakete und die
+   optionale Sprachauswahl wird kanonisch dedupliziert.
+2. Zwölf pure Builder laufen in einer unveränderlichen festen Reihenfolge von
+   Basisprofil und Stil über Kategorie-/Fachmodule bis zu dynamischen
+   Negativregeln und technischer Spezifikation. Normalisierung und stabile
+   Dublettenentfernung machen wiederholte Builds deterministisch.
+3. Die Engine verzweigt ausschließlich über die diskriminierte Kategorie und
+   aufgelöste Capabilities. 4/8-Richtungen erscheinen nur bei `directional`,
+   Animation bleibt unabhängig, und Richtungssets sperren Kamera, Bodenanker
+   und Weltlicht bei reiner Motivrotation.
+4. Freie Artworks erhalten keine Tile-, Weltkamera-, Figurenmaßstabs-,
+   Richtungs- oder Animationsvorgaben. Texturen bleiben flache Materialmuster;
+   Atlasangaben verwenden die bestehende pure Tileset-Metrik.
+5. Neun Engine-Tests prüfen die sechs Pflichtfälle, alle neun Kategorien,
+   kategoriefremde Daten, deutsche/englische Stilpakete, Unveränderlichkeit,
+   deterministische Ausgabe und Tileset-Atlaswerte. Der vollständige Stand
+   umfasst 99 Vitest-Dateien mit 572 erfolgreichen Tests sowie 10 erfolgreiche
+   Legacy-Tests.
 
 ## Ausführungsplan Prompt 22
 
@@ -1138,18 +1191,16 @@
    RTL-Tests sichern den vollständigen Artwork-Roundtrip und die Lesbarkeit
    alter Schema-V2-Daten ab.
 
-## Übergabe an Prompt 23
+## Übergabe an Prompt 24
 
-- Implementiere ausschließlich die modulare, frameworkfreie Prompt Engine 2.0
-  aus `docs/CODEX-V2-PROMPTS.md`; die neun Kategorieeditoren sind dafür die
-  validierten Eingabegrenzen.
-- Erzeuge Hauptprompt, Negativprompt, technische Spezifikation und kombinierte
-  Ausgabe deterministisch und ignoriere kategoriefremde Felder.
-- Richtungsregeln dürfen nur bei `directional` erscheinen. Freie Artworks
-  dürfen keine Tile-, Sprite- oder Weltkameraregeln aus geerbten Altwerten in
-  die Ausgabe übernehmen.
-- Review-/Output-UI, Copy-/Export-Flows und Profilkonvertierung bleiben den
-  späteren Prompts 24 und 25 vorbehalten.
+- Nutze ausschließlich den öffentlichen `domain/prompt-engine`-Vertrag und
+  bereits aufgelöste Profile; dupliziere keine Promptlogik in React.
+- Baue die vier Ausgaben in den Review-/Output-Workspace ein und mache
+  Paketwahl, Zusammenfassung sowie Konfliktwarnungen zugänglich sichtbar.
+- Copy, TXT-, JSON- und Profilspeicheraktionen erhalten injizierbare,
+  testbare Grenzen und laufen über bestehende Adapter.
+- Profilkonvertierung, abschließende Accessibility-Politur und Release-Cleanup
+  bleiben den späteren Prompts 25 bis 27 vorbehalten.
 
 ## Erfasster Legacy-Ist-Stand
 
@@ -1200,7 +1251,7 @@
 | 19 | Tileset-Editor | Tile-/Transition-/Seam-Regeln | abgeschlossen |
 | 20 | Item-/Ausrüstungseditor | Spielasset-spezifische Darstellung | abgeschlossen |
 | 21 | Artwork-Editor | freie Komposition ohne erzwungene Tilelogik | abgeschlossen |
-| 22 | Prompt Engine 2.0 | modulare TS-Promptbausteine | offen |
+| 22 | Prompt Engine 2.0 | modulare TS-Promptbausteine | abgeschlossen |
 | 23 | Review + Output Workspace | vier Ausgaben, Kopieren, Export | offen |
 | 24 | Profilkonvertierung | technische Konflikte sichtbar lösen | offen |
 | 25 | Accessibility + Responsive | Tastatur, Kontrast, mobile Layouts | offen |

@@ -607,10 +607,11 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   schreibfreies Resume. `freeComposition` blendet Tile-, Sprite-, Weltkamera-,
   Figuren-, Richtungs- und Animationsregeln aus; Summary und Dashboard zeigen
   nur kompakte tatsächliche Artwork-Fakten.
-- Prompts 00 bis 22 sind abgeschlossen. Prompt 23 ergänzt als nächste Phase
-  die Prompt Engine 2.0. Prompt 22 enthält weder Prompt Engine
-  beziehungsweise Review-/Output-Erzeugung noch In-place-Mutation oder
-  Reparenting einer bestehenden Basisfamilie.
+- Prompts 00 bis 23 sind abgeschlossen. Die frameworkfreie Prompt Engine 2.0
+  verarbeitet aufgelöste Profile bereits vollständig; Prompt 24 ergänzt als
+  nächste Phase ausschließlich Review-/Output-UI und Aktionen. In-place-
+  Mutation oder Reparenting einer bestehenden Basisfamilie bleiben außerhalb
+  dieses Stands.
 
 ---
 
@@ -1211,6 +1212,28 @@ Irrelevante Kategoriefelder dürfen nicht in die Ausgabe gelangen.
 ### Stilabgrenzung
 
 Keine direkten Namen bestehender Spiele, Marken, Figuren oder Künstler in generierten Prompts. Beschreibe ausschließlich allgemeine Eigenschaften.
+
+### Umgesetzter Engine-Vertrag seit Prompt 23
+
+- `src/domain/prompt-engine/index.ts` ist die öffentliche pure TypeScript-
+  Grenze. `buildPromptPackages()` akzeptiert ein bereits validiertes und
+  aufgelöstes Profil sowie optional `en`/`de`; es liest oder verändert weder
+  React-, Browser-, Storage- noch Formzustand.
+- Die zwölf Bausteine laufen in der dokumentierten festen Reihenfolge und
+  liefern strukturierte Hauptabschnitte, negative Regeln und technische
+  Fakten. Die Aggregation normalisiert Leerraum, entfernt Dubletten stabil und
+  baut daraus `main`, `negative`, `technical` und `combined`.
+- `classic` und `dark` ergeben je ein Paket; `both` ergibt getrennte Pakete,
+  ohne widersprüchliche Stilvorgaben in einem Prompt zu mischen.
+- Diskriminierte Kategorien und zentrale Capabilities sind die einzige
+  Relevanzquelle. Richtungsreihenfolge und 4×1-/4×2-Layout erscheinen nur bei
+  `directional`; Kamera, Bodenanker und Weltlicht bleiben dabei konstant.
+  Animation darf unabhängig davon existieren.
+- `freeComposition` unterdrückt Spielraster, Weltkamera, Figurenmaßstab,
+  Richtungsset und Animation. Tileset-Atlaswerte werden über
+  `createTilesetTechnicalSpecification()` bezogen und nicht neu berechnet.
+- Prompt 23 enthält absichtlich keine React-Ausgabe, Clipboard-, TXT-, JSON-
+  oder Speicheraktionen; diese Integration ist die Grenze von Prompt 24.
 
 ---
 
