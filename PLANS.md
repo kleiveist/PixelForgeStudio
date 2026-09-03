@@ -4,9 +4,40 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Abgeschlossene Aufgabe:** Prompt 13 — Basisprofil-Editor
-- **Nächste Aufgabe:** Prompt 14 — Character/NPC Editor
+- **Abgeschlossene Aufgabe:** Prompt 14 — Character/NPC Editor
+- **Nächste Aufgabe:** Prompt 15 — Moving Object Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 14
+
+1. Das gemeinsame strikte `CharacterAnswersSchema` additiv um den vollständigen
+   Figuren- und NPC-Katalog erweitern. Bestehende V2-Felder bleiben lesbar;
+   `characterHeight` bleibt ausschließlich technischer Profilwert und wird nie
+   als Figurenantwort dupliziert.
+2. Den bisherigen einzelnen Animationswert durch eine kanonisch geordnete,
+   eindeutige Liste gewählter Aktionen mit eigener Framezahl (1–8) ergänzen.
+   Idle, Walk, Run, Attack, Use und Talk sind Pflichtoptionen; bestehende
+   Interact-/Hurt-/Special-Daten bleiben kompatibel. Richtung und Animation
+   werden weiterhin unabhängig über Capabilities validiert.
+3. Einen eigenständigen, responsiven `character-editor` als Wizard-Schritt
+   direkt nach dem Basisprofil ergänzen. Er zeigt Identität, Körper, Kopf,
+   Kleidung, Ausrüstung, Material, Palette, Ausdruck und Silhouette sowie
+   bedingte NPC-Fragen. Die wirksame Figurenhöhe erscheint nur read-only mit
+   Quelle und Lock-Status.
+4. Character-Animationen im bestehenden capability-gesteuerten
+   Animationsschritt als zugängliche Aktionsauswahl mit Frames je Aktion
+   abbilden. Die Richtungswahl bleibt ausschließlich im `directional`-Schritt;
+   feste Kamera, Weltlicht, Fußanker und Neuzeichnung asymmetrischer Details
+   werden sichtbar erklärt.
+5. Alle neuen Werte vollständig durch RHF-Rohsnapshot, Draft-Hydration,
+   minimale Draft-Projektion, Autosave, Resume und Live-Zusammenfassung führen.
+   Kategorie-/Untertypwechsel entfernen Character-Daten, ein Basiswechsel
+   behält sie; Nicht-Character-Flows erhalten weder Step noch Antworten.
+6. Schema-, Domain-, Routing-, Lifecycle- und RTL-Tests für vollständigen
+   Roundtrip, alte V2-Daten, 80-px-Vererbung, Locks, acht Richtungen,
+   Aktionen/Frames, schreibfreie Hydration und Bereinigung ergänzen. Danach
+   Dokumentation, Vollverifikation, Abschlussaudit und separaten Prompt-14-
+   Commit ausführen.
 
 ## Ausführungsplan Prompt 13
 
@@ -542,6 +573,61 @@
   schreibfreie Profil-/Resume-Hydration, Zusammenfassung und responsive
   Tastaturbedienung gemeinsam abdecken.
 
+## Ergebnis Prompt 14
+
+1. Die öffentliche Character-Domain stellt kanonische Kataloge für Körper,
+   Darstellung und Animation sowie NPC-/Humanoid-Untertypregeln bereit. Das
+   gemeinsame strikte `CharacterAnswersSchema` umfasst den vollständigen
+   Character-/NPC-Katalog; alle neuen Antworten bleiben optional und
+   `characterHeight` ist weiterhin ausschließlich ein technischer Profilwert.
+2. Ein eigener Schritt `Figur und Rolle` liegt nach der Basisprofilwahl und
+   vor Richtung und Animation. Der responsive RHF-Editor gliedert Identität,
+   Körper, Kopf, Kleidung, Zubehör, Material, Palette und Lesbarkeit,
+   blendet NPC-Kontext nur für passende Untertypen ein und entfernt humanoide
+   Kleidungsfragen bei Tier und Kreatur.
+3. Der Editor zeigt die wirksame Figurenhöhe read-only mit Quelle und
+   Lock-Status. Damit bleiben die 80 px der Standardfamilie geerbt;
+   Character-Antworten und redundante technische Asset-Overrides duplizieren
+   den geerbten Wert nicht.
+4. Richtungswahl bleibt allein im `directional`-Schritt und unterstützt vier
+   oder acht Ansichten. Animation bleibt davon getrennt: eine kanonisch
+   geordnete, eindeutige `animationActions`-Liste speichert pro gewählter
+   Aktion ein bis acht Frames. Walk startet bei fünf Frames; vorhandene
+   Einzelaktionsdaten bleiben lesbar und werden beim nächsten gültigen
+   Benutzer-Write in die neue Form überführt.
+5. Sämtliche Character-Werte laufen verlustfrei durch RHF-Rohsnapshot,
+   Draft-Hydration, Autosave und Resume. Ein Basisfamilienwechsel behält
+   Character-Antworten, während Kategorie- oder Untertypwechsel sie selbst bei
+   einem veralteten Formularsnapshot an der Mapper-Grenze entfernen.
+   Wird ein geerbtes optionales Character-Default ausdrücklich geleert, löst
+   der Draft die Kategorieprovenienz und materialisiert alle übrigen wirksamen
+   Fach- und Technikwerte, damit der gelöschte Wert beim Resume nicht zurückkehrt.
+   Profilstart, Resume und Mount bleiben schreibfrei.
+6. Live-Zusammenfassung und Dashboard-Projektion zeigen die tatsächliche Rolle,
+   geerbte Höhe, gewählte Richtungszahl sowie jede konfigurierte Aktion mit
+   eigener Framezahl. Schema-, Domain-, Routing-, Lifecycle-, Dashboard- und
+   RTL-Tests decken zusätzlich Locks, Legacy-Hydration und Nicht-Character-
+   Ausschluss ab.
+
+## Übergabe an Prompt 15
+
+- Ergänze den Moving-Object-Editor als eigenen Feature-Schritt außerhalb der
+  generischen `GuidedWizardEngine`. Er folgt demselben Base-/Capability-Vertrag,
+  darf aber keine Character-Felder oder NPC-Untertypregeln wiederverwenden.
+- Erweitere das strikte `MovingObjectAnswersSchema` um Objektklasse,
+  Bewegungsart, Footprint, Anker, Material und Zustand. Neue Antworten müssen
+  wieder durch Rohsnapshot, Draft-Mapping, Autosave, Resume und Summary laufen.
+- Richtung bleibt ausschließlich über `directional` sichtbar: Ein Wagen kann
+  vier oder acht Ansichten erhalten, ein nur pulsierender beziehungsweise
+  schwebender Kristall darf durch `animated` nicht automatisch richtungsfähig
+  werden.
+- Das Character-spezifische `animationActions`-Modell und dessen Framebereich
+  bleiben isoliert. Definiere für bewegliche Nicht-Figuren die fachlich
+  passende Animations-/Frameabbildung, ohne Legacy-V2-Daten unlesbar zu machen.
+- Kategorie-/Untertypwechsel müssen Moving-Object-Daten defensiv bereinigen;
+  ein reiner Basiswechsel behält sie. Prompt Engine, Review und Export bleiben
+  weiterhin späteren Phasen vorbehalten.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -582,7 +668,7 @@
 | 10 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | abgeschlossen |
 | 11 | Kategorie-Routing | Capability-gesteuerte Fragen | abgeschlossen |
 | 12 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | abgeschlossen |
-| 13 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | offen |
+| 13 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | abgeschlossen |
 | 14 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | offen |
 | 15 | Textur-/Materialeditor | Material, Seamless, Oberfläche | offen |
 | 16 | Natur-/Baumeditor | Klima, Saison, Krone, Stamm etc. | offen |

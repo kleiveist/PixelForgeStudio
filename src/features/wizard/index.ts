@@ -1,7 +1,9 @@
 export {
+  WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_CORE_STEPS,
   WizardAnimationStepSchema,
   WizardCategoryStepSchema,
+  WizardCharacterDetailsStepSchema,
   WizardCoreFormSchema,
   WizardDirectionStepSchema,
   WizardProjectStepSchema,

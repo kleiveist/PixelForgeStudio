@@ -351,12 +351,14 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 13
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 14
 
-- `project`, `category`/`subtype`, `baseProfile` und die Capability-Schritte
+- `project`, `category`/`subtype`, `baseProfile`, `characterDetails` und die
+  Capability-Schritte
   sind stabil und deklarativ konfiguriert; jeder besitzt Zod-Schema und
   RHF-Feldpfade. Die Reihenfolge ist
-  `project → category/subtype → baseProfile → Capability-Schritte`.
+  `project → category/subtype → baseProfile → characterDetails, falls
+  Character → Capability-Schritte`.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
   Draft-Mapping, Zusammenfassung und optionale `isApplicable`-Prädikate bereit
@@ -414,9 +416,35 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   und Editorwerte unangetastet sichtbar. Scheitert erst der nachfolgende
   Draft-Autosave, bleibt die bereits angelegte Familie erhalten und die
   sichtbare Sitzungsänderung wird als ungesichert gemeldet.
-- Prompt 14 ergänzt als nächste Phase die Character/NPC-Fachfragen. Prompt 13
-  enthält weder einen NPC-Detail-Editor noch In-place-Mutation oder
-  Reparenting einer bestehenden Basisfamilie.
+- Der Character-/NPC-Detail-Editor ist ein eigener Fachschritt direkt nach der
+  Basisprofilwahl. Er erscheint nur für die Hauptkategorie `character` und
+  gruppiert Identität, Körper, Gesicht, Kleidung, Ausrüstung, Material,
+  Palette, Ausdruck und Silhouette. NPC-Kontextfelder sowie humanoide
+  Kleidungsgruppen sind zusätzlich nach Untertyp gegated.
+- Character-Felder bleiben vollständig in RHF und laufen über dieselbe
+  Draft↔Form-Projektion, Dirty-Erkennung, 300-ms-Autosave- und Resume-Strecke.
+  Kategorie- oder Untertypwechsel entfernen alte Character-Antworten; ein
+  bestätigter Basiswechsel erhält sie. Mount, Profil-Hydration und Resume
+  bleiben schreibfrei.
+- Ein ausdrücklich geleertes, vom Kategorieprofil geerbtes Character-Feld
+  löst dessen Verknüpfung im Draft. Die Projektion materialisiert dabei alle
+  übrigen wirksamen Character- und Technikwerte relativ zur Base; entfernte
+  Richtungen oder Animationen werden beim Resume nicht wiederhergestellt.
+- Die Figurenhöhe wird aus der wirksamen Profilkette gelesen, im Fachschritt
+  read-only mit Base-/Category-/lokaler Quelle und Lock-Status angezeigt und
+  nicht in den Character-Antworten dupliziert.
+- Richtung bleibt ein eigener, ausschließlich bei `directional` sichtbarer
+  4/8-Schritt. Animation bleibt unabhängig davon und speichert ausgewählte
+  Aktionen als eindeutige, kanonisch sortierte `animationActions` mit jeweils
+  1 bis 8 Frames; Walk startet bei 5. Alte Schema-V2-Werte
+  `animationAction`/`framesPerDirection` werden gelesen, neue UI-Schreibvorgänge
+  erzeugen nur das kanonische Modell.
+- Live-Zusammenfassung und Dashboard-Aktivitätsprojektion zeigen die
+  tatsächliche Character-Rolle, Richtungszahl und Aktionen mit Frames statt
+  bloßer Capability-Potenziale.
+- Prompt 15 ergänzt als nächste Phase den Moving-Object-Editor. Prompt 14
+  enthält weder Prompt Engine beziehungsweise Review-/Output-Erzeugung noch
+  In-place-Mutation oder Reparenting einer bestehenden Basisfamilie.
 
 ---
 
@@ -652,6 +680,24 @@ Fragen mindestens:
 - Idle/Walk/Run/Attack/Use/Talk nach Auswahl
 - Frames pro Aktion
 
+Umgesetzt seit Prompt 14:
+
+- `src/domain/characters/` veröffentlicht die stabilen Auswahlkataloge,
+  NPC-/Humanoid-Guards, Aktionsreihenfolge und Frame-Defaults ohne React.
+- `CharacterAnswersSchema` erweitert den bestehenden Character-Vertrag strikt
+  und additiv um optionale, begrenzte Detailfelder. Die Figurenhöhe gehört
+  bewusst nicht zu diesen Antworten.
+- `src/features/character-editor/` rendert den Detail- und den separaten
+  Animationseditor; der Wizard bindet den Detailteil direkt nach dem
+  Basisprofil ein.
+- Das neue persistierte Aktionsmodell ist
+  `animationActions: [{ action, frames }]`. Jede Aktion ist eindeutig und hat
+  1 bis 8 Frames; die kanonische Domainreihenfolge macht die Ausgabe
+  deterministisch. Bestehende Ein-Aktions-Daten bleiben nur als Lesepfad
+  erhalten.
+- Die Auswahl einer Ausgabeart, Promptmodule und der Output Workspace bleiben
+  Gegenstand späterer Prompts.
+
 ## 13.2 Moving Object
 
 - Objektklasse
@@ -841,6 +887,8 @@ Mit Vitest:
 - Locks
 - Compatibility Key
 - Zod-Schemas
+- Character-Antwortgrenzen, eindeutige Aktionslisten und Legacy-Lesbarkeit
+- Character-Draft↔RHF-Roundtrip sowie Bereinigung bei Klassifikationswechseln
 - Migrationslogik
 - Promptmodule
 - Canvas-/Frame-Metriken
@@ -854,6 +902,9 @@ Mit React Testing Library + user-event:
 - Wizard vor/zurück
 - Kategorieabhängige Felder
 - NPC 8-Direction sichtbar, Holztextur nicht
+- Character-Detailstep, NPC-/Humanoid-Gating und geerbte/gesperrte Figurenhöhe
+- mehrere Character-Aktionen mit jeweils 1–8 Frames und Walk-Default 5
+- Character-Autosave, schreibfreie Hydration/Resume und Live-Zusammenfassung
 - Theme-Wechsel
 - Profil laden/speichern
 - Lock-Konfliktworkflow

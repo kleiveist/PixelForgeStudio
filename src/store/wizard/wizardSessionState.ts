@@ -3,6 +3,7 @@ import type {
   AssetSubtype,
   DirectionCount
 } from "../../domain/assets";
+import type { CharacterAnimationActionId } from "../../domain/characters";
 import { jsonValuesEqual } from "../../domain/json";
 import type {
   CharacterAnswers,
@@ -50,6 +51,54 @@ export interface WizardRawCoreFormValues {
   readonly nearestNeighbor?: BaseProfileValues["nearestNeighbor"] | undefined;
   readonly lightingPolicy?: BaseProfileValues["lightingDefaults"]["policy"] | undefined;
   readonly lightingNotes?: BaseProfileValues["lightingDefaults"]["notes"] | undefined;
+  readonly role?: CharacterAnswers["role"];
+  readonly subjectDescription?: CharacterAnswers["subjectDescription"];
+  readonly variantCount?: CharacterAnswers["variantCount"];
+  readonly genderPresentation?: CharacterAnswers["genderPresentation"];
+  readonly age?: CharacterAnswers["age"];
+  readonly relativeHeight?: CharacterAnswers["relativeHeight"];
+  readonly bodyBuild?: CharacterAnswers["bodyBuild"];
+  readonly posture?: CharacterAnswers["posture"];
+  readonly faceShape?: CharacterAnswers["faceShape"];
+  readonly skinTone?: CharacterAnswers["skinTone"];
+  readonly eyeVisibility?: CharacterAnswers["eyeVisibility"];
+  readonly hair?: CharacterAnswers["hair"];
+  readonly hairstyle?: CharacterAnswers["hairstyle"];
+  readonly beard?: CharacterAnswers["beard"];
+  readonly hat?: CharacterAnswers["hat"];
+  readonly headwearCondition?: CharacterAnswers["headwearCondition"];
+  readonly scarf?: CharacterAnswers["scarf"];
+  readonly outerwear?: CharacterAnswers["outerwear"];
+  readonly lowerwear?: CharacterAnswers["lowerwear"];
+  readonly clothingLayers?: CharacterAnswers["clothingLayers"];
+  readonly gloves?: CharacterAnswers["gloves"];
+  readonly handPose?: CharacterAnswers["handPose"];
+  readonly shoes?: CharacterAnswers["shoes"];
+  readonly beltBags?: CharacterAnswers["beltBags"];
+  readonly accessories?: CharacterAnswers["accessories"];
+  readonly backItem?: CharacterAnswers["backItem"];
+  readonly equipment?: CharacterAnswers["equipment"];
+  readonly materials?: CharacterAnswers["materials"];
+  readonly characterPaletteSource?: CharacterAnswers["characterPaletteSource"];
+  readonly primaryColor?: CharacterAnswers["primaryColor"];
+  readonly secondaryColor?: CharacterAnswers["secondaryColor"];
+  readonly accentColor?: CharacterAnswers["accentColor"];
+  readonly condition?: CharacterAnswers["condition"];
+  readonly expression?: CharacterAnswers["expression"];
+  readonly silhouette?: CharacterAnswers["silhouette"];
+  readonly pose?: CharacterAnswers["pose"];
+  readonly professionReadable?: CharacterAnswers["professionReadable"];
+  readonly socialRole?: CharacterAnswers["socialRole"];
+  readonly wealth?: CharacterAnswers["wealth"];
+  readonly culturalFunction?: CharacterAnswers["culturalFunction"];
+  readonly typicalActivity?: CharacterAnswers["typicalActivity"];
+  readonly conversationGesture?: CharacterAnswers["conversationGesture"];
+  readonly everydayTool?: CharacterAnswers["everydayTool"];
+  readonly frontBackDetails?: CharacterAnswers["frontBackDetails"];
+  readonly extraDetails?: CharacterAnswers["extraDetails"];
+  readonly characterAnimationFrames?: Readonly<
+    Partial<Record<CharacterAnimationActionId, number>>
+  > | undefined;
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:

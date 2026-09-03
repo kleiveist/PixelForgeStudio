@@ -517,6 +517,102 @@ describe("profile resolution", () => {
     expect(inherited.profile.valueSources.tileSize).toBe("category");
   });
 
+  it("lets an asset legacy character animation replace inherited canonical actions", () => {
+    const baseProfile = createBaseProfile();
+    const categoryProfile = createNpcCategoryProfile({
+      defaults: {
+        role: "villager",
+        directionCount: 8,
+        animationActions: [
+          { action: "idle", frames: 2 },
+          { action: "walk", frames: 5 }
+        ]
+      }
+    });
+    const assetProfile = createNpcAssetProfile({
+      answers: {
+        role: "guard",
+        directionCount: 8,
+        animationAction: "attack",
+        framesPerDirection: 4
+      }
+    });
+
+    const result = resolveProfile({ baseProfile, categoryProfile, assetProfile });
+
+    expectResolved(result);
+    expect(result.profile.categoryData.answers).toMatchObject({
+      role: "guard",
+      directionCount: 8,
+      animationAction: "attack",
+      framesPerDirection: 4
+    });
+    expect(result.profile.categoryData.answers).not.toHaveProperty("animationActions");
+  });
+
+  it("lets canonical asset actions replace inherited and same-level legacy animation data", () => {
+    const baseProfile = createBaseProfile();
+    const categoryProfile = createNpcCategoryProfile({
+      defaults: {
+        role: "villager",
+        directionCount: 8,
+        animationAction: "walk",
+        framesPerDirection: 5
+      }
+    });
+    const assetProfile = createNpcAssetProfile({
+      answers: {
+        role: "guard",
+        directionCount: 8,
+        animationActions: [
+          { action: "idle", frames: 2 },
+          { action: "run", frames: 6 }
+        ],
+        animationAction: "attack",
+        framesPerDirection: 8
+      }
+    });
+
+    const result = resolveProfile({ baseProfile, categoryProfile, assetProfile });
+
+    expectResolved(result);
+    expect(result.profile.categoryData.answers).toMatchObject({
+      role: "guard",
+      directionCount: 8,
+      animationActions: [
+        { action: "idle", frames: 2 },
+        { action: "run", frames: 6 }
+      ]
+    });
+    expect(result.profile.categoryData.answers).not.toHaveProperty("animationAction");
+    expect(result.profile.categoryData.answers).not.toHaveProperty("framesPerDirection");
+  });
+
+  it("prefers canonical character actions over legacy fields within category defaults", () => {
+    const baseProfile = createBaseProfile();
+    const categoryProfile = createNpcCategoryProfile({
+      defaults: {
+        role: "villager",
+        directionCount: 8,
+        animationActions: [{ action: "walk", frames: 5 }],
+        animationAction: "idle",
+        framesPerDirection: 2
+      }
+    });
+    const assetProfile = createNpcAssetProfile({ answers: { role: "guard" } });
+
+    const result = resolveProfile({ baseProfile, categoryProfile, assetProfile });
+
+    expectResolved(result);
+    expect(result.profile.categoryData.answers).toMatchObject({
+      role: "guard",
+      directionCount: 8,
+      animationActions: [{ action: "walk", frames: 5 }]
+    });
+    expect(result.profile.categoryData.answers).not.toHaveProperty("animationAction");
+    expect(result.profile.categoryData.answers).not.toHaveProperty("framesPerDirection");
+  });
+
   it("treats canonical equal locked values as redundant instead of conflicting", () => {
     const baseProfile = createBaseProfile({
       locks: { alphaPadding: true, lightingDefaults: true },

@@ -231,6 +231,7 @@ describe("profile library data", () => {
       "3/4-RPG",
       "80 px Figur",
       "Transparent",
+      "Rolle: blacksmith",
       "8 Richtungen",
       "Walk · 5 Frames",
       "Stil A + B"

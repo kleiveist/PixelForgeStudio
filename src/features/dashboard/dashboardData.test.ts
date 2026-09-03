@@ -345,6 +345,7 @@ describe("dashboard data", () => {
         "3/4-RPG",
         "80 px Figur",
         "Transparent",
+        "Rolle: blacksmith",
         "8 Richtungen",
         "Walk · 5 Frames",
         "Stil A + B"
@@ -366,6 +367,50 @@ describe("dashboard data", () => {
     });
     expect(artworkSummary?.facts.join(" ")).not.toMatch(
       /Tile|Figur|Richtung|3\/4/
+    );
+  });
+
+  it("projects every canonical Character action with its own frame count", () => {
+    const baseProfile = createBaseProfile();
+    const legacyCharacter = createCharacterProfile(baseProfile, {
+      id: "asset_character_canonical_source",
+      updatedAt: "2026-09-04T09:00:00.000Z"
+    });
+    if (legacyCharacter.category !== "character") {
+      throw new Error("Expected a Character fixture.");
+    }
+    const {
+      animationAction: _legacyAction,
+      framesPerDirection: _legacyFrames,
+      ...portableAnswers
+    } = legacyCharacter.answers;
+    void _legacyAction;
+    void _legacyFrames;
+    const character = parseAssetProfile({
+      ...legacyCharacter,
+      id: "asset_character_canonical",
+      answers: {
+        ...portableAnswers,
+        animationActions: [
+          { action: "idle", frames: 2 },
+          { action: "walk", frames: 5 },
+          { action: "use", frames: 4 }
+        ]
+      }
+    });
+
+    const result = createDashboardData(
+      validProfiles(createLibrary([baseProfile], [character])),
+      emptyDraftResult,
+      null
+    );
+
+    expect(result.recentProfiles[0]?.facts).toEqual(
+      expect.arrayContaining([
+        "Idle · 2 Frames",
+        "Walk · 5 Frames",
+        "Benutzen · 4 Frames"
+      ])
     );
   });
 

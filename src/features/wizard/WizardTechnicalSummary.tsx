@@ -3,6 +3,10 @@ import type {
   AssetCategory,
   AssetSubtype
 } from "../../domain/assets";
+import {
+  CHARACTER_ANIMATION_ACTION_IDS,
+  type CharacterAnimationActionId
+} from "../../domain/characters";
 import type { ResolvedProfile } from "../../domain/profiles";
 import type {
   BaseProfile,
@@ -14,6 +18,7 @@ import {
   getDashboardCategory
 } from "../dashboard/dashboardCatalog";
 import { resolveWizardDraftSnapshot } from "./wizardLifecycle";
+import type { WizardCoreFormValues } from "./wizardSteps";
 import styles from "./WizardView.module.css";
 
 const PIXEL_DENSITY_LABELS = {
@@ -60,6 +65,40 @@ const LIGHTING_LABELS = {
   coolNight: "Kühles Nachtlicht",
   custom: "Individuell"
 } as const;
+
+const CHARACTER_ANIMATION_LABELS: Readonly<
+  Record<CharacterAnimationActionId, string>
+> = {
+  idle: "Idle",
+  walk: "Walk",
+  run: "Run",
+  attack: "Attack",
+  use: "Use",
+  talk: "Talk",
+  interact: "Interact",
+  hurt: "Hurt",
+  special: "Spezialaktion"
+};
+
+function characterAnimationSummary(
+  frames: WizardCoreFormValues["characterAnimationFrames"]
+): string {
+  if (frames === undefined) return "Noch nicht ausgewählt";
+
+  const selected = CHARACTER_ANIMATION_ACTION_IDS.flatMap((action) => {
+    const frameCount = frames[action];
+    if (frameCount === undefined) return [];
+    return [
+      `${CHARACTER_ANIMATION_LABELS[action]} · ${frameCount} ${
+        frameCount === 1 ? "Frame" : "Frames"
+      }`
+    ];
+  });
+
+  return selected.length === 0
+    ? "Noch nicht ausgewählt"
+    : selected.join("; ");
+}
 
 interface SummaryProfile {
   readonly base: BaseProfile | null;
@@ -135,6 +174,7 @@ export interface WizardTechnicalSummaryProps {
   readonly activeCategory: AssetCategory | null;
   readonly activeSubtype: AssetSubtype | null;
   readonly selection: WizardSelectionSummary | null;
+  readonly formValues: WizardCoreFormValues;
 }
 
 export function WizardTechnicalSummary({
@@ -144,7 +184,8 @@ export function WizardTechnicalSummary({
   projectName,
   activeCategory,
   activeSubtype,
-  selection
+  selection,
+  formValues
 }: WizardTechnicalSummaryProps) {
   const category = summaryCategory(draft, categoryHint, activeCategory);
   const draftMatchesActiveSelection =
@@ -153,7 +194,7 @@ export function WizardTechnicalSummary({
   const profile = draftMatchesActiveSelection
     ? findSummaryProfile(draft, library)
     : { base: null, resolved: null, sourceName: null };
-  const values =
+  const technicalValues =
     "category" in draft
       ? profile.resolved?.values ?? null
       : profile.base?.values ?? null;
@@ -190,7 +231,7 @@ export function WizardTechnicalSummary({
               label="Asset-Logik"
               value={[
                 selection.capabilities.movable ? "beweglich" : null,
-                selection.capabilities.directional ? "4/8 Richtungen" : null,
+                selection.capabilities.directional ? "richtungsfähig" : null,
                 selection.capabilities.animated ? "Animation" : null,
                 selection.capabilities.tileable ? "kachelbar" : null,
                 selection.capabilities.scaledCharacter ? "Figurenmaßstab" : null,
@@ -207,55 +248,95 @@ export function WizardTechnicalSummary({
         {profile.base ? (
           <SummaryFact label="Basisprofil" value={profile.base.name} />
         ) : null}
-        {values ? (
+        {selection?.category === "character" ? (
+          <>
+            {formValues.role?.trim() ? (
+              <SummaryFact
+                label="Rolle / Beruf"
+                value={formValues.role.trim()}
+              />
+            ) : null}
+            {selection.capabilities.directional ? (
+              <SummaryFact
+                label="Richtungsset"
+                value={
+                  formValues.directionCount === undefined
+                    ? "Noch nicht ausgewählt"
+                    : `${formValues.directionCount} Richtungen`
+                }
+              />
+            ) : null}
+            {selection.capabilities.animated ? (
+              <SummaryFact
+                label="Animationen"
+                value={characterAnimationSummary(
+                  formValues.characterAnimationFrames
+                )}
+              />
+            ) : null}
+            {formValues.silhouette?.trim() ? (
+              <SummaryFact
+                label="Silhouette"
+                value={formValues.silhouette.trim()}
+              />
+            ) : null}
+          </>
+        ) : null}
+        {technicalValues ? (
           <>
             <SummaryFact
               label="Pixelstil"
-              value={PIXEL_DENSITY_LABELS[values.pixelDensity]}
+              value={PIXEL_DENSITY_LABELS[technicalValues.pixelDensity]}
             />
             <SummaryFact
               label="Stilprofil"
-              value={STYLE_PROFILE_LABELS[values.styleProfile]}
+              value={STYLE_PROFILE_LABELS[technicalValues.styleProfile]}
             />
             {!isFreeComposition ? (
               <>
-                <SummaryFact label="Tile-Raster" value={`${values.tileSize} × ${values.tileSize} px`} />
+                <SummaryFact
+                  label="Tile-Raster"
+                  value={`${technicalValues.tileSize} × ${technicalValues.tileSize} px`}
+                />
                 <SummaryFact
                   label="Perspektive"
-                  value={PERSPECTIVE_LABELS[values.perspectiveType]}
+                  value={PERSPECTIVE_LABELS[technicalValues.perspectiveType]}
                 />
                 <SummaryFact
                   label="Projektion"
-                  value={PROJECTION_LABELS[values.projectionType]}
+                  value={PROJECTION_LABELS[technicalValues.projectionType]}
                 />
                 <SummaryFact
                   label="Kameraneigung"
-                  value={`${values.cameraAngle}°`}
+                  value={`${technicalValues.cameraAngle}°`}
                 />
               </>
             ) : null}
-            {usesCharacterScale && values.characterHeight !== undefined ? (
+            {usesCharacterScale &&
+            technicalValues.characterHeight !== undefined ? (
               <SummaryFact
                 label="Figurenhöhe"
-                value={`${values.characterHeight} px`}
+                value={`${technicalValues.characterHeight} px`}
               />
             ) : null}
             <SummaryFact
               label="Outline"
-              value={OUTLINE_LABELS[values.outlineStyle]}
+              value={OUTLINE_LABELS[technicalValues.outlineStyle]}
             />
             <SummaryFact
               label="Hintergrund"
-              value={BACKGROUND_LABELS[values.backgroundMode]}
+              value={BACKGROUND_LABELS[technicalValues.backgroundMode]}
             />
             <SummaryFact
               label="Lichtlogik"
-              value={LIGHTING_LABELS[values.lightingDefaults.policy]}
+              value={
+                LIGHTING_LABELS[technicalValues.lightingDefaults.policy]
+              }
             />
           </>
         ) : null}
       </dl>
-      {!values ? (
+      {!technicalValues ? (
         <p className={styles.summaryHint}>
           Technische Werte erscheinen, sobald ein Basisprofil Teil des
           Entwurfs ist.

@@ -61,7 +61,8 @@ V1 inventarisieren ✓
 → geführte RHF/Zod-Wizard-Engine mit Autosave und Resume ✓
 → Capability-gesteuertes Kategorie-Routing und dynamische Fragen ✓
 → Basisprofilwahl, Vererbung, Locks, Anlage und Duplikation ✓
-→ spezialisierte Editormodelle
+→ Character-/NPC-Editor mit Aktions- und Frame-Modell ✓
+→ weitere spezialisierte Editormodelle
 → Prompt Engine 2.0
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
@@ -128,9 +129,9 @@ die zur Capability passenden Fragen und Editoren.
 
 ## Spezialisierte Editoren
 
-Geplant sind getrennte React-Features für:
+Der Character-/NPC-Editor ist als erstes getrenntes React-Feature umgesetzt.
+Weitere geplante Features sind:
 
-- Character/NPC
 - Moving Object
 - Static Object
 - Texture/Material
@@ -140,16 +141,28 @@ Geplant sind getrennte React-Features für:
 - Item/Equipment
 - Artwork
 
-Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Richtungs-Auswahl. Ein Windbaum kann trotzdem animiert werden, weil `animated` und `directional` getrennt modelliert werden.
+Der Character-Schritt folgt unmittelbar auf die Basisprofilwahl und erscheint
+nur für Figuren-Untertypen. Er gruppiert Identität, Körper, Gesicht,
+Kleidung, Ausrüstung, Material, Palette und Lesbarkeit; NPC-Kontextfelder und
+humanoide Kleidung werden zusätzlich nach Untertyp eingeblendet. Die wirksame
+Figurenhöhe bleibt ein read-only Wert der Profilkette mit sichtbarer Quelle und
+Lock-Status und wird nicht als Figurenantwort dupliziert.
+
+Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine
+8-Richtungs-Auswahl. Ein Windbaum kann trotzdem animiert werden, weil
+`animated` und `directional` getrennt modelliert werden. Bei Figuren erscheint
+die 4/8-Auswahl nur mit `directional`; Animationen bleiben ein eigener Schritt
+mit eindeutigen Aktionen und jeweils 1 bis 8 Frames. Walk startet bei einer
+Neuauswahl mit 5 Frames.
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 13 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 14 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 14 — Character/NPC Editor
+→ Prompt 15 — Moving Object Editor
 ```
 
 Danach immer genau:
@@ -171,13 +184,21 @@ aktive Wizard Engine trennt die generische RHF-Navigation und Persistenz von
 einer deklarativen, produktspezifischen Flow-Definition. Sie bietet
 Zod-Validierung, sichtbaren Fortschritt, Dirty-/Autosave-Status, exaktes Resume
 und eine technische Zusammenfassung. Der stabile Einstieg lautet
-`Projekt → Hauptkategorie/Untertyp → Basisprofil → Capability-Schritte`.
+`Projekt → Hauptkategorie/Untertyp → Basisprofil → Character-Details,
+falls relevant → Capability-Schritte`.
 Der Basisprofil-Schritt zeigt wirksame Werte mit Quelle und Sperrstatus,
 normalisiert entsperrte Abweichungen zu minimalen Draft-Overrides und bietet
 bei Locks einen bewussten Wechsel, ein Duplikat oder eine neue Familie an.
 Richtungs-, Animations- oder Tileability-Schritte erscheinen ausschließlich
-nach den zentral aufgelösten Capabilities. Der Character/NPC-Detail-Editor ist
-erst Gegenstand von Prompt 14.
+nach den zentral aufgelösten Capabilities. Character-Antworten durchlaufen den
+gleichen RHF-Draft-, Autosave- und Resume-Pfad wie die Core-Felder; Wechsel von
+Kategorie oder Untertyp entfernen alte Character-Daten, ein Basiswechsel
+erhält sie. Die Zusammenfassung und die Dashboard-Projektion zeigen die
+tatsächliche Rolle, Richtungszahl sowie gewählte Aktionen mit Framezahl.
+Das ausdrückliche Leeren eines geerbten Character-Defaults löst den Entwurf
+verlustfrei vom Kategorieprofil, sodass etwa „keine Richtungen“ oder „keine
+Animation“ auch nach einem Resume bestehen bleibt.
+Prompt-Erzeugung und Output-Flächen folgen erst in ihren späteren Phasen.
 
 ## Legacy-V1 lokal prüfen
 
@@ -232,10 +253,19 @@ Das V2-Capability-System unter `src/domain/assets/` trennt Bewegung,
 Richtungsansichten und Animation. Die UI kann dadurch 4/8 Richtungen nur für
 tatsächlich `directional` Assets anbieten.
 
+Der öffentliche Character-Katalog unter `src/domain/characters/` bündelt die
+typisierten Auswahlwerte, NPC-/Humanoid-Untertypprüfungen und die kanonische
+Reihenfolge der Animationsaktionen. `animationActions` speichert jede Aktion
+genau einmal mit 1 bis 8 Frames; die UI-Vorgaben liegen ebenfalls dort und
+setzen Walk auf 5 Frames.
+
 Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
 Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
 werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
-aus den Schemas abgeleitet.
+aus den Schemas abgeleitet. Das strikt additive `CharacterAnswersSchema`
+begrenzt alle Character-Felder und eindeutigen Aktionslisten. Bestehende
+Schema-V2-Daten mit `animationAction` und `framesPerDirection` bleiben lesbar;
+neue Wizard-Projektionen schreiben ausschließlich `animationActions`.
 
 Die öffentliche Profilauflösung unter `src/domain/profiles/` führt validierte
 Base-, Kategorie- und Assetprofile zusammen. Sie setzt Locks durch, meldet
@@ -265,7 +295,9 @@ aus der Domain-Taxonomie ab. Sein reines Read-Model liest Profilbibliothek und
 Entwurf über einen injizierten Storage-Port, löst effektive Profilwerte auf und
 blendet technisch irrelevante Angaben aus. Kategorie-, Profil- und
 Entwurfsaktionen übergeben lediglich einen flüchtigen typisierten Startintent
-an den Wizard; Prompt 09 schreibt deshalb weder Profile noch Drafts.
+an den Wizard; Prompt 09 schreibt deshalb weder Profile noch Drafts. Für
+Character-Profile projiziert das Dashboard die kanonischen Aktions-/Frame-Paare
+und bleibt bei bestehenden Ein-Aktions-Daten abwärtslesbar.
 
 Die Profilbibliothek unter `src/features/profiles/` durchsucht und filtert
 Assetprofile, gruppiert sie wahlweise nach Kategorie oder ihrem neu
@@ -304,6 +336,17 @@ Mehrfeldänderungen stößt anschließend genau die normale Draft-Projektion und
 den Autosave an. Initialisierung, Profil-Hydration und Resume bleiben
 schreibfrei. Ein Wechsel der Klassifikation verwirft alte Kategorieantworten
 und Profilprovenienz, ohne ein bestehendes Basisprofil in-place zu verändern.
+
+Der spezialisierte Character-/NPC-Editor unter
+`src/features/character-editor/` ist als eigener Wizard-Schritt direkt nach
+dem Basisprofil eingebunden. Er rendert nur Character-Fachfelder und blendet
+NPC-Kontext sowie humanoide Kleidung nach Untertyp ein. Die Figurenhöhe wird
+aus der wirksamen Base→Category→lokal-Kette read-only mit Quelle und Lock
+angezeigt. Der getrennte Animationsschritt verwaltet eine formularnahe
+Aktions-/Frame-Map, die das Draft-Mapping deterministisch in eindeutige,
+kanonisch sortierte `animationActions` umwandelt. Rolle, Richtungen,
+Animationen und Silhouette fließen live in die technische Zusammenfassung;
+Mount, Hydration und Resume bleiben auch für diese Felder schreibfrei.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

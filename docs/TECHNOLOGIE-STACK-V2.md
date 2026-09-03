@@ -200,9 +200,34 @@ Mehrfeld-Snapshot durch dieselbe Draft-Projektion, Dirty-Logik und
 Autosave-Strecke wie eine native Eingabe. Mount, Profil-Hydration und Resume
 bleiben weiterhin schreibfrei.
 
-Prompt 14 ergänzt als nächste Phase den Character/NPC-Detail-Editor. Dessen
-Fachfelder und weitere spezialisierte Editoren sind durch Prompt 13 noch nicht
-implementiert.
+Seit Prompt 14 folgt bei der Kategorie `character` unmittelbar nach dem
+Basisprofil ein eigener, deklarativer Character-/NPC-Schritt. Seine
+vollständigen Fachwerte liegen in React Hook Form, werden über das strikte
+additive `CharacterAnswersSchema` in Drafts projiziert und durchlaufen dieselbe
+Dirty-, Autosave- und Resume-Strecke wie die Core-Felder. Initialisierung,
+Profil-Hydration und Resume bleiben schreibfrei. NPC-Kontextfelder und
+humanoide Kleidungsgruppen werden über pure Untertypprüfungen eingeblendet;
+Kategorie- oder Untertypwechsel entfernen alte Character-Daten, während ein
+Basiswechsel sie erhält.
+Beim ausdrücklichen Leeren eines geerbten Character-Defaults wird die
+Kategorieverknüpfung gelöst; die Projektion materialisiert alle übrigen
+wirksamen Fach- und Technikwerte relativ zur Base, damit kein Default beim
+Resume unbeabsichtigt zurückkehrt.
+
+Die wirksame Figurenhöhe bleibt ein technischer Wert der
+Base→Category→lokal-Kette. Der Character-Editor zeigt sie mit Quelle und Lock
+read-only und speichert sie weder in `CharacterAnswers` noch redundant als
+neuen lokalen Override. Richtung und Animation bleiben getrennte
+Capabilities: 4/8 Richtungen erscheinen nur bei `directional`, während
+`animated` eine eindeutige Aktionsliste mit 1 bis 8 Frames je Aktion öffnet.
+Walk startet bei Neuauswahl mit 5 Frames. Bestehende Schema-V2-Werte
+`animationAction` und `framesPerDirection` werden beim Hydrieren weiterhin
+verstanden; neue Projektionen schreiben kanonisch sortierte
+`animationActions`.
+
+Prompt 15 ergänzt als nächste Phase den Moving-Object-Editor. Prompt 14 nimmt
+weder die Prompt Engine noch Review-/Output-Erzeugung oder weitere
+Spezialeditoren vorweg.
 
 ## Speicherung
 
@@ -261,6 +286,9 @@ Pflichtbereiche:
 - bedingte Felder
 - Basisprofilwahl, Lock-Konflikt, Profilwechsel, Anlage und Duplikation
 - schreibfreie Wizard-Hydration und gebündelte programmatische RHF-Änderungen
+- Character/NPC-Feldgrenzen, Untertyp-Gating und Draft↔RHF-Roundtrip
+- eindeutige Character-Aktionen, 1–8 Frames, Walk-Default und Legacy-Lesbarkeit
+- geerbte/gesperrte Figurenhöhe ohne Duplikation in Character-Antworten
 - 8 Richtungen nur bei richtungsabhängig beweglichen Assets
 - Speichern / Laden / Import / Export
 - Theme-Umschaltung

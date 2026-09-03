@@ -97,19 +97,22 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 13
+## 4.3 Umgesetzter Einstieg bis Prompt 14
 
 Der aktuell implementierte Core-Flow lautet:
 
 ```text
-Projekt → Hauptkategorie/Untertyp → Basisprofil → Capability-Schritte
+Projekt → Hauptkategorie/Untertyp → Basisprofil
+→ Character-Details, falls relevant → Capability-Schritte
 ```
 
 Ein klassifizierter Entwurf darf vor der Basiswahl auf `wizard/profile`
 fortsetzbar bleiben. Erst eine in der aktuellen Bibliothek vorhandene oder dort
 erfolgreich neu angelegte Basisfamilie öffnet die nachfolgenden Richtungs-,
 Animations- oder Kachelbarkeitsfragen. Deren Sichtbarkeit stammt ausschließlich
-aus `resolveCapabilities()`.
+aus `resolveCapabilities()`. Für die Hauptkategorie `character` liegt zwischen
+Basisprofil und Capability-Schritten ein eigener Character-/NPC-Fachschritt;
+alle anderen Kategorien überspringen ihn.
 
 Der Basisprofil-Schritt zeigt für alle relevanten Produktionswerte den
 wirksamen Wert, seine Quelle (Basisprofil, Kategorieprofil oder lokaler Entwurf)
@@ -120,9 +123,21 @@ beim Mount zu schreiben. Eine bewusste Auswahl oder andere programmatische
 Mehrfeldänderung wird nach der vollständigen Übernahme einmal durch den
 generischen Engine-Hook in Draft-Projektion, Dirty-Status und Autosave gegeben.
 
-Prompt 14 ergänzt als nächste Phase den Character/NPC-Detail-Editor. Die
-späteren Motiv-, Material-, Setting-, Review- und Output-Flächen der Tabelle
-oben werden hierdurch noch nicht als fertig erklärt.
+Der Character-Schritt verwaltet seine Fachwerte in React Hook Form und
+projiziert sie über das strikte additive Character-Schema in den Draft. Ein
+Kategorie- oder Untertypwechsel entfernt diese Antworten, ein Basiswechsel
+erhält sie. Autosave und exaktes Resume gelten auch für die neuen Felder;
+Initialisierung, Profil-Hydration und Resume bleiben schreibfrei. Rolle,
+Richtungszahl, gewählte Aktionen mit Frames und Silhouette erscheinen in der
+Live-Zusammenfassung, das Dashboard bildet persistierte Aktions-/Frame-Paare ab.
+Wird ein geerbtes optionales Character-Default ausdrücklich geleert, entfernt
+die Draft-Projektion die Kategorieverknüpfung und materialisiert alle übrigen
+wirksamen Fach- und Technikwerte relativ zur Base. So bleibt der leere Wert
+auch nach Resume erhalten.
+
+Prompt 15 ergänzt als nächste Phase den Editor für bewegliche Nicht-Figuren.
+Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
+Tabelle oben werden durch Prompt 14 noch nicht als fertig erklärt.
 
 ---
 
@@ -366,6 +381,24 @@ Die Sichtbarkeit von Fragen wird nicht nur über die Kategorie, sondern über F�
 | Maßstab | Figurenhöhe | standardmäßig geerbte 80 px |
 | Output | Einzelansicht, Modellblatt, Richtungsset, Animationsset | capability-abhängig |
 
+### Implementierungsstand seit Prompt 14
+
+- Der Fachschritt `characterDetails` folgt direkt auf die Basisprofilwahl und
+  erscheint ausschließlich für `character`.
+- Alle Detailfelder sind optionale, begrenzte Bestandteile des strikten
+  additiven `CharacterAnswersSchema`. Die bestehende Kategorie-Union sowie
+  Kategorie-, Assetprofil- und Draft-Verträge verwenden dasselbe Schema.
+- NPC-Kontextfelder erscheinen nur für NPC-artige Untertypen. Humanoide
+  Kleidungsfragen werden für `animal` und `creature` ausgeblendet.
+- Die Figurenhöhe wird aus Base→Category→lokalem technischen Snapshot geerbt,
+  mit Quelle und Lock read-only angezeigt und nicht in `answers` dupliziert.
+- RHF-Rohzustand, Draft-Projektion, Autosave, Resume und Live-Zusammenfassung
+  bilden die Character-Felder vollständig ab. Hydration und Resume schreiben
+  nicht; Kategorie- oder Untertypwechsel bereinigen alte Character-Antworten,
+  ein Basiswechsel erhält sie.
+- Der Output-Wunsch aus der Katalogtabelle ist noch kein Feld dieses Schritts;
+  Ausgabeauswahl, Promptmodule und Output Workspace folgen in späteren Phasen.
+
 ### Richtungs- und Animationsfragen
 
 Diese Gruppe erscheint nur, wenn `directional` oder `animated` aktiv ist.
@@ -374,8 +407,9 @@ Diese Gruppe erscheint nur, wenn `directional` oder `animated` aktiv ist.
 |---|---|
 | Richtungsanzahl | 4 oder 8; 8 nur für richtungsabhängig bewegliche Figuren |
 | Richtungsreihenfolge | fest definierte Reihenfolge oder konfigurierbares Layout |
-| Aktion | Idle, Walk, Run, Interact, Talk, Attack, Hurt, Spezialaktion |
-| Frames pro Richtung | 1 bis 8; für Walk standardmäßig 4 oder 5 |
+| Aktionen | Idle, Walk, Run, Attack, Use, Talk sowie kompatibel Interact, Hurt und Spezialaktion; mehrere auswählbar |
+| Persistiertes Modell | eindeutige, kanonisch sortierte `animationActions: [{ action, frames }]` |
+| Frames pro Aktion | 1 bis 8; Walk startet bei Neuauswahl mit 5 |
 | Phasenlogik | Kontakt, Absenkung, Vorbeiführung, Anhebung |
 | Loop | geschlossen / nicht geschlossen |
 | Spiegelung | keine blinde Spiegelung; asymmetrische Details korrekt neu zeichnen |
@@ -383,6 +417,13 @@ Diese Gruppe erscheint nur, wenn `directional` oder `animated` aktiv ist.
 | Baseline | identischer Fußanker in allen Frames |
 | Höhenabweichung | höchstens definierte Pixelabweichung |
 | Sheet-Layout | automatisch aus Richtungen × Frames berechnen |
+
+Richtung und Animation bleiben getrennte Capabilities. Die Richtungswahl zeigt
+4 oder 8 nur bei `directional`; die Aktionsauswahl erscheint nur bei
+`animated`. Bestehende Schema-V2-Daten mit `animationAction` und
+`framesPerDirection` bleiben lesbar und werden beim nächsten bewussten
+Wizard-Schreibvorgang in das kanonische Aktionsmodell projiziert. Es findet
+keine schreibende Migration beim bloßen Laden statt.
 
 ### NPC-spezifische Zusatzfelder
 
@@ -844,9 +885,11 @@ Basisprofil
   "overrides": {},
   "defaults": {
     "role": "villager",
-    "animationAction": "walk",
     "directionCount": 8,
-    "framesPerDirection": 5
+    "animationActions": [
+      { "action": "idle", "frames": 4 },
+      { "action": "walk", "frames": 5 }
+    ]
   },
   "tags": ["npc", "80px"],
   "createdAt": "2026-09-02T12:00:00.000Z",
@@ -881,9 +924,12 @@ Basisprofil
     "hat": "none",
     "scarf": "short",
     "outerwear": "leather-apron",
-    "animationAction": "walk",
     "directionCount": 8,
-    "framesPerDirection": 5
+    "animationActions": [
+      { "action": "idle", "frames": 4 },
+      { "action": "walk", "frames": 5 },
+      { "action": "use", "frames": 4 }
+    ]
   },
   "tags": ["npc", "village", "craft", "leather", "80px"],
   "favorite": false,
@@ -898,6 +944,11 @@ nicht als vertrauenswürdige Quelle vorgeben. Fehlende Capability-Felder werden 
 Parsen mit `false` materialisiert und der vollständige Snapshot anschließend
 gegen Kategorie und Untertyp geprüft.
 
+Die Beispiele verwenden das seit Prompt 14 kanonische Aktionsmodell. Bereits
+gespeicherte Schema-V2-Daten mit einem einzelnen `animationAction` und
+`framesPerDirection` bleiben parse- und resume-fähig; neue Wizard-Projektionen
+schreiben diese Legacy-Felder nicht mehr.
+
 ## 12.4 Wizard-Draft
 
 ```json
@@ -907,13 +958,22 @@ gegen Kategorie und Untertyp geprüft.
   "route": "wizard/editor",
   "draftId": "draft_001",
   "projectName": "Dorfschmied",
-  "currentStep": "character-motion",
+  "currentStep": "characterDetails",
   "baseProfileId": "base_world_32_80",
   "sourceAssetProfileId": "asset_npc_blacksmith_001",
   "overrides": {},
   "category": "character",
   "subtype": "npc",
-  "answers": {},
+  "answers": {
+    "role": "blacksmith",
+    "bodyBuild": "sturdy",
+    "silhouette": "broad apron and smithing hammer",
+    "directionCount": 8,
+    "animationActions": [
+      { "action": "walk", "frames": 5 },
+      { "action": "use", "frames": 4 }
+    ]
+  },
   "validation": {
     "errors": [],
     "warnings": []
@@ -927,8 +987,10 @@ Basisprofil, Kategorie, Untertyp und Antworten noch auslassen. Ab
 `wizard/profile` ist die Kategorieauswahl vorhanden; `wizard/editor` und
 `wizard/review` verlangen zusätzlich ein Basisprofil und einen Projektnamen.
 Der deklarative Core-Flow setzt `baseProfile` zwischen die Klassifikation und
-die capability-gesteuerten Schritte. Ein exaktes Resume eines klassifizierten
-Pre-Base-Drafts landet wieder dort und schreibt bei der Hydration nicht.
+die kategoriespezifischen beziehungsweise capability-gesteuerten Schritte.
+Für Figuren folgt `characterDetails` direkt danach. Ein exaktes Resume eines
+klassifizierten Pre-Base-Drafts landet wieder beim Basisprofil und schreibt bei
+der Hydration nicht; auch Character-Resume bleibt schreibfrei.
 Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
 und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
 Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale

@@ -480,6 +480,98 @@ describe("wizard draft lifecycle", () => {
     });
   });
 
+  it("resumes the Character-details step only for a based Character draft", () => {
+    const library = createProfileLibraryFixture();
+    const profile = library.assetProfiles.find(
+      (candidate) => candidate.id === "asset_smith_80"
+    );
+    const base = library.baseProfiles.find(
+      (candidate) => candidate.id === profile?.baseProfileId
+    );
+    const category = library.categoryProfiles.find(
+      (candidate) => candidate.id === profile?.categoryProfileId
+    );
+    if (!profile || !base || !category) {
+      throw new Error("Expected a complete Character profile chain.");
+    }
+    const created = createWizardDraftFromAssetProfile({
+      draftId,
+      savedAt: PROFILE_FIXTURE_TIMESTAMP,
+      assetProfile: profile,
+      baseProfile: base,
+      categoryProfile: category
+    });
+    if (created.status !== "created") {
+      throw new Error("Expected a Character profile draft.");
+    }
+    const characterDraft = parseWizardDraft({
+      ...created.draft,
+      route: "wizard/editor",
+      currentStep: "characterDetails",
+      answers: {
+        role: "blacksmith",
+        age: "adult",
+        bodyBuild: "sturdy",
+        materials: "worn leather and dark iron",
+        directionCount: 8,
+        animationActions: [
+          { action: "idle", frames: 4 },
+          { action: "walk", frames: 5 },
+          { action: "use", frames: 5 }
+        ]
+      }
+    });
+
+    expect(resolveWizardCoreStep(characterDraft)).toEqual({
+      stepId: "characterDetails",
+      usedFallback: false
+    });
+    expect(
+      validateWizardResume({
+        requestedDraftId: draftId,
+        draft: characterDraft,
+        profileLibrary: library
+      })
+    ).toEqual({ status: "ready", draft: characterDraft, notices: [] });
+
+    const textureDraft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_texture_character_step",
+      projectName: "Eichenplanken",
+      route: "wizard/editor",
+      currentStep: "characterDetails",
+      baseProfileId: base.id,
+      category: "texture",
+      subtype: "wood",
+      answers: { seamless: true },
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+
+    expect(resolveWizardCoreStep(textureDraft)).toEqual({
+      stepId: "baseProfile",
+      usedFallback: true,
+      unknownStep: "characterDetails"
+    });
+    expect(
+      validateWizardResume({
+        requestedDraftId: textureDraft.draftId,
+        draft: textureDraft,
+        profileLibrary: library
+      })
+    ).toMatchObject({
+      status: "ready",
+      draft: { currentStep: "baseProfile" },
+      notices: [
+        {
+          unknownStep: "characterDetails",
+          fallbackStep: "baseProfile"
+        }
+      ]
+    });
+  });
+
   it("rejects malformed resume payloads before lifecycle handling", () => {
     const result = validateWizardResume({
       requestedDraftId: draftId,

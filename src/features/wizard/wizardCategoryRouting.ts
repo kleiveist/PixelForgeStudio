@@ -7,6 +7,13 @@ import {
   type AssetSubtype
 } from "../../domain/assets";
 import {
+  CHARACTER_ANIMATION_ACTION_IDS,
+  isHumanoidCharacterSubtype,
+  isNpcContextSubtype,
+  type CharacterAnimationActionId
+} from "../../domain/characters";
+import { jsonValuesEqual } from "../../domain/json";
+import {
   profileValuesEqual,
   type ProfileResolutionConflict
 } from "../../domain/profiles";
@@ -15,6 +22,8 @@ import {
   type BaseProfile,
   type BaseProfileOverrides,
   type BaseProfileValues,
+  type CharacterAnimationActionConfig,
+  type CharacterAnswers,
   type ProfileLibrary,
   type WizardDraft
 } from "../../schemas";
@@ -23,7 +32,10 @@ import type {
   WizardCoreFormValues,
   WizardCoreStepId
 } from "./wizardSteps";
-import { parseWizardTechnicalFormValues } from "./wizardSteps";
+import {
+  WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+  parseWizardTechnicalFormValues
+} from "./wizardSteps";
 
 type SelectedWizardDraft = Extract<WizardDraft, { category: unknown }>;
 type MutableWizardCoreFormValues = {
@@ -36,13 +48,45 @@ type MutableBaseProfileValues = {
   -readonly [Key in keyof BaseProfileValues]: BaseProfileValues[Key];
 };
 
-const CONTROLLED_ANSWER_KEYS = new Set([
+const CORE_CONTROLLED_ANSWER_KEYS = new Set([
   "directionCount",
   "animationAction",
   "animationType",
   "movementType",
   "seamless",
   "tileableAxes"
+]);
+
+const CHARACTER_NPC_ANSWER_KEYS = new Set<keyof CharacterAnswers>([
+  "professionReadable",
+  "socialRole",
+  "wealth",
+  "culturalFunction",
+  "typicalActivity",
+  "conversationGesture",
+  "everydayTool",
+  "frontBackDetails"
+]);
+
+const CHARACTER_HUMANOID_ANSWER_KEYS = new Set<keyof CharacterAnswers>([
+  "hat",
+  "headwearCondition",
+  "scarf",
+  "outerwear",
+  "lowerwear",
+  "clothingLayers",
+  "gloves",
+  "handPose",
+  "shoes",
+  "beltBags",
+  "backItem"
+]);
+
+const CHARACTER_CONTROLLED_ANSWER_KEYS = new Set<string>([
+  ...WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+  "animationActions",
+  "animationAction",
+  "framesPerDirection"
 ]);
 
 const PROFILE_VALUE_KEYS = Object.freeze([
@@ -168,6 +212,8 @@ export function wizardStepIsApplicable(
   }
 
   switch (stepId) {
+    case "characterDetails":
+      return selection?.category === "character";
     case "directions":
       return capabilities.directional;
     case "animation":
@@ -240,6 +286,78 @@ function addDefinedValue<
   if (value !== undefined) target[key] = value;
 }
 
+function optionalJsonValuesEqual(left: unknown, right: unknown): boolean {
+  if (left === undefined || right === undefined) return left === right;
+  return jsonValuesEqual(left, right);
+}
+
+type CharacterAnimationFrameMap = NonNullable<
+  WizardCoreFormValues["characterAnimationFrames"]
+>;
+
+function characterAnimationFramesFromAnswers(
+  answers: CharacterAnswers
+): CharacterAnimationFrameMap | undefined {
+  const frames: Partial<Record<CharacterAnimationActionId, number>> = {};
+
+  if (answers.animationActions !== undefined) {
+    for (const animation of answers.animationActions) {
+      frames[animation.action] = animation.frames;
+    }
+  } else if (answers.animationAction !== undefined) {
+    frames[answers.animationAction] = answers.framesPerDirection ?? 1;
+  }
+
+  return Object.keys(frames).length === 0
+    ? undefined
+    : Object.freeze(frames);
+}
+
+function characterAnimationActionsFromForm(
+  frames: WizardCoreFormValues["characterAnimationFrames"],
+  legacyAction: WizardCoreFormValues["animationAction"],
+  previousAnswers: CharacterAnswers
+): readonly CharacterAnimationActionConfig[] | undefined {
+  const effectiveFrames =
+    frames ??
+    (legacyAction === undefined
+      ? undefined
+      : { [legacyAction]: previousAnswers.framesPerDirection ?? 1 });
+  if (effectiveFrames === undefined) return undefined;
+
+  const actions = CHARACTER_ANIMATION_ACTION_IDS.flatMap((action) => {
+    const frameCount = effectiveFrames[action];
+    return frameCount === undefined
+      ? []
+      : [{ action, frames: frameCount } satisfies CharacterAnimationActionConfig];
+  });
+  return actions.length === 0 ? undefined : Object.freeze(actions);
+}
+
+function clearsInheritedCharacterDefault(
+  values: WizardCoreFormValues,
+  defaults: CharacterAnswers
+): boolean {
+  for (const key of WIZARD_CHARACTER_DETAIL_FIELD_PATHS) {
+    if (defaults[key] !== undefined && values[key] === undefined) return true;
+  }
+
+  if (
+    defaults.directionCount !== undefined &&
+    values.directionCount === undefined
+  ) {
+    return true;
+  }
+
+  const inheritedAnimations = characterAnimationFramesFromAnswers(defaults);
+  const selectedAnimations = characterAnimationActionsFromForm(
+    values.characterAnimationFrames,
+    values.animationAction,
+    {}
+  );
+  return inheritedAnimations !== undefined && selectedAnimations === undefined;
+}
+
 export function createWizardCoreFormValues(
   draft: WizardDraft,
   categoryHint: AssetCategory | null = null,
@@ -248,6 +366,7 @@ export function createWizardCoreFormValues(
   let values: MutableWizardCoreFormValues = {
     projectName: draft.projectName
   };
+  let resolvedCharacterAnswers: CharacterAnswers | undefined;
 
   if (!("category" in draft)) {
     if (categoryHint !== null) values.category = categoryHint;
@@ -271,14 +390,30 @@ export function createWizardCoreFormValues(
         baseProfile,
         resolution.profile.values
       );
+      if (resolution.profile.categoryData.category === "character") {
+        resolvedCharacterAnswers = resolution.profile.categoryData.answers;
+      }
     }
   }
 
   switch (draft.category) {
-    case "character":
-      addDefinedValue(values, "directionCount", draft.answers.directionCount);
-      addDefinedValue(values, "animationAction", draft.answers.animationAction);
+    case "character": {
+      const answers = resolvedCharacterAnswers ?? draft.answers;
+      for (const key of WIZARD_CHARACTER_DETAIL_FIELD_PATHS) {
+        const value = answers[key];
+        if (value !== undefined) {
+          (values as Record<string, unknown>)[key] = value;
+        }
+      }
+      addDefinedValue(values, "directionCount", answers.directionCount);
+      const characterAnimationFrames = characterAnimationFramesFromAnswers(
+        answers
+      );
+      if (characterAnimationFrames !== undefined) {
+        values.characterAnimationFrames = characterAnimationFrames;
+      }
       break;
+    }
     case "movingObject":
       addDefinedValue(values, "directionCount", draft.answers.directionCount);
       addDefinedValue(values, "animationType", draft.answers.animationType);
@@ -442,25 +577,80 @@ function controlledAnswers(
   draft: WizardDraft,
   values: WizardCoreFormValues,
   selection: AssetSelection,
-  capabilities: AssetCapabilities
+  capabilities: AssetCapabilities,
+  inheritedCharacterDefaults: CharacterAnswers | undefined
 ): Record<string, unknown> {
-  const previousAnswers = selectionsMatch(draft, selection)
-    ? (draft.answers as Readonly<Record<string, unknown>>)
-    : {};
+  const sameSelection = selectionsMatch(draft, selection);
+  if (!sameSelection) return {};
+
+  const previousAnswers = draft.answers as Readonly<Record<string, unknown>>;
   const answers = Object.fromEntries(
     Object.entries(previousAnswers).filter(
-      ([key, value]) => !CONTROLLED_ANSWER_KEYS.has(key) && value !== undefined
+      ([key, value]) =>
+        !CORE_CONTROLLED_ANSWER_KEYS.has(key) &&
+        (selection.category !== "character" ||
+          !CHARACTER_CONTROLLED_ANSWER_KEYS.has(key)) &&
+        value !== undefined
     )
   );
 
-  if (capabilities.directional && values.directionCount !== undefined) {
+  if (
+    capabilities.directional &&
+    values.directionCount !== undefined &&
+    (selection.category !== "character" ||
+      !optionalJsonValuesEqual(
+        values.directionCount,
+        inheritedCharacterDefaults?.directionCount
+      ))
+  ) {
     answers.directionCount = values.directionCount;
   }
 
   switch (selection.category) {
     case "character":
-      if (capabilities.animated && values.animationAction !== undefined) {
-        answers.animationAction = values.animationAction;
+      for (const key of WIZARD_CHARACTER_DETAIL_FIELD_PATHS) {
+        if (
+          (CHARACTER_NPC_ANSWER_KEYS.has(key) &&
+            !isNpcContextSubtype(selection.subtype)) ||
+          (CHARACTER_HUMANOID_ANSWER_KEYS.has(key) &&
+            !isHumanoidCharacterSubtype(selection.subtype))
+        ) {
+          continue;
+        }
+        const value = values[key];
+        if (
+          value !== undefined &&
+          !optionalJsonValuesEqual(value, inheritedCharacterDefaults?.[key])
+        ) {
+          answers[key] = value;
+        }
+      }
+      if (capabilities.animated) {
+        const previousCharacterAnswers: CharacterAnswers =
+          draft.category === "character"
+            ? draft.answers
+            : {};
+        const animationActions = characterAnimationActionsFromForm(
+          values.characterAnimationFrames,
+          values.animationAction,
+          previousCharacterAnswers
+        );
+        const inheritedAnimationActions =
+          inheritedCharacterDefaults === undefined
+            ? undefined
+            : characterAnimationActionsFromForm(
+                characterAnimationFramesFromAnswers(
+                  inheritedCharacterDefaults
+                ),
+                undefined,
+                {}
+              );
+        if (
+          animationActions !== undefined &&
+          !optionalJsonValuesEqual(animationActions, inheritedAnimationActions)
+        ) {
+          answers.animationActions = animationActions;
+        }
       }
       break;
     case "movingObject":
@@ -497,17 +687,18 @@ function controlledAnswers(
     answers.tileableAxes = values.tileableAxes;
   }
 
-  const framesPerDirection = answers.framesPerDirection;
-  const hasAnimation =
-    answers.animationAction !== undefined || answers.animationType !== undefined;
-  if (
-    !capabilities.directional ||
-    values.directionCount === undefined ||
-    (typeof framesPerDirection === "number" &&
-      framesPerDirection > 1 &&
-      !hasAnimation)
-  ) {
-    delete answers.framesPerDirection;
+  if (selection.category !== "character") {
+    const framesPerDirection = answers.framesPerDirection;
+    const hasAnimation = answers.animationType !== undefined;
+    if (
+      !capabilities.directional ||
+      values.directionCount === undefined ||
+      (typeof framesPerDirection === "number" &&
+        framesPerDirection > 1 &&
+        !hasAnimation)
+    ) {
+      delete answers.framesPerDirection;
+    }
   }
 
   return answers;
@@ -526,6 +717,7 @@ function selectedDraftRoute(
   hasBaseProfile: boolean
 ): "wizard/profile" | "wizard/editor" {
   if (
+    stepId === "characterDetails" ||
     stepId === "directions" ||
     stepId === "animation" ||
     stepId === "tileability"
@@ -629,6 +821,7 @@ export function updateWizardDraftFromCoreForm(
     "baseProfileId" in input.draft ? input.draft.baseProfileId : undefined;
   const baseProfileId = input.values.baseProfileId;
   const baseProfileChanged = previousBaseProfileId !== baseProfileId;
+  const profileLinksCanBeRetained = sameSelection && !baseProfileChanged;
   const baseProfile =
     baseProfileId === undefined
       ? undefined
@@ -647,6 +840,26 @@ export function updateWizardDraftFromCoreForm(
     });
   }
 
+  const linkedCategoryProfileId =
+    profileLinksCanBeRetained && "categoryProfileId" in input.draft
+      ? input.draft.categoryProfileId
+      : undefined;
+  const linkedCategoryProfile =
+    linkedCategoryProfileId === undefined
+      ? undefined
+      : input.context.library?.categoryProfiles.find(
+          (profile) => profile.id === linkedCategoryProfileId
+        );
+  const detachCharacterCategoryProfile =
+    selection.category === "character" &&
+    linkedCategoryProfile?.category === "character" &&
+    clearsInheritedCharacterDefault(
+      input.values,
+      linkedCategoryProfile.defaults
+    );
+  const retainedProfileLinks =
+    profileLinksCanBeRetained && !detachCharacterCategoryProfile;
+
   let overrides =
     baseProfileChanged
       ? undefined
@@ -661,7 +874,7 @@ export function updateWizardDraftFromCoreForm(
   ) {
     overrides = technicalOverridesFromForm(
       input.values,
-      baseProfileChanged
+      baseProfileChanged || detachCharacterCategoryProfile
         ? baseProfile.values
         : resolveInheritedTechnicalValues(
             input.draft,
@@ -673,7 +886,13 @@ export function updateWizardDraftFromCoreForm(
     );
   }
 
-  const retainedProfileLinks = sameSelection && !baseProfileChanged;
+  const retainedCategoryProfile =
+    retainedProfileLinks ? linkedCategoryProfile : undefined;
+  const inheritedCharacterDefaults =
+    selection.category === "character" &&
+    retainedCategoryProfile?.category === "character"
+      ? retainedCategoryProfile.defaults
+      : undefined;
   const common = {
     schemaVersion: 2,
     kind: "wizardDraft",
@@ -693,7 +912,13 @@ export function updateWizardDraftFromCoreForm(
       ? input.draft.validation
       : { errors: [], warnings: [] },
     savedAt: input.savedAt ?? input.draft.savedAt,
-    answers: controlledAnswers(input.draft, input.values, selection, capabilities)
+    answers: controlledAnswers(
+      input.draft,
+      input.values,
+      selection,
+      capabilities,
+      inheritedCharacterDefaults
+    )
   } as const;
 
   let candidate = parseSelectedDraft(selection, common);

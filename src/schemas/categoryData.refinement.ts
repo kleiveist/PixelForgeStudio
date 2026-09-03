@@ -23,7 +23,9 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
     context.addIssue({ code: "custom", path: [dataKey, field], message });
   };
   const hasAnimationData =
-    categoryData.animationAction !== undefined || categoryData.animationType !== undefined;
+    categoryData.animationActions !== undefined ||
+    categoryData.animationAction !== undefined ||
+    categoryData.animationType !== undefined;
 
   if (categoryData.directionCount !== undefined && !capabilities.directional) {
     addIssue("directionCount", "Direction counts are only valid for directional asset subtypes.");
@@ -50,8 +52,14 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
   }
 
   if (hasAnimationData && !capabilities.animated) {
+    const animationField =
+      categoryData.animationActions !== undefined
+        ? "animationActions"
+        : categoryData.animationAction !== undefined
+          ? "animationAction"
+          : "animationType";
     addIssue(
-      categoryData.animationAction === undefined ? "animationType" : "animationAction",
+      animationField,
       "Animation data is only valid for animated asset subtypes."
     );
   }

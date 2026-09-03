@@ -9,6 +9,8 @@
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
+  - `characters/`: Character/NPC option catalogs, subtype guards, canonical
+    animation-action order, and per-action frame defaults
   - `profiles/`: validated profile-chain resolution, base-lock enforcement,
     structured diagnostics, normalized overrides, compatibility keys,
     canonical BaseProfile defaults, immutable BaseProfile creation/duplication,
@@ -25,12 +27,14 @@
     whitelist, prompt builder, validation, and frame/canvas metrics
 - `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
   Kategorie-Dashboard, `profiles/` die kategorisierte Assetprofilbibliothek
-  und `wizard/` die deklarative RHF-/Zod-Wizard-Grundlage; Review-/Output-
-  Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
+  und `wizard/` die deklarative RHF-/Zod-Wizard-Grundlage;
+  `character-editor/` enthält den ersten spezialisierten Asset-Editor;
+  Review-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
-  - `categoryData.schema.ts`: strict category-specific answer contracts
+  - `categoryData.schema.ts`: strict category-specific answer contracts,
+    including the additive Character/NPC catalog and unique per-action frames
   - `profiles.schema.ts`: base, category, and asset profile contracts
   - `appSettings.schema.ts`, `wizardDraft.schema.ts`,
     `exportBundle.schema.ts`: remaining persisted/imported V2 contracts
@@ -64,9 +68,22 @@ the migration reference.
 subtype pairs form a discriminated union; UI features ask the capability
 resolver whether direction, animation, scale, or other question groups apply.
 
+`domain/characters/index.ts` is the public, framework-free Character/NPC
+catalog API. It owns the stable values used by schema and UI, the canonical
+`idle → walk → run → attack → use → talk → interact → hurt → special`
+action order, 1-to-8-frame UI defaults (Walk: 5), and the pure NPC-context and
+humanoid-subtype guards. This keeps subtype gating and new Character answer
+serialization out of React literals.
+
 `schemas/index.ts` is the public validation boundary. Persisted and imported
 values enter its parse functions as `unknown`; exported TypeScript types are
 inferred from the corresponding Zod schemas rather than maintained separately.
+`CharacterAnswersSchema` remains a strict additive member of the category
+union: detailed Character/NPC fields are optional but bounded, `characterHeight`
+is deliberately absent, and `animationActions` accepts unique action/frame
+pairs only. The previous schema-version-2 `animationAction` plus
+`framesPerDirection` fields remain readable for existing local data. New UI
+writes normalize them to `animationActions`; no eager storage migration occurs.
 
 `domain/profiles/index.ts` is the public framework-free profile API.
 `resolveProfile()` accepts already validated profile objects and returns a
@@ -177,11 +194,14 @@ structured `StorageReadResult` values, resolves every card through
 capability-relevant facts. Free-composition artwork omits Tile and world-
 perspective facts; figures alone show character scale, and direction, movement
 and animation badges describe configured answers rather than capability
-potential. Unknown badge IDs are ignored safely. The React view reads this model
-through the narrow `DashboardStorage` port (`readProfileLibrary` + `readDraft`)
-and never accesses `localStorage`. Category, profile and draft starts are
-write-free; only an explicit base-profile selection delegates a validated
-AppSettings update to the existing Settings provider.
+potential. Character animation facts prefer the canonical per-action frame
+list and fall back to the previous single-action representation for existing
+schema-version-2 profiles. Unknown badge IDs are ignored safely. The React view
+reads this model through the narrow `DashboardStorage` port
+(`readProfileLibrary` + `readDraft`) and never accesses `localStorage`.
+Category, profile and draft starts are write-free; only an explicit base-profile
+selection delegates a validated AppSettings update to the existing Settings
+provider.
 
 `features/profiles/profileLibraryData.ts` reuses that resolved presentation
 projection, searches the complete source tag set, combines category, Base and
@@ -225,23 +245,29 @@ several RHF values programmatically calls it once to enter the same projection,
 Dirty-state and autosave path as a native control change. Product routing and
 Base-profile semantics remain outside the generic engine.
 
-`features/wizard/wizardCategoryRouting.ts` is the Prompt-13 boundary between
+`features/wizard/wizardCategoryRouting.ts` is the Prompt-14 boundary between
 core form values and the strict Draft union. It validates category/subtype
 pairs against the canonical taxonomy, resolves visibility only through
 `resolveCapabilities()`, preserves hidden answers for an unchanged selection,
 and creates clean answers when classification changes. The stable core flow is
-`project → category/subtype → baseProfile → directions | animation |
-tileability`, with the last three steps conditionally present. A category-only
-choice remains a raw session value until a matching subtype makes it
-persistable; a classified pre-Base Draft remains on `wizard/profile`. The Draft
-mapper returns `null` for explicit non-persistable intermediates, allowing
-navigation while preventing an old selected Draft from being written over raw
-form state. After Base selection it derives only non-redundant, capability-
-relevant, unlocked technical differences as Asset-level overrides. A confirmed
+`project → category/subtype → baseProfile → characterDetails, when
+Character → directions | animation | tileability`, with the specialist and
+capability steps conditionally present. A category-only choice remains a raw
+session value until a matching subtype makes it persistable; a classified
+pre-Base Draft remains on `wizard/profile`. The Draft mapper returns `null` for
+explicit non-persistable intermediates, allowing navigation while preventing
+an old selected Draft from being written over raw form state. After Base
+selection it derives only non-redundant, capability-relevant, unlocked
+technical differences as Asset-level overrides. It serializes the Character
+form's action/frame map in domain order as unique `animationActions`, while old
+single-action answers hydrate the same form without an eager write. A confirmed
 Base switch removes prior technical overrides and stale Category/Asset
-provenance rather than silently reparenting persisted profiles. Step schemas
-independently reject incomplete Base values and category-incompatible
-capability values.
+provenance while retaining Character answers; a category or subtype switch
+purges those answers. Explicitly clearing an inherited optional Character
+default detaches Category/Asset provenance and materializes every other
+effective answer and technical override against the Base, so the parent value
+cannot reappear on Resume. Step schemas independently reject incomplete Base
+values and category-incompatible specialist or capability values.
 
 `features/wizard/wizardLifecycle.ts` creates blank drafts, resolves profile
 starts against the current provider graph, updates route/step metadata and
@@ -262,8 +288,10 @@ dynamic Zod resolver, semantic progress, focus-managed forward/back navigation
 and a 300-ms valid-change autosave. Navigation writes its new step immediately;
 invalid or unavailable writes retain raw session data and the last successful
 baseline. Recovery never deletes or overwrites the stored slot. The adjacent
-technical summary displays the portable, capability-relevant snapshot and
-omits world-grid geometry for resolved free-composition artwork.
+technical summary displays the portable, capability-relevant snapshot, adds
+the actual Character role, directions, selected actions with frame counts and
+silhouette when present, and omits world-grid geometry for resolved
+free-composition artwork.
 
 `features/wizard/BaseProfileStep.tsx` is the Prompt-13 UI boundary. It presents
 native radio selection plus effective technical values with explicit Base,
@@ -278,7 +306,22 @@ selection stays visibly dirty. Character height, world geometry and alpha
 padding follow the resolved capabilities. Mount, profile hydration and Resume
 do not write.
 
-Prompt 14 may add Character/NPC-specific questions and rendering to the
-external flow. It must reuse this resolved Base/lock contract; Prompt 13 does
-not implement an in-place Base-family editor, descendant reparenting, or any
-NPC detail fields.
+`features/character-editor/index.ts` is the public React boundary for Prompt
+14. `CharacterDetailsEditor` groups identity/variants, body/face/expression,
+humanoid wardrobe, gear/material, local-or-profile palette intent and
+silhouette fields. NPC-context fields render only for the centrally defined
+NPC-like subtypes; humanoid wardrobe is hidden for animals and creatures. The
+effective Character height is displayed read-only with Base/Category/local
+source and Base lock, and is never part of `CharacterAnswers`.
+
+`CharacterAnimationEditor` remains separate from direction selection. It is
+rendered only for the `animated` capability and stores a transient RHF map of
+selected actions to 1–8 frames; selecting Walk starts at five. Direction
+selection remains the existing `directional`-only 4/8 step. Both specialist
+surfaces use the same Draft projection, autosave and exact Resume path as the
+core fields. Mount and hydration remain write-free.
+
+Prompt 15 is the next phase and may add the moving-object production editor.
+Prompt 14 does not implement Prompt Engine modules, review/output generation,
+or any of the remaining specialist editors. It also does not add in-place
+Base-family mutation or descendant reparenting.

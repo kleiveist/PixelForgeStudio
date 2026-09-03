@@ -94,6 +94,7 @@ const animationLabels = {
   idle: "Idle",
   walk: "Walk",
   run: "Run",
+  use: "Benutzen",
   interact: "Interaktion",
   talk: "Talk",
   attack: "Attack",
@@ -158,15 +159,27 @@ function animationFact(
 function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
   switch (profile.categoryData.category) {
     case "character": {
-      const { animationAction, directionCount, framesPerDirection } =
-        profile.categoryData.answers;
+      const {
+        animationAction,
+        animationActions,
+        directionCount,
+        framesPerDirection,
+        role
+      } = profile.categoryData.answers;
+      const animationFacts =
+        animationActions === undefined
+          ? animationAction === undefined
+            ? []
+            : [animationFact(animationAction, framesPerDirection)]
+          : animationActions.map((animation) =>
+              animationFact(animation.action, animation.frames)
+            );
       return [
+        ...(role === undefined ? [] : [`Rolle: ${role}`]),
         ...(directionCount === undefined
           ? []
           : [`${directionCount} Richtungen`]),
-        ...(animationAction === undefined
-          ? []
-          : [animationFact(animationAction, framesPerDirection)])
+        ...animationFacts
       ];
     }
     case "movingObject": {

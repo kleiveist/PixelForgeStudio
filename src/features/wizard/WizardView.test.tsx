@@ -228,6 +228,27 @@ function profileLibraryWithLockedTileSize(): ProfileLibrary {
   });
 }
 
+function profileLibraryWithLockedCharacterHeight(): ProfileLibrary {
+  const library = createProfileLibraryFixture();
+  const source = library.baseProfiles.find(
+    (profile) => profile.id === "base_world_80"
+  );
+  if (!source) throw new Error("Expected the 80 px Base profile fixture.");
+
+  const lockedBase = parseBaseProfile({
+    ...source,
+    locks: { ...source.locks, characterHeight: true },
+    updatedAt: SAVED_TIMESTAMP
+  });
+
+  return ProfileLibrarySchema.parse({
+    ...library,
+    baseProfiles: library.baseProfiles.map((profile) =>
+      profile.id === lockedBase.id ? lockedBase : profile
+    )
+  });
+}
+
 function profileLibraryWithHeightlessBase(
   lockCharacterHeight = false
 ): ProfileLibrary {
@@ -430,7 +451,7 @@ describe("guided Wizard integration", () => {
     });
   });
 
-  it("routes an NPC through directions and movement questions", async () => {
+  it("routes an NPC through its editor, eight directions, and per-action frames", async () => {
     const user = userEvent.setup();
     const { adapter } = renderStudio();
 
@@ -454,8 +475,17 @@ describe("guided Wizard integration", () => {
 
     await enterBaseProfileStep(user);
     await selectBaseProfile(user);
+    expect(within(progress).getByText("Figur und Rolle")).toBeVisible();
     expect(within(progress).getByText("Richtungen")).toBeVisible();
     expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Figur und Rolle" })
+    ).toHaveFocus();
+    expect(
+      screen.getByRole("status", { name: "Figurenhöhe" })
+    ).toHaveTextContent("80 px");
 
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(screen.getByRole("heading", { level: 2, name: "Richtungen" })).toHaveFocus();
@@ -480,18 +510,41 @@ describe("guided Wizard integration", () => {
       screen.getByRole("heading", { level: 2, name: "Bewegung und Animation" })
     ).toBeVisible();
     expect(screen.getByText("Dieses Asset kann sich bewegen.")).toBeVisible();
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Aktion" }),
-      "walk"
+    await user.click(
+      screen.getByRole("checkbox", { name: "Walk aktivieren" })
     );
+    expect(
+      screen.getByRole("spinbutton", { name: "Frames für Walk" })
+    ).toHaveValue(5);
+    await user.click(
+      screen.getByRole("checkbox", { name: "Idle aktivieren" })
+    );
+    const idleFrames = screen.getByRole("spinbutton", {
+      name: "Frames für Idle"
+    });
+    await user.clear(idleFrames);
+    await user.type(idleFrames, "2");
 
     await waitFor(() =>
       expect(readValidDraft(adapter)).toMatchObject({
         category: "character",
         subtype: "npc",
-        answers: { directionCount: 8, animationAction: "walk" }
+        answers: {
+          directionCount: 8,
+          animationActions: [
+            { action: "idle", frames: 2 },
+            { action: "walk", frames: 5 }
+          ]
+        }
       })
     );
+    const summary = screen.getByRole("complementary", {
+      name: "Technische Zusammenfassung"
+    });
+    expect(within(summary).getByText("8 Richtungen")).toBeVisible();
+    expect(
+      within(summary).getByText("Idle · 2 Frames; Walk · 5 Frames")
+    ).toBeVisible();
   });
 
   it("validates category before subtype and focuses the missing classification field", async () => {
@@ -562,12 +615,74 @@ describe("guided Wizard integration", () => {
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(readValidDraft(adapter)).toMatchObject({
       route: "wizard/editor",
-      currentStep: "directions",
+      currentStep: "characterDetails",
       baseProfileId: "base_world_80",
       category: "character",
       subtype: "npc"
     });
     expect(readValidDraft(adapter)).not.toHaveProperty("overrides");
+  });
+
+  it("keeps the locked 80 px scale read-only and autosaves detailed character answers", async () => {
+    const storage = populatedStorage(profileLibraryWithLockedCharacterHeight());
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({ storage });
+
+    await user.type(projectNameInput(), "Kräuterhändlerin");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+
+    const height = screen.getByRole("region", { name: "Figurenhöhe" });
+    expect(within(height).getByRole("status", { name: "Figurenhöhe" })).toHaveTextContent(
+      "80 px"
+    );
+    expect(within(height).getByText("Gesperrt")).toBeVisible();
+    expect(
+      within(height).getByText(
+        "Quelle: Basisprofil · Weltfamilie 32 px / Figuren 80 px"
+      )
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("spinbutton", { name: "Figurenhöhe" })
+    ).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Rolle / Beruf" }),
+      "Kräuterhändlerin"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Alterswirkung" }),
+      "older"
+    );
+    await user.type(screen.getByRole("textbox", { name: "Haare" }), "silberner Zopf");
+    await user.type(
+      screen.getByRole("textbox", { name: "Ausrüstung / Werkzeug" }),
+      "Kräuterkorb"
+    );
+
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        currentStep: "characterDetails",
+        answers: {
+          role: "Kräuterhändlerin",
+          age: "older",
+          hair: "silberner Zopf",
+          equipment: "Kräuterkorb"
+        }
+      })
+    );
+    const saved = readValidDraft(adapter);
+    expect(saved).not.toHaveProperty("answers.characterHeight");
+    expect(saved).not.toHaveProperty("overrides.characterHeight");
+    const summary = screen.getByRole("complementary", {
+      name: "Technische Zusammenfassung"
+    });
+    expect(within(summary).getByText("Rolle / Beruf").nextElementSibling).toHaveTextContent(
+      "Kräuterhändlerin"
+    );
   });
 
   it("requires and stores an unlocked character height when the selected Base does not define one", async () => {
@@ -764,6 +879,7 @@ describe("guided Wizard integration", () => {
     await enterBaseProfileStep(user);
     await selectBaseProfile(user);
     expect(within(progress).getByText("Kachelbarkeit")).toBeVisible();
+    expect(within(progress).queryByText("Figur und Rolle")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(
@@ -969,6 +1085,90 @@ describe("guided Wizard integration", () => {
 
     await user.click(screen.getByRole("button", { name: /Zurück/ }));
     expect(projectNameInput()).toHaveValue("Winterwald");
+  });
+
+  it("resumes canonical character data on its editor step without a mount write", () => {
+    vi.useFakeTimers();
+    const draft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_character_resume",
+      projectName: "Nordtorwache",
+      route: "wizard/editor",
+      currentStep: "characterDetails",
+      baseProfileId: "base_world_80",
+      category: "character",
+      subtype: "npc",
+      answers: {
+        role: "Torwache",
+        hair: "kurzer dunkler Zopf",
+        silhouette: "breiter Schild und hoher Helm",
+        directionCount: 8,
+        animationActions: [
+          { action: "idle", frames: 2 },
+          { action: "walk", frames: 5 }
+        ]
+      },
+      validation: { errors: [], warnings: [] },
+      savedAt: INITIAL_TIMESTAMP
+    });
+    const storage = populatedStorage();
+    storeDraft(storage, draft);
+
+    renderStudio({ storage });
+    act(() => vi.advanceTimersByTime(1_000));
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Figur und Rolle" })
+    ).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Rolle / Beruf" })).toHaveValue(
+      "Torwache"
+    );
+    expect(screen.getByRole("textbox", { name: "Haare" })).toHaveValue(
+      "kurzer dunkler Zopf"
+    );
+    expect(
+      screen.getByRole("status", { name: "Figurenhöhe" })
+    ).toHaveTextContent("80 px");
+    const summary = screen.getByRole("complementary", {
+      name: "Technische Zusammenfassung"
+    });
+    expect(within(summary).getByText("Torwache")).toBeVisible();
+    expect(within(summary).getByText("8 Richtungen")).toBeVisible();
+    expect(
+      within(summary).getByText("Idle · 2 Frames; Walk · 5 Frames")
+    ).toBeVisible();
+    expect(storage.mutations).toEqual([]);
+  });
+
+  it("derives the Character height source from normalized profile resolution", () => {
+    const draft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_character_redundant_height",
+      projectName: "Redundante Figurenhöhe",
+      route: "wizard/editor",
+      currentStep: "characterDetails",
+      baseProfileId: "base_world_80",
+      category: "character",
+      subtype: "npc",
+      overrides: { characterHeight: 80 },
+      answers: {},
+      validation: { errors: [], warnings: [] },
+      savedAt: INITIAL_TIMESTAMP
+    });
+    const storage = populatedStorage();
+    storeDraft(storage, draft);
+
+    renderStudio({ storage });
+
+    expect(
+      screen.getByText(
+        "Quelle: Basisprofil · Weltfamilie 32 px / Figuren 80 px"
+      )
+    ).toBeVisible();
+    expect(screen.queryByText(/Quelle: Lokaler Entwurf ·/)).not.toBeInTheDocument();
+    expect(storage.mutations).toEqual([]);
   });
 
   it("resumes a selected pre-base Draft on the required Base-profile step without writing", () => {
@@ -1250,6 +1450,7 @@ describe("guided Wizard integration", () => {
     expect(within(summary).getByText("48 × 48 px")).toBeVisible();
     expect(within(summary).getByText("80 px")).toBeVisible();
     expect(within(summary).getByText("Warmes Innenlicht")).toBeVisible();
+    expect(within(summary).getByText("blacksmith")).toBeVisible();
     expect(document.body.innerHTML).not.toContain(source.compatibilityKey);
     expect(storage.mutations).toEqual([]);
 
@@ -1278,14 +1479,74 @@ describe("guided Wizard integration", () => {
       categoryProfileId: source.categoryProfileId,
       category: source.category,
       subtype: source.subtype,
-      answers: source.answers,
+      answers: {
+        role: "blacksmith",
+        animationActions: [{ action: "walk", frames: 5 }]
+      },
       overrides: source.overrides
     });
 
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(
-      screen.getByRole("heading", { level: 2, name: "Richtungen" })
+      screen.getByRole("heading", { level: 2, name: "Figur und Rolle" })
     ).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Rolle / Beruf" })).toHaveValue(
+      "blacksmith"
+    );
+  });
+
+  it("persists clearing inherited Character animations without restoring them on resume", async () => {
+    const storage = populatedStorage();
+    const user = userEvent.setup();
+    const rendered = renderStudio({
+      navigation: new MemoryNavigation({ status: "valid", view: "profiles" }),
+      storage
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Profil „Dorfschmied mit Lederschürze“ im Wizard laden"
+      })
+    );
+    await enterBaseProfileStep(user);
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+
+    const walk = screen.getByRole("checkbox", { name: "Walk aktivieren" });
+    expect(walk).toBeChecked();
+    await user.click(walk);
+
+    await waitFor(() => {
+      const saved = createV2StorageAdapter(storage).readDraft();
+      expect(saved.status).toBe("valid");
+      if (saved.status !== "valid") return;
+      expect(saved.value).toMatchObject({
+        currentStep: "animation",
+        answers: { role: "blacksmith", directionCount: 8 }
+      });
+      expect(saved.value).not.toHaveProperty("categoryProfileId");
+      expect(saved.value).not.toHaveProperty("sourceAssetProfileId");
+      expect(saved.value).not.toHaveProperty("answers.animationActions");
+    });
+    const summary = screen.getByRole("complementary", {
+      name: "Technische Zusammenfassung"
+    });
+    expect(
+      within(summary).getByText("Animationen").nextElementSibling
+    ).toHaveTextContent("Noch nicht ausgewählt");
+
+    rendered.unmount();
+    storage.mutations.splice(0);
+    renderStudio({ storage });
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Bewegung und Animation" })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("checkbox", { name: "Walk aktivieren" })
+    ).not.toBeChecked();
+    expect(storage.mutations).toEqual([]);
   });
 
   it("requires confirmation before moving a profile start to another production family", async () => {
@@ -1353,7 +1614,11 @@ describe("guided Wizard integration", () => {
         baseProfileId: "base_world_96",
         category: source.category,
         subtype: source.subtype,
-        answers: source.answers
+        answers: {
+          role: "blacksmith",
+          directionCount: 8,
+          animationActions: [{ action: "walk", frames: 5 }]
+        }
       });
       expect(switched).not.toHaveProperty("categoryProfileId");
       expect(switched).not.toHaveProperty("sourceAssetProfileId");
@@ -1366,7 +1631,11 @@ describe("guided Wizard integration", () => {
       baseProfileId: "base_world_96",
       category: source.category,
       subtype: source.subtype,
-      answers: source.answers
+      answers: {
+        role: "blacksmith",
+        directionCount: 8,
+        animationActions: [{ action: "walk", frames: 5 }]
+      }
     });
     expect(switched).not.toHaveProperty("categoryProfileId");
     expect(switched).not.toHaveProperty("sourceAssetProfileId");

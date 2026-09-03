@@ -1,5 +1,19 @@
 import { z } from "zod";
 import { ASSET_SUBTYPES } from "../domain/assets";
+import {
+  CHARACTER_AGE_IDS,
+  CHARACTER_ANIMATION_ACTION_IDS,
+  CHARACTER_BODY_BUILD_IDS,
+  CHARACTER_CONDITION_IDS,
+  CHARACTER_EXPRESSION_IDS,
+  CHARACTER_EYE_VISIBILITY_IDS,
+  CHARACTER_GENDER_PRESENTATION_IDS,
+  CHARACTER_HEADWEAR_CONDITION_IDS,
+  CHARACTER_PALETTE_SOURCE_IDS,
+  CHARACTER_POSTURE_IDS,
+  CHARACTER_RELATIVE_HEIGHT_IDS,
+  CHARACTER_WEALTH_IDS
+} from "../domain/characters";
 import { validateCategoryDataCapabilities } from "./categoryData.refinement";
 import { DirectionCountSchema, FootprintSchema } from "./common.schema";
 
@@ -8,17 +22,83 @@ const sharedAnswersShape = {
   extraDetails: z.string().trim().max(4000).optional()
 } as const;
 
+const CharacterDescriptorSchema = z.string().trim().min(1).max(200);
+const CharacterDetailSchema = z.string().trim().min(1).max(500);
+
+export const CharacterAnimationActionSchema = z
+  .strictObject({
+    action: z.enum(CHARACTER_ANIMATION_ACTION_IDS),
+    frames: z.number().int().min(1).max(8)
+  })
+  .readonly();
+
+export const CharacterAnimationActionsSchema = z
+  .array(CharacterAnimationActionSchema)
+  .min(1)
+  .max(CHARACTER_ANIMATION_ACTION_IDS.length)
+  .superRefine((actions, context) => {
+    const seen = new Set<string>();
+    actions.forEach((entry, index) => {
+      if (seen.has(entry.action)) {
+        context.addIssue({
+          code: "custom",
+          path: [index, "action"],
+          message: `Duplicate character animation action "${entry.action}".`
+        });
+      }
+      seen.add(entry.action);
+    });
+  })
+  .readonly();
+
 export const CharacterAnswersSchema = z
   .strictObject({
     ...sharedAnswersShape,
     role: z.string().trim().min(1).max(100).optional(),
     variantCount: z.number().int().min(1).max(5).optional(),
+    genderPresentation: z.enum(CHARACTER_GENDER_PRESENTATION_IDS).optional(),
+    age: z.enum(CHARACTER_AGE_IDS).optional(),
+    relativeHeight: z.enum(CHARACTER_RELATIVE_HEIGHT_IDS).optional(),
+    bodyBuild: z.enum(CHARACTER_BODY_BUILD_IDS).optional(),
+    posture: z.enum(CHARACTER_POSTURE_IDS).optional(),
+    faceShape: CharacterDescriptorSchema.optional(),
+    skinTone: CharacterDescriptorSchema.optional(),
+    eyeVisibility: z.enum(CHARACTER_EYE_VISIBILITY_IDS).optional(),
+    hair: CharacterDescriptorSchema.optional(),
+    hairstyle: CharacterDescriptorSchema.optional(),
+    beard: CharacterDescriptorSchema.optional(),
     hat: z.string().trim().min(1).max(100).optional(),
+    headwearCondition: z.enum(CHARACTER_HEADWEAR_CONDITION_IDS).optional(),
     scarf: z.string().trim().min(1).max(100).optional(),
     outerwear: z.string().trim().min(1).max(120).optional(),
-    animationAction: z
-      .enum(["idle", "walk", "run", "interact", "talk", "attack", "hurt", "special"])
-      .optional(),
+    lowerwear: CharacterDescriptorSchema.optional(),
+    clothingLayers: CharacterDetailSchema.optional(),
+    gloves: CharacterDescriptorSchema.optional(),
+    handPose: CharacterDescriptorSchema.optional(),
+    shoes: CharacterDescriptorSchema.optional(),
+    beltBags: CharacterDetailSchema.optional(),
+    accessories: CharacterDetailSchema.optional(),
+    backItem: CharacterDescriptorSchema.optional(),
+    equipment: CharacterDetailSchema.optional(),
+    materials: CharacterDetailSchema.optional(),
+    characterPaletteSource: z.enum(CHARACTER_PALETTE_SOURCE_IDS).optional(),
+    primaryColor: CharacterDescriptorSchema.optional(),
+    secondaryColor: CharacterDescriptorSchema.optional(),
+    accentColor: CharacterDescriptorSchema.optional(),
+    condition: z.enum(CHARACTER_CONDITION_IDS).optional(),
+    expression: z.enum(CHARACTER_EXPRESSION_IDS).optional(),
+    silhouette: CharacterDetailSchema.optional(),
+    pose: CharacterDescriptorSchema.optional(),
+    professionReadable: z.boolean().optional(),
+    socialRole: CharacterDescriptorSchema.optional(),
+    wealth: z.enum(CHARACTER_WEALTH_IDS).optional(),
+    culturalFunction: CharacterDetailSchema.optional(),
+    typicalActivity: CharacterDetailSchema.optional(),
+    conversationGesture: CharacterDetailSchema.optional(),
+    everydayTool: CharacterDescriptorSchema.optional(),
+    frontBackDetails: CharacterDetailSchema.optional(),
+    animationActions: CharacterAnimationActionsSchema.optional(),
+    animationAction: z.enum(CHARACTER_ANIMATION_ACTION_IDS).optional(),
     directionCount: DirectionCountSchema.optional(),
     framesPerDirection: z.number().int().min(1).max(8).optional()
   })
@@ -195,6 +275,9 @@ export const AssetCategoryDataSchema = z
   });
 
 export type CharacterAnswers = z.infer<typeof CharacterAnswersSchema>;
+export type CharacterAnimationActionConfig = z.infer<
+  typeof CharacterAnimationActionSchema
+>;
 export type MovingObjectAnswers = z.infer<typeof MovingObjectAnswersSchema>;
 export type StaticObjectAnswers = z.infer<typeof StaticObjectAnswersSchema>;
 export type TextureAnswers = z.infer<typeof TextureAnswersSchema>;

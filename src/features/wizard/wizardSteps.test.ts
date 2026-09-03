@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   WIZARD_CORE_STEPS,
+  WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WizardAnimationStepSchema,
   WizardBaseProfileStepSchema,
   WizardCategoryStepSchema,
+  WizardCharacterDetailsStepSchema,
   WizardDirectionStepSchema,
   WizardProjectStepSchema,
   WizardTileabilityStepSchema,
@@ -37,6 +39,7 @@ describe("wizard core steps", () => {
       "project",
       "category",
       "baseProfile",
+      "characterDetails",
       "directions",
       "animation",
       "tileability"
@@ -46,11 +49,19 @@ describe("wizard core steps", () => {
     expect(getWizardCoreStep("baseProfile").fieldPaths).toEqual(
       expect.arrayContaining(["baseProfileId", "tileSize", "lightingPolicy"])
     );
+    expect(getWizardCoreStep("characterDetails").fieldPaths).toBe(
+      WIZARD_CHARACTER_DETAIL_FIELD_PATHS
+    );
+    expect(getWizardCoreStep("characterDetails")).toMatchObject({
+      route: "wizard/editor",
+      title: "Figur und Rolle"
+    });
     expect(getWizardCoreStep("directions").fieldPaths).toEqual(["directionCount"]);
     expect(getWizardCoreStep("animation").fieldPaths).toEqual([
       "movementType",
       "animationAction",
-      "animationType"
+      "animationType",
+      "characterAnimationFrames"
     ]);
     expect(getWizardCoreStep("tileability").fieldPaths).toEqual([
       "seamless",
@@ -59,6 +70,62 @@ describe("wizard core steps", () => {
     expect(getWizardCoreStepIndex("project")).toBe(0);
     expect(getWizardCoreStepIndex("category")).toBe(1);
     expect(getWizardCoreStepIndex("baseProfile")).toBe(2);
+    expect(getWizardCoreStepIndex("characterDetails")).toBe(3);
+  });
+
+  it("declares the complete Character/NPC answer paths without duplicating technical height", () => {
+    expect(WIZARD_CHARACTER_DETAIL_FIELD_PATHS).toEqual([
+      "role",
+      "subjectDescription",
+      "variantCount",
+      "genderPresentation",
+      "age",
+      "relativeHeight",
+      "bodyBuild",
+      "posture",
+      "faceShape",
+      "skinTone",
+      "eyeVisibility",
+      "hair",
+      "hairstyle",
+      "beard",
+      "hat",
+      "headwearCondition",
+      "scarf",
+      "outerwear",
+      "lowerwear",
+      "clothingLayers",
+      "gloves",
+      "handPose",
+      "shoes",
+      "beltBags",
+      "accessories",
+      "backItem",
+      "equipment",
+      "materials",
+      "characterPaletteSource",
+      "primaryColor",
+      "secondaryColor",
+      "accentColor",
+      "condition",
+      "expression",
+      "silhouette",
+      "pose",
+      "professionReadable",
+      "socialRole",
+      "wealth",
+      "culturalFunction",
+      "typicalActivity",
+      "conversationGesture",
+      "everydayTool",
+      "frontBackDetails",
+      "extraDetails"
+    ]);
+    expect(WIZARD_CHARACTER_DETAIL_FIELD_PATHS).not.toContain("characterHeight");
+    expect(WIZARD_CHARACTER_DETAIL_FIELD_PATHS).not.toContain("directionCount");
+    expect(WIZARD_CHARACTER_DETAIL_FIELD_PATHS).not.toContain(
+      "characterAnimationFrames"
+    );
   });
 
   it("validates the required project name at each navigation boundary", () => {
@@ -140,6 +207,81 @@ describe("wizard core steps", () => {
         subtype: "npc",
         ...technicalValues,
         characterHeight: undefined
+      }).success
+    ).toBe(false);
+  });
+
+  it("scopes the Character-details boundary to a classified character with a Base profile", () => {
+    const npc = {
+      projectName: "Dorfschmied",
+      category: "character" as const,
+      subtype: "npc" as const,
+      ...technicalValues,
+      role: "blacksmith",
+      age: "adult" as const,
+      bodyBuild: "sturdy" as const,
+      materials: "worn leather and dark iron",
+      expression: "serious" as const,
+      silhouette: "broad apron and hammer"
+    };
+
+    expect(WizardCharacterDetailsStepSchema.safeParse(npc).success).toBe(true);
+    expect(
+      WizardCharacterDetailsStepSchema.safeParse({
+        ...npc,
+        category: "texture",
+        subtype: "wood"
+      }).success
+    ).toBe(false);
+    expect(
+      WizardCharacterDetailsStepSchema.safeParse({
+        projectName: "Noch ohne Basis",
+        category: "character",
+        subtype: "npc",
+        role: "blacksmith"
+      }).success
+    ).toBe(false);
+  });
+
+  it("validates canonical Character actions and their independent frame counts", () => {
+    const npc = {
+      projectName: "Animierter Schmied",
+      category: "character" as const,
+      subtype: "npc" as const,
+      ...technicalValues,
+      characterAnimationFrames: {
+        idle: 4,
+        walk: 5,
+        run: 6,
+        attack: 7,
+        use: 5,
+        talk: 4,
+        interact: 3,
+        hurt: 2,
+        special: 8
+      }
+    };
+
+    expect(WizardAnimationStepSchema.safeParse(npc).success).toBe(true);
+    expect(
+      WizardAnimationStepSchema.safeParse({
+        ...npc,
+        characterAnimationFrames: { walk: 0 }
+      }).success
+    ).toBe(false);
+    expect(
+      WizardAnimationStepSchema.safeParse({
+        ...npc,
+        characterAnimationFrames: { walk: 9 }
+      }).success
+    ).toBe(false);
+    expect(
+      WizardAnimationStepSchema.safeParse({
+        ...npc,
+        category: "nature",
+        subtype: "tree",
+        characterHeight: undefined,
+        animationType: "wind"
       }).success
     ).toBe(false);
   });

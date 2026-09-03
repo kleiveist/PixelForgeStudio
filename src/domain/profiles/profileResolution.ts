@@ -9,6 +9,7 @@ import type {
   BaseProfileOverrides,
   BaseProfileValues,
   CategoryProfile,
+  CharacterAnswers,
   StableId
 } from "../../schemas";
 import { createCompatibilityKey, normalizeCompatibilityText } from "./compatibilityKey";
@@ -216,6 +217,52 @@ function mergeAnswers<Answers extends object>(
   return Object.freeze(answers) as Answers;
 }
 
+function copyDefinedAnswers(
+  target: Record<string, unknown>,
+  source: CharacterAnswers
+): void {
+  for (const [key, value] of Object.entries(source)) {
+    if (value === undefined) continue;
+    target[key] = cloneAndFreezeUnknown(value);
+  }
+}
+
+/**
+ * Merges the legacy singleton and canonical list animation representations as
+ * one semantic value. The higher profile level selects the representation;
+ * when both occur on the same level, the canonical list wins.
+ */
+function mergeCharacterAnswers(
+  categoryAnswers: CharacterAnswers | undefined,
+  assetAnswers: CharacterAnswers
+): CharacterAnswers {
+  const answers: Record<string, unknown> = {};
+
+  if (categoryAnswers !== undefined) {
+    copyDefinedAnswers(answers, categoryAnswers);
+
+    if (categoryAnswers.animationActions !== undefined) {
+      delete answers.animationAction;
+      delete answers.framesPerDirection;
+    }
+  }
+
+  if (assetAnswers.animationActions !== undefined) {
+    delete answers.animationAction;
+    delete answers.framesPerDirection;
+    copyDefinedAnswers(answers, assetAnswers);
+    delete answers.animationAction;
+    delete answers.framesPerDirection;
+  } else if (assetAnswers.animationAction !== undefined) {
+    delete answers.animationActions;
+    copyDefinedAnswers(answers, assetAnswers);
+  } else {
+    copyDefinedAnswers(answers, assetAnswers);
+  }
+
+  return Object.freeze(answers) as CharacterAnswers;
+}
+
 function mergeCategoryData(
   categoryProfile: CategoryProfile | undefined,
   assetProfile: AssetProfile
@@ -225,7 +272,7 @@ function mergeCategoryData(
       return Object.freeze({
         category: "character",
         subtype: assetProfile.subtype,
-        answers: mergeAnswers(
+        answers: mergeCharacterAnswers(
           categoryProfile?.category === "character" ? categoryProfile.defaults : undefined,
           assetProfile.answers
         )

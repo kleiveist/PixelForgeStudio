@@ -5,7 +5,13 @@ import {
   type AssetCategory,
   type AssetSubtype
 } from "../../domain/assets";
+import type { CharacterSubtype } from "../../domain/characters";
 import type { ProfileLibrary } from "../../schemas";
+import {
+  CharacterAnimationEditor,
+  CharacterDetailsEditor,
+  type CharacterHeightSource
+} from "../character-editor";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import {
   DASHBOARD_CATEGORIES,
@@ -26,10 +32,12 @@ import {
 } from "./wizardCategoryRouting";
 import {
   WIZARD_CORE_STEPS,
+  WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   type WizardCoreFieldPath,
   type WizardCoreFormValues,
   type WizardCoreStepId
 } from "./wizardSteps";
+import { resolveWizardDraftSnapshot } from "./wizardLifecycle";
 import styles from "./WizardView.module.css";
 
 export interface WizardCoreFlowContext {
@@ -55,17 +63,6 @@ const CAPABILITY_LABELS = {
   modular: "modular",
   freeComposition: "freie Komposition"
 } as const;
-
-const ANIMATION_ACTION_OPTIONS = [
-  ["idle", "Idle"],
-  ["walk", "Walk"],
-  ["run", "Run"],
-  ["interact", "Interaktion"],
-  ["talk", "Sprechen"],
-  ["attack", "Angriff"],
-  ["hurt", "Treffer"],
-  ["special", "Spezialaktion"]
-] as const;
 
 const MOVEMENT_TYPE_OPTIONS = [
   ["roll", "rollen"],
@@ -107,6 +104,8 @@ const ANIMATION_TYPE_OPTIONS = {
 
 const CLASSIFICATION_FIELDS = [
   "subtype",
+  ...WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+  "characterAnimationFrames",
   "directionCount",
   "animationAction",
   "animationType",
@@ -472,8 +471,83 @@ function DirectionsStep({ form }: CoreStepProps) {
       <p className={styles.logicNote}>
         Die Kamera bleibt fest. Nur das Motiv wird logisch neu ausgerichtet;
         asymmetrische Details werden nicht blind gespiegelt.
+        {directionCount === 8
+          ? " Die feste Reihenfolge lautet S, SW, W, NW, N, NE, E, SE."
+          : ""}
       </p>
     </div>
+  );
+}
+
+function CharacterDetailsStep({ context, draft, form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
+  const baseProfileId = useWatch({
+    control: form.control,
+    name: "baseProfileId"
+  });
+  const characterHeight = useWatch({
+    control: form.control,
+    name: "characterHeight"
+  });
+  const selection = resolveWizardCapabilities({ category, subtype });
+  const baseProfile = context.library?.baseProfiles.find(
+    (profile) => profile.id === baseProfileId
+  );
+
+  if (
+    category !== "character" ||
+    subtype === undefined ||
+    !selection?.scaledCharacter ||
+    baseProfile === undefined ||
+    characterHeight === undefined
+  ) {
+    return (
+      <section className={styles.changeWarning} role="alert">
+        <strong>Figurenprofil nicht verfügbar</strong>
+        <p>
+          Kehre zum Basisprofil zurück und wähle eine gültige
+          Produktionsfamilie mit Figurenmaßstab.
+        </p>
+      </section>
+    );
+  }
+
+  const resolution = context.library
+    ? resolveWizardDraftSnapshot(draft, context.library)
+    : null;
+  const resolvedHeightSource =
+    resolution?.status === "resolved"
+      ? resolution.profile.valueSources.characterHeight
+      : undefined;
+  const categoryProfile =
+    "categoryProfileId" in draft && draft.categoryProfileId !== undefined
+      ? context.library?.categoryProfiles.find(
+          (profile) => profile.id === draft.categoryProfileId
+        )
+      : undefined;
+  const heightSource: CharacterHeightSource =
+    resolvedHeightSource === "category"
+      ? "Kategorieprofil"
+      : resolvedHeightSource === "asset"
+        ? "Lokaler Entwurf"
+        : "Basisprofil";
+  const heightSourceName =
+    resolvedHeightSource === "category"
+      ? (categoryProfile?.name ?? "Unbekanntes Kategorieprofil")
+      : resolvedHeightSource === "asset"
+        ? draft.projectName || "Aktueller Entwurf"
+        : baseProfile.name;
+
+  return (
+    <CharacterDetailsEditor
+      characterHeight={characterHeight}
+      form={form}
+      heightLocked={baseProfile.locks.characterHeight === true}
+      heightSource={heightSource}
+      heightSourceName={heightSourceName}
+      subtype={subtype as CharacterSubtype}
+    />
   );
 }
 
@@ -502,7 +576,7 @@ function AnimationSelect({
   );
 }
 
-function AnimationStep({ form }: CoreStepProps) {
+function AnimationStep({ form, notifyProgrammaticChange }: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const values = form.getValues();
   const capabilities = resolveWizardCapabilities(values);
@@ -525,22 +599,10 @@ function AnimationStep({ form }: CoreStepProps) {
       </div>
 
       {category === "character" ? (
-        <div className={styles.fieldGroup}>
-          <label htmlFor="wizard-animation-action">Aktion</label>
-          <select
-            id="wizard-animation-action"
-            {...form.register("animationAction", {
-              setValueAs: optionalSelectValue
-            })}
-          >
-            <option value="">Noch keine Aktion festlegen</option>
-            {ANIMATION_ACTION_OPTIONS.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <CharacterAnimationEditor
+          form={form}
+          notifyProgrammaticChange={notifyProgrammaticChange}
+        />
       ) : null}
 
       {category === "movingObject" ? (
@@ -645,6 +707,7 @@ function CoreSummary({
       activeCategory={values.category ?? null}
       activeSubtype={values.subtype ?? null}
       selection={getSelectionSummary(values)}
+      formValues={values}
     />
   );
 }
@@ -663,6 +726,7 @@ const STEP_COMPONENTS = {
   project: ProjectStep,
   category: CategoryStep,
   baseProfile: BaseProfileStep,
+  characterDetails: CharacterDetailsStep,
   directions: DirectionsStep,
   animation: AnimationStep,
   tileability: TileabilityStep
@@ -682,6 +746,14 @@ export const WIZARD_CORE_FLOW = Object.freeze({
     }),
     Object.freeze({
       ...WIZARD_CORE_STEPS[3],
+      Component: STEP_COMPONENTS.characterDetails,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("characterDetails", values, context.library)
+    }),
+    Object.freeze({
+      ...WIZARD_CORE_STEPS[4],
       Component: STEP_COMPONENTS.directions,
       isApplicable: (
         values: WizardCoreFormValues,
@@ -689,7 +761,7 @@ export const WIZARD_CORE_FLOW = Object.freeze({
       ) => wizardStepIsApplicable("directions", values, context.library)
     }),
     Object.freeze({
-      ...WIZARD_CORE_STEPS[4],
+      ...WIZARD_CORE_STEPS[5],
       Component: STEP_COMPONENTS.animation,
       isApplicable: (
         values: WizardCoreFormValues,
@@ -697,7 +769,7 @@ export const WIZARD_CORE_FLOW = Object.freeze({
       ) => wizardStepIsApplicable("animation", values, context.library)
     }),
     Object.freeze({
-      ...WIZARD_CORE_STEPS[5],
+      ...WIZARD_CORE_STEPS[6],
       Component: STEP_COMPONENTS.tileability,
       isApplicable: (
         values: WizardCoreFormValues,

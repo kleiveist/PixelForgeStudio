@@ -7,8 +7,10 @@ import {
   type AssetCategory,
   type AssetSubtype
 } from "../../domain/assets";
+import { CHARACTER_ANIMATION_ACTION_IDS } from "../../domain/characters";
 import {
   BaseProfileValuesSchema,
+  CharacterAnswersSchema,
   type BaseProfileValues
 } from "../../schemas";
 
@@ -45,6 +47,25 @@ const AnimationTypeSchema = z.enum([
   "lava",
   "custom"
 ]);
+
+const {
+  animationAction: _legacyCharacterAnimationAction,
+  animationActions: _characterAnimationActions,
+  directionCount: _characterDirectionCount,
+  framesPerDirection: _legacyCharacterFrames,
+  ...characterDetailFormShape
+} = CharacterAnswersSchema.unwrap().shape;
+void _legacyCharacterAnimationAction;
+void _characterAnimationActions;
+void _characterDirectionCount;
+void _legacyCharacterFrames;
+
+const CharacterAnimationFramesSchema = z
+  .partialRecord(
+    z.enum(CHARACTER_ANIMATION_ACTION_IDS),
+    z.number().int().min(1).max(8)
+  )
+  .optional();
 
 export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
@@ -89,9 +110,11 @@ export const WizardCoreFormSchema = z.strictObject({
     ])
     .optional(),
   lightingNotes: z.string().trim().max(2000).optional(),
+  ...characterDetailFormShape,
+  characterAnimationFrames: CharacterAnimationFramesSchema,
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
-    .enum(["idle", "walk", "run", "interact", "talk", "attack", "hurt", "special"])
+    .enum(CHARACTER_ANIMATION_ACTION_IDS)
     .optional(),
   animationType: AnimationTypeSchema.optional(),
   movementType: z
@@ -107,6 +130,7 @@ export type WizardCoreStepId =
   | "project"
   | "category"
   | "baseProfile"
+  | "characterDetails"
   | "directions"
   | "animation"
   | "tileability";
@@ -141,6 +165,54 @@ export const WIZARD_TECHNICAL_FIELD_PATHS = Object.freeze([
   "nearestNeighbor",
   "lightingPolicy",
   "lightingNotes"
+] as const satisfies readonly WizardCoreFieldPath[]);
+
+export const WIZARD_CHARACTER_DETAIL_FIELD_PATHS = Object.freeze([
+  "role",
+  "subjectDescription",
+  "variantCount",
+  "genderPresentation",
+  "age",
+  "relativeHeight",
+  "bodyBuild",
+  "posture",
+  "faceShape",
+  "skinTone",
+  "eyeVisibility",
+  "hair",
+  "hairstyle",
+  "beard",
+  "hat",
+  "headwearCondition",
+  "scarf",
+  "outerwear",
+  "lowerwear",
+  "clothingLayers",
+  "gloves",
+  "handPose",
+  "shoes",
+  "beltBags",
+  "accessories",
+  "backItem",
+  "equipment",
+  "materials",
+  "characterPaletteSource",
+  "primaryColor",
+  "secondaryColor",
+  "accentColor",
+  "condition",
+  "expression",
+  "silhouette",
+  "pose",
+  "professionReadable",
+  "socialRole",
+  "wealth",
+  "culturalFunction",
+  "typicalActivity",
+  "conversationGesture",
+  "everydayTool",
+  "frontBackDetails",
+  "extraDetails"
 ] as const satisfies readonly WizardCoreFieldPath[]);
 
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
@@ -311,6 +383,16 @@ function validateCapabilityFields(
     );
   }
   if (
+    values.characterAnimationFrames !== undefined &&
+    (category !== "character" || !capabilities.animated)
+  ) {
+    addFieldIssue(
+      context,
+      "characterAnimationFrames",
+      "Figurenaktionen sind für diesen Untertyp nicht verfügbar."
+    );
+  }
+  if (
     values.movementType !== undefined &&
     (category !== "movingObject" || !capabilities.movable)
   ) {
@@ -411,6 +493,17 @@ export const WizardCategoryStepSchema = WizardCoreFormSchema.superRefine(
 export const WizardBaseProfileStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) => refineSelectedValues(values, context, undefined, true)
 );
+export const WizardCharacterDetailsStepSchema =
+  WizardCoreFormSchema.superRefine((values, context) => {
+    refineSelectedValues(values, context, undefined, true);
+    if (values.category !== undefined && values.category !== "character") {
+      addFieldIssue(
+        context,
+        "category",
+        "Der Figuren-Editor ist nur für Charaktere verfügbar."
+      );
+    }
+  });
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) =>
     refineSelectedValues(values, context, "directional", true)
@@ -468,6 +561,15 @@ export const WIZARD_CORE_STEPS = Object.freeze([
     schema: WizardBaseProfileStepSchema
   }),
   Object.freeze({
+    id: "characterDetails",
+    route: "wizard/editor",
+    title: "Figur und Rolle",
+    description:
+      "Beschreibe Identität, Körper, Kleidung, Ausrüstung und die lesbare Silhouette der Figur.",
+    fieldPaths: WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+    schema: WizardCharacterDetailsStepSchema
+  }),
+  Object.freeze({
     id: "directions",
     route: "wizard/editor",
     title: "Richtungen",
@@ -483,7 +585,12 @@ export const WIZARD_CORE_STEPS = Object.freeze([
     description:
       "Beschreibe zeitliche Bewegung, ohne Animation automatisch mit Richtungen gleichzusetzen.",
     fieldPaths: Object.freeze(
-      ["movementType", "animationAction", "animationType"] as const
+      [
+        "movementType",
+        "animationAction",
+        "animationType",
+        "characterAnimationFrames"
+      ] as const
     ),
     schema: WizardAnimationStepSchema
   }),

@@ -57,6 +57,14 @@
 - gesperrte Werte read-only dargestellt und einen expliziten Konfliktworkflow mit Abbruch, Profilwechsel, Duplikat oder neuer kanonischer Produktionsfamilie ergänzt
 - immutable Anlage und Duplikation von Basisfamilien mit neuen IDs/Zeitstempeln und einem validierten vollständigen Profilgraph-Write umgesetzt; Originalfamilien und ihre Kindreferenzen bleiben unverändert
 - generischen Wizard-Step-Vertrag um einen Hook für programmatische Mehrfeldänderungen erweitert, sodass gebündelte Basisprofilübernahmen dieselbe Draft-Projektion, Dirty-Logik und Autosave-Strecke wie native Eingaben verwenden
+- frameworkfreien Character-Katalog mit typisierten Fachoptionen, NPC-/Humanoid-Untertypprüfungen, kanonischer Aktionsreihenfolge und Walk-Default von fünf Frames ergänzt
+- strikt additives `CharacterAnswersSchema` für Identität, Körper, Gesicht, Kleidung, Ausrüstung, Material, Palette, Lesbarkeit und NPC-Kontext eingeführt; Grenzen und eindeutige `animationActions` mit jeweils 1 bis 8 Frames werden an der Zod-Grenze geprüft
+- bestehenden Schema-V2-Character-Daten mit `animationAction` und `framesPerDirection` lesbar gehalten, während neue Wizard-Projektionen ausschließlich kanonisch sortierte `animationActions` schreiben
+- eigenen Character-/NPC-Schritt unmittelbar nach der Basisprofilwahl integriert; NPC-Kontext und humanoide Kleidung werden nach Untertyp eingeblendet, Nicht-Character-Flows bleiben frei von Character-Fragen
+- geerbte Figurenhöhe im Character-Editor read-only mit Quelle und Lock dargestellt und aus Assetantworten ausgeschlossen; Basisprofilwechsel erhalten Character-Inhalte, Klassifikationswechsel bereinigen sie
+- Character-Richtungswahl weiterhin ausschließlich über `directional` auf 4/8 begrenzt und Animation separat als Multi-Aktionsauswahl mit individueller Framezahl umgesetzt
+- Character-Fachwerte in RHF-Draft-Roundtrip, Dirty-State, Autosave, schreibfreies Resume, Live-Zusammenfassung und Dashboard-Aktivitätsprojektion integriert
+- explizites Leeren geerbter Character-Defaults dauerhaft abgebildet: der Draft löst die Kategorieprovenienz, materialisiert übrige Fach- und Technikwerte und stellt entfernte Richtungen oder Animationen beim Resume nicht wieder her
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt
