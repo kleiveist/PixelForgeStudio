@@ -87,6 +87,9 @@ AA-Grenzen:
 
 Dies ist eine reproduzierbare Browser-, Screenshot- und DOM-Prüfung, aber
 keine Zertifizierung mit jedem realen Screenreader, Betriebssystem-
-Hochkontrastmodus oder Touchgerät. Solche Geräteprüfungen gehören zusammen
-mit der vollständigen Release-Checkliste in Prompt 27. Prompt 26 verändert
-weder Fachdefaults noch Prompt-Engine, Persistenzmodell oder Legacy V1.
+Hochkontrastmodus oder Touchgerät. Solche Geräteprüfungen bleiben sinnvolle
+plattformspezifische Qualitätssicherung. Prompt 26 veränderte weder
+Fachdefaults noch Prompt-Engine, Persistenzmodell oder Legacy V1; Prompt 27
+hat die übergreifende Release-Checkliste anschließend bestanden und die
+ausführbare Legacy-UI entfernt. Die Abschlussmatrix steht in
+`V2-RELEASE-ACCEPTANCE.md`.

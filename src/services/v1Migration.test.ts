@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import autosaveFixture from "../../legacy/v1/tests/fixtures/v1/autosave-directional-character.json";
-import presetsFixture from "../../legacy/v1/tests/fixtures/v1/presets-storage.json";
-import legacyExportFixture from "../../legacy/v1/presets/hero-eight-directions.json";
+import autosaveFixture from "../test/fixtures/legacy-v1/autosave-directional-character.json";
+import presetsFixture from "../test/fixtures/legacy-v1/presets-storage.json";
+import legacyExportFixture from "../test/fixtures/legacy-v1/hero-eight-directions-export.json";
 import { resolveProfile } from "../domain/profiles";
 import { fingerprintLegacyText } from "../domain/migration";
 import type { MigrationBackup } from "../schemas";

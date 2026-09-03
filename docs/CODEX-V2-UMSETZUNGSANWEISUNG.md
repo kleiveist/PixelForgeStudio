@@ -607,7 +607,7 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   schreibfreies Resume. `freeComposition` blendet Tile-, Sprite-, Weltkamera-,
   Figuren-, Richtungs- und Animationsregeln aus; Summary und Dashboard zeigen
   nur kompakte tatsächliche Artwork-Fakten.
-- Prompts 00 bis 26 sind abgeschlossen. Die frameworkfreie Prompt Engine 2.0
+- Prompts 00 bis 27 sind abgeschlossen. Die frameworkfreie Prompt Engine 2.0
   verarbeitet aufgelöste Profile vollständig; der Review-/Output-Workspace
   bindet sie an aktiven oder lokal gesicherten Draft, Profilbibliothek,
   Konfliktanzeige, Clipboard, TXT-/JSON-Export und Assetprofil-Speicherung an.
@@ -617,7 +617,9 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   einer bestehenden Basisfamilie bleiben ausgeschlossen. Der abschließende
   UI-Querschnitt ist für Desktop, Tablet und 360-px-Viewports, Hell/Dunkel/
   System, Tastaturfokus, Kontrast und reduzierte Bewegung geprüft und in
-  `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` dokumentiert.
+  `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` dokumentiert. Die produktive
+  Startmigration, der vollständige Workspace-Transfer und die belegte
+  Legacy-Entfernung stehen in `V2-RELEASE-ACCEPTANCE.md`.
 
 ---
 
@@ -1356,6 +1358,22 @@ Querschnitt seit Prompt 26:
 - Viewportmatrix, Keyboard-Flows, gemessene Kontrastwerte und die Grenze der
   Browserprüfung stehen in `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
 
+Releasegrenze seit Prompt 27:
+
+- `initializeBrowserWorkspaceStorage()` führt die backup-gesicherte,
+  idempotente V1→V2-Migration vor jedem Provider-Read aus und liefert ihren
+  strukturierten Status an die Einstellungsansicht.
+- Workspace-JSON umfasst den validierten Profilgraph, App-Einstellungen und
+  den letzten Draft. Profile werden zuerst vollständig inspiziert;
+  abweichende IDs benötigen eine explizite Ersetzungsbestätigung.
+- Profil- und Settings-Provider rehydrieren nach erfolgreichen Importwrites.
+  Optionale Settings-/Draft-Fehler werden sichtbar gemeldet und nicht als
+  atomarer Gesamterfolg ausgegeben.
+- Die ausführbare Legacy-UI wurde erst nach erfolgreicher Test- und
+  Browserparität entfernt. Pure Kompatibilitätslogik und synthetische Fixtures
+  bleiben erhalten; die vollständige Evidenz steht in
+  `V2-RELEASE-ACCEPTANCE.md`.
+
 ---
 
 # 17. Tests
@@ -1503,6 +1521,8 @@ Ziel-`package.json` mindestens:
    validieren und erst danach die drei Profil-Namespaces schreiben.
 10. Den Backupstatus zuletzt auf `completed` setzen. Ein liegengebliebener
     `prepared`-Datensatz wird mit denselben IDs wiederaufgenommen.
+11. Die Migration beim Browserstart vor dem ersten Profil-/Settings-Read
+    ausführen und Erfolg, Konflikt oder Ausfall sichtbar an die UI übergeben.
 
 Ein `completed`-Backup ist der autoritative Migrationsmarker und macht weitere
 Startläufe zum No-op. Die normalisierten V1-Daten und Transformationshinweise
@@ -1532,3 +1552,7 @@ V2 ist releasefähig, wenn:
 - `npm run verify` grün ist,
 - Accessibility-/Responsive-Kernprüfung bestanden ist,
 - und die Legacy-V1-UI erst nach bestätigter Parität entfernt wurde.
+
+Diese Definition of Done ist seit Prompt 27 erfüllt. Prüfmatrix, Löschentscheid
+und verbleibende nicht blockierende Risiken stehen in
+`V2-RELEASE-ACCEPTANCE.md`.

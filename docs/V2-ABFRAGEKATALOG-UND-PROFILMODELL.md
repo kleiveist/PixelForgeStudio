@@ -1176,7 +1176,7 @@ Basisprofil
 | Tileset | nicht passende Kanten, sichtbare Wiederholung, falsches Raster |
 | Artwork | unerwünschte Schrift, Wasserzeichen, unklare Hauptkomposition |
 
-## 11.3 Implementierungsstand bis Prompt 26
+## 11.3 Implementierungsstand bis Prompt 27
 
 - `buildPromptPackages()` nimmt ein vollständig `ResolvedProfile` entgegen
   und erzeugt pro gewünschter Sprache und wirksamer Stilvariante ein
@@ -1236,6 +1236,17 @@ Basisprofil
   reduzierte Bewegung und Forced-Colors werden am globalen Stylesheet
   respektiert. Die Mess- und Viewportdetails stehen in
   `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
+- Prompt 27 startet die idempotente V1→V2-Migration vor der Provider-
+  Hydration, zeigt ihren strukturierten Zustand und belässt V1-Quellkeys
+  unverändert.
+- Der vollständige Workspace-Transfer serialisiert Profilgraph,
+  App-Einstellungen und letzten Draft in das bestehende validierte
+  ExportBundle. Imports prüfen den gesamten Graph vor Writes, bestätigen
+  abweichende IDs explizit und rehydrieren die betroffenen Provider.
+- Die Release-Abnahme belegt alle neun Editoren, Direction-Gating, vier
+  Ausgaben, JSON/TXT, Themes und Keyboard/Responsive. Erst danach wurde die
+  ausführbare Legacy-UI entfernt; Details stehen in
+  `V2-RELEASE-ACCEPTANCE.md`.
 
 ---
 

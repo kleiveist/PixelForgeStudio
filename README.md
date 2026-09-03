@@ -12,11 +12,14 @@
 
 Dieses Repository enthält drei aufeinander abgestimmte Bereiche:
 
-1. das aktive **V2-Grundgerüst mit React, TypeScript und Vite**,
-2. die eingefrorene **Legacy-V1 unter `legacy/v1/`** als ausführbare Migrationsquelle,
-3. den **verbindlichen V2-Codex-Bauplan** für die schrittweise Produktmigration.
+1. das release-abgenommene **PixelForge Prompt Studio V2 mit React,
+   TypeScript und Vite**,
+2. pure **V1-Migrationsverträge und synthetische Fixtures** für kompatible
+   Browserdaten,
+3. den **verbindlichen V2-Codex-Bauplan** samt Implementierungshistorie.
 
-Die Legacy-V1 ist **nicht** die Zieltechnologie. Neue V2-Funktionalität wird nicht mehr in Vanilla JavaScript entwickelt.
+Die ausführbare Vanilla-V1 wurde in Prompt 27 nach belegter Feature-Parität
+entfernt. Neue V2-Funktionalität entsteht ausschließlich im Ziel-Stack.
 
 ## Verbindlicher V2-Stack
 
@@ -40,9 +43,14 @@ Die Legacy-V1 ist **nicht** die Zieltechnologie. Neue V2-Funktionalität wird ni
 
 Details: `docs/TECHNOLOGIE-STACK-V2.md`.
 
-## Warum die Legacy-V1 noch enthalten ist
+## Erhaltene Legacy-Migrationsverträge
 
-Codex soll bestehende Promptregeln, Presets, Speicherformate und technische Berechnungen nicht neu erfinden oder versehentlich verlieren. Deshalb bleibt die bestehende Anwendung bis zur bestätigten V2-Feature-Parität unter `legacy/v1/` ausführbar und getestet.
+Die historische V1 war bis zur Release-Abnahme die ausführbare Referenz für
+Promptregeln, Presets, Speicherformate und technische Berechnungen. Nach
+bestandener automatisierter und manueller Parität wurde ihre UI entfernt. Die
+pure TypeScript-Kompatibilitätsdomain, Migration und synthetischen Fixtures
+bleiben aktiv getestet; der ursprüngliche Quellstand ist über die Git-Historie
+vor Prompt 27 wiederherstellbar.
 
 Die Migration läuft kontrolliert:
 
@@ -74,8 +82,8 @@ V1 inventarisieren ✓
 → Review und Output Workspace ✓
 → kontrollierte Profilkonflikte und Konvertierung ✓
 → Accessibility, Responsive Design und visuelle Politur ✓
-→ Release-Abnahme (nächste Phase)
-→ Legacy-UI erst danach entfernen
+→ Release-Abnahme, produktive Startmigration und Workspace-Transfer ✓
+→ Legacy-UI nach bestätigter Parität entfernt ✓
 ```
 
 ## Dokumente für Codex
@@ -87,6 +95,7 @@ V1 inventarisieren ✓
 | `docs/TECHNOLOGIE-STACK-V2.md` | verbindlicher React/TypeScript/Vite-Stack |
 | `docs/LEGACY-V1-BASELINE.md` | reproduzierbare V1-Inventur, Migrationsverträge und bewusste V2-Korrekturen |
 | `docs/V2-IMPLEMENTIERUNGSSTATUS.md` | geprüfter Prompt-, Commit-, Test- und Remote-Stand |
+| `docs/V2-RELEASE-ACCEPTANCE.md` | vollständige Releasecheckliste, Browsermatrix, Legacy-Entscheidung und Restrisiken |
 | `docs/CODEX-V2-UMSETZUNGSANWEISUNG.md` | Architektur, Migration, Editoren, Prompt Engine, Tests |
 | `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md` | vollständige fachliche Fragen- und Profilstruktur |
 | `docs/CODEX-V2-PROMPTS.md` | einzeln ausführbare Codex-Aufträge 00–27 |
@@ -143,8 +152,8 @@ die zur Capability passenden Fragen und Editoren.
 
 Character-/NPC-, Moving-Object-, Texture-/Material-, Nature-/Tree-,
 Static-Object-, Building-/Architecture-, Tileset-, Item-/Equipment- und
-Artwork-Editor sind als getrennte React-Features umgesetzt. Als nächste Phase
-folgt ihre zusammenhängende Release-Abnahme.
+Artwork-Editor sind als getrennte React-Features umgesetzt. Sie wurden in
+Prompt 27 zusammenhängend release-abgenommen.
 
 Der Character-Schritt folgt unmittelbar auf die Basisprofilwahl und erscheint
 nur für Figuren-Untertypen. Er gruppiert Identität, Körper, Gesicht,
@@ -275,15 +284,15 @@ horizontales Overflow sind geprüft; die reproduzierbare Matrix steht in
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 26 sind abgeschlossen. Die nächste einzeln auszuführende
-Phase ist:
+Prompt 00 bis Prompt 27 sind abgeschlossen. Es ist kein nummerierter
+V2-Prompt mehr offen:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 27 — V2 Release-Abnahme
+→ Prompt 00–27 ✓
 ```
 
-Danach immer genau:
+Für spätere, neu beauftragte Erweiterungen gilt weiterhin:
 
 ```text
 Aufgabe → implementieren → testen → Diff prüfen → committen → nächste Aufgabe
@@ -365,20 +374,21 @@ Item- und Artwork-Antworten nutzen denselben Vertrag. Artwork bleibt als
 `freeComposition` von Tile-, Sprite-, Weltkamera-, Figuren-, Richtungs- und
 Animationsregeln entkoppelt; Summary und Dashboard zeigen nur tatsächlich
 konfigurierte Fachwerte.
-Prompt-Erzeugung und Output-Flächen folgen erst in ihren späteren Phasen.
+Prompt-Erzeugung, Review und Output-Flächen sind vollständig umgesetzt und
+release-abgenommen.
 
-## Legacy-V1 lokal prüfen
+## V1-Migrationskompatibilität prüfen
 
-Die eingefrorene V1 bleibt separat ausführbar:
+Die nicht ausführbaren historischen Verträge werden im V2-Teststand geprüft:
 
 ```bash
-npm run check:legacy
-npm run test:legacy
-npm run dev:legacy
-npm run build:legacy
+npx vitest run src/domain/legacy-v1/legacyV1.test.ts \
+  src/services/v1Migration.test.ts \
+  src/services/workspaceBootstrap.test.ts
 ```
 
-Details: `legacy/v1/README.md` und `docs/LEGACY-V1-BASELINE.md`.
+Fixtures: `src/test/fixtures/legacy-v1/`. Historische Details und
+Pre-Removal-Evidenz: `docs/LEGACY-V1-BASELINE.md`.
 
 ## Entwicklung und Prüfung
 

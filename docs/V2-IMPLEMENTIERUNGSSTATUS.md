@@ -6,13 +6,11 @@
 
 ## Stand
 
-Der letzte vollständig implementierte Funktionsabschnitt ist **Prompt 26 —
-Accessibility, Responsive Design und visuelle Politur**. Er ist für den
-separaten Feature-Commit mit dem Betreff
-`♿ feat: polish responsive accessible studio experience` vorbereitet. Die
-sechs Shell-Ansichten sind für Desktop, Tablet und 360-px-Viewports unter
-Hell/Dunkel/System geprüft; Tastaturfokus, reduzierte Bewegung, Kontrast,
-Labels und dynamische Statuswechsel sind gehärtet und dokumentiert.
+Die vollständige nummerierte V2-Serie **Prompt 00–27 ist abgeschlossen**.
+Prompt 27 bindet die V1→V2-Migration vor dem ersten Provider-Read ein, macht
+den vollständigen Workspace-JSON-Transfer in Einstellungen zugänglich und
+dokumentiert die bestandene Release-Abnahme. Der separate Release-Commit trägt
+den Betreff `🚀 release: complete PixelForge Prompt Studio v2 migration`.
 
 Prompt 18 ist vollständig in Commit `6dabbbb` enthalten. Dessen Betreff
 (`♻️ refactor: Code vereinfachen und strukturieren`) beschreibt den Inhalt
@@ -22,9 +20,11 @@ folgen als getrennte Feature-Commits `433eeda` beziehungsweise `2557c94`;
 der Dokumentationsstand vor Prompt 21 liegt in `446cbd0`, Prompt 21 selbst in
 `bb90757`.
 
-Die Anwendung besitzt aktuell React, TypeScript und Vite als aktive
-V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
-`legacy/v1/` erhalten.
+React, TypeScript und Vite bilden nun die einzige aktive Apparchitektur. Die
+ausführbare V1-UI wurde erst nach automatisierter und manueller Paritätsprüfung
+entfernt. Pure Migrations-/Kompatibilitätslogik und synthetische Verträge
+bleiben unter `src/domain/legacy-v1/` und `src/test/fixtures/legacy-v1/`
+erhalten; der entfernte Quellstand bleibt über Git wiederherstellbar.
 
 ## Abgeschlossene Grundlagen
 
@@ -36,7 +36,7 @@ V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
 | 03 | neun Asset-Kategorien, Untertypen und getrennte Capabilities für Richtung und Animation |
 | 04 | strikte Schema-V2-Verträge mit Zod und daraus abgeleitete TypeScript-Typen |
 
-## Abgeschlossene beauftragte Phasen 05–26
+## Abgeschlossene beauftragte Phasen 05–27
 
 | Prompt | Commit | Umgesetzter Stand |
 |---:|---|---|
@@ -61,7 +61,8 @@ V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
 | 23 | `57ac335` | modulare pure TypeScript-Prompt-Engine mit zwölf Bausteinen, getrennten Stilpaketen und allen vier Ausgabearten |
 | 24 | `82c1bb0` | produktionsreifer Review-/Output-Workspace mit Konfliktanzeige, vier Tabs, Copy, TXT-/JSON-Export und Profilspeicherung |
 | 25 | `c67f26a` | kontrollierte Lock-Konvertierung mit Vier-Wege-UX, Folgenvorschau und unveränderten Ausgangsfamilien |
-| 26 | `♿ dieser Commit` | responsive Sechs-View-Politur, vollständige Tastaturpfade, sichtbarer Fokus, Kontrast- und Reduced-Motion-Audit |
+| 26 | `aac3f30` | responsive Sechs-View-Politur, vollständige Tastaturpfade, sichtbarer Fokus, Kontrast- und Reduced-Motion-Audit |
+| 27 | `🚀 dieser Commit` | produktiver Migrationsbootstrap, vollständiger Workspace-Transfer, Release-Abnahme und belegte Legacy-UI-Entfernung |
 
 Durchgehend umgesetzt sind außerdem:
 
@@ -103,20 +104,31 @@ Durchgehend umgesetzt sind außerdem:
   ohne horizontales Seiten-Overflow;
 - Fokus-, Kontrast-, Forced-Colors- und Reduced-Motion-Regeln sind über
   semantische Tokens zentral abgesichert und im Accessibility-/Responsive-
-  Audit dokumentiert.
+  Audit dokumentiert;
+- die V1→V2-Migration läuft beim Browserstart vor der Provider-Hydration,
+  bleibt backup-gesichert und idempotent und löscht keine V1-Quelle;
+- Einstellungen exportieren und importieren den vollständigen validierten
+  Workspace einschließlich Profilgraph, App-Settings und letztem Draft;
+- ID-Konflikte verlangen eine explizite Bestätigung, und Provider rehydrieren
+  erfolgreiche Importe ohne Seitenreload;
+- die vollständige Releasecheckliste und Browsermatrix stehen in
+  `V2-RELEASE-ACCEPTANCE.md`.
 
 ## Letzter vollständiger Prüfstand
 
-Der Funktionsstand bis Prompt 26 wurde am 3. September 2026 mit folgenden
+Der endgültige Funktionsstand bis Prompt 27 wurde am 3. September 2026 mit folgenden
 Ergebnissen geprüft:
 
 - TypeScript-Typecheck erfolgreich;
-- Legacy-Strukturprüfung für 13 JavaScript-Dateien und 51 Formularfelder
-  erfolgreich;
-- 10 von 10 Legacy-Tests erfolgreich;
-- 103 Vitest-Dateien mit 598 von 598 Tests erfolgreich;
+- 106 Vitest-Dateien mit 611 von 611 Tests erfolgreich;
 - Vite-Produktionsbuild erfolgreich;
 - `git diff --check` sauber.
+
+Unmittelbar vor der belegpflichtigen Legacy-Entfernung waren zusätzlich die
+historische Strukturprüfung für 13 JavaScript-Dateien und 51 Formularfelder
+sowie 10 von 10 V1-Node-Tests erfolgreich. Danach wurden die benötigten
+Verträge in den V2-Testbereich übernommen und erneut als Teil von Vitest
+geprüft.
 
 Vite meldet weiterhin ausschließlich die bekannte, nicht blockierende Warnung
 für einen JavaScript-Chunk über 500 kB. Code-Splitting ist damit eine spätere
@@ -124,23 +136,17 @@ Optimierung, kein Fehler des aktuellen Funktionsstands.
 
 ## Noch umzusetzen
 
-Die verbleibenden Phasen werden weiterhin einzeln implementiert, geprüft,
-dokumentiert und jeweils separat committet:
-
-| Prompt | Offene Aufgabe |
-|---:|---|
-| 27 | vollständige V2-Release-Abnahme; Legacy-UI nur bei belegter Parität entfernen |
-
-Die nächste einzeln auszuführende Phase ist **Prompt 27 — V2 Release-Abnahme**.
-Übergabe und Arbeitsgrenze stehen in
-`PLANS.md`; der verbindliche Phasenscope bleibt `docs/CODEX-V2-PROMPTS.md`.
+Es ist **kein nummerierter V2-Prompt mehr offen**. PWA und Tauri 2 bleiben
+bewusst ungestartete Optionen und benötigen einen eigenen Auftrag. Die
+verbindliche Abschlussgrenze und Restrisiken stehen in
+`docs/V2-RELEASE-ACCEPTANCE.md` und `PLANS.md`.
 
 ## Git- und Remote-Hinweis
 
 `origin/main` steht weiterhin auf `6dabbbb`; die Branches sind nicht
 divergiert. Der lokale Branch enthält zusätzlich die getrennten Prompt-19-,
 Prompt-20-, Statusdokumentations-, Prompt-21-, Prompt-22-, Prompt-23-,
-Prompt-24-, Prompt-25- und Prompt-26-Commits. Der Remote-Stand
+Prompt-24-, Prompt-25-, Prompt-26- und Prompt-27-Commits. Der Remote-Stand
 enthält damit den funktionalen Prompt-18-Inhalt unter dem unzutreffenden
-Refactor-Betreff, während die späteren Phasen einschließlich Prompt 26 bisher
+Refactor-Betreff, während die späteren Phasen einschließlich Prompt 27 bisher
 nur lokal vorliegen. Es wurde nicht gepusht.

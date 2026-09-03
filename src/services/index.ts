@@ -10,6 +10,7 @@ export {
   type InspectedProfileImport,
   type ParsedExportBundleJson,
   type ProfileExportSelection,
+  type ProfileTransferStorage,
   type TransferValidationIssue
 } from "./profileTransfer";
 export {
@@ -29,6 +30,11 @@ export {
   type MigrationCounts,
   type MigrationIssue
 } from "./v1Migration";
+export {
+  initializeBrowserWorkspaceStorage,
+  initializeWorkspaceStorage,
+  type WorkspaceStorageBootstrap
+} from "./workspaceBootstrap";
 export {
   createBrowserNavigationAdapter,
   type NavigationAdapter

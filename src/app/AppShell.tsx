@@ -6,8 +6,8 @@ import { Badge } from "../components/ui";
 import { BRAND } from "../config";
 import { APP_VIEW_IDS, type AppView } from "../domain/navigation";
 import type { AssetCategory } from "../domain/assets";
-import { PlaceholderView } from "../features/app-views/PlaceholderView";
 import { ReviewOutputWorkspace } from "../features/review-output";
+import { SettingsView } from "../features/settings";
 import { WizardView, type WizardStorage } from "../features/wizard";
 import { ProfileLibraryView } from "../features/profiles";
 import {
@@ -16,7 +16,10 @@ import {
 } from "../features/dashboard/DashboardView";
 import type { DashboardStorage } from "../features/dashboard/dashboardData";
 import type { StableId } from "../schemas";
-import type { OutputWorkspaceAdapter } from "../services";
+import type {
+  LegacyV1StorageMigrationResult,
+  OutputWorkspaceAdapter
+} from "../services";
 import { useNavigation } from "../store/navigation";
 import { useSettings } from "../store/settings";
 import { useWizardSession } from "../store/wizard";
@@ -34,6 +37,7 @@ interface ActiveViewProps {
   readonly onStartNewAsset: (category: AssetCategory | null) => void;
   readonly outputAdapter: OutputWorkspaceAdapter;
   readonly sessionRevision: number;
+  readonly startupMigration: LegacyV1StorageMigrationResult;
   readonly storageAdapter: DashboardStorage & WizardStorage;
   readonly view: AppView;
 }
@@ -49,6 +53,7 @@ function ActiveView({
   onStartNewAsset,
   outputAdapter,
   sessionRevision,
+  startupMigration,
   storageAdapter,
   view
 }: ActiveViewProps) {
@@ -98,9 +103,11 @@ function ActiveView({
   }
 
   return (
-    <PlaceholderView
-      definition={APP_VIEW_DEFINITIONS[view]}
-      view={view}
+    <SettingsView
+      outputAdapter={outputAdapter}
+      startupMigration={startupMigration}
+      storageAdapter={storageAdapter}
+      {...(now ? { now } : {})}
     />
   );
 }
@@ -110,6 +117,7 @@ export interface AppShellProps {
   readonly createDraftId?: () => string;
   readonly now?: () => string;
   readonly outputAdapter: OutputWorkspaceAdapter;
+  readonly startupMigration: LegacyV1StorageMigrationResult;
   readonly storageAdapter: DashboardStorage & WizardStorage;
 }
 
@@ -118,6 +126,7 @@ export function AppShell({
   createDraftId,
   now,
   outputAdapter,
+  startupMigration,
   storageAdapter
 }: AppShellProps) {
   const { activeView, navigate } = useNavigation();
@@ -260,6 +269,7 @@ export function AppShell({
             onStartNewAsset={startNewAsset}
             outputAdapter={outputAdapter}
             sessionRevision={sessionRevision}
+            startupMigration={startupMigration}
             storageAdapter={storageAdapter}
             view={activeView}
           />

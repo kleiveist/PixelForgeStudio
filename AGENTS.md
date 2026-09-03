@@ -2,7 +2,11 @@
 
 ## Auftrag
 
-Dieses Repository enthält die Legacy-V1 sowie den verbindlichen Bauplan für **PixelForge Prompt Studio V2**. V2 ist ein lokales Prompt-Produktionsstudio für konsistente moderne Pixelart-Assets mit Dashboard, Profilbibliothek, geführtem Wizard, Profilvererbung und spezialisierten Asset-Editoren.
+Dieses Repository enthält das release-abgenommene **PixelForge Prompt Studio
+V2**, seine verbindliche Architektur und erhaltene V1-Migrationsverträge. V2
+ist ein lokales Prompt-Produktionsstudio für konsistente moderne
+Pixelart-Assets mit Dashboard, Profilbibliothek, geführtem Wizard,
+Profilvererbung und spezialisierten Asset-Editoren.
 
 Vor funktionalen Änderungen lesen:
 
@@ -28,12 +32,16 @@ Vor funktionalen Änderungen lesen:
 - kein Backend
 - kein Python in der Haupt-App
 
-Die vorhandenen HTML/CSS/JavaScript-Dateien sind **Legacy V1**. Sie dürfen während der Migration als Referenz und Datenquelle verwendet werden. Neue V2-Features dürfen nicht als neue Vanilla-DOM-Architektur entstehen.
+Die ausführbare HTML/CSS/JavaScript-**Legacy V1** wurde in Prompt 27 nach
+belegter Parität entfernt. Ihre pure TypeScript-Kompatibilitätsdomain und
+synthetischen Fixtures bleiben ausschließlich für Migration und Regression
+erhalten. Neue Features dürfen nicht als Vanilla-DOM-Architektur entstehen.
 
 ## Arbeitsweise
 
 1. Genau eine Aufgabe aus `docs/CODEX-V2-PROMPTS.md` bearbeiten.
-2. Vor Änderungen betroffene Legacy- und V2-Dateien untersuchen.
+2. Vor Änderungen betroffene V2- und gegebenenfalls
+   Legacy-Kompatibilitätsdateien untersuchen.
 3. Bei komplexen Schritten den Status in `PLANS.md` aktualisieren.
 4. Kleinste vollständige Lösung implementieren.
 5. Domain-Logik als pure TypeScript-Funktionen halten.

@@ -63,6 +63,7 @@ export type ProfileLibraryAction =
       type: "mutationFailed";
       mutation: Exclude<ProfileMutationNotice, Readonly<{ status: "ready" }>>;
     }>
+  | Readonly<{ type: "libraryImported"; library: ProfileLibrary }>
   | Readonly<{ type: "mutationDismissed" }>;
 
 export const DEFAULT_PROFILE_LIBRARY_FILTERS: ProfileLibraryFilters =
@@ -128,6 +129,12 @@ export function profileLibraryReducer(
       };
     case "mutationFailed":
       return { ...state, mutation: action.mutation };
+    case "libraryImported":
+      return {
+        ...state,
+        libraryResult: { status: "valid", value: action.library },
+        mutation: { status: "ready" }
+      };
     case "mutationDismissed":
       return state.mutation.status === "ready"
         ? state

@@ -5,7 +5,7 @@ import { BRAND } from "./config";
 import {
   createBrowserNavigationAdapter,
   createBrowserOutputWorkspaceAdapter,
-  createBrowserV2StorageAdapter
+  initializeBrowserWorkspaceStorage
 } from "./services";
 import "./styles/tokens.css";
 import "./styles/globals.css";
@@ -16,7 +16,7 @@ if (!rootElement) {
   throw new Error(`${BRAND.shortName} konnte das Root-Element nicht finden.`);
 }
 
-const storageAdapter = createBrowserV2StorageAdapter();
+const { storageAdapter, migration } = initializeBrowserWorkspaceStorage();
 const navigationAdapter = createBrowserNavigationAdapter();
 const outputAdapter = createBrowserOutputWorkspaceAdapter();
 
@@ -26,6 +26,7 @@ createRoot(rootElement).render(
       navigationAdapter={navigationAdapter}
       outputAdapter={outputAdapter}
       storageAdapter={storageAdapter}
+      startupMigration={migration}
     />
   </StrictMode>
 );

@@ -1,5 +1,6 @@
 import {
   createBrowserOutputWorkspaceAdapter,
+  type LegacyV1StorageMigrationResult,
   type NavigationAdapter,
   type OutputWorkspaceAdapter
 } from "../services";
@@ -26,18 +27,21 @@ export interface AppProps {
   readonly createBaseProfileId?: () => string;
   readonly createDraftId?: () => string;
   readonly outputAdapter?: OutputWorkspaceAdapter;
+  readonly startupMigration?: LegacyV1StorageMigrationResult;
 }
 
 function NavigationRoot({
   navigationAdapter,
   storageAdapter,
   outputAdapter,
+  startupMigration,
   now,
   createDraftId
 }: Readonly<{
   navigationAdapter: NavigationAdapter;
   storageAdapter: DashboardStorage & WizardStorage;
   outputAdapter: OutputWorkspaceAdapter;
+  startupMigration: LegacyV1StorageMigrationResult;
   now?: () => string;
   createDraftId?: () => string;
 }>) {
@@ -52,6 +56,7 @@ function NavigationRoot({
         <AppShell
           activeBaseProfileId={settings.activeBaseProfileId}
           outputAdapter={outputAdapter}
+          startupMigration={startupMigration}
           storageAdapter={storageAdapter}
           {...(now ? { now } : {})}
           {...(createDraftId ? { createDraftId } : {})}
@@ -68,7 +73,8 @@ export function App({
   createProfileId,
   createBaseProfileId,
   createDraftId,
-  outputAdapter = createBrowserOutputWorkspaceAdapter()
+  outputAdapter = createBrowserOutputWorkspaceAdapter(),
+  startupMigration = { status: "notNeeded" }
 }: AppProps) {
   const optionalProviderProps = now ? { now } : {};
   const optionalProfileProviderProps = {
@@ -85,6 +91,7 @@ export function App({
         <NavigationRoot
           navigationAdapter={navigationAdapter}
           outputAdapter={outputAdapter}
+          startupMigration={startupMigration}
           storageAdapter={storageAdapter}
           {...(now ? { now } : {})}
           {...(createDraftId ? { createDraftId } : {})}

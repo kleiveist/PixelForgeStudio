@@ -50,7 +50,9 @@
   `texture-editor/`, `nature-editor/`, `building-editor/` und
   `tileset-editor/`, `item-editor/` und `artwork-editor/` enthalten die neun
   spezialisierten Asset-Editoren; `review-output/` enthält Review, Prompt-
-  Ausgaben und den kontrollierten Profilkonvertierungsworkflow
+  Ausgaben und den kontrollierten Profilkonvertierungsworkflow; `settings/`
+  enthält den sichtbaren Migrationsstatus und den vollständigen lokalen
+  Workspace-JSON-Transfer
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -65,9 +67,10 @@
     raw, autosave, preset, and export-shaped V1 input
   - `storage.schema.ts`: versioned collection envelopes, profile-graph
     integrity, migration backup, and completion-marker contracts
-- `services/`: injectable storage and navigation ports, JSON profile transfer,
-  and V1 storage migration orchestration; public exports live in
-  `services/index.ts`
+- `services/`: injectable storage, navigation and output ports, JSON profile
+  transfer, V1 storage migration orchestration, and the browser workspace
+  bootstrap that runs migration before provider hydration; public exports
+  live in `services/index.ts`
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
   complete validated app-settings envelope and effective theme state;
   `profiles/` owns the validated profile-library UI state, filters, and
@@ -77,12 +80,15 @@
   Formularwerte bleibt
 - `styles/`: globale semantische Light-/Dark-Tokens, System-Fallback und
   Reset-/Grundregeln
-- `test/`: gemeinsames Vitest-/Testing-Library-Setup
+- `test/`: gemeinsames Vitest-/Testing-Library-Setup und nicht ausführbare,
+  synthetische V1-Migrations-/Promptverträge unter `fixtures/legacy-v1/`
 
-V1 liegt unverändert unter `legacy/v1/` und darf nur als Referenz,
-Migrationsquelle und Regressionstest verwendet werden.
+The executable V1 UI was removed in Prompt 27 only after automated and manual
+parity was demonstrated. Historical inputs now live as inert fixtures under
+`test/fixtures/legacy-v1/`; the removed source remains recoverable from Git
+history before the Prompt 27 release commit.
 
-The public compatibility API is `domain/legacy-v1/index.ts`. It intentionally
+The public compatibility API remains `domain/legacy-v1/index.ts`. It intentionally
 reproduces historical V1 behavior, including stale but valid sheet-layout
 values. New V2 rules build beside this namespace instead of silently changing
 the migration reference.
@@ -264,25 +270,28 @@ also omits tile and world-camera geometry. Lighting-note text is canonicalized
 and represented by a compact deterministic, non-cryptographic fingerprint;
 the key is for grouping, never for security or data integrity.
 
-`services/storageAdapter.ts` is the only V2 module allowed to access browser
-`localStorage`. `createV2StorageAdapter()` accepts an injected
-`KeyValueStorage`; `createBrowserV2StorageAdapter()` is the browser composition
-root. Reads return a discriminated `valid | empty | invalid | unavailable`
-result. Profile writes use versioned namespace envelopes and validate the
-complete Base→Category→Asset graph before a best-effort write with a rollback
-attempt. If browser storage also rejects that rollback, the adapter reports
-`unavailable` but cannot guarantee atomicity. `ProfileLibraryProvider` is the
-sole in-app mutation owner and assumes its adapter identity remains stable for
-the app lifecycle. Future import or restore paths must rehydrate that provider
-instead of writing beside its in-memory graph; cross-tab synchronization is
-not part of Prompt 10.
+`services/storageAdapter.ts` owns all V2 storage semantics; direct browser
+`localStorage` access is confined to this service and the migration-first
+`workspaceBootstrap.ts` composition root. `createV2StorageAdapter()` accepts
+an injected
+`KeyValueStorage`; `initializeBrowserWorkspaceStorage()` is the production
+composition root and returns the stable adapter only after attempting the
+startup migration. Reads return a discriminated
+`valid | empty | invalid | unavailable` result. Profile writes use versioned
+namespace envelopes and validate the complete Base→Category→Asset graph before
+a best-effort write with a rollback attempt. If browser storage also rejects
+that rollback, the adapter reports `unavailable` but cannot guarantee
+atomicity. `ProfileLibraryProvider` is the sole in-app profile mutation owner
+and assumes its adapter identity remains stable for the app lifecycle. Its
+public import action re-reads and replaces provider state after a successful
+validated graph write; cross-tab synchronization is outside V2 scope.
 
 `services/v1Migration.ts` reads both V1 keys independently, writes their exact
 raw strings to a `prepared` backup before parsing, transforms valid sources,
 then writes the `completed` marker last. IDs derive from technical values and
 source slots, so a prepared migration can converge safely after interruption.
-Legacy keys are never deleted. V1 constraint flags remain isolated provenance
-instead of being misinterpreted as V2 inheritance locks.
+Legacy browser keys are never deleted. V1 constraint flags remain isolated
+provenance instead of being misinterpreted as V2 inheritance locks.
 
 `services/profileTransfer.ts` owns the V2 JSON boundary. Selected exports add
 their referenced Base/Category profiles automatically. Bundle parsing checks
@@ -290,7 +299,20 @@ schema/format/application, duplicate IDs, graph references, resolver conflicts,
 and recomputed Compatibility Keys. Existing identical IDs are skipped;
 different payloads are returned as visible conflicts unless replacement is
 explicitly requested. UI settings and draft payloads roundtrip in the bundle
-contract but profile import does not silently apply them to the local UI state.
+contract but the low-level profile import never silently applies them to the
+local UI state.
+
+`features/settings/index.ts` is the Prompt-27 React boundary for startup status
+and full-workspace transfer. It composes the profile-import service with the
+profile, settings, and Wizard-session providers, reads/writes the optional
+Draft through the storage adapter, and applies settings or the latest imported
+Draft only when the corresponding checkboxes remain selected. A successful
+Draft restore publishes an exact Resume intent so stale in-memory Wizard state
+cannot mask it. Files are size-limited and fully inspected before mutation;
+differing IDs require a second explicit replacement action. A later
+Settings/Draft write cannot be atomic with the profile graph across
+localStorage namespaces, so any partial follow-up failure is reported instead
+of hidden.
 
 `config/brand.ts` is the single source for visible product copy. The separate
 `EXPORT_APPLICATION_ID` remains stable because it is a persisted wire-format
@@ -304,7 +326,7 @@ object, persists only explicit user changes through the injected storage port,
 and observes `prefers-color-scheme` only while System is selected. It writes
 the resolved mode to `document.documentElement.dataset.theme`; media changes
 never mutate storage or `updatedAt`. `main.tsx` creates the browser adapter once
-at the composition root.
+through the migration-first workspace bootstrap at the composition root.
 
 `components/ui/index.ts` exposes the first reusable CSS-Module primitives,
 `Badge` and `Surface`. `components/theme/ThemeSwitcher.tsx` is a native,
@@ -751,5 +773,8 @@ reduced to a single 1 ms iteration. The verified desktop/tablet/360-px matrix,
 keyboard paths, and contrast measurements are recorded in
 `docs/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
 
-Prompts 00 through 26 are complete. Prompt 27 release acceptance and any
-evidence-gated Legacy removal remain untouched.
+Prompt 27 completes the numbered V2 series. Startup migration now precedes
+provider reads, full workspace transfer rehydrates public provider boundaries,
+and the executable Legacy UI was removed only after the automated and browser
+parity evidence recorded in `docs/V2-RELEASE-ACCEPTANCE.md`. Prompts 00 through
+27 are complete; PWA and Tauri remain unstarted optional projects.

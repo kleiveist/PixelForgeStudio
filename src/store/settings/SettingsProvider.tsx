@@ -39,6 +39,7 @@ export interface SettingsContextValue {
   readonly setActiveBaseProfile: (
     profileId: StableId | null
   ) => StorageMutationResult;
+  readonly restoreSettings: (settings: AppSettings) => StorageMutationResult;
 }
 
 export type SettingsStorage = Pick<
@@ -225,17 +226,31 @@ export function SettingsProvider({
     [now, storageAdapter]
   );
 
+  const restoreSettings = useCallback(
+    (settings: AppSettings): StorageMutationResult => {
+      const result = storageAdapter.writeSettings(settings);
+      if (result.status !== "ok") return result;
+
+      settingsRef.current = settings;
+      dispatch({ type: "settingsChanged", settings });
+      return result;
+    },
+    [storageAdapter]
+  );
+
   const value = useMemo<SettingsContextValue>(
     () => ({
       settings: state.settings,
       themePreference: state.settings.theme,
       resolvedTheme,
       persistence: state.persistence,
+      restoreSettings,
       setActiveBaseProfile,
       setThemePreference
     }),
     [
       resolvedTheme,
+      restoreSettings,
       setActiveBaseProfile,
       setThemePreference,
       state.persistence,

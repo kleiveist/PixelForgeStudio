@@ -15,6 +15,7 @@
 - [Technische Prompt-Spezifikation](PROMPT-SPECIFICATION.md)
 - [PixelForge Prompt Studio V2 — Accessibility- und Responsive-Audit](V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md)
 - [PixelForge Prompt Studio V2 — Implementierungsstatus](V2-IMPLEMENTIERUNGSSTATUS.md)
+- [PixelForge Prompt Studio V2 — Release-Abnahme](V2-RELEASE-ACCEPTANCE.md)
 - [PixelForge Prompt Studio V2 — verbindlicher Technologie-Stack](TECHNOLOGIE-STACK-V2.md)
 - [PixelForge Prompt Studio V2 — Abfragekatalog und Profilmodell](V2-ABFRAGEKATALOG-UND-PROFILMODELL.md)
 <!-- PYGINDEX:INDEX END -->

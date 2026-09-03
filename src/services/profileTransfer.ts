@@ -14,6 +14,11 @@ import {
 } from "../schemas";
 import type { V2StorageAdapter } from "./storageAdapter";
 
+export type ProfileTransferStorage = Pick<
+  V2StorageAdapter,
+  "readProfileLibrary" | "writeProfileLibrary"
+>;
+
 export interface ProfileExportSelection {
   readonly baseProfileIds?: readonly string[];
   readonly categoryProfileIds?: readonly string[];
@@ -270,7 +275,7 @@ function workspaceData(bundle: ExportBundle): Readonly<{
 }
 
 export function importProfileBundle(
-  adapter: V2StorageAdapter,
+  adapter: ProfileTransferStorage,
   json: string,
   options: Readonly<{ conflictStrategy?: "replaceExisting" }> = {}
 ): ImportProfileBundleResult {

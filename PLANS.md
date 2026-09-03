@@ -2,12 +2,70 @@
 
 ## Status
 
-- **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
-- **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** Prompt 26 — Accessibility, Responsive Design und visuelle Politur (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 27 — V2-Release-Abnahme (noch nicht begonnen)
-- **Zuletzt abgeschlossen:** Prompt 26 — Accessibility, Responsive Design und visuelle Politur
+- **Legacy:** ausführbare V1-UI nach belegter Parität entfernt; pure
+  TypeScript-Kompatibilität und synthetische Migrationsfixtures bleiben erhalten
+- **Ziel:** V2 als TypeScript + React + Vite; Release-Abnahme abgeschlossen
+- **Aktuelle Aufgabe:** Prompt 27 — V2-Release-Abnahme (abgeschlossen)
+- **Nächste Aufgabe:** keine nummerierte V2-Phase; optionale Erweiterungen bleiben ungestartet
+- **Zuletzt abgeschlossen:** Prompt 27 — V2-Release-Abnahme
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 27
+
+1. Jede Release-Checklistenposition auf eine produktive Modulgrenze,
+   automatisierte Tests und – wo UI-relevant – einen realen Browserpfad
+   zurückführen. Architektur-, Default-, Capability- und Stilreferenz-Guards
+   statisch gegen den aktuellen Quellstand prüfen.
+2. Die V1→V2-Startmigration vor dem ersten Provider-Read in den produktiven
+   Browser-Bootstrap einbinden und ihren Zustand sichtbar machen. Die bereits
+   pure, idempotente und backup-gesicherte Migration bleibt die einzige
+   Transformationsgrenze.
+3. Den bislang nur infrastrukturell vorhandenen JSON-Roundtrip als lokale
+   Einstellungsansicht zugänglich machen: vollständigen Workspace exportieren,
+   Import vorab validieren, ID-Konflikte explizit bestätigen und optionale
+   Settings-/Draft-Daten kontrolliert übernehmen.
+4. Releasepfade für Dashboard, Profile/Locks/Compatibility, alle neun
+   Spezialeditoren, Richtungsgating, vier Prompt-Ausgaben, JSON/TXT,
+   Light/Dark/System sowie Keyboard/Responsive im Test und Browser prüfen.
+5. Legacy V1 nur dann entfernen, wenn die V2-Parität einschließlich
+   produktiver Migration und manueller Browserabnahme belegt ist; benötigte
+   Migrationsfixtures vorher in einen nicht ausführbaren Testbereich
+   überführen. Andernfalls die konkrete Lücke dokumentieren und den Release
+   nicht als fertig markieren.
+6. Releasebericht, Architektur und Status aktualisieren, dann
+   `npm run verify`, `git diff --check`, Diff-/Default-Audit und den separaten
+   Prompt-27-Commit ausführen. Es folgt keine weitere nummerierte Phase.
+
+## Ergebnis Prompt 27
+
+1. Der produktive Browser-Bootstrap führt die backup-gesicherte,
+   idempotente V1→V2-Migration vor dem ersten Provider-Read aus. Die
+   Einstellungsansicht zeigt Erfolg, Wiederanlauf, Konflikte und nicht
+   verfügbaren Storage an; originale V1-Keys werden nie gelöscht.
+2. Die Einstellungsansicht exportiert Profile, Einstellungen und den letzten
+   lokalen Entwurf als ein validiertes V2-JSON-Bundle. Importdaten beginnen
+   als `unknown`, ID-Konflikte verlangen eine explizite Ersetzungsbestätigung,
+   und Einstellungen sowie der jüngste Entwurf können gezielt übernommen
+   werden; Provider rehydrieren nach erfolgreichen Writes ohne Reload.
+3. Die zusammenhängende Browserabnahme hat Dashboard, Profile, Migration,
+   alle neun Spezialeditoren, Light/Dark/System, Tastaturpfade, 360-px-Reflow,
+   vier Promptausgaben sowie reale JSON-/TXT-Downloads geprüft. Richtung war
+   nur bei NPC und fahrendem Objekt sichtbar, bei den sieben statischen oder
+   frei komponierten Fällen nicht.
+4. Die ausführbare Vanilla-V1 unter `legacy/v1/` wurde erst nach erfolgreicher
+   Paritätsprüfung entfernt. Relevante Autosave-, Preset-, Export- und
+   Promptsignatur-Verträge liegen nun nicht ausführbar unter
+   `src/test/fixtures/legacy-v1/`; der pure Kompatibilitätsport bleibt unter
+   `src/domain/legacy-v1/` erhalten. Der entfernte Quellstand bleibt über die
+   Git-Historie wiederherstellbar.
+5. Der abschließende Prüfstand umfasst 106 Vitest-Dateien mit 611 von 611
+   erfolgreichen Tests, fehlerfreien Strict-TypeScript-Typecheck,
+   Produktionsbuild und `git diff --check`. Die bekannte Vite-Warnung für den
+   etwa 860-kB-JavaScript-Chunk bleibt eine nicht blockierende spätere
+   Code-Splitting-Optimierung.
+6. `docs/V2-RELEASE-ACCEPTANCE.md` enthält die vollständige Evidenz und die
+   verbleibenden Restrisiken. Prompts 00–27 sind abgeschlossen; eine optionale
+   PWA- oder Tauri-Phase beginnt nur mit einem neuen Auftrag.
 
 ## Ausführungsplan Prompt 26
 
@@ -1364,24 +1422,26 @@
 - Ändere keine gesperrten Basiswerte still und führe kein implizites
   Reparenting von Geschwister- oder Kindprofilen durch. Compatibility-Key-
   Änderungen müssen deterministisch und vor dem Commit sichtbar sein.
-- Die querschnittliche Accessibility-Politur ist inzwischen mit Prompt 26
-  abgeschlossen; Release-Cleanup und mögliche Legacy-Entfernung bleiben der
-  belegpflichtigen Abnahme aus Prompt 27 vorbehalten.
+- Die querschnittliche Accessibility-Politur wurde mit Prompt 26
+  abgeschlossen; Release-Cleanup und Legacy-Entfernung wurden anschließend
+  evidenzgebunden in Prompt 27 abgeschlossen.
 
-## Erfasster Legacy-Ist-Stand
+## Historisch erfasster Legacy-Ist-Stand (Prompt 00)
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
 - V1 besitzt acht Formularabschnitte mit 51 flachen State-Feldern.
 - Zwei localStorage-Namespaces, zwei mitgelieferte Import-Presets und vier
   Promptausgaben sind als Migrationsverträge erfasst.
 - Synthetische Autosave-/Preset-Fixtures und Signaturen der Standardprompts
-  liegen unter `legacy/v1/tests/fixtures/v1/`.
+  liegen seit der Release-Abnahme unter `src/test/fixtures/legacy-v1/`.
 - Abweichung vom Zielmodell: V1 koppelt Richtungsmodi noch nicht an
   Capabilities und führt irrelevante flache Werte weiter. Diese Daten werden in
   V2 migriert, das Verhalten aber bewusst nicht fortgeschrieben.
-- V1 nutzt weiterhin Node.js `>=18`, Vanilla JavaScript und den eingebauten
-  Node-Testläufer, ist aber vollständig unter `legacy/v1/` isoliert. Das aktive
-  Root-Projekt nutzt den verbindlichen V2-Stack.
+- Die ausführbare V1 nutzte Node.js `>=18`, Vanilla JavaScript und den
+  eingebauten Node-Testläufer. Sie diente bis einschließlich Prompt 27 als
+  Paritätsreferenz und wurde danach entfernt; der Stand bleibt in der
+  Git-Historie erhalten. Das aktive Root-Projekt nutzt ausschließlich den
+  verbindlichen V2-Stack.
 
 ## Verbindliche Quellen
 
@@ -1422,7 +1482,7 @@
 | 24 | Review + Output Workspace | vier Ausgaben, Kopieren, Export | abgeschlossen |
 | 25 | Profilkonvertierung | technische Konflikte sichtbar lösen | abgeschlossen |
 | 26 | Accessibility + Responsive | Tastatur, Kontrast, mobile Layouts | abgeschlossen |
-| 27 | Release-Abnahme | Migration, Tests, Build, Dokumentation | offen |
+| 27 | Release-Abnahme | Migration, Tests, Build, Dokumentation und belegte Legacy-Entfernung | abgeschlossen |
 | 28 | Optional PWA | erst nach V2-Release | später |
 | 29 | Optional Tauri 2 | erst nach stabiler Web-V2 | später |
 
@@ -1449,7 +1509,7 @@
 7. Vitest + React Testing Library bilden das Testfundament.
 8. V2 bleibt ohne Backend.
 
-## Noch lokal zu entscheiden
+## Optionale Folgeentscheidungen
 
 - genaue Sheet-Layoutoptionen für mehrere Aktionen
 - Rückkehrhistorie beim Kategorienwechsel

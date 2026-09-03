@@ -111,6 +111,37 @@ describe("profile library state", () => {
     });
   });
 
+  it("publishes a freshly imported validated library and clears stale notices", () => {
+    const initialLibrary = createProfileLibraryFixture();
+    const importedLibrary = {
+      ...initialLibrary,
+      assetProfiles: initialLibrary.assetProfiles.slice(0, 1)
+    };
+    const firstProfile = initialLibrary.assetProfiles[0];
+    if (!firstProfile) throw new Error("Expected an asset profile fixture.");
+    const state = profileLibraryReducer(
+      {
+        ...createProfileLibraryState({
+          status: "valid",
+          value: initialLibrary
+        }),
+        mutation: {
+          status: "saved",
+          operation: "save",
+          profileId: firstProfile.id,
+          profileName: firstProfile.name
+        }
+      },
+      { type: "libraryImported", library: importedLibrary }
+    );
+
+    expect(state.libraryResult).toEqual({
+      status: "valid",
+      value: importedLibrary
+    });
+    expect(state.mutation).toEqual({ status: "ready" });
+  });
+
   it("keeps library and filters on failure and can dismiss the notice", () => {
     const library = createProfileLibraryFixture();
     const initial = profileLibraryReducer(

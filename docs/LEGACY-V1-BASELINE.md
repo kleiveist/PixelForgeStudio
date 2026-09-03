@@ -8,25 +8,23 @@
 
 Diese Baseline beschreibt den tatsächlich ausführbaren V1-Bestand vor der
 React-/TypeScript-Migration. Sie ist die Referenz für Prompt 02 (Domain-Port),
-Prompt 06 (V1→V2-Migration) und die spätere Feature-Paritätsprüfung. Die
+Prompt 06 (V1→V2-Migration) und die Feature-Paritätsprüfung in Prompt 27. Die
 Aufnahme verändert kein Produktverhalten.
 
-Erfasst am **2026-09-02** mit Node.js 22.22.2 und npm 10.9.7. Die V1 selbst
-deklariert in `legacy/v1/package.json` weiterhin Node.js `>=18`; das aktive
+Seit der bestandenen Release-Abnahme ist dies ein **historisches
+Archivdokument**: Die ausführbaren Dateien unter `legacy/v1/` wurden in Prompt
+27 entfernt. Der damalige Stand bleibt über die Git-Historie vor dem
+Prompt-27-Commit wiederherstellbar. Aktive Migrationsverträge liegen als pure
+TypeScript-Domain unter `src/domain/legacy-v1/` und als nicht ausführbare,
+synthetische Fixtures unter `src/test/fixtures/legacy-v1/`.
+
+Erfasst am **2026-09-02** mit Node.js 22.22.2 und npm 10.9.7. Die historische
+V1 deklarierte in `legacy/v1/package.json` Node.js `>=18`; das aktive
 Root-Projekt deklariert seit Prompt 01 den V2-Zielwert.
 
-## Baseline reproduzieren
+## Archivierte Baseline und heutige Prüfung
 
-```bash
-npm run check:legacy
-npm run test:legacy
-npm run build:legacy
-git diff --check
-```
-
-Das rootweite `npm run verify` führt diese Legacy-Prüfungen zusätzlich zum
-V2-Typecheck, den Vitest-Tests und dem Vite-Build aus. Die Legacy-Befehle tun
-isoliert Folgendes:
+Vor der Entfernung wurden diese historischen Befehle ausgeführt:
 
 1. `npm run check:legacy`: Syntaxprüfung für 13 JavaScript-/MJS-Dateien sowie
    Abgleich der 51 Formularfelder gegen `DEFAULT_STATE`.
@@ -36,13 +34,25 @@ isoliert Folgendes:
 3. `npm run build:legacy`: kopiert die statische V1 nach `legacy/v1/dist/` und
    erzeugt eine zeitgestempelte `BUILD-INFO.txt`; `dist/` bleibt ignoriert.
 
+Alle drei Prüfungen bestanden unmittelbar vor der Entfernung; zusätzlich
+bestanden 10 von 10 V1-Node-Tests. Die Befehle existieren danach bewusst nicht
+mehr. Die erhaltenen Verträge werden heute so geprüft:
+
+```bash
+npx vitest run src/domain/legacy-v1/legacyV1.test.ts \
+  src/services/v1Migration.test.ts \
+  src/services/workspaceBootstrap.test.ts
+npm run verify
+git diff --check
+```
+
 V1 besitzt keine Laufzeitabhängigkeiten und daher in ihrem eingefrorenen Ordner
 keine `package-lock.json`. Der Root-Lockfile gehört zum V2-Grundgerüst ab Prompt
 01, nicht zur historischen Baseline.
 
 ## Laufzeitarchitektur
 
-| Datei / Bereich | Tatsächliche Verantwortung in V1 |
+| Historischer Pfad bis Prompt 26 | Tatsächliche Verantwortung in V1 |
 |---|---|
 | `legacy/v1/index.html` | statische, deutschsprachige Einseitenoberfläche mit Preset-Leiste, langem Konfigurationsformular und Ausgabe-Workspace |
 | `legacy/v1/src/js/main.js` | globaler Objekt-State, DOM-Events, 120-ms-Neuberechnung, Autosave, Preset- und Import-/Export-Flows |
@@ -79,10 +89,11 @@ typisiert noch schematisch validiert.
 | Transparenz und Export | `backgroundMode="transparent"`, `shadowMode="automatic"`, `detailLevel="important"`, `alphaPadding=8`, `anchorMode="bottomCenter"`; native Auflösung, Nearest Neighbor und pixelgenaue Kanten aktiv |
 | Qualität und Schutz | Spiellesbarkeit, Silhouette, Proportionen, Formtrennung, Rechteabgrenzung, Produktionsreife und Überdetail-Schutz aktiv plus englische Konsistenzregel |
 
-Die acht Abschnitte enthalten zusammen 51 eindeutige Felder. Die vollständigen
-Werte sind in `legacy/v1/src/js/config/default-state.js` die Quelle der Wahrheit; ihre
-exakten Promptresultate werden zusätzlich durch
-`legacy/v1/tests/fixtures/v1/default-output-signatures.json` festgehalten.
+Die acht Abschnitte enthalten zusammen 51 eindeutige Felder. Historische Quelle
+der vollständigen Werte war `legacy/v1/src/js/config/default-state.js`; heute
+sichert der TypeScript-Port sie, und
+`src/test/fixtures/legacy-v1/default-output-signatures.json` hält die exakten
+Promptresultate fest.
 
 ### Auswahlkataloge
 
@@ -176,10 +187,11 @@ state: vollständiger flacher V1-State
 generatedOutputs[]: id, profile, language, main, negative, technical, combined
 ```
 
-Die mitgelieferten Dateien `legacy/v1/presets/hero-eight-directions.json` und
-`legacy/v1/presets/building-single.json` sind manuell importierbare, partielle
-Konfigurations-Envelopes. Sie werden nicht automatisch in der Preset-Auswahl
-registriert.
+Die historischen Dateien `legacy/v1/presets/hero-eight-directions.json` und
+`legacy/v1/presets/building-single.json` waren manuell importierbare, partielle
+Konfigurations-Envelopes. Ihre Verträge liegen heute unter
+`src/test/fixtures/legacy-v1/hero-eight-directions-export.json` und
+`src/test/fixtures/legacy-v1/building-single-export.json`.
 
 TXT-Exporte enthalten Projekt, Zeitstempel und alle kombinierten Pakete. Der
 Dateiname wird kleingeschrieben, Unicode-dekomponiert, auf ASCII-Buchstaben und
@@ -215,10 +227,11 @@ Einstiegspunkt `index.ts` exportiert:
 - Validierung sowie den unveränderten zweisprachigen Promptaufbau.
 
 Der Port ist bewusst mit `LegacyV1` benannt. Er ist eine stabile
-Migrationsbrücke, nicht das künftige V2-Domainmodell. Vitest vergleicht die
-portierten Funktionen direkt mit der eingefrorenen JavaScript-Referenz, den
-beiden synthetischen Storage-Fixtures und den aufgezeichneten SHA-256-Signaturen.
-Die Domain importiert weder React noch Vite.
+Migrationsbrücke, nicht das V2-Domainmodell. Bis zur Abnahme verglich Vitest die
+portierten Funktionen direkt mit der eingefrorenen JavaScript-Referenz. Nach
+deren Entfernung sichern vollständige Storage-/Export-Fixtures und die
+aufgezeichneten SHA-256-Signaturen denselben Vertrag. Die Domain importiert
+weder React noch Vite.
 
 ## In V2 zu erhalten
 
@@ -259,14 +272,17 @@ erhaltendes Zielverhalten:
 
 | Fixture | Zweck |
 |---|---|
-| `legacy/v1/tests/fixtures/v1/autosave-directional-character.json` | exakte V1-Autosave-Hülle mit vollständigem directional Character-State |
-| `legacy/v1/tests/fixtures/v1/presets-storage.json` | exakter V1-Preset-Arrayvertrag mit vollständigem Einzelgebäude-State und bewusst erhaltenem irrelevantem 4×2-Wert |
-| `legacy/v1/tests/fixtures/v1/default-output-signatures.json` | Metriken, Textlängen und SHA-256-Signaturen der zwei unveränderten Standardausgaben |
+| `src/test/fixtures/legacy-v1/autosave-directional-character.json` | exakte V1-Autosave-Hülle mit vollständigem directional Character-State |
+| `src/test/fixtures/legacy-v1/presets-storage.json` | exakter V1-Preset-Arrayvertrag mit vollständigem Einzelgebäude-State und bewusst erhaltenem irrelevantem 4×2-Wert |
+| `src/test/fixtures/legacy-v1/default-output-signatures.json` | Metriken, Textlängen und SHA-256-Signaturen der zwei unveränderten Standardausgaben |
+| `src/test/fixtures/legacy-v1/scenario-output-signatures.json` | bytegenaue Signaturen des Richtungscharakters und des historischen Einzelgebäudes |
+| `src/test/fixtures/legacy-v1/hero-eight-directions-export.json` | historischer manueller Richtungsprofil-Export |
+| `src/test/fixtures/legacy-v1/building-single-export.json` | historischer manueller Einzelgebäude-Export |
 
 Alle Fixture-Namen, Zeitpunkte und Motive sind statisch und erfunden. Sie
 enthalten keine Browserdaten und keine exportierten Nutzerprofile.
 
-## Implementierte V2-Startmigration
+## Implementierte produktive V2-Startmigration
 
 Prompt 06 überführt die beiden oben inventarisierten Storage-Keys über
 `src/services/v1Migration.ts`. Vor dem ersten Parse werden ihre exakten
@@ -275,6 +291,10 @@ Die ursprünglichen V1-Keys bleiben unverändert. Erst nach validierter
 Base→Category→Asset-Persistenz wird der Marker `completed` geschrieben; ein
 unterbrochener Lauf verwendet denselben Backupdatensatz und dieselben
 deterministischen IDs erneut.
+
+Prompt 27 bindet diese Orchestrierung über
+`src/services/workspaceBootstrap.ts` vor dem ersten React-Provider-Read in den
+Browserstart ein und zeigt das Ergebnis in Einstellungen an.
 
 Die pure Transformation unter `src/domain/migration/` deckt alle 18
 V1-Assettypen tabellarisch ab. Der zuvor fehlende Waffenfall besitzt dafür den

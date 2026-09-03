@@ -28,9 +28,11 @@ import {
   type ProfileLibrary,
   type StableId
 } from "../../schemas";
-import type {
-  StorageMutationResult,
-  V2StorageAdapter
+import {
+  importProfileBundle as importProfileBundleIntoStorage,
+  type ImportProfileBundleResult,
+  type StorageMutationResult,
+  type V2StorageAdapter
 } from "../../services";
 import {
   createProfileLibraryState,
@@ -82,6 +84,10 @@ export interface ProfileLibraryContextValue {
     profileId: StableId,
     proposedDefinition?: BaseProfileDefinition
   ) => ProfileActionResult<BaseProfile>;
+  readonly importProfileBundle: (
+    json: string,
+    options?: Readonly<{ conflictStrategy?: "replaceExisting" }>
+  ) => ImportProfileBundleResult;
   readonly dismissMutation: () => void;
 }
 
@@ -566,6 +572,42 @@ export function ProfileLibraryProvider({
     ]
   );
 
+  const importProfileBundle = useCallback(
+    (
+      json: string,
+      options: Readonly<{ conflictStrategy?: "replaceExisting" }> = {}
+    ): ImportProfileBundleResult => {
+      const result = importProfileBundleIntoStorage(
+        storageAdapter,
+        json,
+        options
+      );
+      if (result.status !== "imported") return result;
+
+      const refreshed = storageAdapter.readProfileLibrary();
+      if (refreshed.status === "unavailable") {
+        return { status: "unavailable", message: refreshed.message };
+      }
+      if (refreshed.status === "invalid") {
+        return {
+          status: "invalid",
+          reason: "invalidExistingLibrary",
+          message: refreshed.message,
+          issues: refreshed.issues
+        };
+      }
+
+      const library: ProfileLibrary =
+        refreshed.status === "valid"
+          ? refreshed.value
+          : { baseProfiles: [], categoryProfiles: [], assetProfiles: [] };
+      libraryRef.current = library;
+      dispatch({ type: "libraryImported", library });
+      return result;
+    },
+    [storageAdapter]
+  );
+
   const value = useMemo<ProfileLibraryContextValue>(
     () => ({
       libraryResult: state.libraryResult,
@@ -587,6 +629,7 @@ export function ProfileLibraryProvider({
       deleteProfile,
       createBaseProfile,
       duplicateBaseProfile,
+      importProfileBundle,
       dismissMutation: () => dispatch({ type: "mutationDismissed" })
     }),
     [
@@ -594,6 +637,7 @@ export function ProfileLibraryProvider({
       createBaseProfile,
       duplicateBaseProfile,
       duplicateProfile,
+      importProfileBundle,
       saveAssetProfile,
       state.filters,
       state.libraryResult,

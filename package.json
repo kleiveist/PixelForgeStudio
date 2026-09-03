@@ -12,11 +12,7 @@
     "typecheck": "tsc -b --pretty false",
     "test": "vitest",
     "test:run": "vitest run",
-    "check:legacy": "node legacy/v1/scripts/check.mjs",
-    "test:legacy": "node --test legacy/v1/tests/*.test.mjs",
-    "dev:legacy": "node legacy/v1/scripts/dev-server.mjs",
-    "build:legacy": "node legacy/v1/scripts/build.mjs",
-    "verify": "npm run typecheck && npm run check:legacy && npm run test:legacy && npm run test:run && npm run build"
+    "verify": "npm run typecheck && npm run test:run && npm run build"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0",

@@ -1,10 +1,22 @@
 # Changelog
 
-## Unreleased — V2-Planung
+## 2.0.0 — 2026-09-03
 
+- vollständige Prompt-27-Release-Abnahme für Migration, Dashboard, Profile,
+  neun Spezialeditoren, Direction-Gating, vier Promptausgaben, JSON/TXT,
+  Themes, Keyboard und Responsive dokumentiert
+- produktiven migration-first Browser-Bootstrap ergänzt und den strukturierten
+  V1-Migrationsstatus in Einstellungen sichtbar gemacht
+- vollständigen validierten Workspace-JSON-Export/-Import mit expliziten
+  Profil-ID-Konflikten sowie optionaler Settings-/Draft-Wiederherstellung
+  umgesetzt
+- ausführbare Legacy-V1 nach bestätigter automatisierter und manueller
+  Parität entfernt; synthetische Migrations-/Promptverträge in den
+  V2-Testbereich übernommen und den puren TypeScript-Port erhalten
 - aktives Root-Projekt auf React 19, TypeScript strict, Vite 8 und npm migriert
 - Vitest-, React-Testing-Library- und jsdom-Testfundament eingerichtet
-- Legacy-V1 vollständig nach `legacy/v1/` verschoben und über eigene Scripts weiter prüfbar gehalten
+- Legacy-V1 zu Beginn der Migration vollständig nach `legacy/v1/` verschoben
+  und bis zur Release-Abnahme über eigene Scripts prüfbar gehalten
 - minimale responsive V2-App-Shell mit CSS Modules, semantischen Tokens und lokalem SVG-Signet ergänzt
 - V1-Defaults, State-Whitelist, Promptaufbau, Validierung und technische Metriken als frameworkfreie Strict-TypeScript-Domain portiert
 - bytegenaue Vitest-Parität über Legacy-Referenz, synthetische Storage-Fixtures und SHA-256-Promptsignaturen abgesichert

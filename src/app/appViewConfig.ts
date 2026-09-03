@@ -33,7 +33,7 @@ export const APP_VIEW_DEFINITIONS: Readonly<
     eyebrow: "Geführter Abfragekatalog",
     description:
       "Die wiederaufnehmbare Wizard Engine validiert jeden Schritt und sichert gültige Änderungen lokal.",
-    nextStep: "Kategorie- und Capability-Routing folgt in der nächsten Phase."
+    nextStep: "Kategorie, Untertyp, Basisprofil und passende Fachschritte sind vollständig aktiv."
   },
   review: {
     label: "Prüfung",
@@ -54,9 +54,9 @@ export const APP_VIEW_DEFINITIONS: Readonly<
   settings: {
     label: "Einstellungen",
     title: "Das Studio passend konfigurieren.",
-    eyebrow: "Einstellungen",
+    eyebrow: "Einstellungen & Datentransfer",
     description:
-      "Darstellung und spätere globale Arbeitspräferenzen bleiben lokal und kontrollierbar.",
-    nextStep: "Der Theme-Schalter ist bereits aktiv; weitere Optionen folgen bedarfsgerecht."
+      "Darstellung und Workspace-Daten bleiben lokal, kontrollierbar und als validiertes V2-JSON übertragbar.",
+    nextStep: "V1-Migrationsstatus sowie vollständiger JSON-Export und -Import sind aktiv."
   }
 };

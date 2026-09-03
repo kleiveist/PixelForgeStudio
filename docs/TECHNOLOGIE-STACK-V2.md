@@ -6,7 +6,11 @@
 
 ## Status
 
-Dieses Dokument ist für Version 2 **verbindlich**. Die vorhandene Vanilla-JavaScript-Anwendung im Repository ist ausschließlich Legacy-Bestand und Migrationsquelle. Neue V2-Oberflächen oder V2-Domänenfunktionen dürfen nicht mehr als Vanilla-DOM-Anwendung umgesetzt werden.
+Dieses Dokument ist für Version 2 **verbindlich**. Die historische
+Vanilla-JavaScript-Anwendung diente ausschließlich als Legacy-Migrationsquelle
+und wurde nach der belegten Prompt-27-Parität entfernt. Erhalten bleiben pure
+TypeScript-Kompatibilität und synthetische Fixtures. Neue V2-Oberflächen oder
+V2-Domänenfunktionen dürfen nicht als Vanilla-DOM-Anwendung umgesetzt werden.
 
 ## Haupttechnologien
 
@@ -473,8 +477,13 @@ Oberflächen. Das globale Stylesheet deaktiviert unter
 `prefers-reduced-motion: reduce` Übergänge, begrenzt Animationen und erhält in
 erzwungenen Systemfarben einen sichtbaren Fokusring. Die geprüfte
 Desktop-/Tablet-/Schmalviewport-Matrix und die Kontrastwerte stehen in
-`V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`. Prompts 00 bis 26 sind abgeschlossen;
-Prompt 27 bleibt die nächste separate Phase.
+`V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
+
+Prompt 27 bindet die backup-gesicherte V1-Migration vor dem ersten
+Provider-Read in den Browserstart ein, stellt den vollständigen
+Workspace-JSON-Transfer über Einstellungen bereit und dokumentiert die
+erfolgreiche Release-Abnahme in `V2-RELEASE-ACCEPTANCE.md`. Die ausführbare
+Legacy-UI wurde erst danach entfernt. Prompts 00 bis 27 sind abgeschlossen.
 
 ## Speicherung
 
