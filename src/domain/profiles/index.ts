@@ -2,16 +2,27 @@ export {
   createCompatibilityKey
 } from "./compatibilityKey";
 export {
+  DEFAULT_BASE_PROFILE_LOCKS,
+  DEFAULT_BASE_PROFILE_VALUES,
+  createDefaultBaseProfileLocks,
+  createDefaultBaseProfileValues
+} from "./baseProfileDefaults";
+export {
   profileValuesEqual,
   resolveProfile,
   type ResolveProfileInput
 } from "./profileResolution";
 export {
+  createBaseProfile,
   createDuplicateProfileName,
   deleteAssetProfile,
+  duplicateBaseProfile,
   duplicateAssetProfile,
   toggleAssetProfileFavorite,
-  type AssetProfileLibraryChange
+  type AssetProfileLibraryChange,
+  type BaseProfileDefinition,
+  type BaseProfileLibraryChange,
+  type ProfileLibraryChange
 } from "./profileLibrary";
 export type {
   ProfileOverrideLevel,

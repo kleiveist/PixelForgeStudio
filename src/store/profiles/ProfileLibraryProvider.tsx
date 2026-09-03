@@ -10,15 +10,19 @@ import {
 } from "react";
 import type { AssetCategory } from "../../domain/assets";
 import {
+  createBaseProfile as createBaseProfileInLibrary,
   deleteAssetProfile,
+  duplicateBaseProfile as duplicateBaseProfileInLibrary,
   duplicateAssetProfile,
   toggleAssetProfileFavorite,
-  type AssetProfileLibraryChange
+  type BaseProfileDefinition,
+  type ProfileLibraryChange
 } from "../../domain/profiles";
 import {
   ProfileLibrarySchema,
   StableIdSchema,
   type AssetProfile,
+  type BaseProfile,
   type ProfileLibrary,
   type StableId
 } from "../../schemas";
@@ -39,15 +43,17 @@ export type ProfileLibraryStorage = Pick<
   "readProfileLibrary" | "writeProfileLibrary"
 >;
 
-export type ProfileActionResult =
-  | Readonly<{ status: "ok"; profile: AssetProfile }>
+type ProfileEntity = AssetProfile | BaseProfile;
+
+export type ProfileActionResult<Profile extends ProfileEntity = AssetProfile> =
+  | Readonly<{ status: "ok"; profile: Profile }>
   | Readonly<{
       status: "invalid" | "unavailable" | "notFound" | "idConflict";
       message: string;
     }>;
 
 type ProfileActionFailure = Exclude<
-  ProfileActionResult,
+  ProfileActionResult<ProfileEntity>,
   Readonly<{ status: "ok" }>
 >;
 
@@ -64,6 +70,13 @@ export interface ProfileLibraryContextValue {
   readonly toggleFavorite: (profileId: StableId) => ProfileActionResult;
   readonly duplicateProfile: (profileId: StableId) => ProfileActionResult;
   readonly deleteProfile: (profileId: StableId) => ProfileActionResult;
+  readonly createBaseProfile: (
+    definition: BaseProfileDefinition
+  ) => ProfileActionResult<BaseProfile>;
+  readonly duplicateBaseProfile: (
+    profileId: StableId,
+    proposedDefinition?: BaseProfileDefinition
+  ) => ProfileActionResult<BaseProfile>;
   readonly dismissMutation: () => void;
 }
 
@@ -72,24 +85,26 @@ export interface ProfileLibraryProviderProps {
   readonly storageAdapter: ProfileLibraryStorage;
   readonly now?: () => string;
   readonly createProfileId?: () => string;
+  readonly createBaseProfileId?: () => string;
 }
 
 const ProfileLibraryContext =
   createContext<ProfileLibraryContextValue | null>(null);
 
-let fallbackIdSequence = 0;
+let fallbackAssetIdSequence = 0;
+let fallbackBaseIdSequence = 0;
 
 function currentIsoTimestamp(): string {
   return new Date().toISOString();
 }
 
-function createDefaultProfileId(): string {
+function randomProfileId(prefix: "asset" | "base"): string | null {
   try {
     if (
       typeof globalThis.crypto !== "undefined" &&
       typeof globalThis.crypto.randomUUID === "function"
     ) {
-      return `asset_${globalThis.crypto.randomUUID()}`;
+      return `${prefix}_${globalThis.crypto.randomUUID()}`;
     }
 
     if (
@@ -100,14 +115,29 @@ function createDefaultProfileId(): string {
       const randomId = [...bytes]
         .map((value) => value.toString(16).padStart(2, "0"))
         .join("");
-      return `asset_${randomId}`;
+      return `${prefix}_${randomId}`;
     }
   } catch {
     // The collision check below keeps the local fallback safe.
   }
 
-  fallbackIdSequence += 1;
-  return `asset_${Date.now().toString(36)}_${fallbackIdSequence.toString(36)}`;
+  return null;
+}
+
+function createDefaultProfileId(): string {
+  const randomId = randomProfileId("asset");
+  if (randomId !== null) return randomId;
+
+  fallbackAssetIdSequence += 1;
+  return `asset_${Date.now().toString(36)}_${fallbackAssetIdSequence.toString(36)}`;
+}
+
+function createDefaultBaseProfileId(): string {
+  const randomId = randomProfileId("base");
+  if (randomId !== null) return randomId;
+
+  fallbackBaseIdSequence += 1;
+  return `base_${Date.now().toString(36)}_${fallbackBaseIdSequence.toString(36)}`;
 }
 
 function actionLabel(operation: ProfileMutationOperation): string {
@@ -118,6 +148,10 @@ function actionLabel(operation: ProfileMutationOperation): string {
       return "Duplikat";
     case "delete":
       return "Löschung";
+    case "createBase":
+      return "Basisprofil";
+    case "duplicateBase":
+      return "Basisprofil-Duplikat";
   }
 }
 
@@ -142,11 +176,31 @@ function storageFailure(
   };
 }
 
+function findCanonicalChangedProfile<Profile extends ProfileEntity>(
+  library: ProfileLibrary,
+  requestedProfile: Profile
+): Profile | null {
+  const canonicalProfile =
+    requestedProfile.kind === "baseProfile"
+      ? library.baseProfiles.find(
+          (profile) => profile.id === requestedProfile.id
+        )
+      : library.assetProfiles.find(
+          (profile) => profile.id === requestedProfile.id
+        );
+
+  if (!canonicalProfile || canonicalProfile.kind !== requestedProfile.kind) {
+    return null;
+  }
+  return canonicalProfile as Profile;
+}
+
 export function ProfileLibraryProvider({
   children,
   storageAdapter,
   now = currentIsoTimestamp,
-  createProfileId = createDefaultProfileId
+  createProfileId = createDefaultProfileId,
+  createBaseProfileId = createDefaultBaseProfileId
 }: ProfileLibraryProviderProps) {
   const [initialState] = useState(() =>
     createProfileLibraryState(storageAdapter.readProfileLibrary())
@@ -155,7 +209,9 @@ export function ProfileLibraryProvider({
   const libraryRef = useRef<ProfileLibrary | null>(
     initialState.libraryResult.status === "valid"
       ? initialState.libraryResult.value
-      : null
+      : initialState.libraryResult.status === "empty"
+        ? { baseProfiles: [], categoryProfiles: [], assetProfiles: [] }
+        : null
   );
   const initialReadStatusRef = useRef(initialState.libraryResult.status);
 
@@ -164,7 +220,7 @@ export function ProfileLibraryProvider({
       operation: ProfileMutationOperation,
       status: Exclude<ProfileActionResult["status"], "ok">,
       message: string
-    ): ProfileActionResult => {
+    ): ProfileActionFailure => {
       dispatch({
         type: "mutationFailed",
         mutation: failureNotice(operation, status, message)
@@ -175,10 +231,10 @@ export function ProfileLibraryProvider({
   );
 
   const commitChange = useCallback(
-    (
+    <Profile extends ProfileEntity,>(
       operation: ProfileMutationOperation,
-      change: AssetProfileLibraryChange
-    ): ProfileActionResult => {
+      change: ProfileLibraryChange<Profile>
+    ): ProfileActionResult<Profile> => {
       if (change.status === "notFound") {
         return fail(
           operation,
@@ -203,6 +259,22 @@ export function ProfileLibraryProvider({
         );
       }
 
+      // A successful delete intentionally removes its subject from the
+      // candidate graph. The deleted profile already comes from the currently
+      // validated library; every other mutation returns the canonical entity
+      // produced by parsing the resulting graph.
+      const canonicalProfile =
+        operation === "delete"
+          ? change.profile
+          : findCanonicalChangedProfile(candidate.data, change.profile);
+      if (canonicalProfile === null) {
+        return fail(
+          operation,
+          "invalid",
+          `${actionLabel(operation)} wurde abgebrochen, weil das geänderte Profil im validierten Profilgraphen fehlt.`
+        );
+      }
+
       const writeResult = storageAdapter.writeProfileLibrary(candidate.data);
       if (writeResult.status !== "ok") {
         const result = storageFailure(operation, writeResult);
@@ -214,15 +286,15 @@ export function ProfileLibraryProvider({
         type: "mutationSucceeded",
         library: candidate.data,
         operation,
-        profile: change.profile
+        profile: canonicalProfile
       });
-      return { status: "ok", profile: change.profile };
+      return { status: "ok", profile: canonicalProfile };
     },
     [fail, storageAdapter]
   );
 
   const currentLibraryOrFailure = useCallback(
-    (operation: ProfileMutationOperation): ProfileLibrary | ProfileActionResult => {
+    (operation: ProfileMutationOperation): ProfileLibrary | ProfileActionFailure => {
       const library = libraryRef.current;
       if (library) return library;
       if (initialReadStatusRef.current === "invalid") {
@@ -310,6 +382,118 @@ export function ProfileLibraryProvider({
     [commitChange, currentLibraryOrFailure]
   );
 
+  const createBaseProfile = useCallback(
+    (definition: BaseProfileDefinition): ProfileActionResult<BaseProfile> => {
+      const library = currentLibraryOrFailure("createBase");
+      if (!("baseProfiles" in library)) return library;
+
+      let candidateId: string;
+      try {
+        candidateId = createBaseProfileId();
+      } catch {
+        return fail(
+          "createBase",
+          "invalid",
+          "Das Basisprofil konnte nicht mit einer neuen Profil-ID angelegt werden."
+        );
+      }
+      const parsedId = StableIdSchema.safeParse(candidateId);
+      if (!parsedId.success) {
+        return fail(
+          "createBase",
+          "invalid",
+          "Das Basisprofil konnte wegen einer ungültigen Profil-ID nicht angelegt werden."
+        );
+      }
+
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch {
+        return fail(
+          "createBase",
+          "invalid",
+          "Das Basisprofil konnte nicht mit einem gültigen Zeitstempel angelegt werden."
+        );
+      }
+
+      return commitChange(
+        "createBase",
+        createBaseProfileInLibrary(
+          library,
+          parsedId.data,
+          timestamp,
+          definition
+        )
+      );
+    },
+    [
+      commitChange,
+      createBaseProfileId,
+      currentLibraryOrFailure,
+      fail,
+      now
+    ]
+  );
+
+  const duplicateBaseProfile = useCallback(
+    (
+      profileId: StableId,
+      proposedDefinition?: BaseProfileDefinition
+    ): ProfileActionResult<BaseProfile> => {
+      const library = currentLibraryOrFailure("duplicateBase");
+      if (!("baseProfiles" in library)) return library;
+
+      let candidateId: string;
+      try {
+        candidateId = createBaseProfileId();
+      } catch {
+        return fail(
+          "duplicateBase",
+          "invalid",
+          "Das Basisprofil-Duplikat konnte nicht mit einer neuen Profil-ID angelegt werden."
+        );
+      }
+      const parsedId = StableIdSchema.safeParse(candidateId);
+      if (!parsedId.success) {
+        return fail(
+          "duplicateBase",
+          "invalid",
+          "Das Basisprofil-Duplikat konnte wegen einer ungültigen Profil-ID nicht angelegt werden."
+        );
+      }
+
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch {
+        return fail(
+          "duplicateBase",
+          "invalid",
+          "Das Basisprofil-Duplikat konnte nicht mit einem gültigen Zeitstempel angelegt werden."
+        );
+      }
+
+      return commitChange(
+        "duplicateBase",
+        duplicateBaseProfileInLibrary(
+          library,
+          profileId,
+          parsedId.data,
+          timestamp,
+          proposedDefinition
+        )
+      );
+    },
+    [
+      commitChange,
+      createBaseProfileId,
+      currentLibraryOrFailure,
+      fail,
+      now
+    ]
+  );
+
   const value = useMemo<ProfileLibraryContextValue>(
     () => ({
       libraryResult: state.libraryResult,
@@ -328,10 +512,14 @@ export function ProfileLibraryProvider({
       toggleFavorite,
       duplicateProfile,
       deleteProfile,
+      createBaseProfile,
+      duplicateBaseProfile,
       dismissMutation: () => dispatch({ type: "mutationDismissed" })
     }),
     [
       deleteProfile,
+      createBaseProfile,
+      duplicateBaseProfile,
       duplicateProfile,
       state.filters,
       state.libraryResult,

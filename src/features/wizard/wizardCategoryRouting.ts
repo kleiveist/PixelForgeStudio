@@ -7,18 +7,33 @@ import {
   type AssetSubtype
 } from "../../domain/assets";
 import {
+  profileValuesEqual,
+  type ProfileResolutionConflict
+} from "../../domain/profiles";
+import {
   parseWizardDraft,
+  type BaseProfile,
   type BaseProfileOverrides,
+  type BaseProfileValues,
+  type ProfileLibrary,
   type WizardDraft
 } from "../../schemas";
+import { resolveWizardDraftSnapshot } from "./wizardLifecycle";
 import type {
   WizardCoreFormValues,
   WizardCoreStepId
 } from "./wizardSteps";
+import { parseWizardTechnicalFormValues } from "./wizardSteps";
 
 type SelectedWizardDraft = Extract<WizardDraft, { category: unknown }>;
 type MutableWizardCoreFormValues = {
   -readonly [Key in keyof WizardCoreFormValues]: WizardCoreFormValues[Key];
+};
+type MutableBaseProfileOverrides = {
+  -readonly [Key in keyof BaseProfileOverrides]: BaseProfileOverrides[Key];
+};
+type MutableBaseProfileValues = {
+  -readonly [Key in keyof BaseProfileValues]: BaseProfileValues[Key];
 };
 
 const CONTROLLED_ANSWER_KEYS = new Set([
@@ -29,6 +44,35 @@ const CONTROLLED_ANSWER_KEYS = new Set([
   "seamless",
   "tileableAxes"
 ]);
+
+const PROFILE_VALUE_KEYS = Object.freeze([
+  "pixelDensity",
+  "styleProfile",
+  "tileSize",
+  "characterHeight",
+  "perspectiveType",
+  "cameraAngle",
+  "cameraDirection",
+  "projectionType",
+  "outlineStyle",
+  "paletteMode",
+  "backgroundMode",
+  "alphaPadding",
+  "nearestNeighbor",
+  "lightingDefaults"
+] as const satisfies readonly (keyof BaseProfileValues)[]);
+
+const WORLD_GEOMETRY_PROFILE_VALUE_KEYS = Object.freeze([
+  "tileSize",
+  "perspectiveType",
+  "cameraAngle",
+  "cameraDirection",
+  "projectionType"
+] as const satisfies readonly (keyof BaseProfileOverrides)[]);
+
+export interface WizardCoreDraftContext {
+  readonly library: ProfileLibrary | null;
+}
 
 function subtypeIsKnownForCategory(
   category: AssetCategory,
@@ -102,12 +146,26 @@ export function resolveWizardCapabilities(
 
 export function wizardStepIsApplicable(
   stepId: WizardCoreStepId,
-  values: WizardCoreFormValues
+  values: WizardCoreFormValues,
+  library: ProfileLibrary | null = null
 ): boolean {
   if (stepId === "project" || stepId === "category") return true;
 
+  const selection = getWizardAssetSelection(values);
+  if (stepId === "baseProfile") return selection !== null;
+
   const capabilities = resolveWizardCapabilities(values);
   if (!capabilities) return false;
+  const baseProfile = library?.baseProfiles.find(
+    (profile) => profile.id === values.baseProfileId
+  );
+  if (!baseProfile) return false;
+  if (
+    capabilities.scaledCharacter &&
+    values.characterHeight === undefined
+  ) {
+    return false;
+  }
 
   switch (stepId) {
     case "directions":
@@ -117,6 +175,59 @@ export function wizardStepIsApplicable(
     case "tileability":
       return capabilities.tileable;
   }
+}
+
+function withoutTechnicalFormValues(
+  values: WizardCoreFormValues
+): WizardCoreFormValues {
+  const {
+    baseProfileId: _baseProfileId,
+    pixelDensity: _pixelDensity,
+    styleProfile: _styleProfile,
+    tileSize: _tileSize,
+    characterHeight: _characterHeight,
+    perspectiveType: _perspectiveType,
+    cameraAngle: _cameraAngle,
+    cameraDirection: _cameraDirection,
+    projectionType: _projectionType,
+    outlineStyle: _outlineStyle,
+    paletteMode: _paletteMode,
+    backgroundMode: _backgroundMode,
+    alphaPadding: _alphaPadding,
+    nearestNeighbor: _nearestNeighbor,
+    lightingPolicy: _lightingPolicy,
+    lightingNotes: _lightingNotes,
+    ...remainingValues
+  } = values;
+  return remainingValues;
+}
+
+export function applyWizardBaseProfileToFormValues(
+  values: WizardCoreFormValues,
+  baseProfile: BaseProfile,
+  effectiveValues: BaseProfileValues = baseProfile.values
+): WizardCoreFormValues {
+  return {
+    ...withoutTechnicalFormValues(values),
+    baseProfileId: baseProfile.id,
+    pixelDensity: effectiveValues.pixelDensity,
+    styleProfile: effectiveValues.styleProfile,
+    tileSize: effectiveValues.tileSize,
+    ...(effectiveValues.characterHeight === undefined
+      ? {}
+      : { characterHeight: effectiveValues.characterHeight }),
+    perspectiveType: effectiveValues.perspectiveType,
+    cameraAngle: effectiveValues.cameraAngle,
+    cameraDirection: effectiveValues.cameraDirection,
+    projectionType: effectiveValues.projectionType,
+    outlineStyle: effectiveValues.outlineStyle,
+    paletteMode: effectiveValues.paletteMode,
+    backgroundMode: effectiveValues.backgroundMode,
+    alphaPadding: effectiveValues.alphaPadding,
+    nearestNeighbor: effectiveValues.nearestNeighbor,
+    lightingPolicy: effectiveValues.lightingDefaults.policy,
+    lightingNotes: effectiveValues.lightingDefaults.notes
+  };
 }
 
 function addDefinedValue<
@@ -131,9 +242,10 @@ function addDefinedValue<
 
 export function createWizardCoreFormValues(
   draft: WizardDraft,
-  categoryHint: AssetCategory | null = null
+  categoryHint: AssetCategory | null = null,
+  library: ProfileLibrary | null = null
 ): WizardCoreFormValues {
-  const values: MutableWizardCoreFormValues = {
+  let values: MutableWizardCoreFormValues = {
     projectName: draft.projectName
   };
 
@@ -144,6 +256,23 @@ export function createWizardCoreFormValues(
 
   values.category = draft.category;
   values.subtype = draft.subtype;
+
+  if (draft.baseProfileId !== undefined) {
+    values.baseProfileId = draft.baseProfileId;
+    const baseProfile = library?.baseProfiles.find(
+      (profile) => profile.id === draft.baseProfileId
+    );
+    const resolution = library
+      ? resolveWizardDraftSnapshot(draft, library)
+      : null;
+    if (baseProfile && resolution?.status === "resolved") {
+      values = applyWizardBaseProfileToFormValues(
+        values,
+        baseProfile,
+        resolution.profile.values
+      );
+    }
+  }
 
   switch (draft.category) {
     case "character":
@@ -194,10 +323,119 @@ function sanitizeOverrides(
   capabilities: AssetCapabilities
 ): BaseProfileOverrides | undefined {
   if (overrides === undefined) return undefined;
-  if (capabilities.scaledCharacter) return overrides;
 
-  const { characterHeight: _removedCharacterHeight, ...relevantOverrides } = overrides;
+  const relevantOverrides: MutableBaseProfileOverrides = { ...overrides };
+  if (!capabilities.scaledCharacter) delete relevantOverrides.characterHeight;
+  if (capabilities.freeComposition) {
+    for (const key of WORLD_GEOMETRY_PROFILE_VALUE_KEYS) {
+      delete relevantOverrides[key];
+    }
+  }
   return relevantOverrides;
+}
+
+export type WizardBaseProfileProjectionIssue =
+  | Readonly<{ code: "profileLibraryUnavailable" }>
+  | Readonly<{ code: "baseProfileRequired" }>
+  | Readonly<{ code: "missingBaseProfile"; baseProfileId: string }>
+  | Readonly<{
+      code: "incompatibleBaseProfile";
+      baseProfileId: string;
+      field: "characterHeight";
+    }>
+  | Readonly<{ code: "incompleteTechnicalValues" }>
+  | Readonly<{
+      code: "profileResolutionConflict";
+      conflicts: readonly [
+        ProfileResolutionConflict,
+        ...ProfileResolutionConflict[]
+      ];
+    }>;
+
+export class WizardBaseProfileProjectionError extends Error {
+  readonly issue: WizardBaseProfileProjectionIssue;
+
+  constructor(issue: WizardBaseProfileProjectionIssue) {
+    super(`Wizard Base-profile projection failed: ${issue.code}.`);
+    this.name = "WizardBaseProfileProjectionError";
+    this.issue = issue;
+  }
+}
+
+function setOverrideValue<Key extends keyof BaseProfileOverrides>(
+  overrides: MutableBaseProfileOverrides,
+  key: Key,
+  value: Exclude<BaseProfileOverrides[Key], undefined>
+): void {
+  overrides[key] = value;
+}
+
+function technicalOverridesFromForm(
+  values: WizardCoreFormValues,
+  inheritedValues: BaseProfileValues,
+  capabilities: AssetCapabilities
+): BaseProfileOverrides {
+  const technicalValues = parseWizardTechnicalFormValues(values);
+  if (!technicalValues) {
+    throw new WizardBaseProfileProjectionError({
+      code: "incompleteTechnicalValues"
+    });
+  }
+  const overrides: MutableBaseProfileOverrides = {};
+  for (const key of PROFILE_VALUE_KEYS) {
+    if (key === "characterHeight" && !capabilities.scaledCharacter) continue;
+    if (
+      capabilities.freeComposition &&
+      WORLD_GEOMETRY_PROFILE_VALUE_KEYS.includes(
+        key as (typeof WORLD_GEOMETRY_PROFILE_VALUE_KEYS)[number]
+      )
+    ) {
+      continue;
+    }
+    const attemptedValue = technicalValues[key];
+    if (attemptedValue === undefined) continue;
+    const inheritedValue = inheritedValues[key];
+    if (
+      inheritedValue !== undefined &&
+      profileValuesEqual(inheritedValue, attemptedValue)
+    ) {
+      continue;
+    }
+    setOverrideValue(overrides, key, attemptedValue);
+  }
+  return overrides;
+}
+
+function resolveInheritedTechnicalValues(
+  draft: WizardDraft,
+  library: ProfileLibrary,
+  baseProfile: BaseProfile,
+  capabilities: AssetCapabilities
+): BaseProfileValues {
+  const inheritedValues: MutableBaseProfileValues = {
+    ...baseProfile.values,
+    lightingDefaults: { ...baseProfile.values.lightingDefaults }
+  };
+  if (!("category" in draft) || draft.categoryProfileId === undefined) {
+    return inheritedValues;
+  }
+
+  const categoryProfile = library.categoryProfiles.find(
+    (profile) =>
+      profile.id === draft.categoryProfileId &&
+      profile.baseProfileId === baseProfile.id &&
+      profile.category === draft.category &&
+      profile.subtype === draft.subtype
+  );
+  if (!categoryProfile) return inheritedValues;
+
+  for (const key of PROFILE_VALUE_KEYS) {
+    const value = categoryProfile.overrides[key];
+    if (value === undefined || baseProfile.locks[key] === true) continue;
+    if (key === "characterHeight" && !capabilities.scaledCharacter) continue;
+    setOverrideValue(inheritedValues, key, value);
+  }
+  return inheritedValues;
 }
 
 function controlledAnswers(
@@ -280,6 +518,88 @@ export interface UpdateWizardDraftFromCoreFormInput {
   readonly values: WizardCoreFormValues;
   readonly stepId: WizardCoreStepId;
   readonly savedAt?: string;
+  readonly context: WizardCoreDraftContext;
+}
+
+function selectedDraftRoute(
+  stepId: WizardCoreStepId,
+  hasBaseProfile: boolean
+): "wizard/profile" | "wizard/editor" {
+  if (
+    stepId === "directions" ||
+    stepId === "animation" ||
+    stepId === "tileability"
+  ) {
+    if (!hasBaseProfile) {
+      throw new WizardBaseProfileProjectionError({
+        code: "baseProfileRequired"
+      });
+    }
+    return "wizard/editor";
+  }
+  return "wizard/profile";
+}
+
+function parseSelectedDraft(
+  selection: AssetSelection,
+  common: Readonly<Record<string, unknown>>
+): SelectedWizardDraft {
+  switch (selection.category) {
+    case "character":
+      return parseWizardDraft({
+        ...common,
+        category: "character",
+        subtype: selection.subtype
+      }) as SelectedWizardDraft;
+    case "movingObject":
+      return parseWizardDraft({
+        ...common,
+        category: "movingObject",
+        subtype: selection.subtype
+      }) as SelectedWizardDraft;
+    case "staticObject":
+      return parseWizardDraft({
+        ...common,
+        category: "staticObject",
+        subtype: selection.subtype
+      }) as SelectedWizardDraft;
+    case "texture":
+      return parseWizardDraft({
+        ...common,
+        category: "texture",
+        subtype: selection.subtype
+      }) as SelectedWizardDraft;
+    case "nature":
+      return parseWizardDraft({
+        ...common,
+        category: "nature",
+        subtype: selection.subtype
+      }) as SelectedWizardDraft;
+    case "building":
+      return parseWizardDraft({
+        ...common,
+        category: "building",
+        subtype: selection.subtype
+      }) as SelectedWizardDraft;
+    case "tileset":
+      return parseWizardDraft({
+        ...common,
+        category: "tileset",
+        subtype: selection.subtype
+      }) as SelectedWizardDraft;
+    case "item":
+      return parseWizardDraft({
+        ...common,
+        category: "item",
+        subtype: selection.subtype
+      }) as SelectedWizardDraft;
+    case "artwork":
+      return parseWizardDraft({
+        ...common,
+        category: "artwork",
+        subtype: selection.subtype
+      }) as SelectedWizardDraft;
+  }
 }
 
 export function updateWizardDraftFromCoreForm(
@@ -305,88 +625,105 @@ export function updateWizardDraftFromCoreForm(
   if (!capabilities) {
     throw new RangeError("A valid wizard selection must resolve capabilities.");
   }
-  const overrides = sanitizeOverrides(
-    "overrides" in input.draft ? input.draft.overrides : undefined,
-    capabilities
-  );
-  const baseProfileId =
+  const previousBaseProfileId =
     "baseProfileId" in input.draft ? input.draft.baseProfileId : undefined;
+  const baseProfileId = input.values.baseProfileId;
+  const baseProfileChanged = previousBaseProfileId !== baseProfileId;
+  const baseProfile =
+    baseProfileId === undefined
+      ? undefined
+      : input.context.library?.baseProfiles.find(
+          (profile) => profile.id === baseProfileId
+        );
+  if (baseProfileId !== undefined && input.context.library === null) {
+    throw new WizardBaseProfileProjectionError({
+      code: "profileLibraryUnavailable"
+    });
+  }
+  if (baseProfileId !== undefined && baseProfile === undefined) {
+    throw new WizardBaseProfileProjectionError({
+      code: "missingBaseProfile",
+      baseProfileId
+    });
+  }
+
+  let overrides =
+    baseProfileChanged
+      ? undefined
+      : sanitizeOverrides(
+          "overrides" in input.draft ? input.draft.overrides : undefined,
+          capabilities
+        );
+  if (
+    baseProfile &&
+    sameSelection &&
+    input.context.library !== null
+  ) {
+    overrides = technicalOverridesFromForm(
+      input.values,
+      baseProfileChanged
+        ? baseProfile.values
+        : resolveInheritedTechnicalValues(
+            input.draft,
+            input.context.library,
+            baseProfile,
+            capabilities
+          ),
+      capabilities
+    );
+  }
+
+  const retainedProfileLinks = sameSelection && !baseProfileChanged;
   const common = {
     schemaVersion: 2,
     kind: "wizardDraft",
     draftId: input.draft.draftId,
     projectName: input.values.projectName,
-    route: sameSelection ? input.draft.route : "wizard/profile",
+    route: selectedDraftRoute(input.stepId, baseProfileId !== undefined),
     currentStep: input.stepId,
     ...(baseProfileId === undefined ? {} : { baseProfileId }),
-    ...(sameSelection && input.draft.categoryProfileId !== undefined
+    ...(retainedProfileLinks && input.draft.categoryProfileId !== undefined
       ? { categoryProfileId: input.draft.categoryProfileId }
       : {}),
-    ...(sameSelection && input.draft.sourceAssetProfileId !== undefined
+    ...(retainedProfileLinks && input.draft.sourceAssetProfileId !== undefined
       ? { sourceAssetProfileId: input.draft.sourceAssetProfileId }
       : {}),
     ...(overrides === undefined ? {} : { overrides }),
-    validation: sameSelection
+    validation: retainedProfileLinks
       ? input.draft.validation
       : { errors: [], warnings: [] },
     savedAt: input.savedAt ?? input.draft.savedAt,
     answers: controlledAnswers(input.draft, input.values, selection, capabilities)
   } as const;
 
-  switch (selection.category) {
-    case "character":
-      return parseWizardDraft({
-        ...common,
-        category: "character",
-        subtype: selection.subtype
+  let candidate = parseSelectedDraft(selection, common);
+  if (baseProfileId !== undefined && input.context.library !== null) {
+    const resolution = resolveWizardDraftSnapshot(
+      candidate,
+      input.context.library
+    );
+    if (!resolution) {
+      throw new WizardBaseProfileProjectionError({
+        code: "incompatibleBaseProfile",
+        baseProfileId,
+        field: "characterHeight"
       });
-    case "movingObject":
-      return parseWizardDraft({
-        ...common,
-        category: "movingObject",
-        subtype: selection.subtype
+    }
+    if (resolution.status === "conflict") {
+      throw new WizardBaseProfileProjectionError({
+        code: "profileResolutionConflict",
+        conflicts: resolution.conflicts
       });
-    case "staticObject":
-      return parseWizardDraft({
-        ...common,
-        category: "staticObject",
-        subtype: selection.subtype
-      });
-    case "texture":
-      return parseWizardDraft({
-        ...common,
-        category: "texture",
-        subtype: selection.subtype
-      });
-    case "nature":
-      return parseWizardDraft({
-        ...common,
-        category: "nature",
-        subtype: selection.subtype
-      });
-    case "building":
-      return parseWizardDraft({
-        ...common,
-        category: "building",
-        subtype: selection.subtype
-      });
-    case "tileset":
-      return parseWizardDraft({
-        ...common,
-        category: "tileset",
-        subtype: selection.subtype
-      });
-    case "item":
-      return parseWizardDraft({
-        ...common,
-        category: "item",
-        subtype: selection.subtype
-      });
-    case "artwork":
-      return parseWizardDraft({
-        ...common,
-        category: "artwork",
-        subtype: selection.subtype
-      });
+    }
+    const normalizedOverrides = resolution.profile.normalizedOverrides.asset;
+    const { overrides: _unresolvedOverrides, ...withoutOverrides } = candidate;
+    candidate = parseSelectedDraft(selection, {
+      ...withoutOverrides,
+      ...(Object.keys(normalizedOverrides).length === 0
+        ? {}
+        : { overrides: normalizedOverrides })
+    });
   }
+
+  return candidate;
 }

@@ -93,7 +93,36 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
 - Unsichtbare Felder dürfen nicht unbemerkt in den Prompt einfließen.
 - Pflichtfelder werden vor „Weiter“ geprüft.
 - Eine seitliche Zusammenfassung zeigt aktive Kategorie, Basisprofil, Maßstab, Ausgabe und Capability-Status.
-- Der Wizard speichert den Entwurf nach jeder gültigen Änderung lokal.
+- Der Wizard speichert gültige Nutzeränderungen verzögert und bewusste
+  Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
+  lösen keinen Write aus.
+
+## 4.3 Umgesetzter Einstieg bis Prompt 13
+
+Der aktuell implementierte Core-Flow lautet:
+
+```text
+Projekt → Hauptkategorie/Untertyp → Basisprofil → Capability-Schritte
+```
+
+Ein klassifizierter Entwurf darf vor der Basiswahl auf `wizard/profile`
+fortsetzbar bleiben. Erst eine in der aktuellen Bibliothek vorhandene oder dort
+erfolgreich neu angelegte Basisfamilie öffnet die nachfolgenden Richtungs-,
+Animations- oder Kachelbarkeitsfragen. Deren Sichtbarkeit stammt ausschließlich
+aus `resolveCapabilities()`.
+
+Der Basisprofil-Schritt zeigt für alle relevanten Produktionswerte den
+wirksamen Wert, seine Quelle (Basisprofil, Kategorieprofil oder lokaler Entwurf)
+und den Lock-Status. Figurenhöhe erscheint nur bei `scaledCharacter`, Raster-
+und Weltkamerageometrie nicht bei `freeComposition` und der Alpha-Rand nur bei
+transparentem Hintergrund. Profil-Hydration setzt den Formularzustand, ohne
+beim Mount zu schreiben. Eine bewusste Auswahl oder andere programmatische
+Mehrfeldänderung wird nach der vollständigen Übernahme einmal durch den
+generischen Engine-Hook in Draft-Projektion, Dirty-Status und Autosave gegeben.
+
+Prompt 14 ergänzt als nächste Phase den Character/NPC-Detail-Editor. Die
+späteren Motiv-, Material-, Setting-, Review- und Output-Flächen der Tabelle
+oben werden hierdurch noch nicht als fertig erklärt.
 
 ---
 
@@ -133,10 +162,29 @@ Ein Feld im Basisprofil besitzt:
 Regeln:
 
 1. Ein gesperrter Wert wird im Kindprofil angezeigt, aber nicht direkt verändert.
-2. Der Nutzer kann den Wert nur durch „Basisprofil duplizieren“ oder „neues Basisprofil erstellen“ ändern.
+2. Der Konfliktworkflow bietet Abbruch, die Wahl einer anderen Familie,
+   „Basisprofil duplizieren“ oder „neues Basisprofil erstellen“; es gibt keinen
+   stillen Override.
 3. Ein ungesperrter Wert kann vom Kategorie- oder Asset-Profil überschrieben werden.
 4. Die Zusammenfassung kennzeichnet Werte als **geerbt**, **überschrieben** oder **lokal**.
 5. Beim Speichern wird kein redundanter Override geschrieben, wenn der Wert dem Basisprofil entspricht.
+6. Eine neue oder duplizierte Familie wird als vollständiger Kandidat mit
+   neuer ID und neuen Zeitstempeln in den validierten Gesamtgraphen eingefügt.
+   Erst nach einem erfolgreichen Gesamtgraph-Write wird sie im Entwurf gewählt.
+7. Anlage und Duplikation verändern weder eine bestehende Familie noch deren
+   Nachkommen oder Elternreferenzen. In-place-Bearbeitung und Reparenting sind
+   nicht Bestandteil des Prompt-13-Schritts.
+
+Im Wizard sind entsperrte technische Felder RHF-gesteuerte lokale
+Entwurfswerte. Das Draft-Mapping vergleicht sie mit der wirksamen
+Base→Category-Vererbung und persistiert nur minimale, nicht redundante sowie
+capability-relevante Asset-Level-Overrides. Die Lock-Schalter selbst werden nur beim expliziten
+Anlegen oder Duplizieren einer echten Basisfamilie bearbeitet; sie sind keine
+Asset-Overrides.
+
+Die in der Parametertabelle genannte Prompt-Ausgabe bleibt Teil des
+vollständigen Zielmodells. Sie ist kein Feld des aktuell implementierten
+`BaseProfileValuesSchema` und wurde durch Prompt 13 nicht vorgezogen.
 
 ---
 
@@ -878,6 +926,9 @@ Drafts der frühen Routen `wizard/project` und `wizard/category` dürfen
 Basisprofil, Kategorie, Untertyp und Antworten noch auslassen. Ab
 `wizard/profile` ist die Kategorieauswahl vorhanden; `wizard/editor` und
 `wizard/review` verlangen zusätzlich ein Basisprofil und einen Projektnamen.
+Der deklarative Core-Flow setzt `baseProfile` zwischen die Klassifikation und
+die capability-gesteuerten Schritte. Ein exaktes Resume eines klassifizierten
+Pre-Base-Drafts landet wieder dort und schreibt bei der Hydration nicht.
 Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
 und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
 Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale
@@ -887,6 +938,13 @@ Referenzen und Locks aufgelöst. Ein Konflikt öffnet Recovery und überschreibt
 den gespeicherten Draft nicht; ein gelöschtes Quell-Asset allein ist dagegen
 kein Fehler. Schema-ungültige laufende Formwerte sind reiner Sessionzustand und
 werden nie in dieses persistierte Modell geschrieben.
+
+Ein bestätigter Wechsel der Basisfamilie behält Kategorie, Untertyp und
+Assetantworten, entfernt aber technische Overrides sowie nicht mehr passende
+Kategorieprofil- und Assetprovenienz. Der Wechsel mutiert oder reparentet keine
+persistierten Profile. Entsperrte Änderungen innerhalb derselben Familie
+werden beim nächsten gültigen Draft-Snapshot erneut auf minimale Overrides
+normalisiert.
 
 ---
 
@@ -903,7 +961,16 @@ pixelforge:v2:asset-profiles
 pixelforge:v2:migration-backup
 ```
 
-Der sichtbare Markenname darf später geändert werden; die Speicher-Schlüssel sollten danach aus Stabilitätsgründen nicht umbenannt werden. Die Profilbereiche verwenden versionierte Collection-Envelopes. UI-Code greift ausschließlich über den zentralen Storage-Adapter zu; Profilbereiche werden als validierter Gesamtgraph geschrieben.
+Der sichtbare Markenname darf später geändert werden; die Speicher-Schlüssel
+sollten danach aus Stabilitätsgründen nicht umbenannt werden. Die Profilbereiche
+verwenden versionierte Collection-Envelopes. UI-Code greift ausschließlich über
+den zentralen Storage-Adapter zu; Profilbereiche werden als validierter
+Gesamtgraph geschrieben. Auch das Anlegen oder Duplizieren eines Basisprofils
+verwendet genau diese gemeinsame Mutationsgrenze. Scheitert dieser Graph-Write,
+bleiben der vorherige Bibliotheksgraph und die bisherige Draft-Basis-ID
+unverändert. Scheitert erst der danach angestoßene Draft-Autosave, bleibt die
+erfolgreich angelegte Familie bestehen und die Sitzung kennzeichnet ihre
+Auswahl sichtbar als ungesichert.
 
 ---
 

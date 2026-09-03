@@ -122,6 +122,47 @@ const SYNTHETIC_FLOW = Object.freeze({
 >);
 
 describe("GuidedWizardEngine extension contract", () => {
+  it("passes the current product context through every Draft projection", async () => {
+    const user = userEvent.setup();
+    const updateDraft = vi.fn(SYNTHETIC_FLOW.updateDraft);
+    const flow = { ...SYNTHETIC_FLOW, updateDraft };
+    const context = { fieldLabel: "Kontextgebundene Notiz" };
+
+    render(
+      <GuidedWizardEngine
+        baselineDraft={INITIAL_DRAFT}
+        baselineValues={{
+          projectName: INITIAL_DRAFT.projectName,
+          craftNote: "",
+          craftEnabled: true
+        }}
+        context={context}
+        draft={INITIAL_DRAFT}
+        draftPersisted={false}
+        flow={flow}
+        initialStepId="project"
+        initialValues={{
+          projectName: INITIAL_DRAFT.projectName,
+          craftNote: "",
+          craftEnabled: true
+        }}
+        now={() => "2026-09-04T10:05:00.000Z"}
+        onDraftEdited={() => undefined}
+        onDraftSaved={() => undefined}
+        storageAdapter={{ writeDraft: () => ({ status: "ok" }) }}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+
+    expect(updateDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context,
+        stepId: "foundation"
+      })
+    );
+  });
+
   it("validates, focuses, navigates, and autosaves a declarative third step", async () => {
     const user = userEvent.setup();
     const writeDraft = vi.fn(() => ({ status: "ok" as const }));

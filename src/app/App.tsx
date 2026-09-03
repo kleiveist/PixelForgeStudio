@@ -19,6 +19,7 @@ export interface AppProps {
     WizardStorage;
   readonly now?: () => string;
   readonly createProfileId?: () => string;
+  readonly createBaseProfileId?: () => string;
   readonly createDraftId?: () => string;
 }
 
@@ -57,12 +58,14 @@ export function App({
   storageAdapter,
   now,
   createProfileId,
+  createBaseProfileId,
   createDraftId
 }: AppProps) {
   const optionalProviderProps = now ? { now } : {};
   const optionalProfileProviderProps = {
     ...(now ? { now } : {}),
-    ...(createProfileId ? { createProfileId } : {})
+    ...(createProfileId ? { createProfileId } : {}),
+    ...(createBaseProfileId ? { createBaseProfileId } : {})
   };
   return (
     <SettingsProvider storageAdapter={storageAdapter} {...optionalProviderProps}>

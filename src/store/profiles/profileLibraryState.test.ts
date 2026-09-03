@@ -86,6 +86,31 @@ describe("profile library state", () => {
     expect(state.filters).toBe(initial.filters);
   });
 
+  it("publishes a successful Base-profile mutation through the same graph state", () => {
+    const library = createProfileLibraryFixture();
+    const profile = library.baseProfiles[0];
+    if (!profile) throw new Error("Expected a Base profile fixture.");
+    const initial = createProfileLibraryState({
+      status: "valid",
+      value: library
+    });
+
+    const state = profileLibraryReducer(initial, {
+      type: "mutationSucceeded",
+      library,
+      operation: "duplicateBase",
+      profile
+    });
+
+    expect(state.libraryResult).toEqual({ status: "valid", value: library });
+    expect(state.mutation).toEqual({
+      status: "saved",
+      operation: "duplicateBase",
+      profileId: profile.id,
+      profileName: profile.name
+    });
+  });
+
   it("keeps library and filters on failure and can dismiss the notice", () => {
     const library = createProfileLibraryFixture();
     const initial = profileLibraryReducer(

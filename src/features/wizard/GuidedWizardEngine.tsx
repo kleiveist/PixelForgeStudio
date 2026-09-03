@@ -46,6 +46,11 @@ export interface GuidedWizardStepComponentProps<
   readonly context: Context;
   readonly draft: WizardDraft;
   readonly form: UseFormReturn<Values>;
+  /**
+   * Re-projects and autosaves the current form snapshot after a step applies
+   * several values programmatically. Native controls do not need to call it.
+   */
+  readonly notifyProgrammaticChange: () => void;
 }
 
 export interface GuidedWizardSummaryComponentProps<
@@ -75,12 +80,14 @@ export interface GuidedWizardStepDefinition<
 
 export interface GuidedWizardDraftUpdate<
   Values extends FieldValues,
-  StepId extends string
+  StepId extends string,
+  Context
 > {
   readonly draft: WizardDraft;
   readonly values: Values;
   readonly stepId: StepId;
   readonly savedAt?: string;
+  readonly context: Context;
 }
 
 export interface GuidedWizardFlowDefinition<
@@ -94,7 +101,7 @@ export interface GuidedWizardFlowDefinition<
   ];
   /** `null` keeps a valid form intermediate transient while navigation continues. */
   readonly updateDraft: (
-    input: GuidedWizardDraftUpdate<Values, StepId>
+    input: GuidedWizardDraftUpdate<Values, StepId, Context>
   ) => WizardDraft | null;
   readonly Summary: ComponentType<
     GuidedWizardSummaryComponentProps<Values, Context>
@@ -396,7 +403,8 @@ export function GuidedWizardEngine<
           draft: draftRef.current,
           values,
           stepId,
-          savedAt: now()
+          savedAt: now(),
+          context
         });
       } catch {
         setIsDirty(true);
@@ -429,17 +437,15 @@ export function GuidedWizardEngine<
       reset(values);
       return true;
     },
-    [cancelAutosave, flow, now, onDraftSaved, reset, storageAdapter]
+    [cancelAutosave, context, flow, now, onDraftSaved, reset, storageAdapter]
   );
 
-  useEffect(() => {
-    const subscription = watch((_formValues, event) => {
-      if (event.type !== "change" || event.name === undefined) return;
+  const applyFormChange = useCallback(
+    (values: Values) => {
       cancelAutosave();
       setSubmitError(null);
       setActiveStepConfirmed(false);
 
-      const values = getValues();
       onValuesChanged?.(values);
 
       const stepResult = activeStepRef.current.schema.safeParse(values);
@@ -463,7 +469,8 @@ export function GuidedWizardEngine<
         candidate = flow.updateDraft({
           draft: draftRef.current,
           values: stepResult.data,
-          stepId: currentStepRef.current
+          stepId: currentStepRef.current,
+          context
         });
       } catch {
         const dirty =
@@ -493,6 +500,25 @@ export function GuidedWizardEngine<
         autosaveTimerRef.current = null;
         persistValues(stepResult.data, currentStepRef.current);
       }, AUTOSAVE_DELAY_MS);
+    },
+    [
+      applyEditedDraft,
+      cancelAutosave,
+      context,
+      flow,
+      onValuesChanged,
+      persistValues
+    ]
+  );
+
+  const notifyProgrammaticChange = useCallback(() => {
+    applyFormChange(getValues());
+  }, [applyFormChange, getValues]);
+
+  useEffect(() => {
+    const subscription = watch((_formValues, event) => {
+      if (event.type !== "change" || event.name === undefined) return;
+      applyFormChange(getValues());
     });
 
     return () => {
@@ -500,12 +526,9 @@ export function GuidedWizardEngine<
       cancelAutosave();
     };
   }, [
-    applyEditedDraft,
+    applyFormChange,
     cancelAutosave,
-    flow,
     getValues,
-    onValuesChanged,
-    persistValues,
     watch
   ]);
 
@@ -531,7 +554,8 @@ export function GuidedWizardEngine<
         candidate = flow.updateDraft({
           draft: draftRef.current,
           values,
-          stepId: targetStep
+          stepId: targetStep,
+          context
         });
       } catch {
         setIsDirty(true);
@@ -551,7 +575,7 @@ export function GuidedWizardEngine<
       setSubmitError(null);
       if (candidate !== null) persistValues(values, targetStep);
     },
-    [applyEditedDraft, cancelAutosave, flow, persistValues]
+    [applyEditedDraft, cancelAutosave, context, flow, persistValues]
   );
 
   const submitValid = useCallback(
@@ -614,7 +638,8 @@ export function GuidedWizardEngine<
       const candidate = flow.updateDraft({
         draft: draftRef.current,
         values,
-        stepId: previousStep.id
+        stepId: previousStep.id,
+        context
       });
       if (candidate !== null) {
         applyEditedDraft(candidate);
@@ -707,7 +732,12 @@ export function GuidedWizardEngine<
           ) : null}
 
           <div className={styles.stepBody}>
-            <ActiveStepComponent context={context} draft={draft} form={form} />
+            <ActiveStepComponent
+              context={context}
+              draft={draft}
+              form={form}
+              notifyProgrammaticChange={notifyProgrammaticChange}
+            />
           </div>
 
           <div className={styles.formFooter}>

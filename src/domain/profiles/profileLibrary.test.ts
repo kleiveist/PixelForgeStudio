@@ -3,6 +3,7 @@ import {
   ProfileLibrarySchema,
   StableIdSchema,
   type AssetProfile,
+  type BaseProfile,
   type ProfileLibrary
 } from "../../schemas";
 import {
@@ -10,11 +11,15 @@ import {
   createProfileLibraryFixture
 } from "../../test/profileLibraryFixtures";
 import {
+  createBaseProfile,
   createDuplicateProfileName,
   deleteAssetProfile,
   duplicateAssetProfile,
+  duplicateBaseProfile,
   toggleAssetProfileFavorite,
-  type AssetProfileLibraryChange
+  type AssetProfileLibraryChange,
+  type BaseProfileDefinition,
+  type BaseProfileLibraryChange
 } from "./index";
 
 function profileById(library: ProfileLibrary, id: string): AssetProfile {
@@ -23,9 +28,24 @@ function profileById(library: ProfileLibrary, id: string): AssetProfile {
   return profile;
 }
 
+function baseById(library: ProfileLibrary, id: string): BaseProfile {
+  const profile = library.baseProfiles.find((candidate) => candidate.id === id);
+  if (!profile) throw new Error(`Expected fixture Base profile "${id}".`);
+  return profile;
+}
+
 function expectChanged(
   result: AssetProfileLibraryChange
 ): asserts result is Extract<AssetProfileLibraryChange, { status: "changed" }> {
+  expect(result.status).toBe("changed");
+  if (result.status !== "changed") {
+    throw new Error(`Expected a changed library, received "${result.status}".`);
+  }
+}
+
+function expectBaseChanged(
+  result: BaseProfileLibraryChange
+): asserts result is Extract<BaseProfileLibraryChange, { status: "changed" }> {
   expect(result.status).toBe("changed");
   if (result.status !== "changed") {
     throw new Error(`Expected a changed library, received "${result.status}".`);
@@ -44,6 +64,209 @@ function deepFreeze<T>(value: T): T {
   }
   return Object.freeze(value);
 }
+
+describe("base profile library mutations", () => {
+  it("creates a standalone production family without changing existing descendants", () => {
+    const library = deepFreeze(createProfileLibraryFixture());
+    const before = createProfileLibraryFixture();
+    const source = baseById(library, "base_world_80");
+    const profileId = StableIdSchema.parse("base_world_112");
+    const timestamp = "2026-09-03T20:00:00.000Z";
+    const definition: BaseProfileDefinition = {
+      name: "Weltfamilie 48 px / Figuren 112 px",
+      iconId: "world-grid",
+      values: {
+        ...source.values,
+        tileSize: 48,
+        characterHeight: 112,
+        lightingDefaults: {
+          policy: "gloomyDiffuse",
+          notes: "Stable northwest world light."
+        }
+      },
+      locks: { tileSize: true, characterHeight: true }
+    };
+
+    const result = createBaseProfile(library, profileId, timestamp, definition);
+
+    expectBaseChanged(result);
+    expect(result.profile).toEqual({
+      schemaVersion: 2,
+      kind: "baseProfile",
+      id: profileId,
+      ...definition,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    });
+    expect(result.profile.values).not.toBe(definition.values);
+    expect(result.profile.values.lightingDefaults).not.toBe(
+      definition.values.lightingDefaults
+    );
+    expect(result.profile.locks).not.toBe(definition.locks);
+    expect(result.library.baseProfiles).toHaveLength(
+      library.baseProfiles.length + 1
+    );
+    expect(result.library.categoryProfiles).toBe(library.categoryProfiles);
+    expect(result.library.assetProfiles).toBe(library.assetProfiles);
+    expect(
+      result.library.categoryProfiles.every(
+        (profile) => profile.baseProfileId !== profileId
+      )
+    ).toBe(true);
+    expect(
+      result.library.assetProfiles.every(
+        (profile) => profile.baseProfileId !== profileId
+      )
+    ).toBe(true);
+    expect(ProfileLibrarySchema.safeParse(result.library).success).toBe(true);
+    expect(library).toEqual(before);
+  });
+
+  it("duplicates only the Base and drops migration provenance", () => {
+    const fixture = createProfileLibraryFixture();
+    const sourceId = StableIdSchema.parse("base_world_80");
+    const source = baseById(fixture, sourceId);
+    const migratedSource: BaseProfile = {
+      ...source,
+      migratedFromVersion: 1
+    };
+    const library = deepFreeze(
+      ProfileLibrarySchema.parse({
+        ...fixture,
+        baseProfiles: fixture.baseProfiles.map((profile) =>
+          profile.id === sourceId ? migratedSource : profile
+        )
+      })
+    );
+    const storedSource = baseById(library, sourceId);
+    const duplicateId = StableIdSchema.parse("base_world_80_copy");
+    const timestamp = "2026-09-03T20:15:00.000Z";
+
+    const result = duplicateBaseProfile(
+      library,
+      sourceId,
+      duplicateId,
+      timestamp
+    );
+
+    expectBaseChanged(result);
+    expect(result.profile).toMatchObject({
+      id: duplicateId,
+      name: "Weltfamilie 32 px / Figuren 80 px (Kopie)",
+      iconId: storedSource.iconId,
+      values: storedSource.values,
+      locks: storedSource.locks,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    });
+    expect(result.profile).not.toHaveProperty("migratedFromVersion");
+    expect(result.profile.values).not.toBe(storedSource.values);
+    expect(result.profile.values.lightingDefaults).not.toBe(
+      storedSource.values.lightingDefaults
+    );
+    expect(result.profile.locks).not.toBe(storedSource.locks);
+    expect(baseById(result.library, sourceId)).toBe(storedSource);
+    expect(result.library.categoryProfiles).toBe(library.categoryProfiles);
+    expect(result.library.assetProfiles).toBe(library.assetProfiles);
+    expect(
+      result.library.categoryProfiles.some(
+        (profile) => profile.baseProfileId === duplicateId
+      )
+    ).toBe(false);
+    expect(
+      result.library.assetProfiles.some(
+        (profile) => profile.baseProfileId === duplicateId
+      )
+    ).toBe(false);
+    expect(ProfileLibrarySchema.safeParse(result.library).success).toBe(true);
+  });
+
+  it("applies a complete proposed definition to a duplicate while preserving the source", () => {
+    const library = deepFreeze(createProfileLibraryFixture());
+    const sourceId = StableIdSchema.parse("base_world_80");
+    const source = baseById(library, sourceId);
+    const duplicateId = StableIdSchema.parse("base_world_48_96");
+    const definition: BaseProfileDefinition = {
+      name: "Dungeonfamilie 48 px / Figuren 96 px",
+      iconId: "dungeon-grid",
+      values: {
+        ...source.values,
+        tileSize: 48,
+        characterHeight: 96,
+        styleProfile: "dark",
+        lightingDefaults: {
+          policy: "gloomyDiffuse",
+          notes: "Controlled subterranean light."
+        }
+      },
+      locks: {
+        ...source.locks,
+        tileSize: true,
+        characterHeight: true,
+        lightingDefaults: true
+      }
+    };
+
+    const result = duplicateBaseProfile(
+      library,
+      sourceId,
+      duplicateId,
+      "2026-09-03T20:30:00.000Z",
+      definition
+    );
+
+    expectBaseChanged(result);
+    expect(result.profile).toMatchObject({
+      id: duplicateId,
+      ...definition
+    });
+    expect(baseById(result.library, sourceId)).toBe(source);
+    expect(source.values.tileSize).toBe(32);
+    expect(source.values.characterHeight).toBe(80);
+    expect(result.library.categoryProfiles).toBe(library.categoryProfiles);
+    expect(result.library.assetProfiles).toBe(library.assetProfiles);
+    expect(ProfileLibrarySchema.safeParse(result.library).success).toBe(true);
+  });
+
+  it("rejects missing sources and Base-id collisions without changing the graph", () => {
+    const library = deepFreeze(createProfileLibraryFixture());
+    const source = baseById(library, "base_world_80");
+    const occupiedId = StableIdSchema.parse("base_world_96");
+    const missingId = StableIdSchema.parse("base_missing");
+    const definition: BaseProfileDefinition = {
+      name: "Nicht gespeichert",
+      iconId: source.iconId,
+      values: source.values,
+      locks: source.locks
+    };
+
+    expect(
+      createBaseProfile(
+        library,
+        occupiedId,
+        "2026-09-03T21:00:00.000Z",
+        definition
+      )
+    ).toEqual({ status: "idConflict", profileId: occupiedId });
+    expect(
+      duplicateBaseProfile(
+        library,
+        missingId,
+        StableIdSchema.parse("base_copy"),
+        "2026-09-03T21:00:00.000Z"
+      )
+    ).toEqual({ status: "notFound", profileId: missingId });
+    expect(
+      duplicateBaseProfile(
+        library,
+        source.id,
+        occupiedId,
+        "2026-09-03T21:00:00.000Z"
+      )
+    ).toEqual({ status: "idConflict", profileId: occupiedId });
+    expect(library).toEqual(createProfileLibraryFixture());
+  });
+});
 
 describe("asset profile library mutations", () => {
   it("toggles a favorite immutably without treating it as a content edit", () => {

@@ -1,6 +1,7 @@
 import type { AssetCategory } from "../../domain/assets";
 import type {
   AssetProfile,
+  BaseProfile,
   ProfileLibrary,
   StableId
 } from "../../schemas";
@@ -14,7 +15,12 @@ export interface ProfileLibraryFilters {
   readonly groupBy: "category" | "compatibility";
 }
 
-export type ProfileMutationOperation = "favorite" | "duplicate" | "delete";
+export type ProfileMutationOperation =
+  | "favorite"
+  | "duplicate"
+  | "delete"
+  | "createBase"
+  | "duplicateBase";
 
 export type ProfileMutationNotice =
   | Readonly<{ status: "ready" }>
@@ -50,7 +56,7 @@ export type ProfileLibraryAction =
       type: "mutationSucceeded";
       library: ProfileLibrary;
       operation: ProfileMutationOperation;
-      profile: AssetProfile;
+      profile: AssetProfile | BaseProfile;
     }>
   | Readonly<{
       type: "mutationFailed";

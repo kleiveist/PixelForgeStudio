@@ -432,7 +432,7 @@ describe("wizard draft lifecycle", () => {
     });
 
     expect(resolveWizardCoreStep(draft)).toEqual({
-      stepId: "category",
+      stepId: "baseProfile",
       usedFallback: true,
       unknownStep: "directions"
     });
@@ -456,13 +456,28 @@ describe("wizard draft lifecycle", () => {
     const library = createProfileLibraryFixture();
 
     expect(resolveWizardDraftSnapshot(draft, library)).toBeNull();
+    expect(resolveWizardCoreStep(draft)).toEqual({
+      stepId: "baseProfile",
+      usedFallback: true,
+      unknownStep: "animation"
+    });
     expect(
       validateWizardResume({
         requestedDraftId: draftId,
         draft,
         profileLibrary: library
       })
-    ).toEqual({ status: "ready", draft, notices: [] });
+    ).toEqual({
+      status: "ready",
+      draft: { ...draft, currentStep: "baseProfile" },
+      notices: [
+        {
+          code: "unknownCurrentStep",
+          unknownStep: "animation",
+          fallbackStep: "baseProfile"
+        }
+      ]
+    });
   });
 
   it("rejects malformed resume payloads before lifecycle handling", () => {

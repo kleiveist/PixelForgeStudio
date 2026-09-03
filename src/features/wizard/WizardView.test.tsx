@@ -14,6 +14,7 @@ import {
   ProfileLibrarySchema,
   parseAssetProfile,
   parseBaseProfile,
+  parseCategoryProfile,
   parseWizardDraft,
   type ProfileLibrary,
   type WizardDraft
@@ -32,6 +33,7 @@ const DEFAULT_DRAFT_ID = "draft_wizard_view_001";
 type SelectedWizardDraft = Extract<WizardDraft, { category: unknown }>;
 
 interface RenderStudioOptions {
+  readonly createBaseProfileId?: () => string;
   readonly createDraftId?: () => string;
   readonly navigation?: MemoryNavigation;
   readonly now?: () => string;
@@ -40,7 +42,7 @@ interface RenderStudioOptions {
 }
 
 function renderStudio(options: RenderStudioOptions = {}) {
-  const storage = options.storage ?? new MemoryStorage();
+  const storage = options.storage ?? populatedStorage();
   const navigation =
     options.navigation ??
     new MemoryNavigation({ status: "valid", view: "wizard" });
@@ -49,6 +51,9 @@ function renderStudio(options: RenderStudioOptions = {}) {
     <App
       navigationAdapter={navigation}
       storageAdapter={adapter}
+      createBaseProfileId={
+        options.createBaseProfileId ?? (() => "base_wizard_view_001")
+      }
       createDraftId={options.createDraftId ?? (() => DEFAULT_DRAFT_ID)}
       now={options.now ?? (() => SAVED_TIMESTAMP)}
     />
@@ -78,6 +83,31 @@ async function selectAssetClassification(
   );
 }
 
+function baseProfileChoice(name: RegExp): HTMLInputElement {
+  return within(
+    screen.getByRole("group", { name: "Produktionsfamilie auswählen" })
+  ).getByRole("radio", { name });
+}
+
+async function selectBaseProfile(
+  user: ReturnType<typeof userEvent.setup>,
+  name: RegExp = /^Weltfamilie 32 px \/ Figuren 80 px/
+): Promise<HTMLInputElement> {
+  const choice = baseProfileChoice(name);
+  await user.click(choice);
+  expect(choice).toBeChecked();
+  return choice;
+}
+
+async function enterBaseProfileStep(
+  user: ReturnType<typeof userEvent.setup>
+): Promise<void> {
+  await user.click(screen.getByRole("button", { name: /Weiter/ }));
+  expect(
+    screen.getByRole("heading", { level: 2, name: "Basisprofil" })
+  ).toBeVisible();
+}
+
 function draftWrites(storage: MemoryStorage) {
   return storage.mutations.filter(
     (mutation) => mutation.key === V2_STORAGE_KEYS.draft
@@ -91,6 +121,17 @@ function readValidDraft(
   expect(result.status).toBe("valid");
   if (result.status !== "valid") {
     throw new Error("Expected a valid persisted Wizard draft.");
+  }
+  return result.value;
+}
+
+function readValidProfileLibrary(
+  adapter: ReturnType<typeof createV2StorageAdapter>
+): ProfileLibrary {
+  const result = adapter.readProfileLibrary();
+  expect(result.status).toBe("valid");
+  if (result.status !== "valid") {
+    throw new Error("Expected a valid persisted profile library.");
   }
   return result.value;
 }
@@ -162,6 +203,92 @@ function profileLibraryWithTechnicalOverrides(): ProfileLibrary {
     ...library,
     assetProfiles: library.assetProfiles.map((candidate) =>
       candidate.id === profile.id ? profile : candidate
+    )
+  });
+}
+
+function profileLibraryWithLockedTileSize(): ProfileLibrary {
+  const library = createProfileLibraryFixture();
+  const source = library.baseProfiles.find(
+    (profile) => profile.id === "base_world_80"
+  );
+  if (!source) throw new Error("Expected the 80 px Base profile fixture.");
+
+  const lockedBase = parseBaseProfile({
+    ...source,
+    locks: { ...source.locks, tileSize: true },
+    updatedAt: SAVED_TIMESTAMP
+  });
+
+  return ProfileLibrarySchema.parse({
+    ...library,
+    baseProfiles: library.baseProfiles.map((profile) =>
+      profile.id === lockedBase.id ? lockedBase : profile
+    )
+  });
+}
+
+function profileLibraryWithHeightlessBase(
+  lockCharacterHeight = false
+): ProfileLibrary {
+  const library = createProfileLibraryFixture();
+  const source = library.baseProfiles.find(
+    (profile) => profile.id === "base_unused"
+  );
+  if (!source) throw new Error("Expected the unused Base profile fixture.");
+  const { characterHeight: omittedCharacterHeight, ...values } = source.values;
+  void omittedCharacterHeight;
+  const heightlessBase = parseBaseProfile({
+    ...source,
+    values,
+    locks: {
+      ...source.locks,
+      ...(lockCharacterHeight ? { characterHeight: true } : {})
+    }
+  });
+
+  return ProfileLibrarySchema.parse({
+    ...library,
+    baseProfiles: library.baseProfiles.map((profile) =>
+      profile.id === heightlessBase.id ? heightlessBase : profile
+    )
+  });
+}
+
+function profileLibraryWithCategoryTileOverride(): ProfileLibrary {
+  const library = createProfileLibraryFixture();
+  const source = library.assetProfiles.find(
+    (profile) => profile.id === "asset_smith_80"
+  );
+  const base = library.baseProfiles.find(
+    (profile) => profile.id === source?.baseProfileId
+  );
+  const category = library.categoryProfiles.find(
+    (profile) => profile.id === source?.categoryProfileId
+  );
+  if (!source || !base || !category || source.category !== "character") {
+    throw new Error("Expected a complete character profile fixture.");
+  }
+
+  const inheritedCategory = parseCategoryProfile({
+    ...category,
+    overrides: { ...category.overrides, tileSize: 48 }
+  });
+  const compatibleSource = parseAssetProfile({
+    ...source,
+    compatibilityKey: createCompatibilityKey(
+      { ...base.values, tileSize: 48 },
+      { category: "character", subtype: source.subtype }
+    )
+  });
+
+  return ProfileLibrarySchema.parse({
+    ...library,
+    categoryProfiles: library.categoryProfiles.map((profile) =>
+      profile.id === inheritedCategory.id ? inheritedCategory : profile
+    ),
+    assetProfiles: library.assetProfiles.map((profile) =>
+      profile.id === compatibleSource.id ? compatibleSource : profile
     )
   });
 }
@@ -318,9 +445,17 @@ describe("guided Wizard integration", () => {
     const progress = screen.getByRole("navigation", {
       name: "Wizard-Fortschritt"
     });
+    expect(within(progress).getByText("Basisprofil")).toBeVisible();
+    expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+    expect(
+      within(progress).queryByText("Bewegung und Animation")
+    ).not.toBeInTheDocument();
+    expect(within(progress).queryByText("Kachelbarkeit")).not.toBeInTheDocument();
+
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
     expect(within(progress).getByText("Richtungen")).toBeVisible();
     expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
-    expect(within(progress).queryByText("Kachelbarkeit")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(screen.getByRole("heading", { level: 2, name: "Richtungen" })).toHaveFocus();
@@ -380,6 +515,234 @@ describe("guided Wizard integration", () => {
     expect(draftWrites(storage)).toHaveLength(1);
   });
 
+  it("selects an existing production family and exposes its inherited values before capability steps", async () => {
+    const user = userEvent.setup();
+    const { adapter } = renderStudio();
+
+    await user.type(projectNameInput(), "Geerbte Hafenwache");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+
+    const choice = await selectBaseProfile(user);
+    const effectiveValues = screen.getByRole("region", {
+      name: "Weltfamilie 32 px / Figuren 80 px"
+    });
+    expect(choice).toBeChecked();
+    expect(
+      within(effectiveValues).getByRole("combobox", { name: "Pixelstil" })
+    ).toHaveValue("modernHd");
+    expect(
+      within(effectiveValues).getByRole("spinbutton", { name: "Tilegröße" })
+    ).toHaveValue(32);
+    expect(
+      within(effectiveValues).getByRole("spinbutton", {
+        name: "Figurenhöhe"
+      })
+    ).toHaveValue(80);
+    expect(
+      within(effectiveValues).getAllByText(
+        "Quelle: Basisprofil „Weltfamilie 32 px / Figuren 80 px“"
+      )[0]
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        route: "wizard/profile",
+        currentStep: "baseProfile",
+        baseProfileId: "base_world_80"
+      })
+    );
+
+    const progress = screen.getByRole("navigation", {
+      name: "Wizard-Fortschritt"
+    });
+    expect(within(progress).getByText("Richtungen")).toBeVisible();
+    expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(readValidDraft(adapter)).toMatchObject({
+      route: "wizard/editor",
+      currentStep: "directions",
+      baseProfileId: "base_world_80",
+      category: "character",
+      subtype: "npc"
+    });
+    expect(readValidDraft(adapter)).not.toHaveProperty("overrides");
+  });
+
+  it("requires and stores an unlocked character height when the selected Base does not define one", async () => {
+    const storage = populatedStorage(profileLibraryWithHeightlessBase());
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({ storage });
+
+    await user.type(projectNameInput(), "Flexible Figurenfamilie");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user, /^Unbenutztes Basisprofil/);
+
+    const characterHeight = screen.getByRole("spinbutton", {
+      name: "Figurenhöhe"
+    });
+    expect(characterHeight).toHaveValue(null);
+    expect(
+      within(
+        screen.getByRole("navigation", { name: "Wizard-Fortschritt" })
+      ).queryByText("Richtungen")
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter|Entwurf sichern/ }));
+    expect(
+      screen.getByText(
+        "Für Figuren und figurähnliche Assets ist eine Figurenhöhe erforderlich."
+      )
+    ).toBeVisible();
+
+    await user.type(characterHeight, "80");
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        baseProfileId: "base_unused",
+        overrides: { characterHeight: 80 }
+      })
+    );
+    expect(
+      within(
+        screen.getByRole("navigation", { name: "Wizard-Fortschritt" })
+      ).getByText("Richtungen")
+    ).toBeVisible();
+  });
+
+  it("disables a character Base whose missing height is itself locked", async () => {
+    const storage = populatedStorage(profileLibraryWithHeightlessBase(true));
+    const user = userEvent.setup();
+    renderStudio({ storage });
+
+    await user.type(projectNameInput(), "Ungeeignete Figurenfamilie");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+
+    expect(baseProfileChoice(/^Unbenutztes Basisprofil/)).toBeDisabled();
+    expect(
+      screen.getByText(/Nicht kompatibel: gesperrte Figurenhöhe fehlt/)
+    ).toBeVisible();
+  });
+
+  it("normalizes an unlocked local override back to inheritance", async () => {
+    const user = userEvent.setup();
+    const { adapter } = renderStudio();
+
+    await user.type(projectNameInput(), "Variable Tilefamilie");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+
+    const tileSize = screen.getByRole("spinbutton", { name: "Tilegröße" });
+    await user.clear(tileSize);
+    await user.type(tileSize, "48");
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        baseProfileId: "base_world_80",
+        overrides: { tileSize: 48 }
+      })
+    );
+    expect(screen.getByText("Quelle: Lokaler Entwurf")).toBeVisible();
+
+    await user.clear(tileSize);
+    await user.type(tileSize, "32");
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).not.toHaveProperty("overrides.tileSize")
+    );
+    expect(
+      screen.getAllByText(
+        "Quelle: Basisprofil „Weltfamilie 32 px / Figuren 80 px“"
+      )[0]
+    ).toBeVisible();
+  });
+
+  it("labels an Asset override as local when it returns below a Category override to the Base value", async () => {
+    const library = profileLibraryWithCategoryTileOverride();
+    const storage = populatedStorage(library);
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({
+      navigation: new MemoryNavigation({ status: "valid", view: "profiles" }),
+      storage
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Profil „Dorfschmied mit Lederschürze“ im Wizard laden"
+      })
+    );
+    await enterBaseProfileStep(user);
+
+    const effectiveValues = screen.getByRole("region", {
+      name: "Weltfamilie 32 px / Figuren 80 px"
+    });
+    const tileSize = within(effectiveValues).getByRole("spinbutton", {
+      name: "Tilegröße"
+    });
+    expect(tileSize).toHaveValue(48);
+    expect(
+      within(effectiveValues).getByText("Quelle: Kategorieprofil „NPCs 80 px“")
+    ).toBeVisible();
+
+    await user.clear(tileSize);
+    await user.type(tileSize, "32");
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        overrides: { tileSize: 32 }
+      })
+    );
+    expect(
+      within(effectiveValues).getByText("Quelle: Lokaler Entwurf")
+    ).toBeVisible();
+  });
+
+  it("keeps a locked inherited value unchanged when its conflict workflow is cancelled", async () => {
+    const storage = populatedStorage(profileLibraryWithLockedTileSize());
+    const originalBaseProfiles = storage.getItem(V2_STORAGE_KEYS.baseProfiles);
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({ storage });
+
+    await user.type(projectNameInput(), "Gesperrte Tilefamilie");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        baseProfileId: "base_world_80"
+      })
+    );
+    const draftBeforeConflict = storage.getItem(V2_STORAGE_KEYS.draft);
+
+    const effectiveValues = screen.getByRole("region", {
+      name: "Weltfamilie 32 px / Figuren 80 px"
+    });
+    const conflictTrigger = within(effectiveValues).getByRole("button", {
+      name: /Anderen Wert verwenden/
+    });
+    await user.click(conflictTrigger);
+
+    const conflict = screen.getByRole("alert", {
+      name: "Tilegröße ist gesperrt"
+    });
+    expect(within(conflict).getByText(/vererbt diesen Wert verbindlich/)).toBeVisible();
+    await user.click(within(conflict).getByRole("button", { name: "Abbrechen" }));
+
+    await waitFor(() => expect(conflictTrigger).toHaveFocus());
+    expect(
+      screen.queryByRole("alert", { name: "Tilegröße ist gesperrt" })
+    ).not.toBeInTheDocument();
+    expect(within(effectiveValues).getByText("32 × 32 px")).toBeVisible();
+    expect(storage.getItem(V2_STORAGE_KEYS.baseProfiles)).toBe(
+      originalBaseProfiles
+    );
+    expect(storage.getItem(V2_STORAGE_KEYS.draft)).toBe(draftBeforeConflict);
+  });
+
   it("routes a wood texture to tileability without movement or direction", async () => {
     const user = userEvent.setup();
     const { adapter } = renderStudio();
@@ -391,11 +754,16 @@ describe("guided Wizard integration", () => {
     const progress = screen.getByRole("navigation", {
       name: "Wizard-Fortschritt"
     });
-    expect(within(progress).getByText("Kachelbarkeit")).toBeVisible();
+    expect(within(progress).getByText("Basisprofil")).toBeVisible();
+    expect(within(progress).queryByText("Kachelbarkeit")).not.toBeInTheDocument();
     expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
     expect(
       within(progress).queryByText("Bewegung und Animation")
     ).not.toBeInTheDocument();
+
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+    expect(within(progress).getByText("Kachelbarkeit")).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(
@@ -425,6 +793,14 @@ describe("guided Wizard integration", () => {
     const progress = screen.getByRole("navigation", {
       name: "Wizard-Fortschritt"
     });
+    expect(within(progress).getByText("Basisprofil")).toBeVisible();
+    expect(
+      within(progress).queryByText("Bewegung und Animation")
+    ).not.toBeInTheDocument();
+    expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
     expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
     expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
 
@@ -595,7 +971,7 @@ describe("guided Wizard integration", () => {
     expect(projectNameInput()).toHaveValue("Winterwald");
   });
 
-  it("resumes a selected pre-base Draft without requiring profile records", () => {
+  it("resumes a selected pre-base Draft on the required Base-profile step without writing", () => {
     const draft = parseWizardDraft({
       schemaVersion: 2,
       kind: "wizardDraft",
@@ -609,18 +985,74 @@ describe("guided Wizard integration", () => {
       validation: { errors: [], warnings: [] },
       savedAt: INITIAL_TIMESTAMP
     });
-    const storage = new MemoryStorage();
+    const storage = populatedStorage();
     storeDraft(storage, draft);
 
     renderStudio({ storage });
 
     expect(
-      screen.getByRole("heading", { level: 2, name: "Bewegung und Animation" })
+      screen.getByRole("heading", { level: 2, name: "Basisprofil" })
     ).toBeVisible();
-    expect(screen.getByRole("combobox", { name: "Animationsart" })).toHaveValue(
-      "wind"
+    expect(
+      within(
+        screen.getByRole("group", { name: "Produktionsfamilie auswählen" })
+      ).queryByRole("radio", { checked: true })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: "Animationsart" })
+    ).not.toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("complementary", {
+          name: "Technische Zusammenfassung"
+        })
+      ).getByText("Natur / Pflanze")
+    ).toBeVisible();
+    expect(
+      within(
+        screen.getByRole("navigation", { name: "Wizard-Fortschritt" })
+      ).queryByText("Bewegung und Animation")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Entwurf sichern|Schritt prüfen/ })
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/sicher fortgesetzt/)
+    ).not.toBeInTheDocument();
+    expect(storage.mutations).toEqual([]);
+  });
+
+  it("blocks Base-profile selection when the stored library is corrupt and leaves it untouched", () => {
+    const draft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_pre_base_corrupt_library",
+      projectName: "Sicherer Vorstufenentwurf",
+      route: "wizard/profile",
+      currentStep: "baseProfile",
+      category: "texture",
+      subtype: "wood",
+      answers: {},
+      validation: { errors: [], warnings: [] },
+      savedAt: INITIAL_TIMESTAMP
+    });
+    const storage = populatedStorage();
+    storeDraft(storage, draft);
+    const corruptProfiles = "{broken-base-profile-library";
+    storage.values.set(V2_STORAGE_KEYS.baseProfiles, corruptProfiles);
+
+    renderStudio({ storage });
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Basisprofil" })
+    ).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Basisprofile konnten nicht sicher gelesen werden"
     );
-    expect(screen.queryByText(/sicher fortgesetzt/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: "Produktionsfamilie auswählen" })
+    ).not.toBeInTheDocument();
+    expect(storage.getItem(V2_STORAGE_KEYS.baseProfiles)).toBe(corruptProfiles);
     expect(storage.mutations).toEqual([]);
   });
 
@@ -787,7 +1219,7 @@ describe("guided Wizard integration", () => {
     });
   });
 
-  it("starts from an exact profile without dropping classification, answers, or overrides", async () => {
+  it("starts from an exact profile through its selected Base profile without dropping portable data", async () => {
     const library = profileLibraryWithTechnicalOverrides();
     const source = library.assetProfiles.find(
       (profile) => profile.id === "asset_smith_80"
@@ -821,9 +1253,21 @@ describe("guided Wizard integration", () => {
     expect(document.body.innerHTML).not.toContain(source.compatibilityKey);
     expect(storage.mutations).toEqual([]);
 
-    await user.click(screen.getByRole("button", { name: /Weiter/ }));
-
-    expect(screen.getByRole("heading", { level: 2, name: "Richtungen" })).toBeVisible();
+    await enterBaseProfileStep(user);
+    expect(
+      baseProfileChoice(/^Weltfamilie 32 px \/ Figuren 80 px/)
+    ).toBeChecked();
+    const effectiveValues = screen.getByRole("region", {
+      name: "Weltfamilie 32 px / Figuren 80 px"
+    });
+    expect(
+      within(effectiveValues).getByRole("spinbutton", { name: "Tilegröße" })
+    ).toHaveValue(48);
+    expect(
+      within(effectiveValues).getByRole("spinbutton", {
+        name: "Figurenhöhe"
+      })
+    ).toHaveValue(80);
 
     expect(draftWrites(storage)).toEqual([
       { operation: "set", key: V2_STORAGE_KEYS.draft }
@@ -836,6 +1280,316 @@ describe("guided Wizard integration", () => {
       subtype: source.subtype,
       answers: source.answers,
       overrides: source.overrides
+    });
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Richtungen" })
+    ).toBeVisible();
+  });
+
+  it("requires confirmation before moving a profile start to another production family", async () => {
+    const library = profileLibraryWithTechnicalOverrides();
+    const source = library.assetProfiles.find(
+      (profile) => profile.id === "asset_smith_80"
+    );
+    if (!source) throw new Error("Expected the overridden smith profile.");
+    const storage = populatedStorage(library);
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({
+      navigation: new MemoryNavigation({ status: "valid", view: "profiles" }),
+      storage
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Profil „Dorfschmied mit Lederschürze“ im Wizard laden"
+      })
+    );
+    await enterBaseProfileStep(user);
+
+    const currentChoice = baseProfileChoice(
+      /^Weltfamilie 32 px \/ Figuren 80 px/
+    );
+    const nextChoice = baseProfileChoice(
+      /^Weltfamilie 32 px \/ Figuren 96 px/
+    );
+    expect(currentChoice).toBeChecked();
+    const storedBeforeRequest = storage.getItem(V2_STORAGE_KEYS.draft);
+    const writesBeforeRequest = draftWrites(storage).length;
+
+    await user.click(nextChoice);
+
+    const confirmation = screen.getByRole("alert", {
+      name: "Produktionsfamilie wechseln?"
+    });
+    expect(currentChoice).toBeChecked();
+    expect(nextChoice).not.toBeChecked();
+    expect(storage.getItem(V2_STORAGE_KEYS.draft)).toBe(storedBeforeRequest);
+    expect(draftWrites(storage)).toHaveLength(writesBeforeRequest);
+
+    await user.click(
+      within(confirmation).getByRole("button", {
+        name: "Zu „Weltfamilie 32 px / Figuren 96 px“ wechseln"
+      })
+    );
+
+    expect(nextChoice).toBeChecked();
+    const effectiveValues = screen.getByRole("region", {
+      name: "Weltfamilie 32 px / Figuren 96 px"
+    });
+    expect(
+      within(effectiveValues).getByRole("spinbutton", { name: "Tilegröße" })
+    ).toHaveValue(32);
+    expect(
+      within(effectiveValues).getByRole("spinbutton", {
+        name: "Figurenhöhe"
+      })
+    ).toHaveValue(96);
+
+    await waitFor(() => {
+      const switched = readValidDraft(adapter);
+      expect(switched).toMatchObject({
+        baseProfileId: "base_world_96",
+        category: source.category,
+        subtype: source.subtype,
+        answers: source.answers
+      });
+      expect(switched).not.toHaveProperty("categoryProfileId");
+      expect(switched).not.toHaveProperty("sourceAssetProfileId");
+      expect(switched).not.toHaveProperty("overrides");
+    });
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    const switched = readValidDraft(adapter);
+    expect(switched).toMatchObject({
+      baseProfileId: "base_world_96",
+      category: source.category,
+      subtype: source.subtype,
+      answers: source.answers
+    });
+    expect(switched).not.toHaveProperty("categoryProfileId");
+    expect(switched).not.toHaveProperty("sourceAssetProfileId");
+    expect(switched).not.toHaveProperty("overrides");
+  });
+
+  it("creates selectable standalone families through duplicate and new workflows", async () => {
+    const createBaseProfileId = vi
+      .fn<() => string>()
+      .mockReturnValueOnce("base_wizard_copy_001")
+      .mockReturnValueOnce("base_wizard_new_001");
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({ createBaseProfileId });
+
+    await user.type(projectNameInput(), "Neue Produktionslinien");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Ausgewähltes Basisprofil duplizieren"
+      })
+    );
+    const duplicateEditor = screen.getByRole("region", {
+      name: "„Weltfamilie 32 px / Figuren 80 px“ duplizieren"
+    });
+    const duplicateName = within(duplicateEditor).getByRole("textbox", {
+      name: "Name der Produktionsfamilie"
+    });
+    expect(duplicateName).toHaveValue(
+      "Weltfamilie 32 px / Figuren 80 px (Kopie)"
+    );
+    await user.clear(duplicateName);
+    await user.type(duplicateName, "Eigenständige 48-px-Familie");
+    const duplicateTileSize = within(duplicateEditor).getByRole("spinbutton", {
+      name: "Tilegröße in Pixeln"
+    });
+    await user.clear(duplicateTileSize);
+    await user.type(duplicateTileSize, "48");
+    await user.click(
+      within(duplicateEditor).getByRole("button", {
+        name: "Basisprofil anlegen"
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        "Basisprofil „Eigenständige 48-px-Familie“ wurde angelegt und ausgewählt."
+      )
+    ).toBeVisible();
+    expect(
+      baseProfileChoice(/^Eigenständige 48-px-Familie/)
+    ).toBeChecked();
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        baseProfileId: "base_wizard_copy_001"
+      })
+    );
+    let library = readValidProfileLibrary(adapter);
+    expect(
+      library.baseProfiles.find(
+        (profile) => profile.id === "base_wizard_copy_001"
+      )
+    ).toMatchObject({
+      name: "Eigenständige 48-px-Familie",
+      values: { tileSize: 48 }
+    });
+    expect(
+      library.baseProfiles.find((profile) => profile.id === "base_world_80")
+    ).toMatchObject({ values: { tileSize: 32 } });
+
+    await user.click(
+      screen.getByRole("button", { name: "Neue kanonische Familie" })
+    );
+    const newEditor = screen.getByRole("region", {
+      name: "Kanonisches Basisprofil anlegen"
+    });
+    const newName = within(newEditor).getByRole("textbox", {
+      name: "Name der Produktionsfamilie"
+    });
+    await user.clear(newName);
+    await user.type(newName, "Neue kanonische Waldwelt");
+    await user.click(
+      within(newEditor).getByRole("button", { name: "Basisprofil anlegen" })
+    );
+
+    expect(
+      await screen.findByText(
+        "Basisprofil „Neue kanonische Waldwelt“ wurde angelegt und ausgewählt."
+      )
+    ).toBeVisible();
+    expect(baseProfileChoice(/^Neue kanonische Waldwelt/)).toBeChecked();
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        baseProfileId: "base_wizard_new_001"
+      })
+    );
+    library = readValidProfileLibrary(adapter);
+    expect(
+      library.baseProfiles.find(
+        (profile) => profile.id === "base_wizard_new_001"
+      )
+    ).toMatchObject({
+      name: "Neue kanonische Waldwelt",
+      values: { tileSize: 32, characterHeight: 80 }
+    });
+    expect(createBaseProfileId).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects a newly locked character family with no character height before storage", async () => {
+    const storage = populatedStorage();
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({
+      createBaseProfileId: () => "base_invalid_locked_height",
+      storage
+    });
+
+    await user.type(projectNameInput(), "Validierte Figurenfamilie");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+    const before = readValidProfileLibrary(adapter);
+
+    await user.click(
+      screen.getByRole("button", { name: "Neue kanonische Familie" })
+    );
+    const editor = screen.getByRole("region", {
+      name: "Kanonisches Basisprofil anlegen"
+    });
+    const name = within(editor).getByRole("textbox", {
+      name: "Name der Produktionsfamilie"
+    });
+    await user.clear(name);
+    await user.type(name, "Unvollständige Figurenfamilie");
+    await user.clear(
+      within(editor).getByRole("spinbutton", {
+        name: "Figurenhöhe in Pixeln"
+      })
+    );
+    await user.click(
+      within(editor).getByRole("checkbox", {
+        name: "Figurenhöhe für Kindprofile sperren"
+      })
+    );
+    await user.click(
+      within(editor).getByRole("button", { name: "Basisprofil anlegen" })
+    );
+
+    expect(
+      within(editor).getByText(
+        "Eine fehlende Figurenhöhe darf für diese Figurenfamilie nicht gesperrt werden."
+      )
+    ).toBeVisible();
+    expect(readValidProfileLibrary(adapter)).toEqual(before);
+    expect(
+      within(
+        screen.getByRole("group", { name: "Produktionsfamilie auswählen" })
+      ).queryByRole("radio", { name: /Unvollständige Figurenfamilie/ })
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the library and Draft selection fail-closed when creating a family cannot be stored", async () => {
+    const storage = populatedStorage();
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({
+      createBaseProfileId: () => "base_write_failure_001",
+      storage
+    });
+
+    await user.type(projectNameInput(), "Fehlertolerante Familie");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await user.click(screen.getByRole("button", { name: /Zurück/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Basisprofil" })
+    ).toBeVisible();
+    expect(readValidDraft(adapter)).toMatchObject({
+      baseProfileId: "base_world_80",
+      currentStep: "baseProfile"
+    });
+
+    const originalLibrary = readValidProfileLibrary(adapter);
+    const originalBaseNamespace = storage.getItem(V2_STORAGE_KEYS.baseProfiles);
+    storage.failSetFor = V2_STORAGE_KEYS.baseProfiles;
+    await user.click(
+      screen.getByRole("button", { name: "Neue kanonische Familie" })
+    );
+    const editor = screen.getByRole("region", {
+      name: "Kanonisches Basisprofil anlegen"
+    });
+    const name = within(editor).getByRole("textbox", {
+      name: "Name der Produktionsfamilie"
+    });
+    await user.clear(name);
+    await user.type(name, "Darf nicht erscheinen");
+    await user.click(
+      within(editor).getByRole("button", { name: "Basisprofil anlegen" })
+    );
+
+    expect(
+      within(editor).getByRole("alert")
+    ).toHaveTextContent(
+      "Basisprofil wurde nicht gespeichert. Der lokale Speicher ist nicht verfügbar."
+    );
+    expect(
+      within(
+        screen.getByRole("group", { name: "Produktionsfamilie auswählen" })
+      ).queryByRole("radio", { name: /Darf nicht erscheinen/ })
+    ).not.toBeInTheDocument();
+    expect(
+      baseProfileChoice(/^Weltfamilie 32 px \/ Figuren 80 px/)
+    ).toBeChecked();
+    expect(storage.getItem(V2_STORAGE_KEYS.baseProfiles)).toBe(
+      originalBaseNamespace
+    );
+    expect(readValidProfileLibrary(adapter)).toEqual(originalLibrary);
+    expect(readValidDraft(adapter)).toMatchObject({
+      baseProfileId: "base_world_80"
     });
   });
 
@@ -895,7 +1649,7 @@ describe("guided Wizard integration", () => {
       screen.getByRole("combobox", { name: /Untertyp/ }),
       "wood"
     );
-    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await enterBaseProfileStep(user);
 
     const changed = readValidDraft(adapter);
     expect(changed).toMatchObject({
@@ -911,8 +1665,12 @@ describe("guided Wizard integration", () => {
     expect(changed).not.toHaveProperty("answers.animationAction");
     expect(changed).not.toHaveProperty("answers.framesPerDirection");
     expect(
+      baseProfileChoice(/^Weltfamilie 32 px \/ Figuren 80 px/)
+    ).toBeChecked();
+    expect(
       screen.queryByRole("heading", { level: 2, name: "Richtungen" })
     ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(
       screen.getByRole("heading", { level: 2, name: "Kachelbarkeit" })
     ).toBeVisible();
@@ -1049,6 +1807,31 @@ describe("guided Wizard integration", () => {
     expect(within(summary).queryByText("Kameraneigung")).not.toBeInTheDocument();
     expect(within(summary).queryByText("Figurenhöhe")).not.toBeInTheDocument();
     expect(storage.mutations).toEqual([]);
+
+    await enterBaseProfileStep(user);
+    expect(
+      baseProfileChoice(/^Weltfamilie 32 px \/ Figuren 80 px/)
+    ).toBeChecked();
+    const effectiveValues = screen.getByRole("region", {
+      name: "Weltfamilie 32 px / Figuren 80 px"
+    });
+    expect(
+      within(effectiveValues).getByRole("combobox", { name: "Pixelstil" })
+    ).toHaveValue("modernHd");
+    expect(
+      within(effectiveValues).queryByRole("spinbutton", { name: "Tilegröße" })
+    ).not.toBeInTheDocument();
+    expect(
+      within(effectiveValues).queryByRole("combobox", { name: "Perspektive" })
+    ).not.toBeInTheDocument();
+    expect(
+      within(effectiveValues).queryByRole("combobox", { name: "Projektion" })
+    ).not.toBeInTheDocument();
+    expect(
+      within(effectiveValues).queryByRole("spinbutton", {
+        name: "Figurenhöhe"
+      })
+    ).not.toBeInTheDocument();
   });
 
   it("does not create start or resume writes under StrictMode", () => {

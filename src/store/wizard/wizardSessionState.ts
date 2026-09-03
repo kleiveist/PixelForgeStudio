@@ -6,6 +6,7 @@ import type {
 import { jsonValuesEqual } from "../../domain/json";
 import type {
   CharacterAnswers,
+  BaseProfileValues,
   MovingObjectAnswers,
   NatureAnswers,
   StableId,
@@ -33,6 +34,22 @@ export interface WizardRawCoreFormValues {
   readonly projectName: string;
   readonly category?: AssetCategory | undefined;
   readonly subtype?: AssetSubtype | undefined;
+  readonly baseProfileId?: string | undefined;
+  readonly pixelDensity?: BaseProfileValues["pixelDensity"] | undefined;
+  readonly styleProfile?: BaseProfileValues["styleProfile"] | undefined;
+  readonly tileSize?: BaseProfileValues["tileSize"] | undefined;
+  readonly characterHeight?: BaseProfileValues["characterHeight"];
+  readonly perspectiveType?: BaseProfileValues["perspectiveType"] | undefined;
+  readonly cameraAngle?: BaseProfileValues["cameraAngle"] | undefined;
+  readonly cameraDirection?: BaseProfileValues["cameraDirection"] | undefined;
+  readonly projectionType?: BaseProfileValues["projectionType"] | undefined;
+  readonly outlineStyle?: BaseProfileValues["outlineStyle"] | undefined;
+  readonly paletteMode?: BaseProfileValues["paletteMode"] | undefined;
+  readonly backgroundMode?: BaseProfileValues["backgroundMode"] | undefined;
+  readonly alphaPadding?: BaseProfileValues["alphaPadding"] | undefined;
+  readonly nearestNeighbor?: BaseProfileValues["nearestNeighbor"] | undefined;
+  readonly lightingPolicy?: BaseProfileValues["lightingDefaults"]["policy"] | undefined;
+  readonly lightingNotes?: BaseProfileValues["lightingDefaults"]["notes"] | undefined;
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:

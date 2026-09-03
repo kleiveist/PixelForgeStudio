@@ -163,8 +163,10 @@ Umgesetzter Vertrag seit Prompt 08:
   nur den View-State. Normale Navigation schreibt keine App-Einstellungen.
 - Browserzugriff liegt im injizierbaren Adapter unter `src/services/`, der
   React-Context unter `src/store/navigation/`.
-- Basisprofil- und Kategorieeditoren werden in ihren späteren Phasen innerhalb
-  des Wizard-Zweigs aufgebaut und sind daher keine zusätzlichen Shell-Routen.
+- Der Basisprofil-Schritt ist seit Prompt 13 innerhalb des Wizard-Zweigs
+  umgesetzt und daher keine zusätzliche Shell-Route. Kategorie- und
+  Spezialeditoren folgen weiterhin in ihren jeweiligen Phasen innerhalb
+  dieses Zweigs.
 
 ---
 
@@ -285,18 +287,20 @@ Umgesetzter Vertrag seit Prompt 09:
 - Ein vorhandenes Basisprofil kann im Dashboard ausdrücklich als aktives
   Produktionsfundament gewählt werden; die validierten AppSettings werden
   dabei gespeichert und ein Storage-Ausfall sichtbar als Sitzungswahl
-  behandelt. Die Bearbeitung technischer Basiswerte bleibt dem Basisprofil-
-  Editor vorbehalten.
+  behandelt. Technische Draft-Abweichungen sowie Anlage und Duplikation einer
+  Familie liegen im Basisprofil-Schritt des Wizards. Eine bestehende Familie
+  wird dort weiterhin nicht in-place bearbeitet.
 - Alle Kategorie- und Materialgrafiken sind lokale dekorative SVG-React-
   Komponenten mit sichtbaren Textlabels; die Kartenraster wechseln responsiv
   von drei über zwei auf eine Spalte.
 
-Umgesetzter Vertrag seit Prompt 10:
+Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 
 - Die Profilbibliothek verwaltet Assetprofile als Blätter der validierten
-  Base→Category→Asset-Kette. Basisprofile dienen als Filter und bleiben bis
-  zum eigenen Editor unverändert; beim Löschen eines Assets werden Eltern nie
-  kaskadierend entfernt.
+  Base→Category→Asset-Kette. Beim Löschen eines Assets werden Eltern nie
+  kaskadierend entfernt. Prompt 13 ergänzt immutable Anlage und Duplikation
+  eigenständiger Basisfamilien; bestehende Basen und ihre Kinder werden dabei
+  nicht in-place geändert oder auf die neue Familie umgehängt.
 - Suche, Kategorie-, Basisprofil- und Favoritenfilter sowie der
   Gruppierungsmodus liegen im appweiten Profile-Context/Reducer und bleiben
   beim Ansichtswechsel erhalten.
@@ -347,24 +351,43 @@ Umgesetzter Vertrag seit Prompt 10:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 12
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 13
 
-- `project`, `category`/`subtype` und die Capability-Schritte sind stabil und
-  deklarativ konfiguriert; jeder besitzt Zod-Schema und RHF-Feldpfade.
+- `project`, `category`/`subtype`, `baseProfile` und die Capability-Schritte
+  sind stabil und deklarativ konfiguriert; jeder besitzt Zod-Schema und
+  RHF-Feldpfade. Die Reihenfolge ist
+  `project → category/subtype → baseProfile → Capability-Schritte`.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
   Draft-Mapping, Zusammenfassung und optionale `isApplicable`-Prädikate bereit
-  und ist die Erweiterungsgrenze.
+  und ist die Erweiterungsgrenze. Der Flow-Kontext wird auch an die
+  Draft-Projektion gereicht. Für gebündelte programmatische RHF-Änderungen
+  erhält eine Step-Komponente `notifyProgrammaticChange()`; ein Aufruf startet
+  nach allen `setValue()`-Operationen dieselbe Projektion, Dirty-Logik und
+  Autosave-Strecke wie eine native Eingabe.
 - Die Hauptkategorie wird vor dem Untertyp gewählt. Solange kein passender
-  Untertyp vorliegt, bleibt die Klassifikation transient. Danach werden
-  Richtungs-, Animations- und Tileability-Schritte ausschließlich über
-  `resolveCapabilities()` eingeblendet. Eine nicht persistierbare
-  Zwischenklassifikation liefert aus dem Draft-Mapping `null`, damit
-  Vor-/Zurück-Navigation keine alte Auswahl zurückschreibt.
+  Untertyp vorliegt, bleibt die Klassifikation transient. Nach erfolgreicher
+  Basisprofilwahl werden Richtungs-, Animations- und Tileability-Schritte
+  ausschließlich über `resolveCapabilities()` eingeblendet. Eine nicht
+  persistierbare Zwischenklassifikation liefert aus dem Draft-Mapping `null`,
+  damit Vor-/Zurück-Navigation keine alte Auswahl zurückschreibt.
+- Nach vollständiger Klassifikation ist die Basisprofilwahl verpflichtend.
+  Der Schritt zeigt wirksame technische Werte jeweils mit Quelle und Lock.
+  `characterHeight` erscheint nur bei `scaledCharacter`, Welt-Raster und
+  Kamera nicht bei `freeComposition`, der Alpha-Rand nur bei transparentem
+  Hintergrund.
+- Entsperrte Abweichungen werden beim Draft-Mapping gegen die wirksame
+  Base→Category-Vererbung verglichen. Nur nicht redundante und
+  capability-relevante Werte werden als Asset-Level-Overrides gespeichert.
+  Gesperrte Werte bleiben read-only;
+  Konflikte bieten Abbruch, anderes Basisprofil, Duplikat oder neue kanonische
+  Familie statt eines stillen Overrides.
 - Ein Klassifikationswechsel übernimmt keine alten Assetantworten oder
   Profilprovenienz. Die Basisreferenz und fachlich relevante technische
   Overrides bleiben erhalten; `characterHeight` wird ohne `scaledCharacter`
-  entfernt.
+  entfernt. Ein bestätigter Basiswechsel behält die Assetantworten, entfernt
+  aber alte technische Overrides sowie nicht mehr passende Kategorieprofil-
+  und Assetprovenienz.
 - Neue und profilbasierte Starts sind zunächst flüchtig; Resume übernimmt nur
   die exakt angeforderte validierte Draft-ID.
 - Mount, Profil-Hydration und Resume schreiben nicht. Gültige Änderungen werden
@@ -381,9 +404,19 @@ Umgesetzter Vertrag seit Prompt 10:
 - Resume und technische Zusammenfassung lösen diesen portablen Snapshot gegen
   aktuelle Elternprofile und Locks auf; die Quell-ID bleibt reine Provenienz.
 - Ein vollständig klassifizierter Draft darf vor der Basisprofilwahl ohne
-  Base-ID auf `wizard/profile` liegen. Prompt 13 ergänzt dort den
-  Basisprofil-Editor; vorhandene, aber fehlende Referenzen bleiben Recovery-
-  Fehler.
+  Base-ID auf `wizard/profile` liegen. Resume führt ihn exakt zum
+  `baseProfile`-Schritt zurück; vorhandene, aber fehlende Referenzen bleiben
+  Recovery-Fehler.
+- Neue und duplizierte Basisfamilien werden erst nach expliziter Bestätigung
+  als vollständiger, Zod-validierter Profilgraph über den Provider
+  persistiert. Erst ein erfolgreicher Write übernimmt ihre ID und Werte in den
+  Draft. Ein Fehler dieses Graph-Writes lässt Bibliothek, bestehende Base-ID
+  und Editorwerte unangetastet sichtbar. Scheitert erst der nachfolgende
+  Draft-Autosave, bleibt die bereits angelegte Familie erhalten und die
+  sichtbare Sitzungsänderung wird als ungesichert gemeldet.
+- Prompt 14 ergänzt als nächste Phase die Character/NPC-Fachfragen. Prompt 13
+  enthält weder einen NPC-Detail-Editor noch In-place-Mutation oder
+  Reparenting einer bestehenden Basisfamilie.
 
 ---
 
@@ -446,17 +479,28 @@ Globale technische Produktionsfamilie. Enthält mindestens:
 
 - `id`
 - `name`
-- `pixelStyle`
+- `iconId`
+- `pixelDensity`
+- `styleProfile`
 - `tileSize`
 - `characterHeight?`
-- `perspective`
+- `perspectiveType`
 - `cameraAngle`
-- `projection`
+- `cameraDirection`
+- `projectionType`
 - `outlineStyle`
 - `paletteMode`
 - `backgroundMode`
+- `alphaPadding`
+- `nearestNeighbor`
 - `lightingDefaults`
 - `locks`
+
+Der Prompt-13-Schritt legt eine Familie neu aus kanonischen Defaults an oder
+dupliziert eine bestehende Familie einschließlich ihrer vollständigen Werte und
+Locks. Er bearbeitet keine bereits persistierte Familie in-place und hängt
+deren Kinder nicht um. Eine weitergehende globale Bestandsverwaltung bleibt
+eine eigene spätere Produktgrenze.
 
 ## 9.2 CategoryProfile
 
@@ -473,7 +517,11 @@ Ein gelockter Base-Wert darf im Kind nicht überschrieben werden. Die UI bietet 
 - Änderung abbrechen
 - Basisprofil duplizieren
 - neues Basisprofil erstellen
-- Asset bewusst auf anderes kompatibles Profil verschieben
+- Entwurf bewusst auf ein anderes Basisprofil wechseln
+
+Der wirksame Wert bleibt dabei sichtbar und nennt seine Quelle als Basisprofil,
+Kategorieprofil oder lokalen Entwurf. Bei entsperrten Feldern entsteht kein
+Override, wenn der Formularwert dem geerbten Wert entspricht.
 
 ## 9.5 Compatibility Key
 

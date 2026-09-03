@@ -17,6 +17,7 @@ import {
   type GuidedWizardStepComponentProps,
   type GuidedWizardSummaryComponentProps
 } from "./GuidedWizardEngine";
+import { BaseProfileStep } from "./BaseProfileStep";
 import { WizardTechnicalSummary } from "./WizardTechnicalSummary";
 import {
   resolveWizardCapabilities,
@@ -661,6 +662,7 @@ function getSelectionSummary(values: WizardCoreFormValues) {
 const STEP_COMPONENTS = {
   project: ProjectStep,
   category: CategoryStep,
+  baseProfile: BaseProfileStep,
   directions: DirectionsStep,
   animation: AnimationStep,
   tileability: TileabilityStep
@@ -672,21 +674,35 @@ export const WIZARD_CORE_FLOW = Object.freeze({
     Object.freeze({ ...WIZARD_CORE_STEPS[1], Component: STEP_COMPONENTS.category }),
     Object.freeze({
       ...WIZARD_CORE_STEPS[2],
-      Component: STEP_COMPONENTS.directions,
-      isApplicable: (values: WizardCoreFormValues) =>
-        wizardStepIsApplicable("directions", values)
+      Component: STEP_COMPONENTS.baseProfile,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("baseProfile", values, context.library)
     }),
     Object.freeze({
       ...WIZARD_CORE_STEPS[3],
-      Component: STEP_COMPONENTS.animation,
-      isApplicable: (values: WizardCoreFormValues) =>
-        wizardStepIsApplicable("animation", values)
+      Component: STEP_COMPONENTS.directions,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("directions", values, context.library)
     }),
     Object.freeze({
       ...WIZARD_CORE_STEPS[4],
+      Component: STEP_COMPONENTS.animation,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("animation", values, context.library)
+    }),
+    Object.freeze({
+      ...WIZARD_CORE_STEPS[5],
       Component: STEP_COMPONENTS.tileability,
-      isApplicable: (values: WizardCoreFormValues) =>
-        wizardStepIsApplicable("tileability", values)
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("tileability", values, context.library)
     })
   ]),
   updateDraft: updateWizardDraftFromCoreForm,

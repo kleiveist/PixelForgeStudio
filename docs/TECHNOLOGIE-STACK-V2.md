@@ -146,11 +146,17 @@ React Context + Reducer verwaltet mindestens:
 Die Profilauflösung selbst ist eine pure Domain-Funktion und gehört nicht in den Reducer.
 
 Seit Prompt 10 hält `ProfileLibraryProvider` den validierten Gesamtgraphen,
-Profilfilter und sichtbare Mutationsresultate über Ansichtswechsel hinweg. Pure
-Assetprofil-Operationen werden vor der Übernahme erneut als vollständige
-Bibliothek mit Zod geprüft und ausschließlich über `writeProfileLibrary()`
-persistiert. Fehlgeschlagene Writes lassen Bibliotheksgraph und Karten
-unverändert; nur der sichtbare Mutationsstatus im Reducer wechselt auf den
+Profilfilter und sichtbare Mutationsresultate über Ansichtswechsel hinweg. Seit
+Prompt 13 umfasst die Mutationsgrenze neben den Assetprofil-Operationen auch
+das immutable Anlegen und Duplizieren von Basisfamilien. Eine neue Familie
+erhält eine validierte ID und Zeitstempel; Original, Nachkommen und bestehende
+Elternreferenzen werden weder in-place geändert noch umgehängt. Jeder Kandidat
+wird vor der Übernahme erneut als vollständige Bibliothek mit Zod geprüft und
+ausschließlich über einen gemeinsamen `writeProfileLibrary()`-Aufruf
+persistiert. Der Storage-Adapter versucht bei Teilfehlern einen Rollback, kann
+aber keine atomare Browser-Speicherung garantieren. Fehlgeschlagene Writes
+lassen Bibliotheksgraph und Karten unverändert; nur der sichtbare Mutationsstatus
+im Reducer wechselt auf den
 konkreten Fehler. Der injizierte Storage-Adapter bleibt über einen
 App-Lifecycle stabil. Spätere Import-/Restore-Flows müssen den Provider
 rehydrieren, statt parallel direkt in dieselben Namespaces zu schreiben.
@@ -172,11 +178,31 @@ und Zusammenfassung. Profil- und Resume-Hydration schreiben nicht. Gültige
 Benutzeränderungen werden verzögert, bewusste Schrittwechsel sofort über den
 schmalen Draft-Storage-Port persistiert. Seit Prompt 12 können Schritte ein
 deklaratives `isApplicable`-Prädikat besitzen. Hauptkategorie und Untertyp
-werden zuerst gewählt; Richtung, Animation und Kachelbarkeit erscheinen nur
-nach zentral aufgelöster Capability. Kategorie-only bleibt transient, während
-ein vollständiger Pre-Base-Draft auf `wizard/profile` fortsetzbar ist. Eine
-explizite `null`-Draftprojektion hält unvollständige Klassifikationswechsel bei
+werden zuerst gewählt. Seit Prompt 13 folgt danach verpflichtend die Wahl,
+Anlage oder Duplikation eines Basisprofils; Richtung, Animation und
+Kachelbarkeit erscheinen erst anschließend nach zentral aufgelöster
+Capability. Kategorie-only bleibt transient, während ein vollständiger
+Pre-Base-Draft auf `wizard/profile` fortsetzbar ist. Eine explizite
+`null`-Draftprojektion hält unvollständige Klassifikationswechsel bei
 Vor-/Zurück-Navigation im Formular, ohne den alten Draft erneut zu speichern.
+
+Der Basisprofil-Schritt bildet die vollständigen technischen Werte in React
+Hook Form ab, zeigt ihren wirksamen Wert, ihre Quelle und den Lock-Status und
+blendet Figurenhöhe, Weltgeometrie sowie Alpha-Rand capability-gerecht ein.
+Entsperrte Abweichungen werden beim Draft-Mapping gegen die wirksame
+Base→Category-Vererbung verglichen; nur nicht redundante und relevante Werte
+gelangen in den Asset-Level-Override-Snapshot. Gesperrte Felder sind read-only
+und öffnen einen
+bewussten Abbruch-/Wechsel-/Duplikat-/Neu-Workflow. Für die programmatische
+Übernahme aller Base-Werte stellt die generische Engine dem Schritt
+`notifyProgrammaticChange()` bereit. Ein Aufruf führt den fertigen
+Mehrfeld-Snapshot durch dieselbe Draft-Projektion, Dirty-Logik und
+Autosave-Strecke wie eine native Eingabe. Mount, Profil-Hydration und Resume
+bleiben weiterhin schreibfrei.
+
+Prompt 14 ergänzt als nächste Phase den Character/NPC-Detail-Editor. Dessen
+Fachfelder und weitere spezialisierte Editoren sind durch Prompt 13 noch nicht
+implementiert.
 
 ## Speicherung
 
@@ -233,6 +259,8 @@ Pflichtbereiche:
 - Prompt-Module
 - Wizard-Routing
 - bedingte Felder
+- Basisprofilwahl, Lock-Konflikt, Profilwechsel, Anlage und Duplikation
+- schreibfreie Wizard-Hydration und gebündelte programmatische RHF-Änderungen
 - 8 Richtungen nur bei richtungsabhängig beweglichen Assets
 - Speichern / Laden / Import / Export
 - Theme-Umschaltung

@@ -51,6 +51,12 @@
 - Klassifikationswechsel bereinigen alte Kategorieantworten, Profilprovenienz, Validierung und irrelevante Figurenhöhen-Overrides ohne globale Basiswerte zu verlieren
 - unvollständige Klassifikationswechsel als nicht persistierbare Zwischenstände modelliert, sodass Vor-/Zurück-Navigation keinen alten Profil-Draft zurückschreibt
 - Capability- und kategoriespezifische Step-Schemas sowie NPC-, Holztextur-, Windbaum-, Pre-Base-Resume- und schreibfreie Hydrationsflows mit Routing- und RTL-Tests abgesichert
+- verbindlichen Wizard-Einstieg `Projekt → Hauptkategorie/Untertyp → Basisprofil → Capability-Schritte` umgesetzt; Initialisierung, Profil-Hydration und Resume bleiben bis zur Nutzeraktion schreibfrei
+- zugänglichen und responsiven Basisprofil-Schritt mit sichtbaren wirksamen Werten, Quellen und Locks sowie capability-relevanter Figurenhöhe, Weltgeometrie und Alpha-Konfiguration ergänzt
+- entsperrte technische Abweichungen als minimale Asset-Level-Draft-Overrides normalisiert; redundante und irrelevante Werte werden nicht persistiert
+- gesperrte Werte read-only dargestellt und einen expliziten Konfliktworkflow mit Abbruch, Profilwechsel, Duplikat oder neuer kanonischer Produktionsfamilie ergänzt
+- immutable Anlage und Duplikation von Basisfamilien mit neuen IDs/Zeitstempeln und einem validierten vollständigen Profilgraph-Write umgesetzt; Originalfamilien und ihre Kindreferenzen bleiben unverändert
+- generischen Wizard-Step-Vertrag um einen Hook für programmatische Mehrfeldänderungen erweitert, sodass gebündelte Basisprofilübernahmen dieselbe Draft-Projektion, Dirty-Logik und Autosave-Strecke wie native Eingaben verwenden
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

@@ -5,6 +5,7 @@ import {
   StableIdSchema,
   type ProfileLibrary
 } from "../../schemas";
+import type { BaseProfileDefinition } from "../../domain/profiles";
 import {
   V2_STORAGE_KEYS,
   createV2StorageAdapter,
@@ -24,6 +25,8 @@ import {
 
 const SOURCE_PROFILE_ID = StableIdSchema.parse("asset_smith_80");
 const DUPLICATE_PROFILE_ID = "asset_smith_copy";
+const CREATED_BASE_PROFILE_ID = "base_created_family";
+const DUPLICATE_BASE_PROFILE_ID = "base_world_copy";
 const DUPLICATE_TIMESTAMP = "2026-09-02T20:30:00.000Z";
 
 function ContextCapture({
@@ -40,6 +43,7 @@ function renderProvider(
   overrides: Readonly<{
     now?: () => string;
     createProfileId?: () => string;
+    createBaseProfileId?: () => string;
   }> = {}
 ) {
   let context: ProfileLibraryContextValue | null = null;
@@ -47,6 +51,9 @@ function renderProvider(
     ...(overrides.now ? { now: overrides.now } : {}),
     ...(overrides.createProfileId
       ? { createProfileId: overrides.createProfileId }
+      : {}),
+    ...(overrides.createBaseProfileId
+      ? { createBaseProfileId: overrides.createBaseProfileId }
       : {})
   };
 
@@ -70,6 +77,23 @@ function findSourceProfile(library: ProfileLibrary) {
   );
   if (!profile) throw new Error("Expected the source profile fixture.");
   return profile;
+}
+
+function baseDefinition(
+  library: ProfileLibrary,
+  changes: Partial<BaseProfileDefinition> = {}
+): BaseProfileDefinition {
+  const source = library.baseProfiles.find(
+    (profile) => profile.id === "base_world_80"
+  );
+  if (!source) throw new Error("Expected the source Base profile fixture.");
+
+  return {
+    name: changes.name ?? source.name,
+    iconId: changes.iconId ?? source.iconId,
+    values: changes.values ?? source.values,
+    locks: changes.locks ?? source.locks
+  };
 }
 
 function contextLibrary(context: ProfileLibraryContextValue): ProfileLibrary {
@@ -168,6 +192,290 @@ describe("ProfileLibraryProvider", () => {
     expect(
       current.assetProfiles.some((profile) => profile.id === DUPLICATE_PROFILE_ID)
     ).toBe(true);
+  });
+
+  it("creates the first Base profile from an empty library through one full-graph write", () => {
+    const writeProfileLibrary = vi.fn((_input: unknown) => ({
+      status: "ok" as const
+    }));
+    const storageAdapter: ProfileLibraryStorage = {
+      readProfileLibrary: () => ({ status: "empty" }),
+      writeProfileLibrary
+    };
+    const definition: BaseProfileDefinition = {
+      name: "Neue Weltfamilie",
+      iconId: "world-grid",
+      values: {
+        pixelDensity: "modernHd",
+        styleProfile: "both",
+        tileSize: 32,
+        characterHeight: 80,
+        perspectiveType: "threeQuarter",
+        cameraAngle: 60,
+        cameraDirection: "southToNorth",
+        projectionType: "orthographic",
+        outlineStyle: "softSelective",
+        paletteMode: "byProfile",
+        backgroundMode: "transparent",
+        alphaPadding: 8,
+        nearestNeighbor: true,
+        lightingDefaults: {
+          policy: "adaptive",
+          notes: "Keep world light stable."
+        }
+      },
+      locks: { tileSize: true, characterHeight: true }
+    };
+    const rendered = renderProvider(storageAdapter, {
+      createBaseProfileId: () => CREATED_BASE_PROFILE_ID,
+      now: () => DUPLICATE_TIMESTAMP
+    });
+    let result: ReturnType<ProfileLibraryContextValue["createBaseProfile"]> | undefined;
+
+    act(() => {
+      result = rendered.getContext().createBaseProfile(definition);
+    });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      profile: {
+        id: CREATED_BASE_PROFILE_ID,
+        ...definition,
+        createdAt: DUPLICATE_TIMESTAMP,
+        updatedAt: DUPLICATE_TIMESTAMP
+      }
+    });
+    expect(writeProfileLibrary).toHaveBeenCalledTimes(1);
+    const candidate = ProfileLibrarySchema.parse(
+      writeProfileLibrary.mock.calls[0]?.[0]
+    );
+    expect(candidate.baseProfiles).toHaveLength(1);
+    expect(candidate.categoryProfiles).toEqual([]);
+    expect(candidate.assetProfiles).toEqual([]);
+    expect(contextLibrary(rendered.getContext())).toEqual(candidate);
+    expect(rendered.getContext().mutation).toMatchObject({
+      status: "saved",
+      operation: "createBase",
+      profileId: CREATED_BASE_PROFILE_ID
+    });
+  });
+
+  it("returns the canonical Base entity adopted from the validated graph", () => {
+    const library = createProfileLibraryFixture();
+    const source = library.baseProfiles[0];
+    if (!source) throw new Error("Expected a Base profile fixture.");
+    const { storageAdapter } = validStorageWithMutation(library, {
+      status: "ok"
+    });
+    const rendered = renderProvider(storageAdapter, {
+      createBaseProfileId: () => CREATED_BASE_PROFILE_ID,
+      now: () => DUPLICATE_TIMESTAMP
+    });
+    let result:
+      | ReturnType<ProfileLibraryContextValue["createBaseProfile"]>
+      | undefined;
+
+    act(() => {
+      result = rendered.getContext().createBaseProfile(
+        baseDefinition(library, {
+          name: "  Kanonische Familie  ",
+          values: {
+            ...source.values,
+            lightingDefaults: {
+              ...source.values.lightingDefaults,
+              notes: "  Stable world light.  "
+            }
+          }
+        })
+      );
+    });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      profile: {
+        name: "Kanonische Familie",
+        values: {
+          lightingDefaults: { notes: "Stable world light." }
+        }
+      }
+    });
+    const canonical = contextLibrary(rendered.getContext()).baseProfiles.find(
+      (profile) => profile.id === CREATED_BASE_PROFILE_ID
+    );
+    expect(result?.status === "ok" ? result.profile : null).toEqual(canonical);
+    expect(rendered.getContext().mutation).toMatchObject({
+      status: "saved",
+      profileName: "Kanonische Familie"
+    });
+  });
+
+  it("duplicates a Base with a proposed complete definition and leaves descendants on the source", () => {
+    const { adapter, library } = populatedStorage();
+    const source = library.baseProfiles.find(
+      (profile) => profile.id === "base_world_80"
+    );
+    if (!source) throw new Error("Expected the source Base profile fixture.");
+    const proposed = baseDefinition(library, {
+      name: "Weltfamilie 48 px / Figuren 96 px",
+      values: {
+        ...source.values,
+        tileSize: 48,
+        characterHeight: 96,
+        lightingDefaults: { ...source.values.lightingDefaults }
+      },
+      locks: { ...source.locks, tileSize: true, characterHeight: true }
+    });
+    const rendered = renderProvider(adapter, {
+      createBaseProfileId: () => DUPLICATE_BASE_PROFILE_ID,
+      now: () => DUPLICATE_TIMESTAMP
+    });
+    let result:
+      | ReturnType<ProfileLibraryContextValue["duplicateBaseProfile"]>
+      | undefined;
+
+    act(() => {
+      result = rendered
+        .getContext()
+        .duplicateBaseProfile(source.id, proposed);
+    });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      profile: {
+        id: DUPLICATE_BASE_PROFILE_ID,
+        ...proposed,
+        createdAt: DUPLICATE_TIMESTAMP,
+        updatedAt: DUPLICATE_TIMESTAMP
+      }
+    });
+    const current = contextLibrary(rendered.getContext());
+    expect(current.baseProfiles).toHaveLength(library.baseProfiles.length + 1);
+    expect(
+      current.baseProfiles.find((profile) => profile.id === source.id)
+    ).toEqual(source);
+    expect(
+      current.categoryProfiles.every(
+        (profile) => profile.baseProfileId !== DUPLICATE_BASE_PROFILE_ID
+      )
+    ).toBe(true);
+    expect(
+      current.assetProfiles.every(
+        (profile) => profile.baseProfileId !== DUPLICATE_BASE_PROFILE_ID
+      )
+    ).toBe(true);
+    expect(rendered.getContext().mutation).toMatchObject({
+      status: "saved",
+      operation: "duplicateBase",
+      profileId: DUPLICATE_BASE_PROFILE_ID
+    });
+  });
+
+  it("does not adopt a Base when the complete graph write fails", () => {
+    const library = createProfileLibraryFixture();
+    const definition = baseDefinition(library, { name: "Nicht gespeichert" });
+    const { storageAdapter, writeProfileLibrary } = validStorageWithMutation(
+      library,
+      {
+        status: "unavailable",
+        key: V2_STORAGE_KEYS.baseProfiles,
+        message: "Storage is unavailable."
+      }
+    );
+    const rendered = renderProvider(storageAdapter, {
+      createBaseProfileId: () => CREATED_BASE_PROFILE_ID,
+      now: () => DUPLICATE_TIMESTAMP
+    });
+    let result: ReturnType<ProfileLibraryContextValue["createBaseProfile"]> | undefined;
+
+    act(() => {
+      result = rendered.getContext().createBaseProfile(definition);
+    });
+
+    expect(result).toMatchObject({ status: "unavailable" });
+    expect(writeProfileLibrary).toHaveBeenCalledTimes(1);
+    expect(contextLibrary(rendered.getContext())).toBe(library);
+    expect(
+      contextLibrary(rendered.getContext()).baseProfiles.some(
+        (profile) => profile.id === CREATED_BASE_PROFILE_ID
+      )
+    ).toBe(false);
+    expect(rendered.getContext().mutation).toMatchObject({
+      status: "unavailable",
+      operation: "createBase"
+    });
+  });
+
+  it("rejects an invalid injected Base identity before writing", () => {
+    const library = createProfileLibraryFixture();
+    const { storageAdapter, writeProfileLibrary } = validStorageWithMutation(
+      library,
+      { status: "ok" }
+    );
+    const rendered = renderProvider(storageAdapter, {
+      createBaseProfileId: () => "INVALID BASE ID"
+    });
+    let result: ReturnType<ProfileLibraryContextValue["createBaseProfile"]> | undefined;
+
+    act(() => {
+      result = rendered
+        .getContext()
+        .createBaseProfile(baseDefinition(library));
+    });
+
+    expect(result).toMatchObject({ status: "invalid" });
+    expect(writeProfileLibrary).not.toHaveBeenCalled();
+    expect(contextLibrary(rendered.getContext())).toBe(library);
+  });
+
+  it("rejects a conflicting injected Base identity before writing", () => {
+    const library = createProfileLibraryFixture();
+    const existingBase = library.baseProfiles[0];
+    if (!existingBase) throw new Error("Expected a Base profile fixture.");
+    const { storageAdapter, writeProfileLibrary } = validStorageWithMutation(
+      library,
+      { status: "ok" }
+    );
+    const rendered = renderProvider(storageAdapter, {
+      createBaseProfileId: () => existingBase.id,
+      now: () => DUPLICATE_TIMESTAMP
+    });
+    let result: ReturnType<ProfileLibraryContextValue["createBaseProfile"]> | undefined;
+
+    act(() => {
+      result = rendered
+        .getContext()
+        .createBaseProfile(baseDefinition(library));
+    });
+
+    expect(result).toMatchObject({ status: "idConflict" });
+    expect(writeProfileLibrary).not.toHaveBeenCalled();
+    expect(contextLibrary(rendered.getContext())).toBe(library);
+  });
+
+  it("rejects an invalid prospective Base graph before writing", () => {
+    const library = createProfileLibraryFixture();
+    const { storageAdapter, writeProfileLibrary } = validStorageWithMutation(
+      library,
+      { status: "ok" }
+    );
+    const rendered = renderProvider(storageAdapter, {
+      createBaseProfileId: () => CREATED_BASE_PROFILE_ID,
+      now: () => DUPLICATE_TIMESTAMP
+    });
+    const invalidDefinition = baseDefinition(library, { name: "   " });
+    let result: ReturnType<ProfileLibraryContextValue["createBaseProfile"]> | undefined;
+
+    act(() => {
+      result = rendered.getContext().createBaseProfile(invalidDefinition);
+    });
+
+    expect(result).toMatchObject({ status: "invalid" });
+    expect(writeProfileLibrary).not.toHaveBeenCalled();
+    expect(contextLibrary(rendered.getContext())).toBe(library);
+    expect(rendered.getContext().mutation).toMatchObject({
+      status: "invalid",
+      operation: "createBase"
+    });
   });
 
   it.each([

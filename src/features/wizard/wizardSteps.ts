@@ -7,6 +7,10 @@ import {
   type AssetCategory,
   type AssetSubtype
 } from "../../domain/assets";
+import {
+  BaseProfileValuesSchema,
+  type BaseProfileValues
+} from "../../schemas";
 
 const ProjectNameSchema = z
   .string()
@@ -46,6 +50,45 @@ export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
   category: z.enum(ASSET_CATEGORY_IDS).optional(),
   subtype: AssetSubtypeSchema.optional(),
+  baseProfileId: z
+    .string()
+    .min(3)
+    .max(128)
+    .regex(/^[a-z0-9][a-z0-9_-]*$/)
+    .optional(),
+  pixelDensity: z.enum(["classicHd", "modernHd", "ultraHd"]).optional(),
+  styleProfile: z.enum(["classic", "dark", "both"]).optional(),
+  tileSize: z.number().int().min(8).max(512).optional(),
+  characterHeight: z.number().int().min(16).max(1024).optional(),
+  perspectiveType: z
+    .enum(["topdown", "threeQuarter", "isometric", "side"])
+    .optional(),
+  cameraAngle: z
+    .union([z.literal(30), z.literal(45), z.literal(60)])
+    .optional(),
+  cameraDirection: z
+    .enum(["southToNorth", "swToNe", "seToNw"])
+    .optional(),
+  projectionType: z.enum(["orthographic", "mildPerspective"]).optional(),
+  outlineStyle: z.enum(["dark", "softSelective", "minimal"]).optional(),
+  paletteMode: z
+    .enum(["natural", "vivid", "desaturated", "byProfile"])
+    .optional(),
+  backgroundMode: z.enum(["transparent", "scene"]).optional(),
+  alphaPadding: z.number().int().min(0).max(256).optional(),
+  nearestNeighbor: z.boolean().optional(),
+  lightingPolicy: z
+    .enum([
+      "adaptive",
+      "neutralDay",
+      "warmInterior",
+      "gloomyDiffuse",
+      "neutralNight",
+      "coolNight",
+      "custom"
+    ])
+    .optional(),
+  lightingNotes: z.string().trim().max(2000).optional(),
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
     .enum(["idle", "walk", "run", "interact", "talk", "attack", "hurt", "special"])
@@ -63,6 +106,7 @@ export type WizardCoreFieldPath = keyof WizardCoreFormValues;
 export type WizardCoreStepId =
   | "project"
   | "category"
+  | "baseProfile"
   | "directions"
   | "animation"
   | "tileability";
@@ -80,6 +124,24 @@ interface WizardCoreSelection {
   readonly subtype: AssetSubtype;
   readonly capabilities: AssetCapabilities;
 }
+
+export const WIZARD_TECHNICAL_FIELD_PATHS = Object.freeze([
+  "pixelDensity",
+  "styleProfile",
+  "tileSize",
+  "characterHeight",
+  "perspectiveType",
+  "cameraAngle",
+  "cameraDirection",
+  "projectionType",
+  "outlineStyle",
+  "paletteMode",
+  "backgroundMode",
+  "alphaPadding",
+  "nearestNeighbor",
+  "lightingPolicy",
+  "lightingNotes"
+] as const satisfies readonly WizardCoreFieldPath[]);
 
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
   Partial<Record<AssetCategory, readonly string[]>>
@@ -196,6 +258,34 @@ function addFieldIssue(
   context.addIssue({ code: "custom", path: [field], message });
 }
 
+export function parseWizardTechnicalFormValues(
+  values: WizardCoreFormValues
+): BaseProfileValues | null {
+  const result = BaseProfileValuesSchema.safeParse({
+    pixelDensity: values.pixelDensity,
+    styleProfile: values.styleProfile,
+    tileSize: values.tileSize,
+    ...(values.characterHeight === undefined
+      ? {}
+      : { characterHeight: values.characterHeight }),
+    perspectiveType: values.perspectiveType,
+    cameraAngle: values.cameraAngle,
+    cameraDirection: values.cameraDirection,
+    projectionType: values.projectionType,
+    outlineStyle: values.outlineStyle,
+    paletteMode: values.paletteMode,
+    backgroundMode: values.backgroundMode,
+    alphaPadding: values.alphaPadding,
+    nearestNeighbor: values.nearestNeighbor,
+    lightingDefaults: {
+      policy: values.lightingPolicy,
+      notes: values.lightingNotes
+    }
+  });
+
+  return result.success ? result.data : null;
+}
+
 function validateCapabilityFields(
   values: WizardCoreFormValues,
   selection: WizardCoreSelection,
@@ -269,12 +359,39 @@ function validateCapabilityFields(
 function refineSelectedValues(
   values: WizardCoreFormValues,
   context: z.RefinementCtx,
-  requiredCapability?: "directional" | "animated" | "tileable"
+  requiredCapability?: "directional" | "animated" | "tileable",
+  requireBaseProfile = false
 ): void {
   const selection = requireSelection(values, context);
   if (!selection) return;
 
   validateCapabilityFields(values, selection, context);
+  if (requireBaseProfile) {
+    if (values.baseProfileId === undefined) {
+      addFieldIssue(
+        context,
+        "baseProfileId",
+        "Bitte wähle ein Basisprofil oder lege eine neue Produktionsfamilie an."
+      );
+    }
+    if (parseWizardTechnicalFormValues(values) === null) {
+      addFieldIssue(
+        context,
+        "baseProfileId",
+        "Das Basisprofil benötigt vollständige gültige Produktionswerte."
+      );
+    }
+    if (
+      selection.capabilities.scaledCharacter &&
+      values.characterHeight === undefined
+    ) {
+      addFieldIssue(
+        context,
+        "characterHeight",
+        "Für Figuren und figurähnliche Assets ist eine Figurenhöhe erforderlich."
+      );
+    }
+  }
   if (
     requiredCapability !== undefined &&
     !selection.capabilities[requiredCapability]
@@ -291,19 +408,29 @@ export const WizardProjectStepSchema = WizardCoreFormSchema;
 export const WizardCategoryStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) => refineSelectedValues(values, context)
 );
+export const WizardBaseProfileStepSchema = WizardCoreFormSchema.superRefine(
+  (values, context) => refineSelectedValues(values, context, undefined, true)
+);
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
-  (values, context) => refineSelectedValues(values, context, "directional")
+  (values, context) =>
+    refineSelectedValues(values, context, "directional", true)
 );
 export const WizardAnimationStepSchema = WizardCoreFormSchema.superRefine(
-  (values, context) => refineSelectedValues(values, context, "animated")
+  (values, context) =>
+    refineSelectedValues(values, context, "animated", true)
 );
 export const WizardTileabilityStepSchema = WizardCoreFormSchema.superRefine(
-  (values, context) => refineSelectedValues(values, context, "tileable")
+  (values, context) =>
+    refineSelectedValues(values, context, "tileable", true)
 );
 
 export interface WizardCoreStep {
   readonly id: WizardCoreStepId;
-  readonly route: "wizard/project" | "wizard/category";
+  readonly route:
+    | "wizard/project"
+    | "wizard/category"
+    | "wizard/profile"
+    | "wizard/editor";
   readonly title: string;
   readonly description: string;
   readonly fieldPaths: readonly WizardCoreFieldPath[];
@@ -329,8 +456,20 @@ export const WIZARD_CORE_STEPS = Object.freeze([
     schema: WizardCategoryStepSchema
   }),
   Object.freeze({
+    id: "baseProfile",
+    route: "wizard/profile",
+    title: "Basisprofil",
+    description:
+      "Wähle die globale Produktionsfamilie und prüfe geerbte technische Werte sowie Locks.",
+    fieldPaths: Object.freeze([
+      "baseProfileId",
+      ...WIZARD_TECHNICAL_FIELD_PATHS
+    ] as const),
+    schema: WizardBaseProfileStepSchema
+  }),
+  Object.freeze({
     id: "directions",
-    route: "wizard/category",
+    route: "wizard/editor",
     title: "Richtungen",
     description:
       "Lege nur für richtungsabhängig bewegliche Assets ein 4- oder 8-Richtungsset fest.",
@@ -339,7 +478,7 @@ export const WIZARD_CORE_STEPS = Object.freeze([
   }),
   Object.freeze({
     id: "animation",
-    route: "wizard/category",
+    route: "wizard/editor",
     title: "Bewegung und Animation",
     description:
       "Beschreibe zeitliche Bewegung, ohne Animation automatisch mit Richtungen gleichzusetzen.",
@@ -350,7 +489,7 @@ export const WIZARD_CORE_STEPS = Object.freeze([
   }),
   Object.freeze({
     id: "tileability",
-    route: "wizard/category",
+    route: "wizard/editor",
     title: "Kachelbarkeit",
     description:
       "Definiere die Wiederholbarkeit nur für Assets mit Tileability-Capability.",
@@ -376,5 +515,7 @@ export function getWizardCoreStepIndex(stepId: WizardCoreStepId): number {
 }
 
 export function getWizardCoreFallbackStepId(route: string): WizardCoreStepId {
-  return route === "wizard/project" ? "project" : "category";
+  if (route === "wizard/project") return "project";
+  if (route === "wizard/category") return "category";
+  return "baseProfile";
 }

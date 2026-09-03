@@ -4,9 +4,39 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Abgeschlossene Aufgabe:** Prompt 12 — Kategorie-Routing und dynamische Fragen
-- **Nächste Aufgabe:** Prompt 13 — Basisprofil-Editor
+- **Abgeschlossene Aufgabe:** Prompt 13 — Basisprofil-Editor
+- **Nächste Aufgabe:** Prompt 14 — Character/NPC Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 13
+
+1. Die reine Profilbibliotheks-Domain um das sichere Anlegen und Duplizieren
+   von `BaseProfile`-Familien erweitern. Neue Familien erhalten validierte
+   Identität/Zeitstempel; vorhandene Familien und ihre Nachkommen bleiben
+   unverändert. Der React-Provider übergibt weiterhin ausschließlich den
+   vollständigen, vorab validierten Profilgraphen an einen gemeinsamen Write.
+2. Den Core-Wizard in der verbindlichen Reihenfolge
+   `Projekt → Bildart → Basisprofil → capability-gesteuerte Fragen` erweitern.
+   Ein ausgewähltes Profil muss in der aktuellen Bibliothek existieren;
+   Pre-Base-Drafts bleiben auf `wizard/profile`, nachfolgende Schritte wechseln
+   erst mit gültiger Base-ID auf `wizard/editor`.
+3. Alle globalen Basiswerte aus `BaseProfileValuesSchema` in RHF/Zod abbilden.
+   Wirksame Werte und ihre Quelle werden sichtbar; Figurenhöhe erscheint nur
+   bei `scaledCharacter`, Welt-Raster und Kamera nicht bei `freeComposition`.
+   Entsperrte Abweichungen werden als minimale Asset-Overrides normalisiert,
+   redundante und irrelevante Werte entfernt.
+4. Gesperrte Felder nicht direkt veränderbar machen. Der Konfliktworkflow bietet
+   Abbrechen, Wechsel der Familie, Duplizieren oder eine neue Familie. Erst ein
+   erfolgreich persistiertes Duplikat/eine neue Familie wird in den Draft
+   übernommen; Originalprofil und Draft bleiben bei Fehlern unangetastet.
+5. Profilwechsel explizit bestätigen, wenn Elternreferenzen oder Overrides
+   betroffen sind. Dabei Antworten behalten, aber Kategorieprofil,
+   Assetprovenienz und technische Overrides bewusst bereinigen; Auswahl,
+   Resume und Hydration bleiben bis zur Nutzeraktion schreibfrei.
+6. Pure Domain-/Routing-/Reducer-Tests sowie RTL-Flows für Vererbung,
+   Lock-Konflikt, Duplikation/Neuanlage, Profilwechsel, Capability-Relevanz,
+   Recovery und fehlgeschlagene Gesamtgraph-Writes ergänzen. Danach Dokumentation,
+   Vollverifikation, Diff-Review und den separaten Prompt-13-Commit ausführen.
 
 ## Aktuelle Agentenübergabe
 
@@ -461,24 +491,56 @@
    Schrittlisten, NPC, Holztextur, Windbaum, Datenbereinigung, Klassifikations-
    bestätigung, transienten Back/Forward-Erhalt, Fokus und Pre-Base-Resume ab.
 
-## Übergabe an Prompt 13
+## Ergebnis Prompt 13
 
-- Der neue Basisprofil-Schritt wird außen in `WIZARD_CORE_FLOW` ergänzt; die
-  generische Engine und `isApplicable`-Mechanik bleiben unverändert.
-- Die vollständige Assetauswahl ist nach Prompt 12 auf Route `wizard/profile`
-  sicher vorhanden. Prompt 13 muss dort ein bestehendes `BaseProfile` wählen
-  oder eine neue Produktionsfamilie anlegen und erst dann eine Base-ID setzen.
-- Globale Felder, Vererbung und Locks stammen ausschließlich aus den
-  vorhandenen Profil-Schemas und `resolveProfile()`. Der Editor darf gesperrte
-  Werte weder still überschreiben noch als Assetantwort duplizieren.
-- `characterHeight` wird nur bei `scaledCharacter` angeboten. Freie
-  Komposition blendet irrelevante Raster-/Kamerafelder aus; alle übrigen
-  technischen Pflichtwerte bleiben im Basisprofil verankert.
-- Lock-Konflikte müssen eine bewusste Alternative anbieten (Profil wechseln,
-  duplizieren oder neue Familie), nicht die persistierte Familie mutieren.
-- Neue Auswahl, Profil-Hydration und Resume bleiben bis zur Nutzeraktion
-  schreibfrei. Prompt 13 erweitert den bestehenden Rohwert-Snapshot nur um
-  wirklich transiente Basisprofilfelder.
+1. Der Wizard führt nach Projekt und vollständiger Assetklassifikation durch
+   einen verpflichtenden Basisprofil-Schritt. Capability-Schritte werden erst
+   mit einer in der aktuellen Bibliothek vorhandenen, kompatiblen Base-ID
+   zugänglich; Pre-Base-Drafts bleiben weiterhin sicher fortsetzbar.
+2. Der Editor bildet sämtliche globalen Produktionswerte mit RHF und Zod ab,
+   zeigt pro Wert Quelle und Sperrstatus und begrenzt Figurenhöhe sowie
+   Raster-/Kamerafelder auf passende Capabilities. Entsperrte Abweichungen
+   werden gegen die gesamte Base→Category-Vererbung minimal normalisiert;
+   redundante oder unsichtbar irrelevante Overrides werden entfernt.
+3. Gesperrte Werte sind nicht direkt editierbar. Der sichtbare Konfliktweg
+   bietet Abbruch, andere Familie, eigenständiges Duplikat oder neue Familie.
+   Bestehende Base-Profile und ihre Nachkommen werden dabei nie still mutiert
+   oder umgehängt.
+4. Neue und duplizierte Produktionsfamilien erhalten validierte IDs und
+   Zeitstempel. Der Provider prüft den vollständigen Profilgraphen und übergibt
+   ihn an einen gemeinsamen Adapter-Write; erst dessen Erfolg und die
+   aktualisierte Bibliothek aktivieren die neue Familie im Draft. Fehler lassen
+   Bibliothek und Auswahl unverändert.
+5. Ein Wechsel der Produktionsfamilie benötigt Bestätigung, übernimmt deren
+   Werte als vollständigen Formular-Snapshot, behält Fachantworten und entfernt
+   alte Kategorieeltern, Assetprovenienz sowie technische Overrides.
+   Mehrfeldänderungen werden über
+   einen generischen Engine-Hook genau einmal als vollständiger Snapshot in den
+   normalen Autosave-Pfad projiziert.
+6. Domain-, Provider-, Routing- und RTL-Tests decken Vererbung, Locks,
+   Wechsel, Duplikation, Neuanlage, Recovery, fehlgeschlagene Gesamtgraph-Writes
+   und Capability-Relevanz ab. Hydration und Resume bleiben schreibfrei.
+
+## Übergabe an Prompt 14
+
+- `WIZARD_CORE_FLOW` garantiert jetzt die Reihenfolge
+  `Projekt → Kategorie/Untertyp → Basisprofil → Capability-Schritte`. Der
+  Character-Editor wird außen als eigener Schritt/Feature-Zweig ergänzt; die
+  generische Engine erhält keine Character-Sonderlogik.
+- Figuren lesen den wirksamen Maßstab aus der aufgelösten Profilkette. Eine
+  etwa 80 px hohe Standardfigur darf im Character-Editor weder als separater
+  Assetwert dupliziert noch an einem gelockten `characterHeight` vorbeigeführt
+  werden.
+- Rollen-, Körper-, Kopf-, Kleidungs-, Ausrüstungs-, Ausdrucks- und
+  Silhouettenfragen gehören in das strikt validierte Character-Antwortschema.
+  Bereits vorhandene unbekontrollierte Freitextantworten sind keine zweite
+  technische Profilquelle.
+- Richtungswahl bleibt ausschließlich capability-gesteuert. Vier und acht
+  Richtungen sind bei `directional` möglich; Animationen und Frames werden
+  davon getrennt nach `animated` modelliert.
+- Neue Felder müssen den transienten RHF-Snapshot, Draft-Roundtrip,
+  schreibfreie Profil-/Resume-Hydration, Zusammenfassung und responsive
+  Tastaturbedienung gemeinsam abdecken.
 
 ## Erfasster Legacy-Ist-Stand
 
@@ -519,7 +581,7 @@
 | 9 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | abgeschlossen |
 | 10 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | abgeschlossen |
 | 11 | Kategorie-Routing | Capability-gesteuerte Fragen | abgeschlossen |
-| 12 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | offen |
+| 12 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | abgeschlossen |
 | 13 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | offen |
 | 14 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | offen |
 | 15 | Textur-/Materialeditor | Material, Seamless, Oberfläche | offen |

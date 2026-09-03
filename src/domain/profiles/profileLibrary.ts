@@ -1,14 +1,15 @@
 import type {
   AssetProfile,
+  BaseProfile,
   ProfileLibrary,
   StableId
 } from "../../schemas";
 
-export type AssetProfileLibraryChange =
+export type ProfileLibraryChange<Profile extends AssetProfile | BaseProfile> =
   | Readonly<{
       status: "changed";
       library: ProfileLibrary;
-      profile: AssetProfile;
+      profile: Profile;
     }>
   | Readonly<{
       status: "notFound";
@@ -18,6 +19,12 @@ export type AssetProfileLibraryChange =
       status: "idConflict";
       profileId: StableId;
     }>;
+
+export type AssetProfileLibraryChange = ProfileLibraryChange<AssetProfile>;
+export type BaseProfileLibraryChange = ProfileLibraryChange<BaseProfile>;
+export type BaseProfileDefinition = Readonly<
+  Pick<BaseProfile, "name" | "iconId" | "values" | "locks">
+>;
 
 const MAX_PROFILE_NAME_LENGTH = 120;
 const COPY_SUFFIX_PATTERN = / \(Kopie(?: \d+)?\)$/u;
@@ -47,6 +54,36 @@ function replaceAssetProfile(
   };
 }
 
+function cloneBaseProfileDefinition(
+  definition: BaseProfileDefinition
+): BaseProfileDefinition {
+  return {
+    name: definition.name,
+    iconId: definition.iconId,
+    values: {
+      ...definition.values,
+      lightingDefaults: { ...definition.values.lightingDefaults }
+    },
+    locks: { ...definition.locks }
+  };
+}
+
+function appendBaseProfile(
+  library: ProfileLibrary,
+  profile: BaseProfile
+): BaseProfileLibraryChange {
+  return {
+    status: "changed",
+    library: {
+      ...library,
+      baseProfiles: [...library.baseProfiles, profile],
+      categoryProfiles: library.categoryProfiles,
+      assetProfiles: library.assetProfiles
+    },
+    profile
+  };
+}
+
 export function createDuplicateProfileName(
   name: string,
   existingNames: readonly string[] = []
@@ -67,6 +104,80 @@ export function createDuplicateProfileName(
 
   // There are always more generated candidates than occupied names.
   return copyNameWithSuffix(baseName, ` (Kopie ${existingNames.length + 2})`);
+}
+
+/**
+ * Adds a new standalone production family without changing or re-parenting any
+ * existing category or asset profile. Validation of the resulting complete
+ * graph remains the responsibility of the caller's Zod boundary.
+ */
+export function createBaseProfile(
+  library: ProfileLibrary,
+  profileId: StableId,
+  timestamp: string,
+  definition: BaseProfileDefinition
+): BaseProfileLibraryChange {
+  if (library.baseProfiles.some((profile) => profile.id === profileId)) {
+    return { status: "idConflict", profileId };
+  }
+
+  const clonedDefinition = cloneBaseProfileDefinition(definition);
+  const profile: BaseProfile = {
+    schemaVersion: 2,
+    kind: "baseProfile",
+    id: profileId,
+    ...clonedDefinition,
+    createdAt: timestamp,
+    updatedAt: timestamp
+  };
+
+  return appendBaseProfile(library, profile);
+}
+
+/**
+ * Copies only the selected Base profile. Descendant profiles keep referencing
+ * the source family. A complete proposed definition can be supplied so a
+ * conflict workflow can retain the user's intended values without mutating the
+ * source.
+ */
+export function duplicateBaseProfile(
+  library: ProfileLibrary,
+  sourceProfileId: StableId,
+  duplicateProfileId: StableId,
+  timestamp: string,
+  proposedDefinition?: BaseProfileDefinition
+): BaseProfileLibraryChange {
+  const source = library.baseProfiles.find(
+    (profile) => profile.id === sourceProfileId
+  );
+  if (!source) return { status: "notFound", profileId: sourceProfileId };
+  if (
+    library.baseProfiles.some((profile) => profile.id === duplicateProfileId)
+  ) {
+    return { status: "idConflict", profileId: duplicateProfileId };
+  }
+
+  const definition = cloneBaseProfileDefinition(
+    proposedDefinition ?? {
+      name: createDuplicateProfileName(
+        source.name,
+        library.baseProfiles.map((profile) => profile.name)
+      ),
+      iconId: source.iconId,
+      values: source.values,
+      locks: source.locks
+    }
+  );
+  const profile: BaseProfile = {
+    schemaVersion: 2,
+    kind: "baseProfile",
+    id: duplicateProfileId,
+    ...definition,
+    createdAt: timestamp,
+    updatedAt: timestamp
+  };
+
+  return appendBaseProfile(library, profile);
 }
 
 export function toggleAssetProfileFavorite(

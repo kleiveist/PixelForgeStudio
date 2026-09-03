@@ -37,6 +37,10 @@ function mutationMessage(
       return `„${mutation.profileName}“ wurde als neues Assetprofil angelegt.`;
     case "delete":
       return `„${mutation.profileName}“ wurde gelöscht.`;
+    case "createBase":
+      return `„${mutation.profileName}“ wurde als neues Basisprofil angelegt.`;
+    case "duplicateBase":
+      return `„${mutation.profileName}“ wurde als neues Basisprofil dupliziert.`;
   }
 }
 

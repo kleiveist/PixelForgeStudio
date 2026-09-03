@@ -227,6 +227,8 @@ export function resolveWizardCoreStep(draft: WizardDraft): ResolvedWizardCoreSte
   const currentStepIsApplicable = (stepId: WizardCoreStepId): boolean => {
     if (stepId === "project" || stepId === "category") return true;
     if (!("category" in draft)) return false;
+    if (stepId === "baseProfile") return true;
+    if (draft.baseProfileId === undefined) return false;
 
     const capabilities = selectedDraftCapabilities(draft);
     switch (stepId) {

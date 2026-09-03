@@ -60,7 +60,8 @@ V1 inventarisieren ✓
 → kategorisierte Profilbibliothek und sicheres Assetprofil-CRUD ✓
 → geführte RHF/Zod-Wizard-Engine mit Autosave und Resume ✓
 → Capability-gesteuertes Kategorie-Routing und dynamische Fragen ✓
-→ Basisprofil- und spezialisiertes Editormodell
+→ Basisprofilwahl, Vererbung, Locks, Anlage und Duplikation ✓
+→ spezialisierte Editormodelle
 → Prompt Engine 2.0
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
@@ -121,7 +122,9 @@ Ein deterministischer `compatibilityKey` gruppiert Profile nach tatsächlich rel
 - Item / Ausrüstung
 - Artwork / Konzeptbild
 
-Der Wizard fragt die Hauptkategorie zuerst ab. Danach werden nur passende Fragen und Editoren geladen.
+Der Wizard fragt zuerst Projekt, Hauptkategorie und Untertyp ab. Danach wird
+eine Produktionsfamilie gewählt oder angelegt; erst anschließend erscheinen
+die zur Capability passenden Fragen und Editoren.
 
 ## Spezialisierte Editoren
 
@@ -141,12 +144,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 12 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 13 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 13 — Basisprofil-Editor
+→ Prompt 14 — Character/NPC Editor
 ```
 
 Danach immer genau:
@@ -167,10 +170,14 @@ Filter, Kategorie-/Compatibility-Gruppen und sichere Assetprofilaktionen. Die
 aktive Wizard Engine trennt die generische RHF-Navigation und Persistenz von
 einer deklarativen, produktspezifischen Flow-Definition. Sie bietet
 Zod-Validierung, sichtbaren Fortschritt, Dirty-/Autosave-Status, exaktes Resume
-und eine technische Zusammenfassung. Der Flow fragt Hauptkategorie und
-Untertyp in dieser Reihenfolge ab und blendet Richtungs-, Animations- oder
-Tileability-Schritte ausschließlich nach den zentral aufgelösten Capabilities
-ein. Spezialisierte Detail-Editoren folgen in ihren vorgesehenen Phasen.
+und eine technische Zusammenfassung. Der stabile Einstieg lautet
+`Projekt → Hauptkategorie/Untertyp → Basisprofil → Capability-Schritte`.
+Der Basisprofil-Schritt zeigt wirksame Werte mit Quelle und Sperrstatus,
+normalisiert entsperrte Abweichungen zu minimalen Draft-Overrides und bietet
+bei Locks einen bewussten Wechsel, ein Duplikat oder eine neue Familie an.
+Richtungs-, Animations- oder Tileability-Schritte erscheinen ausschließlich
+nach den zentral aufgelösten Capabilities. Der Character/NPC-Detail-Editor ist
+erst Gegenstand von Prompt 14.
 
 ## Legacy-V1 lokal prüfen
 
@@ -265,10 +272,12 @@ Assetprofile, gruppiert sie wahlweise nach Kategorie oder ihrem neu
 aufgelösten, für die UI opaken Compatibility Key und zeigt technische Werte
 nur bei fachlicher Relevanz. Separate Kartenaktionen laden, favorisieren,
 duplizieren oder löschen ein Assetprofil nach ausdrücklicher Bestätigung.
-`src/store/profiles/` hält Bibliothek und Filter über Ansichtswechsel hinweg;
-Mutationen werden erst nach erneuter Zod-Prüfung und erfolgreichem,
-vollständigem Best-Effort-Gesamtgraph-Write mit Rollback-Versuch sichtbar
-übernommen.
+`src/store/profiles/` hält Bibliothek und Filter über Ansichtswechsel hinweg.
+Neben den Assetprofil-Aktionen legt dieser Provider neue Basisfamilien an oder
+dupliziert eine bestehende Familie. Beide Operationen ändern weder das Original
+noch dessen Kinder oder Elternreferenzen. Mutationen werden erst nach erneuter
+Zod-Prüfung und erfolgreichem, vollständigem Best-Effort-Gesamtgraph-Write mit
+Rollback-Versuch sichtbar übernommen.
 
 Die Wizard-Grundlage unter `src/features/wizard/` trennt deklarative
 Schrittdefinitionen, pure Draft-Lifecycle-Funktionen und React-Darstellung.
@@ -281,10 +290,20 @@ Profil-Hydration, Resume und sichere Recovery-Zustände schreiben nichts.
 Gespeicherte Override-Snapshots werden beim Resume erneut gegen aktuelle Locks
 geprüft und bleiben unabhängig von einer optionalen Quellprofil-Provenienz.
 Die vom Dashboard kommende Kategorie bleibt ein flüchtiger Startkontext, bis
-der Nutzer einen dazu passenden Untertyp auswählt. Danach bestimmt allein das
-zentrale Capability-System die sichtbaren Folgeschritte. Ein Wechsel der
-Klassifikation verwirft alte Kategorieantworten und Profilprovenienz, ohne
-globale Basiswerte zu verändern.
+der Nutzer einen dazu passenden Untertyp auswählt. Danach wählt oder erstellt
+er ein Basisprofil; erst dann bestimmt das zentrale Capability-System die
+sichtbaren Folgeschritte. Wirksame technische Werte bleiben mit ihrer Quelle
+und ihrem Lock sichtbar. Entsperrte lokale Abweichungen werden beim
+Draft-Mapping gegen die wirksame Base→Category-Vererbung verglichen und
+redundant gleiche Werte entfernt.
+Ein gesperrter Wert ist read-only und führt in einen expliziten
+Wechsel-/Duplikat-/Neu-Workflow statt zu einer stillen Mutation. Eine neue oder
+duplizierte Familie wird erst nach erfolgreicher Bibliothekspersistenz in das
+Formular übernommen. Der generische Engine-Hook für programmatische
+Mehrfeldänderungen stößt anschließend genau die normale Draft-Projektion und
+den Autosave an. Initialisierung, Profil-Hydration und Resume bleiben
+schreibfrei. Ein Wechsel der Klassifikation verwirft alte Kategorieantworten
+und Profilprovenienz, ohne ein bestehendes Basisprofil in-place zu verändern.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

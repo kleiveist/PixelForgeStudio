@@ -54,10 +54,11 @@ export function WizardEngine({
   );
   const baselineValues = createWizardCoreFormValues(
     baselineDraft,
-    categoryHint
+    categoryHint,
+    library
   );
   const initialValues =
-    initialFormValues ?? createWizardCoreFormValues(draft, categoryHint);
+    initialFormValues ?? createWizardCoreFormValues(draft, categoryHint, library);
 
   return (
     <GuidedWizardEngine
