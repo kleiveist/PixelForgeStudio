@@ -99,6 +99,30 @@ export interface WizardRawCoreFormValues {
   readonly characterAnimationFrames?: Readonly<
     Partial<Record<CharacterAnimationActionId, number>>
   > | undefined;
+  readonly movingObjectClass?: MovingObjectAnswers["objectClass"] | undefined;
+  readonly movingObjectPurpose?: MovingObjectAnswers["purpose"] | undefined;
+  readonly movingObjectBasicShape?: MovingObjectAnswers["basicShape"] | undefined;
+  readonly movingObjectDescription?: MovingObjectAnswers["subjectDescription"] | undefined;
+  readonly movingObjectFootprintWidthTiles?: NonNullable<
+    MovingObjectAnswers["footprint"]
+  >["widthTiles"] | undefined;
+  readonly movingObjectFootprintDepthTiles?: NonNullable<
+    MovingObjectAnswers["footprint"]
+  >["depthTiles"] | undefined;
+  readonly movingObjectHeightPixels?: MovingObjectAnswers["heightPixels"] | undefined;
+  readonly movingObjectAnchorMode?: MovingObjectAnswers["anchorMode"] | undefined;
+  readonly movingObjectMechanism?: MovingObjectAnswers["mechanism"] | undefined;
+  readonly movingObjectMaterial?: MovingObjectAnswers["material"] | undefined;
+  readonly movingObjectMaterialDetails?: MovingObjectAnswers["materialDetails"] | undefined;
+  readonly movingObjectCondition?: MovingObjectAnswers["condition"] | undefined;
+  readonly movingObjectLightingBehavior?: MovingObjectAnswers["lightingBehavior"] | undefined;
+  readonly movingObjectShadowMode?: MovingObjectAnswers["shadowMode"] | undefined;
+  readonly movingObjectExtraDetails?: MovingObjectAnswers["extraDetails"] | undefined;
+  readonly movingObjectAnimationFrames?: Readonly<
+    Partial<
+      Record<NonNullable<MovingObjectAnswers["animationType"]>, number>
+    >
+  > | undefined;
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:

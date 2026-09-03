@@ -7,6 +7,17 @@ import {
   CHARACTER_ANIMATION_ACTION_IDS,
   type CharacterAnimationActionId
 } from "../../domain/characters";
+import {
+  MOVING_OBJECT_ANIMATION_TYPE_IDS,
+  getDefaultMovingObjectClass,
+  type MovingObjectAnchorMode,
+  type MovingObjectAnimationType,
+  type MovingObjectClass,
+  type MovingObjectCondition,
+  type MovingObjectMaterial,
+  type MovingObjectMovementType,
+  type MovingObjectSubtype
+} from "../../domain/moving-objects";
 import type { ResolvedProfile } from "../../domain/profiles";
 import type {
   BaseProfile,
@@ -80,6 +91,70 @@ const CHARACTER_ANIMATION_LABELS: Readonly<
   special: "Spezialaktion"
 };
 
+const MOVING_OBJECT_CLASS_LABELS: Readonly<Record<MovingObjectClass, string>> = {
+  cart: "Karren / Wagen",
+  rollingObject: "Rollendes Objekt",
+  floatingObject: "Schwebendes Objekt",
+  slidingObject: "Gleitendes Objekt",
+  mechanicalConstruct: "Mechanische Konstruktion",
+  boat: "Boot",
+  platform: "Plattform",
+  magicObject: "Magisches Objekt",
+  nonHumanoidUnit: "Nicht-humanoide Einheit"
+};
+
+const MOVING_OBJECT_MOVEMENT_LABELS: Readonly<
+  Record<MovingObjectMovementType, string>
+> = {
+  roll: "Rollen",
+  slide: "Gleiten",
+  hover: "Schweben",
+  walk: "Laufen",
+  crawl: "Kriechen",
+  fly: "Fliegen",
+  rotate: "Rotieren"
+};
+
+const MOVING_OBJECT_ANCHOR_LABELS: Readonly<
+  Record<MovingObjectAnchorMode, string>
+> = {
+  automatic: "Automatisch",
+  bottomCenter: "Unten mittig",
+  footprintCenter: "Mitte der Standfläche",
+  canvasCenter: "Canvas-Mitte"
+};
+
+const MOVING_OBJECT_MATERIAL_LABELS: Readonly<
+  Record<MovingObjectMaterial, string>
+> = {
+  wood: "Holz",
+  metal: "Metall",
+  fabric: "Stoff",
+  stone: "Stein",
+  magic: "Magische Substanz",
+  mixed: "Mischmaterial"
+};
+
+const MOVING_OBJECT_CONDITION_LABELS: Readonly<
+  Record<MovingObjectCondition, string>
+> = {
+  new: "Neu",
+  used: "Gebraucht",
+  damaged: "Beschädigt",
+  improvised: "Provisorisch"
+};
+
+const MOVING_OBJECT_ANIMATION_LABELS: Readonly<
+  Record<MovingObjectAnimationType, string>
+> = {
+  idle: "Idle",
+  move: "Bewegung",
+  rotate: "Rotation",
+  interact: "Interaktion",
+  openClose: "Öffnen / Schließen",
+  pulse: "Pulsieren"
+};
+
 function characterAnimationSummary(
   frames: WizardCoreFormValues["characterAnimationFrames"]
 ): string {
@@ -95,6 +170,26 @@ function characterAnimationSummary(
     ];
   });
 
+  return selected.length === 0
+    ? "Noch nicht ausgewählt"
+    : selected.join("; ");
+}
+
+function movingObjectAnimationSummary(
+  frames: WizardCoreFormValues["movingObjectAnimationFrames"]
+): string {
+  if (frames === undefined) return "Noch nicht ausgewählt";
+
+  const selected = MOVING_OBJECT_ANIMATION_TYPE_IDS.flatMap((type) => {
+    const frameCount = frames[type];
+    return frameCount === undefined
+      ? []
+      : [
+          `${MOVING_OBJECT_ANIMATION_LABELS[type]} · ${frameCount} ${
+            frameCount === 1 ? "Frame" : "Frames"
+          }`
+        ];
+  });
   return selected.length === 0
     ? "Noch nicht ausgewählt"
     : selected.join("; ");
@@ -278,6 +373,80 @@ export function WizardTechnicalSummary({
               <SummaryFact
                 label="Silhouette"
                 value={formValues.silhouette.trim()}
+              />
+            ) : null}
+          </>
+        ) : null}
+        {selection?.category === "movingObject" ? (
+          <>
+            <SummaryFact
+              label="Objektklasse"
+              value={
+                MOVING_OBJECT_CLASS_LABELS[
+                  formValues.movingObjectClass ??
+                    getDefaultMovingObjectClass(
+                      selection.subtype as MovingObjectSubtype
+                    )
+                ]
+              }
+            />
+            {formValues.movementType !== undefined ? (
+              <SummaryFact
+                label="Bewegungsart"
+                value={MOVING_OBJECT_MOVEMENT_LABELS[formValues.movementType]}
+              />
+            ) : null}
+            {formValues.movingObjectFootprintWidthTiles !== undefined &&
+            formValues.movingObjectFootprintDepthTiles !== undefined ? (
+              <SummaryFact
+                label="Standfläche"
+                value={`${formValues.movingObjectFootprintWidthTiles} × ${formValues.movingObjectFootprintDepthTiles} Tiles`}
+              />
+            ) : null}
+            {formValues.movingObjectAnchorMode !== undefined ? (
+              <SummaryFact
+                label="Ausrichtungsanker"
+                value={
+                  MOVING_OBJECT_ANCHOR_LABELS[
+                    formValues.movingObjectAnchorMode
+                  ]
+                }
+              />
+            ) : null}
+            {selection.capabilities.directional ? (
+              <SummaryFact
+                label="Richtungsset"
+                value={
+                  formValues.directionCount === undefined
+                    ? "Noch nicht ausgewählt"
+                    : `${formValues.directionCount} Richtungen`
+                }
+              />
+            ) : null}
+            {selection.capabilities.animated ? (
+              <SummaryFact
+                label="Animationen"
+                value={movingObjectAnimationSummary(
+                  formValues.movingObjectAnimationFrames
+                )}
+              />
+            ) : null}
+            {formValues.movingObjectMaterial !== undefined ? (
+              <SummaryFact
+                label="Material"
+                value={
+                  MOVING_OBJECT_MATERIAL_LABELS[formValues.movingObjectMaterial]
+                }
+              />
+            ) : null}
+            {formValues.movingObjectCondition !== undefined ? (
+              <SummaryFact
+                label="Zustand"
+                value={
+                  MOVING_OBJECT_CONDITION_LABELS[
+                    formValues.movingObjectCondition
+                  ]
+                }
               />
             ) : null}
           </>

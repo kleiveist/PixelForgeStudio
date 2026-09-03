@@ -14,6 +14,10 @@ import {
 } from "../../domain/characters";
 import { jsonValuesEqual } from "../../domain/json";
 import {
+  MOVING_OBJECT_ANIMATION_TYPE_IDS,
+  type MovingObjectAnimationType
+} from "../../domain/moving-objects";
+import {
   profileValuesEqual,
   type ProfileResolutionConflict
 } from "../../domain/profiles";
@@ -24,6 +28,8 @@ import {
   type BaseProfileValues,
   type CharacterAnimationActionConfig,
   type CharacterAnswers,
+  type MovingObjectAnimationSequenceConfig,
+  type MovingObjectAnswers,
   type ProfileLibrary,
   type WizardDraft
 } from "../../schemas";
@@ -88,6 +94,48 @@ const CHARACTER_CONTROLLED_ANSWER_KEYS = new Set<string>([
   "animationAction",
   "framesPerDirection"
 ]);
+
+const MOVING_OBJECT_CONTROLLED_ANSWER_KEYS = new Set<string>([
+  "objectClass",
+  "purpose",
+  "basicShape",
+  "subjectDescription",
+  "footprint",
+  "heightPixels",
+  "anchorMode",
+  "movementType",
+  "mechanism",
+  "material",
+  "materialDetails",
+  "condition",
+  "lightingBehavior",
+  "shadowMode",
+  "extraDetails",
+  "animationSequences",
+  "animationType",
+  "framesPerDirection",
+  "directionCount"
+]);
+
+const MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS = Object.freeze([
+  ["movingObjectClass", "objectClass"],
+  ["movingObjectPurpose", "purpose"],
+  ["movingObjectBasicShape", "basicShape"],
+  ["movingObjectDescription", "subjectDescription"],
+  ["movingObjectHeightPixels", "heightPixels"],
+  ["movingObjectAnchorMode", "anchorMode"],
+  ["movementType", "movementType"],
+  ["movingObjectMechanism", "mechanism"],
+  ["movingObjectMaterial", "material"],
+  ["movingObjectMaterialDetails", "materialDetails"],
+  ["movingObjectCondition", "condition"],
+  ["movingObjectLightingBehavior", "lightingBehavior"],
+  ["movingObjectShadowMode", "shadowMode"],
+  ["movingObjectExtraDetails", "extraDetails"]
+] as const satisfies readonly (readonly [
+  keyof WizardCoreFormValues,
+  keyof MovingObjectAnswers
+])[]);
 
 const PROFILE_VALUE_KEYS = Object.freeze([
   "pixelDensity",
@@ -214,6 +262,8 @@ export function wizardStepIsApplicable(
   switch (stepId) {
     case "characterDetails":
       return selection?.category === "character";
+    case "movingObjectDetails":
+      return selection?.category === "movingObject";
     case "directions":
       return capabilities.directional;
     case "animation":
@@ -358,6 +408,112 @@ function clearsInheritedCharacterDefault(
   return inheritedAnimations !== undefined && selectedAnimations === undefined;
 }
 
+type MovingObjectAnimationFrameMap = NonNullable<
+  WizardCoreFormValues["movingObjectAnimationFrames"]
+>;
+
+function movingObjectAnimationFramesFromAnswers(
+  answers: MovingObjectAnswers
+): MovingObjectAnimationFrameMap | undefined {
+  const frames: Partial<Record<MovingObjectAnimationType, number>> = {};
+
+  if (answers.animationSequences !== undefined) {
+    for (const type of MOVING_OBJECT_ANIMATION_TYPE_IDS) {
+      const sequence = answers.animationSequences.find(
+        (candidate) => candidate.type === type
+      );
+      if (sequence !== undefined) frames[type] = sequence.frames;
+    }
+  } else if (answers.animationType !== undefined) {
+    frames[answers.animationType] = answers.framesPerDirection ?? 1;
+  }
+
+  return Object.keys(frames).length === 0
+    ? undefined
+    : Object.freeze(frames);
+}
+
+function movingObjectAnimationSequencesFromForm(
+  frames: WizardCoreFormValues["movingObjectAnimationFrames"],
+  legacyType: WizardCoreFormValues["animationType"],
+  previousAnswers: MovingObjectAnswers
+): readonly MovingObjectAnimationSequenceConfig[] | undefined {
+  const movingLegacyType =
+    legacyType !== undefined &&
+    MOVING_OBJECT_ANIMATION_TYPE_IDS.includes(
+      legacyType as MovingObjectAnimationType
+    )
+      ? (legacyType as MovingObjectAnimationType)
+      : undefined;
+  const effectiveFrames =
+    frames ??
+    (movingLegacyType === undefined
+      ? undefined
+      : {
+          [movingLegacyType]: previousAnswers.framesPerDirection ?? 1
+        });
+  if (effectiveFrames === undefined) return undefined;
+
+  const sequences = MOVING_OBJECT_ANIMATION_TYPE_IDS.flatMap((type) => {
+    const frameCount = effectiveFrames[type];
+    return frameCount === undefined
+      ? []
+      : [{ type, frames: frameCount } satisfies MovingObjectAnimationSequenceConfig];
+  });
+  return sequences.length === 0 ? undefined : Object.freeze(sequences);
+}
+
+function movingObjectFormValue(
+  values: WizardCoreFormValues,
+  formField: keyof WizardCoreFormValues
+): unknown {
+  return values[formField];
+}
+
+function movingObjectAnswerValue(
+  answers: MovingObjectAnswers,
+  answerField: keyof MovingObjectAnswers
+): unknown {
+  return answers[answerField];
+}
+
+function clearsInheritedMovingObjectDefault(
+  values: WizardCoreFormValues,
+  defaults: MovingObjectAnswers
+): boolean {
+  for (const [formField, answerField] of MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS) {
+    if (
+      movingObjectAnswerValue(defaults, answerField) !== undefined &&
+      movingObjectFormValue(values, formField) === undefined
+    ) {
+      return true;
+    }
+  }
+
+  if (
+    defaults.footprint !== undefined &&
+    values.movingObjectFootprintWidthTiles === undefined &&
+    values.movingObjectFootprintDepthTiles === undefined
+  ) {
+    return true;
+  }
+
+  if (
+    defaults.directionCount !== undefined &&
+    values.directionCount === undefined
+  ) {
+    return true;
+  }
+
+  const inheritedAnimations = movingObjectAnimationFramesFromAnswers(defaults);
+  const selectedAnimations = movingObjectAnimationSequencesFromForm(
+    values.movingObjectAnimationFrames,
+    values.animationType,
+    {}
+  );
+  return inheritedAnimations !== undefined && selectedAnimations === undefined;
+}
+
 export function createWizardCoreFormValues(
   draft: WizardDraft,
   categoryHint: AssetCategory | null = null,
@@ -367,6 +523,7 @@ export function createWizardCoreFormValues(
     projectName: draft.projectName
   };
   let resolvedCharacterAnswers: CharacterAnswers | undefined;
+  let resolvedMovingObjectAnswers: MovingObjectAnswers | undefined;
 
   if (!("category" in draft)) {
     if (categoryHint !== null) values.category = categoryHint;
@@ -392,6 +549,11 @@ export function createWizardCoreFormValues(
       );
       if (resolution.profile.categoryData.category === "character") {
         resolvedCharacterAnswers = resolution.profile.categoryData.answers;
+      } else if (
+        resolution.profile.categoryData.category === "movingObject"
+      ) {
+        resolvedMovingObjectAnswers =
+          resolution.profile.categoryData.answers;
       }
     }
   }
@@ -414,11 +576,26 @@ export function createWizardCoreFormValues(
       }
       break;
     }
-    case "movingObject":
-      addDefinedValue(values, "directionCount", draft.answers.directionCount);
-      addDefinedValue(values, "animationType", draft.answers.animationType);
-      addDefinedValue(values, "movementType", draft.answers.movementType);
+    case "movingObject": {
+      const answers = resolvedMovingObjectAnswers ?? draft.answers;
+      for (const [formField, answerField] of MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS) {
+        const value = movingObjectAnswerValue(answers, answerField);
+        if (value !== undefined) {
+          (values as Record<string, unknown>)[formField] = value;
+        }
+      }
+      if (answers.footprint !== undefined) {
+        values.movingObjectFootprintWidthTiles = answers.footprint.widthTiles;
+        values.movingObjectFootprintDepthTiles = answers.footprint.depthTiles;
+      }
+      addDefinedValue(values, "directionCount", answers.directionCount);
+      const movingObjectAnimationFrames =
+        movingObjectAnimationFramesFromAnswers(answers);
+      if (movingObjectAnimationFrames !== undefined) {
+        values.movingObjectAnimationFrames = movingObjectAnimationFrames;
+      }
       break;
+    }
     case "staticObject":
       addDefinedValue(values, "animationType", draft.answers.animationType);
       break;
@@ -578,7 +755,8 @@ function controlledAnswers(
   values: WizardCoreFormValues,
   selection: AssetSelection,
   capabilities: AssetCapabilities,
-  inheritedCharacterDefaults: CharacterAnswers | undefined
+  inheritedCharacterDefaults: CharacterAnswers | undefined,
+  inheritedMovingObjectDefaults: MovingObjectAnswers | undefined
 ): Record<string, unknown> {
   const sameSelection = selectionsMatch(draft, selection);
   if (!sameSelection) return {};
@@ -590,6 +768,8 @@ function controlledAnswers(
         !CORE_CONTROLLED_ANSWER_KEYS.has(key) &&
         (selection.category !== "character" ||
           !CHARACTER_CONTROLLED_ANSWER_KEYS.has(key)) &&
+        (selection.category !== "movingObject" ||
+          !MOVING_OBJECT_CONTROLLED_ANSWER_KEYS.has(key)) &&
         value !== undefined
     )
   );
@@ -597,11 +777,14 @@ function controlledAnswers(
   if (
     capabilities.directional &&
     values.directionCount !== undefined &&
-    (selection.category !== "character" ||
-      !optionalJsonValuesEqual(
-        values.directionCount,
-        inheritedCharacterDefaults?.directionCount
-      ))
+    !optionalJsonValuesEqual(
+      values.directionCount,
+      selection.category === "character"
+        ? inheritedCharacterDefaults?.directionCount
+        : selection.category === "movingObject"
+          ? inheritedMovingObjectDefaults?.directionCount
+          : undefined
+    )
   ) {
     answers.directionCount = values.directionCount;
   }
@@ -653,14 +836,74 @@ function controlledAnswers(
         }
       }
       break;
-    case "movingObject":
-      if (capabilities.movable && values.movementType !== undefined) {
-        answers.movementType = values.movementType;
+    case "movingObject": {
+      for (const [formField, answerField] of MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS) {
+        const value = movingObjectFormValue(values, formField);
+        if (
+          value !== undefined &&
+          !optionalJsonValuesEqual(
+            value,
+            inheritedMovingObjectDefaults === undefined
+              ? undefined
+              : movingObjectAnswerValue(
+                  inheritedMovingObjectDefaults,
+                  answerField
+                )
+          )
+        ) {
+          answers[answerField] = value;
+        }
       }
-      if (capabilities.animated && values.animationType !== undefined) {
-        answers.animationType = values.animationType;
+
+      if (
+        capabilities.footprint &&
+        values.movingObjectFootprintWidthTiles !== undefined &&
+        values.movingObjectFootprintDepthTiles !== undefined
+      ) {
+        const footprint = {
+          widthTiles: values.movingObjectFootprintWidthTiles,
+          depthTiles: values.movingObjectFootprintDepthTiles
+        };
+        if (
+          !optionalJsonValuesEqual(
+            footprint,
+            inheritedMovingObjectDefaults?.footprint
+          )
+        ) {
+          answers.footprint = footprint;
+        }
+      }
+
+      if (capabilities.animated) {
+        const previousMovingObjectAnswers: MovingObjectAnswers =
+          draft.category === "movingObject" ? draft.answers : {};
+        const animationSequences = movingObjectAnimationSequencesFromForm(
+          values.movingObjectAnimationFrames,
+          values.animationType,
+          previousMovingObjectAnswers
+        );
+        const inheritedAnimationSequences =
+          inheritedMovingObjectDefaults === undefined
+            ? undefined
+            : movingObjectAnimationSequencesFromForm(
+                movingObjectAnimationFramesFromAnswers(
+                  inheritedMovingObjectDefaults
+                ),
+                undefined,
+                {}
+              );
+        if (
+          animationSequences !== undefined &&
+          !optionalJsonValuesEqual(
+            animationSequences,
+            inheritedAnimationSequences
+          )
+        ) {
+          answers.animationSequences = animationSequences;
+        }
       }
       break;
+    }
     case "staticObject":
     case "nature":
     case "tileset":
@@ -718,6 +961,7 @@ function selectedDraftRoute(
 ): "wizard/profile" | "wizard/editor" {
   if (
     stepId === "characterDetails" ||
+    stepId === "movingObjectDetails" ||
     stepId === "directions" ||
     stepId === "animation" ||
     stepId === "tileability"
@@ -857,8 +1101,17 @@ export function updateWizardDraftFromCoreForm(
       input.values,
       linkedCategoryProfile.defaults
     );
+  const detachMovingObjectCategoryProfile =
+    selection.category === "movingObject" &&
+    linkedCategoryProfile?.category === "movingObject" &&
+    clearsInheritedMovingObjectDefault(
+      input.values,
+      linkedCategoryProfile.defaults
+    );
+  const detachCategoryProfile =
+    detachCharacterCategoryProfile || detachMovingObjectCategoryProfile;
   const retainedProfileLinks =
-    profileLinksCanBeRetained && !detachCharacterCategoryProfile;
+    profileLinksCanBeRetained && !detachCategoryProfile;
 
   let overrides =
     baseProfileChanged
@@ -874,7 +1127,7 @@ export function updateWizardDraftFromCoreForm(
   ) {
     overrides = technicalOverridesFromForm(
       input.values,
-      baseProfileChanged || detachCharacterCategoryProfile
+      baseProfileChanged || detachCategoryProfile
         ? baseProfile.values
         : resolveInheritedTechnicalValues(
             input.draft,
@@ -891,6 +1144,11 @@ export function updateWizardDraftFromCoreForm(
   const inheritedCharacterDefaults =
     selection.category === "character" &&
     retainedCategoryProfile?.category === "character"
+      ? retainedCategoryProfile.defaults
+      : undefined;
+  const inheritedMovingObjectDefaults =
+    selection.category === "movingObject" &&
+    retainedCategoryProfile?.category === "movingObject"
       ? retainedCategoryProfile.defaults
       : undefined;
   const common = {
@@ -917,7 +1175,8 @@ export function updateWizardDraftFromCoreForm(
       input.values,
       selection,
       capabilities,
-      inheritedCharacterDefaults
+      inheritedCharacterDefaults,
+      inheritedMovingObjectDefaults
     )
   } as const;
 

@@ -10,6 +10,7 @@ import type {
   BaseProfileValues,
   CategoryProfile,
   CharacterAnswers,
+  MovingObjectAnswers,
   StableId
 } from "../../schemas";
 import { createCompatibilityKey, normalizeCompatibilityText } from "./compatibilityKey";
@@ -217,14 +218,55 @@ function mergeAnswers<Answers extends object>(
   return Object.freeze(answers) as Answers;
 }
 
-function copyDefinedAnswers(
+function copyDefinedAnswers<Answers extends object>(
   target: Record<string, unknown>,
-  source: CharacterAnswers
+  source: Answers
 ): void {
   for (const [key, value] of Object.entries(source)) {
     if (value === undefined) continue;
     target[key] = cloneAndFreezeUnknown(value);
   }
+}
+
+/**
+ * Treats canonical moving-object sequences and the legacy singleton pair as
+ * one atomic value. A representation selected at the Asset level replaces
+ * the inherited representation; canonical data wins when both occur at the
+ * same level.
+ */
+function mergeMovingObjectAnswers(
+  categoryAnswers: MovingObjectAnswers | undefined,
+  assetAnswers: MovingObjectAnswers
+): MovingObjectAnswers {
+  const answers: Record<string, unknown> = {};
+
+  if (categoryAnswers !== undefined) {
+    copyDefinedAnswers(answers, categoryAnswers);
+    if (categoryAnswers.animationSequences !== undefined) {
+      delete answers.animationType;
+      delete answers.framesPerDirection;
+    }
+  }
+
+  if (assetAnswers.animationSequences !== undefined) {
+    delete answers.animationType;
+    delete answers.framesPerDirection;
+    copyDefinedAnswers(answers, assetAnswers);
+    delete answers.animationType;
+    delete answers.framesPerDirection;
+  } else if (
+    assetAnswers.animationType !== undefined ||
+    assetAnswers.framesPerDirection !== undefined
+  ) {
+    delete answers.animationSequences;
+    delete answers.animationType;
+    delete answers.framesPerDirection;
+    copyDefinedAnswers(answers, assetAnswers);
+  } else {
+    copyDefinedAnswers(answers, assetAnswers);
+  }
+
+  return Object.freeze(answers) as MovingObjectAnswers;
 }
 
 /**
@@ -281,7 +323,7 @@ function mergeCategoryData(
       return Object.freeze({
         category: "movingObject",
         subtype: assetProfile.subtype,
-        answers: mergeAnswers(
+        answers: mergeMovingObjectAnswers(
           categoryProfile?.category === "movingObject" ? categoryProfile.defaults : undefined,
           assetProfile.answers
         )

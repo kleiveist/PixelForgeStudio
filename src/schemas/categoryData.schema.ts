@@ -14,6 +14,17 @@ import {
   CHARACTER_RELATIVE_HEIGHT_IDS,
   CHARACTER_WEALTH_IDS
 } from "../domain/characters";
+import {
+  MOVING_OBJECT_ANCHOR_MODE_IDS,
+  MOVING_OBJECT_ANIMATION_TYPE_IDS,
+  MOVING_OBJECT_CLASS_IDS,
+  MOVING_OBJECT_CONDITION_IDS,
+  MOVING_OBJECT_LIGHTING_BEHAVIOR_IDS,
+  MOVING_OBJECT_MATERIAL_IDS,
+  MOVING_OBJECT_MECHANISM_IDS,
+  MOVING_OBJECT_MOVEMENT_TYPE_IDS,
+  MOVING_OBJECT_SHADOW_MODE_IDS
+} from "../domain/moving-objects";
 import { validateCategoryDataCapabilities } from "./categoryData.refinement";
 import { DirectionCountSchema, FootprintSchema } from "./common.schema";
 
@@ -104,19 +115,52 @@ export const CharacterAnswersSchema = z
   })
   .readonly();
 
+export const MovingObjectAnimationSequenceSchema = z
+  .strictObject({
+    type: z.enum(MOVING_OBJECT_ANIMATION_TYPE_IDS),
+    frames: z.number().int().min(1).max(16)
+  })
+  .readonly();
+
+export const MovingObjectAnimationSequencesSchema = z
+  .array(MovingObjectAnimationSequenceSchema)
+  .min(1)
+  .max(MOVING_OBJECT_ANIMATION_TYPE_IDS.length)
+  .superRefine((sequences, context) => {
+    const seen = new Set<string>();
+    sequences.forEach((sequence, index) => {
+      if (seen.has(sequence.type)) {
+        context.addIssue({
+          code: "custom",
+          path: [index, "type"],
+          message: `Duplicate moving-object animation sequence "${sequence.type}".`
+        });
+      }
+      seen.add(sequence.type);
+    });
+  })
+  .readonly();
+
 export const MovingObjectAnswersSchema = z
   .strictObject({
     ...sharedAnswersShape,
+    objectClass: z.enum(MOVING_OBJECT_CLASS_IDS).optional(),
     purpose: z.string().trim().min(1).max(200).optional(),
-    movementType: z
-      .enum(["roll", "slide", "hover", "walk", "crawl", "fly", "rotate"])
-      .optional(),
+    basicShape: z.string().trim().min(1).max(200).optional(),
+    heightPixels: z.number().int().min(16).max(2048).optional(),
+    movementType: z.enum(MOVING_OBJECT_MOVEMENT_TYPE_IDS).optional(),
+    footprint: FootprintSchema.optional(),
+    anchorMode: z.enum(MOVING_OBJECT_ANCHOR_MODE_IDS).optional(),
     directionCount: DirectionCountSchema.optional(),
-    animationType: z
-      .enum(["idle", "move", "rotate", "interact", "openClose", "pulse"])
-      .optional(),
+    animationSequences: MovingObjectAnimationSequencesSchema.optional(),
+    animationType: z.enum(MOVING_OBJECT_ANIMATION_TYPE_IDS).optional(),
     framesPerDirection: z.number().int().min(1).max(16).optional(),
-    footprint: FootprintSchema.optional()
+    mechanism: z.enum(MOVING_OBJECT_MECHANISM_IDS).optional(),
+    material: z.enum(MOVING_OBJECT_MATERIAL_IDS).optional(),
+    materialDetails: z.string().trim().min(1).max(500).optional(),
+    condition: z.enum(MOVING_OBJECT_CONDITION_IDS).optional(),
+    lightingBehavior: z.enum(MOVING_OBJECT_LIGHTING_BEHAVIOR_IDS).optional(),
+    shadowMode: z.enum(MOVING_OBJECT_SHADOW_MODE_IDS).optional()
   })
   .readonly();
 
@@ -277,6 +321,9 @@ export const AssetCategoryDataSchema = z
 export type CharacterAnswers = z.infer<typeof CharacterAnswersSchema>;
 export type CharacterAnimationActionConfig = z.infer<
   typeof CharacterAnimationActionSchema
+>;
+export type MovingObjectAnimationSequenceConfig = z.infer<
+  typeof MovingObjectAnimationSequenceSchema
 >;
 export type MovingObjectAnswers = z.infer<typeof MovingObjectAnswersSchema>;
 export type StaticObjectAnswers = z.infer<typeof StaticObjectAnswersSchema>;

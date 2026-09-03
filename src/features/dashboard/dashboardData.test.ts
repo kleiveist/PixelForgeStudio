@@ -476,6 +476,136 @@ describe("dashboard data", () => {
     expect(facts.asset_floating).not.toContain("Richtungsfähig");
   });
 
+  it("reports canonical moving-object production facts and directions only for directional subtypes", () => {
+    const baseProfile = createBaseProfile();
+    const cartSelection = {
+      category: "movingObject",
+      subtype: "cart"
+    } as const;
+    const crystalSelection = {
+      category: "movingObject",
+      subtype: "floatingCrystal"
+    } as const;
+    const cart = parseAssetProfile({
+      ...commonAssetFields(baseProfile, {
+        id: "asset_directional_cart",
+        name: "Versorgungswagen",
+        updatedAt: "2026-09-05T09:00:00.000Z"
+      }),
+      compatibilityKey: createCompatibilityKey(
+        baseProfile.values,
+        cartSelection
+      ),
+      category: cartSelection.category,
+      subtype: cartSelection.subtype,
+      iconId: "moving-cart",
+      capabilities: resolveCapabilities(
+        cartSelection.category,
+        cartSelection.subtype
+      ),
+      answers: {
+        objectClass: "cart",
+        movementType: "roll",
+        footprint: { widthTiles: 2, depthTiles: 1 },
+        anchorMode: "footprintCenter",
+        directionCount: 8,
+        animationSequences: [
+          { type: "idle", frames: 3 },
+          { type: "move", frames: 6 }
+        ],
+        material: "wood",
+        condition: "used"
+      }
+    });
+    const crystal = parseAssetProfile({
+      ...commonAssetFields(baseProfile, {
+        id: "asset_pulsing_crystal",
+        name: "Pulsierender Kristall",
+        updatedAt: "2026-09-04T09:00:00.000Z"
+      }),
+      compatibilityKey: createCompatibilityKey(
+        baseProfile.values,
+        crystalSelection
+      ),
+      category: crystalSelection.category,
+      subtype: crystalSelection.subtype,
+      iconId: "moving-floating",
+      capabilities: resolveCapabilities(
+        crystalSelection.category,
+        crystalSelection.subtype
+      ),
+      answers: {
+        objectClass: "floatingObject",
+        movementType: "hover",
+        animationSequences: [{ type: "pulse", frames: 7 }],
+        material: "magic"
+      }
+    });
+    const legacyCart = parseAssetProfile({
+      ...commonAssetFields(baseProfile, {
+        id: "asset_legacy_cart",
+        name: "Legacy-Lieferwagen",
+        updatedAt: "2026-09-03T09:00:00.000Z"
+      }),
+      compatibilityKey: createCompatibilityKey(
+        baseProfile.values,
+        cartSelection
+      ),
+      category: cartSelection.category,
+      subtype: cartSelection.subtype,
+      iconId: "moving-cart",
+      capabilities: resolveCapabilities(
+        cartSelection.category,
+        cartSelection.subtype
+      ),
+      answers: {
+        animationType: "move",
+        framesPerDirection: 5,
+        directionCount: 4
+      }
+    });
+    const result = createDashboardData(
+      validProfiles(
+        createLibrary([baseProfile], [cart, crystal, legacyCart])
+      ),
+      emptyDraftResult,
+      null
+    );
+    const facts = Object.fromEntries(
+      result.recentProfiles.map((profile) => [profile.id, profile.facts])
+    );
+
+    expect(facts.asset_directional_cart).toEqual(
+      expect.arrayContaining([
+        "Klasse: Karren / Wagen",
+        "Bewegung: Rollen",
+        "Standfläche: 2 × 1 Tiles",
+        "Anker in Standflächenmitte",
+        "8 Richtungen",
+        "Idle · 3 Frames",
+        "Bewegung · 6 Frames",
+        "Material: Holz",
+        "Zustand: Gebraucht"
+      ])
+    );
+    expect(facts.asset_pulsing_crystal).toEqual(
+      expect.arrayContaining([
+        "Klasse: Schwebendes Objekt",
+        "Bewegung: Schweben",
+        "Pulsieren · 7 Frames",
+        "Material: Magische Substanz"
+      ])
+    );
+    expect(facts.asset_pulsing_crystal).not.toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/Richtung/)
+      ])
+    );
+    expect(facts.asset_legacy_cart).toEqual(
+      expect.arrayContaining(["4 Richtungen", "Bewegung · 5 Frames"])
+    );
+  });
+
   it("keeps invalid storage results visible and produces no unsafe partial cards", () => {
     const invalidProfiles: StorageReadResult<ProfileLibrary> = {
       status: "invalid",

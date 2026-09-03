@@ -1,4 +1,11 @@
 import type { AssetSubtype } from "../../domain/assets";
+import type {
+  MovingObjectAnchorMode,
+  MovingObjectClass,
+  MovingObjectCondition,
+  MovingObjectMaterial
+} from "../../domain/moving-objects";
+import { getDefaultMovingObjectClass } from "../../domain/moving-objects";
 import { resolveProfile, type ResolvedProfile } from "../../domain/profiles";
 import type {
   AssetProfile,
@@ -89,6 +96,47 @@ const movementTypeLabels = {
   fly: "Fliegen",
   rotate: "Rotieren"
 } as const;
+
+const movingObjectClassLabels: Readonly<Record<MovingObjectClass, string>> = {
+  cart: "Karren / Wagen",
+  rollingObject: "Rollendes Objekt",
+  floatingObject: "Schwebendes Objekt",
+  slidingObject: "Gleitendes Objekt",
+  mechanicalConstruct: "Mechanische Konstruktion",
+  boat: "Boot",
+  platform: "Plattform",
+  magicObject: "Magisches Objekt",
+  nonHumanoidUnit: "Nicht-humanoide Einheit"
+};
+
+const movingObjectAnchorLabels: Readonly<
+  Record<MovingObjectAnchorMode, string>
+> = {
+  automatic: "Automatischer Anker",
+  bottomCenter: "Anker unten mittig",
+  footprintCenter: "Anker in Standflächenmitte",
+  canvasCenter: "Anker in Canvas-Mitte"
+};
+
+const movingObjectMaterialLabels: Readonly<
+  Record<MovingObjectMaterial, string>
+> = {
+  wood: "Holz",
+  metal: "Metall",
+  fabric: "Stoff",
+  stone: "Stein",
+  magic: "Magische Substanz",
+  mixed: "Mischmaterial"
+};
+
+const movingObjectConditionLabels: Readonly<
+  Record<MovingObjectCondition, string>
+> = {
+  new: "Neu",
+  used: "Gebraucht",
+  damaged: "Beschädigt",
+  improvised: "Provisorisch"
+};
 
 const animationLabels = {
   idle: "Idle",
@@ -184,21 +232,51 @@ function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
     }
     case "movingObject": {
       const {
+        anchorMode,
+        animationSequences,
         animationType,
+        condition,
         directionCount,
+        footprint,
         framesPerDirection,
+        material,
+        objectClass,
         movementType
       } = profile.categoryData.answers;
+      const animationFacts =
+        animationSequences === undefined
+          ? animationType === undefined
+            ? []
+            : [animationFact(animationType, framesPerDirection)]
+          : animationSequences.map((sequence) =>
+              animationFact(sequence.type, sequence.frames)
+            );
       return [
+        `Klasse: ${
+          movingObjectClassLabels[
+            objectClass ??
+              getDefaultMovingObjectClass(profile.categoryData.subtype)
+          ]
+        }`,
         ...(movementType === undefined
           ? []
           : [`Bewegung: ${movementTypeLabels[movementType]}`]),
-        ...(directionCount === undefined
+        ...(footprint === undefined
+          ? []
+          : [`Standfläche: ${footprint.widthTiles} × ${footprint.depthTiles} Tiles`]),
+        ...(anchorMode === undefined
+          ? []
+          : [movingObjectAnchorLabels[anchorMode]]),
+        ...(!profile.capabilities.directional || directionCount === undefined
           ? []
           : [`${directionCount} Richtungen`]),
-        ...(animationType === undefined
+        ...animationFacts,
+        ...(material === undefined
           ? []
-          : [animationFact(animationType, framesPerDirection)])
+          : [`Material: ${movingObjectMaterialLabels[material]}`]),
+        ...(condition === undefined
+          ? []
+          : [`Zustand: ${movingObjectConditionLabels[condition]}`])
       ];
     }
     case "staticObject":

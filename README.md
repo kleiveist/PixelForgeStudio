@@ -62,6 +62,7 @@ V1 inventarisieren ✓
 → Capability-gesteuertes Kategorie-Routing und dynamische Fragen ✓
 → Basisprofilwahl, Vererbung, Locks, Anlage und Duplikation ✓
 → Character-/NPC-Editor mit Aktions- und Frame-Modell ✓
+→ Moving-Object-Editor mit Produktions- und Sequenzmodell ✓
 → weitere spezialisierte Editormodelle
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -129,10 +130,9 @@ die zur Capability passenden Fragen und Editoren.
 
 ## Spezialisierte Editoren
 
-Der Character-/NPC-Editor ist als erstes getrenntes React-Feature umgesetzt.
-Weitere geplante Features sind:
+Character-/NPC- und Moving-Object-Editor sind als getrennte React-Features
+umgesetzt. Weitere geplante Features sind:
 
-- Moving Object
 - Static Object
 - Texture/Material
 - Nature/Tree
@@ -155,14 +155,24 @@ die 4/8-Auswahl nur mit `directional`; Animationen bleiben ein eigener Schritt
 mit eindeutigen Aktionen und jeweils 1 bis 8 Frames. Walk startet bei einer
 Neuauswahl mit 5 Frames.
 
+Der eigene `movingObjectDetails`-Schritt folgt für bewegliche Nicht-Figuren
+ebenfalls direkt auf die Basisprofilwahl. Er erfasst Objektklasse, Zweck,
+Grundform, Beschreibung, Tile-Footprint (je Achse 1–64), Höhe (16–2048 px),
+Anker, Bewegungsart, Mechanik, Material, Zustand sowie Licht- und
+Schattenverhalten. Animationen werden davon getrennt als eindeutige,
+kanonisch sortierte `animationSequences` mit 1 bis 16 Frames je Sequenz
+gespeichert. Bestehende Ein-Sequenz-Daten bleiben beim Lesen kompatibel.
+Ein Karren kann dadurch Richtungen und Animation besitzen; ein pulsierender
+schwebender Kristall bleibt animiert, erhält aber keine Richtungsfrage.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 14 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 15 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 15 — Moving Object Editor
+→ Prompt 16 — Texture/Material Editor
 ```
 
 Danach immer genau:
@@ -184,8 +194,8 @@ aktive Wizard Engine trennt die generische RHF-Navigation und Persistenz von
 einer deklarativen, produktspezifischen Flow-Definition. Sie bietet
 Zod-Validierung, sichtbaren Fortschritt, Dirty-/Autosave-Status, exaktes Resume
 und eine technische Zusammenfassung. Der stabile Einstieg lautet
-`Projekt → Hauptkategorie/Untertyp → Basisprofil → Character-Details,
-falls relevant → Capability-Schritte`.
+`Projekt → Hauptkategorie/Untertyp → Basisprofil → Character- oder
+Moving-Object-Details, falls relevant → Capability-Schritte`.
 Der Basisprofil-Schritt zeigt wirksame Werte mit Quelle und Sperrstatus,
 normalisiert entsperrte Abweichungen zu minimalen Draft-Overrides und bietet
 bei Locks einen bewussten Wechsel, ein Duplikat oder eine neue Familie an.
@@ -198,6 +208,14 @@ tatsächliche Rolle, Richtungszahl sowie gewählte Aktionen mit Framezahl.
 Das ausdrückliche Leeren eines geerbten Character-Defaults löst den Entwurf
 verlustfrei vom Kategorieprofil, sodass etwa „keine Richtungen“ oder „keine
 Animation“ auch nach einem Resume bestehen bleibt.
+Moving-Object-Antworten nutzen denselben Base→Category→Asset-Vertrag:
+Basiswechsel erhalten die Fachwerte, Klassifikationswechsel bereinigen sie,
+und das ausdrückliche Leeren eines geerbten Moving-Object-Defaults löst die
+Kategorie-/Assetprovenienz und materialisiert die übrigen wirksamen Werte.
+Rohwerte, Autosave und exaktes Resume umfassen auch beide Moving-Object-
+Editoren; Zusammenfassung und Dashboard zeigen Klasse, Bewegung, Standfläche,
+Anker, Richtungen nur bei `directional`, Sequenzen mit Frames, Material und
+Zustand.
 Prompt-Erzeugung und Output-Flächen folgen erst in ihren späteren Phasen.
 
 ## Legacy-V1 lokal prüfen
@@ -259,6 +277,12 @@ Reihenfolge der Animationsaktionen. `animationActions` speichert jede Aktion
 genau einmal mit 1 bis 8 Frames; die UI-Vorgaben liegen ebenfalls dort und
 setzen Walk auf 5 Frames.
 
+Der öffentliche Moving-Object-Katalog unter
+`src/domain/moving-objects/` bündelt Objektklassen, Bewegungs-, Anker-,
+Mechanik-, Material-, Zustands-, Licht- und Schattenoptionen sowie die
+kanonische Sequenzreihenfolge und zentralen Frame-Defaults. Die aus dem
+Untertyp abgeleitete Objektklasse verhindert widersprüchliche Klassifikation.
+
 Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
 Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
 werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
@@ -266,6 +290,11 @@ aus den Schemas abgeleitet. Das strikt additive `CharacterAnswersSchema`
 begrenzt alle Character-Felder und eindeutigen Aktionslisten. Bestehende
 Schema-V2-Daten mit `animationAction` und `framesPerDirection` bleiben lesbar;
 neue Wizard-Projektionen schreiben ausschließlich `animationActions`.
+Das additive `MovingObjectAnswersSchema` begrenzt Footprint-Achsen auf 1–64,
+die Objekthöhe auf 16–2048 px und jede eindeutige `animationSequences`-Sequenz
+auf 1–16 Frames. Die bisherigen Felder `animationType` und
+`framesPerDirection` bleiben als schreibfreier Lesepfad erhalten; neue
+Moving-Object-Projektionen schreiben nur das kanonische Sequenzmodell.
 
 Die öffentliche Profilauflösung unter `src/domain/profiles/` führt validierte
 Base-, Kategorie- und Assetprofile zusammen. Sie setzt Locks durch, meldet
@@ -297,7 +326,10 @@ blendet technisch irrelevante Angaben aus. Kategorie-, Profil- und
 Entwurfsaktionen übergeben lediglich einen flüchtigen typisierten Startintent
 an den Wizard; Prompt 09 schreibt deshalb weder Profile noch Drafts. Für
 Character-Profile projiziert das Dashboard die kanonischen Aktions-/Frame-Paare
-und bleibt bei bestehenden Ein-Aktions-Daten abwärtslesbar.
+und bleibt bei bestehenden Ein-Aktions-Daten abwärtslesbar. Moving-Object-
+Profile zeigen zusätzlich die tatsächliche Objektklasse, Bewegung, Standfläche,
+Anker, capability-gesteuerte Richtungen, Sequenz-/Frame-Paare, Material und
+Zustand; auch hier bleibt die alte Ein-Sequenz-Repräsentation lesbar.
 
 Die Profilbibliothek unter `src/features/profiles/` durchsucht und filtert
 Assetprofile, gruppiert sie wahlweise nach Kategorie oder ihrem neu
@@ -337,6 +369,13 @@ den Autosave an. Initialisierung, Profil-Hydration und Resume bleiben
 schreibfrei. Ein Wechsel der Klassifikation verwirft alte Kategorieantworten
 und Profilprovenienz, ohne ein bestehendes Basisprofil in-place zu verändern.
 
+Der Moving-Object-Zweig hydratisiert wirksame Fachantworten aus
+Base→Category→Asset und projiziert nur nicht redundante lokale Werte. Beim
+ausdrücklichen Leeren eines geerbten Moving-Object-Werts werden die
+Kategorie-/Assetverknüpfungen gelöst und alle übrigen wirksamen Fach- und
+Technikwerte relativ zur Base materialisiert. Dadurch stellt ein Resume den
+entfernten Wert nicht wieder her.
+
 Der spezialisierte Character-/NPC-Editor unter
 `src/features/character-editor/` ist als eigener Wizard-Schritt direkt nach
 dem Basisprofil eingebunden. Er rendert nur Character-Fachfelder und blendet
@@ -347,6 +386,15 @@ Aktions-/Frame-Map, die das Draft-Mapping deterministisch in eindeutige,
 kanonisch sortierte `animationActions` umwandelt. Rolle, Richtungen,
 Animationen und Silhouette fließen live in die technische Zusammenfassung;
 Mount, Hydration und Resume bleiben auch für diese Felder schreibfrei.
+
+Der spezialisierte Moving-Object-Editor unter
+`src/features/moving-object-editor/` stellt Objekt- und Produktionsdetails im
+eigenen `movingObjectDetails`-Schritt bereit. Sein separater Animationseditor
+verwaltet eine RHF-Map, die deterministisch in eindeutige
+`animationSequences: [{ type, frames }]` mit 1–16 Frames überführt wird.
+Richtung bleibt ein eigener Capability-Schritt und erscheint etwa beim Karren,
+nicht jedoch beim animierten `floatingCrystal`. Beide Flächen nutzen denselben
+Rohzustand, Autosave- und schreibfreien Resume-Pfad wie der Wizard-Core.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

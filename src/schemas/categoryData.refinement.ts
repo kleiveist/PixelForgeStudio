@@ -1,14 +1,11 @@
 import { z } from "zod";
 import {
   resolveCapabilities,
-  type AssetCategory,
-  type AssetSubtype
+  type AssetSelection
 } from "../domain/assets";
+import { getDefaultMovingObjectClass } from "../domain/moving-objects";
 
-export interface CategoryDataCarrier {
-  readonly category: AssetCategory;
-  readonly subtype: AssetSubtype;
-}
+export type CategoryDataCarrier = AssetSelection;
 
 type CategoryDataKey = "answers" | "defaults";
 
@@ -23,9 +20,32 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
     context.addIssue({ code: "custom", path: [dataKey, field], message });
   };
   const hasAnimationData =
+    categoryData.animationSequences !== undefined ||
     categoryData.animationActions !== undefined ||
     categoryData.animationAction !== undefined ||
     categoryData.animationType !== undefined;
+
+  if (value.category === "movingObject" && categoryData.objectClass !== undefined) {
+    const expectedClass = getDefaultMovingObjectClass(value.subtype);
+    if (categoryData.objectClass !== expectedClass) {
+      addIssue(
+        "objectClass",
+        `Object class "${String(categoryData.objectClass)}" does not match moving-object subtype "${value.subtype}"; expected "${expectedClass}".`
+      );
+    }
+  }
+
+  if (categoryData.movementType !== undefined && !capabilities.movable) {
+    addIssue("movementType", "Movement data is only valid for movable asset subtypes.");
+  }
+
+  if (categoryData.footprint !== undefined && !capabilities.footprint) {
+    addIssue("footprint", "Footprints are only valid for footprint-capable asset subtypes.");
+  }
+
+  if (categoryData.anchorMode !== undefined && !capabilities.footprint) {
+    addIssue("anchorMode", "Anchors are only valid for footprint-capable asset subtypes.");
+  }
 
   if (categoryData.directionCount !== undefined && !capabilities.directional) {
     addIssue("directionCount", "Direction counts are only valid for directional asset subtypes.");
@@ -53,11 +73,13 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
 
   if (hasAnimationData && !capabilities.animated) {
     const animationField =
-      categoryData.animationActions !== undefined
-        ? "animationActions"
-        : categoryData.animationAction !== undefined
-          ? "animationAction"
-          : "animationType";
+      categoryData.animationSequences !== undefined
+        ? "animationSequences"
+        : categoryData.animationActions !== undefined
+          ? "animationActions"
+          : categoryData.animationAction !== undefined
+            ? "animationAction"
+            : "animationType";
     addIssue(
       animationField,
       "Animation data is only valid for animated asset subtypes."

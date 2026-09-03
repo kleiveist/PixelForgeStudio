@@ -11,6 +11,9 @@
     direction-option guards
   - `characters/`: Character/NPC option catalogs, subtype guards, canonical
     animation-action order, and per-action frame defaults
+  - `moving-objects/`: Moving Object production catalogs, subtype-to-class
+    mapping, canonical animation-sequence order, and frame defaults used only
+    when a sequence is deliberately activated
   - `profiles/`: validated profile-chain resolution, base-lock enforcement,
     structured diagnostics, normalized overrides, compatibility keys,
     canonical BaseProfile defaults, immutable BaseProfile creation/duplication,
@@ -28,13 +31,15 @@
 - `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
   Kategorie-Dashboard, `profiles/` die kategorisierte Assetprofilbibliothek
   und `wizard/` die deklarative RHF-/Zod-Wizard-Grundlage;
-  `character-editor/` enthält den ersten spezialisierten Asset-Editor;
+  `character-editor/` und `moving-object-editor/` enthalten die ersten
+  spezialisierten Asset-Editoren;
   Review-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
   - `categoryData.schema.ts`: strict category-specific answer contracts,
-    including the additive Character/NPC catalog and unique per-action frames
+    including additive Character/NPC and Moving Object catalogs with unique
+    per-action or per-sequence frames
   - `profiles.schema.ts`: base, category, and asset profile contracts
   - `appSettings.schema.ts`, `wizardDraft.schema.ts`,
     `exportBundle.schema.ts`: remaining persisted/imported V2 contracts
@@ -75,6 +80,14 @@ action order, 1-to-8-frame UI defaults (Walk: 5), and the pure NPC-context and
 humanoid-subtype guards. This keeps subtype gating and new Character answer
 serialization out of React literals.
 
+`domain/moving-objects/index.ts` is the public, framework-free Moving Object
+catalog API. It owns stable object-class, movement, animation, anchor,
+mechanism, material, condition, lighting, and shadow IDs; canonical sequence
+order; 1-to-16-frame activation defaults; and the pure
+subtype-to-object-class mapping. Detail fields receive no value during mere
+hydration.
+Schema and UI consume these exports instead of maintaining parallel literals.
+
 `schemas/index.ts` is the public validation boundary. Persisted and imported
 values enter its parse functions as `unknown`; exported TypeScript types are
 inferred from the corresponding Zod schemas rather than maintained separately.
@@ -84,6 +97,11 @@ is deliberately absent, and `animationActions` accepts unique action/frame
 pairs only. The previous schema-version-2 `animationAction` plus
 `framesPerDirection` fields remain readable for existing local data. New UI
 writes normalize them to `animationActions`; no eager storage migration occurs.
+`MovingObjectAnswersSchema` is another strict additive union member. It bounds
+each footprint axis to 1–64 tiles, `heightPixels` to 16–2048, and each unique
+`animationSequences` entry to 1–16 frames. Existing `animationType` plus
+`framesPerDirection` data remains readable; new UI writes use only the
+canonical sequence list and never migrate on hydration.
 
 `domain/profiles/index.ts` is the public framework-free profile API.
 `resolveProfile()` accepts already validated profile objects and returns a
@@ -91,6 +109,12 @@ discriminated success/conflict result. Reference failures never expose a
 production profile; lock conflicts may expose only an explicitly named safe
 `partialProfile`. Category defaults and asset answers remain correlated by the
 category discriminant.
+
+Moving Object animation is merged as one semantic value rather than as three
+independent keys. At the same profile level `animationSequences` wins over the
+legacy `animationType`/`framesPerDirection` pair; an explicit Asset-level
+representation replaces the inherited Category-level representation in either
+direction. Resolution remains pure and never rewrites stored data.
 
 The same public profile API exposes immutable BaseProfile and AssetProfile
 operations. A Base family can be created from the canonical defaults or copied
@@ -196,7 +220,11 @@ perspective facts; figures alone show character scale, and direction, movement
 and animation badges describe configured answers rather than capability
 potential. Character animation facts prefer the canonical per-action frame
 list and fall back to the previous single-action representation for existing
-schema-version-2 profiles. Unknown badge IDs are ignored safely. The React view
+schema-version-2 profiles. Moving Object facts expose the resolved object
+class, movement, footprint, anchor, capability-valid direction count,
+animation sequences with frames, material, and condition. Canonical sequences
+win over the old singleton representation, which remains a read fallback.
+Unknown badge IDs are ignored safely. The React view
 reads this model through the narrow `DashboardStorage` port
 (`readProfileLibrary` + `readDraft`) and never accesses `localStorage`.
 Category, profile and draft starts are write-free; only an explicit base-profile
@@ -245,29 +273,32 @@ several RHF values programmatically calls it once to enter the same projection,
 Dirty-state and autosave path as a native control change. Product routing and
 Base-profile semantics remain outside the generic engine.
 
-`features/wizard/wizardCategoryRouting.ts` is the Prompt-14 boundary between
+`features/wizard/wizardCategoryRouting.ts` is the Prompt-15 boundary between
 core form values and the strict Draft union. It validates category/subtype
 pairs against the canonical taxonomy, resolves visibility only through
 `resolveCapabilities()`, preserves hidden answers for an unchanged selection,
 and creates clean answers when classification changes. The stable core flow is
-`project → category/subtype → baseProfile → characterDetails, when
-Character → directions | animation | tileability`, with the specialist and
-capability steps conditionally present. A category-only choice remains a raw
+`project → category/subtype → baseProfile → characterDetails or
+movingObjectDetails, when applicable → directions | animation |
+tileability`, with the specialist and capability steps conditionally present.
+A category-only choice remains a raw
 session value until a matching subtype makes it persistable; a classified
 pre-Base Draft remains on `wizard/profile`. The Draft mapper returns `null` for
 explicit non-persistable intermediates, allowing navigation while preventing
 an old selected Draft from being written over raw form state. After Base
 selection it derives only non-redundant, capability-relevant, unlocked
 technical differences as Asset-level overrides. It serializes the Character
-form's action/frame map in domain order as unique `animationActions`, while old
-single-action answers hydrate the same form without an eager write. A confirmed
-Base switch removes prior technical overrides and stale Category/Asset
-provenance while retaining Character answers; a category or subtype switch
-purges those answers. Explicitly clearing an inherited optional Character
-default detaches Category/Asset provenance and materializes every other
-effective answer and technical override against the Base, so the parent value
-cannot reappear on Resume. Step schemas independently reject incomplete Base
-values and category-incompatible specialist or capability values.
+form's action/frame map in domain order as unique `animationActions` and the
+Moving Object map as unique `animationSequences`; both old singleton forms
+hydrate without an eager write. A confirmed Base switch removes prior
+technical overrides and stale Category/Asset provenance while retaining the
+current category answers; a category or subtype switch purges them. Explicitly
+clearing an inherited optional Character or Moving Object default detaches
+Category/Asset provenance and materializes every other effective answer and
+technical override against the Base, so the parent value cannot reappear on
+Resume. Step schemas independently reject incomplete Base values and
+category-incompatible specialist or capability values, including partial
+Moving Object footprints and invalid subtype/object-class combinations.
 
 `features/wizard/wizardLifecycle.ts` creates blank drafts, resolves profile
 starts against the current provider graph, updates route/step metadata and
@@ -288,10 +319,11 @@ dynamic Zod resolver, semantic progress, focus-managed forward/back navigation
 and a 300-ms valid-change autosave. Navigation writes its new step immediately;
 invalid or unavailable writes retain raw session data and the last successful
 baseline. Recovery never deletes or overwrites the stored slot. The adjacent
-technical summary displays the portable, capability-relevant snapshot, adds
+technical summary displays the portable, capability-relevant snapshot. It adds
 the actual Character role, directions, selected actions with frame counts and
-silhouette when present, and omits world-grid geometry for resolved
-free-composition artwork.
+silhouette when present, plus Moving Object class, movement, footprint, anchor,
+capability-valid directions, sequences with frames, material, and condition.
+World-grid geometry remains omitted for resolved free-composition artwork.
 
 `features/wizard/BaseProfileStep.tsx` is the Prompt-13 UI boundary. It presents
 native radio selection plus effective technical values with explicit Base,
@@ -321,7 +353,22 @@ selection remains the existing `directional`-only 4/8 step. Both specialist
 surfaces use the same Draft projection, autosave and exact Resume path as the
 core fields. Mount and hydration remain write-free.
 
-Prompt 15 is the next phase and may add the moving-object production editor.
-Prompt 14 does not implement Prompt Engine modules, review/output generation,
-or any of the remaining specialist editors. It also does not add in-place
-Base-family mutation or descendant reparenting.
+`features/moving-object-editor/index.ts` is the public React boundary for
+Prompt 15. `MovingObjectDetailsEditor` groups the subtype-derived object class,
+purpose, basic shape, description, 1–64-tile footprint axes, 16–2048-pixel
+height, anchor, movement, mechanism, material, condition, lighting, and shadow.
+It is mounted as the dedicated `movingObjectDetails` step directly after Base
+selection and never renders for another category.
+
+`MovingObjectAnimationEditor` is separate from both production details and
+direction selection. It stores a transient RHF map and serializes selected
+types in domain order as unique `animationSequences` with 1–16 frames each.
+The cart route can therefore include the independent 4/8 direction step,
+whereas animated `floatingCrystal` offers sequences without any direction
+control. Raw session state, delayed autosave, navigation writes, exact Resume,
+and write-free hydration are shared with the generic Wizard contract.
+
+Prompt 16 is the next phase and may add the Texture/Material editor. Prompt 15
+does not implement Prompt Engine modules, review/output generation, or any of
+the remaining specialist editors. It also does not add in-place Base-family
+mutation or descendant reparenting.

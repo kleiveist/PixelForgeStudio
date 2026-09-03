@@ -65,6 +65,13 @@
 - Character-Richtungswahl weiterhin ausschließlich über `directional` auf 4/8 begrenzt und Animation separat als Multi-Aktionsauswahl mit individueller Framezahl umgesetzt
 - Character-Fachwerte in RHF-Draft-Roundtrip, Dirty-State, Autosave, schreibfreies Resume, Live-Zusammenfassung und Dashboard-Aktivitätsprojektion integriert
 - explizites Leeren geerbter Character-Defaults dauerhaft abgebildet: der Draft löst die Kategorieprovenienz, materialisiert übrige Fach- und Technikwerte und stellt entfernte Richtungen oder Animationen beim Resume nicht wieder her
+- frameworkfreien Moving-Object-Katalog für Objektklasse, Bewegung, Anker, Mechanik, Material, Zustand, Licht, Schatten und kanonische Animationssequenzen ergänzt
+- additives `MovingObjectAnswersSchema` um Produktionsdetails, Footprint-Achsen von 1 bis 64 Tiles, Höhen von 16 bis 2048 px sowie eindeutige `animationSequences` mit jeweils 1 bis 16 Frames erweitert
+- bestehende Schema-V2-Moving-Object-Daten mit `animationType` und `framesPerDirection` schreibfrei lesbar gehalten, während neue Wizard-Projektionen ausschließlich kanonisch sortierte `animationSequences` schreiben
+- eigenen `movingObjectDetails`-Schritt nach der Basisprofilwahl und einen getrennten Animationseditor eingeführt; Richtungsfragen bleiben ausschließlich an die `directional`-Capability gebunden
+- Karren als richtungsfähigen Bewegungsfall und pulsierende schwebende Kristalle als animierte, nicht richtungsabhängige Assets in Domain-, Schema-, Routing- und UI-Verhalten abgesichert
+- Moving-Object-Fachwerte in Base→Category→Asset-Auflösung, Rohzustand, Autosave, schreibfreies Resume, Live-Zusammenfassung und Dashboard-Aktivitätsprojektion integriert
+- explizites Leeren geerbter Moving-Object-Defaults dauerhaft abgebildet: Kategorie-/Assetprovenienz wird gelöst, übrige wirksame Fach- und Technikwerte werden relativ zur Base materialisiert
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

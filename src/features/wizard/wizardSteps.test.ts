@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   WIZARD_CORE_STEPS,
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+  WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   WizardAnimationStepSchema,
   WizardBaseProfileStepSchema,
   WizardCategoryStepSchema,
   WizardCharacterDetailsStepSchema,
   WizardDirectionStepSchema,
+  WizardMovingObjectDetailsStepSchema,
   WizardProjectStepSchema,
   WizardTileabilityStepSchema,
   getWizardCoreFallbackStepId,
@@ -40,6 +42,7 @@ describe("wizard core steps", () => {
       "category",
       "baseProfile",
       "characterDetails",
+      "movingObjectDetails",
       "directions",
       "animation",
       "tileability"
@@ -56,12 +59,19 @@ describe("wizard core steps", () => {
       route: "wizard/editor",
       title: "Figur und Rolle"
     });
+    expect(getWizardCoreStep("movingObjectDetails").fieldPaths).toBe(
+      WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS
+    );
+    expect(getWizardCoreStep("movingObjectDetails")).toMatchObject({
+      route: "wizard/editor",
+      title: "Objekt und Bewegung"
+    });
     expect(getWizardCoreStep("directions").fieldPaths).toEqual(["directionCount"]);
     expect(getWizardCoreStep("animation").fieldPaths).toEqual([
-      "movementType",
       "animationAction",
       "animationType",
-      "characterAnimationFrames"
+      "characterAnimationFrames",
+      "movingObjectAnimationFrames"
     ]);
     expect(getWizardCoreStep("tileability").fieldPaths).toEqual([
       "seamless",
@@ -71,6 +81,35 @@ describe("wizard core steps", () => {
     expect(getWizardCoreStepIndex("category")).toBe(1);
     expect(getWizardCoreStepIndex("baseProfile")).toBe(2);
     expect(getWizardCoreStepIndex("characterDetails")).toBe(3);
+    expect(getWizardCoreStepIndex("movingObjectDetails")).toBe(4);
+    expect(getWizardCoreStepIndex("directions")).toBe(5);
+  });
+
+  it("declares the complete moving-object detail boundary without direction or animation fields", () => {
+    expect(WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS).toEqual([
+      "movingObjectClass",
+      "movingObjectPurpose",
+      "movingObjectBasicShape",
+      "movingObjectDescription",
+      "movingObjectFootprintWidthTiles",
+      "movingObjectFootprintDepthTiles",
+      "movingObjectHeightPixels",
+      "movingObjectAnchorMode",
+      "movementType",
+      "movingObjectMechanism",
+      "movingObjectMaterial",
+      "movingObjectMaterialDetails",
+      "movingObjectCondition",
+      "movingObjectLightingBehavior",
+      "movingObjectShadowMode",
+      "movingObjectExtraDetails"
+    ]);
+    expect(WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS).not.toContain(
+      "directionCount"
+    );
+    expect(WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS).not.toContain(
+      "movingObjectAnimationFrames"
+    );
   });
 
   it("declares the complete Character/NPC answer paths without duplicating technical height", () => {
@@ -282,6 +321,63 @@ describe("wizard core steps", () => {
         subtype: "tree",
         characterHeight: undefined,
         animationType: "wind"
+      }).success
+    ).toBe(false);
+  });
+
+  it("validates cart details and a directionless floating-crystal animation at their separate boundaries", () => {
+    const cart = {
+      projectName: "Händlerwagen",
+      category: "movingObject" as const,
+      subtype: "cart" as const,
+      ...technicalValues,
+      movingObjectClass: "cart" as const,
+      movingObjectPurpose: "Transport",
+      movingObjectFootprintWidthTiles: 2,
+      movingObjectFootprintDepthTiles: 1,
+      movementType: "roll" as const,
+      directionCount: 8 as const,
+      movingObjectAnimationFrames: { move: 6 }
+    };
+    const crystal = {
+      projectName: "Pulsierender Kristall",
+      category: "movingObject" as const,
+      subtype: "floatingCrystal" as const,
+      ...technicalValues,
+      movingObjectClass: "floatingObject" as const,
+      movementType: "hover" as const,
+      movingObjectAnimationFrames: { pulse: 4 }
+    };
+
+    expect(WizardMovingObjectDetailsStepSchema.safeParse(cart).success).toBe(true);
+    expect(WizardDirectionStepSchema.safeParse(cart).success).toBe(true);
+    expect(WizardAnimationStepSchema.safeParse(cart).success).toBe(true);
+    expect(WizardMovingObjectDetailsStepSchema.safeParse(crystal).success).toBe(true);
+    expect(WizardAnimationStepSchema.safeParse(crystal).success).toBe(true);
+    expect(WizardDirectionStepSchema.safeParse(crystal).success).toBe(false);
+
+    expect(
+      WizardMovingObjectDetailsStepSchema.safeParse({
+        ...cart,
+        movingObjectFootprintDepthTiles: undefined
+      }).success
+    ).toBe(false);
+    expect(
+      WizardMovingObjectDetailsStepSchema.safeParse({
+        ...cart,
+        movingObjectClass: "floatingObject"
+      }).success
+    ).toBe(false);
+    expect(
+      WizardAnimationStepSchema.safeParse({
+        ...crystal,
+        directionCount: 4
+      }).success
+    ).toBe(false);
+    expect(
+      WizardAnimationStepSchema.safeParse({
+        ...crystal,
+        movingObjectAnimationFrames: { pulse: 17 }
       }).success
     ).toBe(false);
   });

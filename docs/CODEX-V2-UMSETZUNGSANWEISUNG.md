@@ -164,9 +164,10 @@ Umgesetzter Vertrag seit Prompt 08:
 - Browserzugriff liegt im injizierbaren Adapter unter `src/services/`, der
   React-Context unter `src/store/navigation/`.
 - Der Basisprofil-Schritt ist seit Prompt 13 innerhalb des Wizard-Zweigs
-  umgesetzt und daher keine zusätzliche Shell-Route. Kategorie- und
-  Spezialeditoren folgen weiterhin in ihren jeweiligen Phasen innerhalb
-  dieses Zweigs.
+  umgesetzt und daher keine zusätzliche Shell-Route. Character- und
+  Moving-Object-Editor sind dort seit Prompt 14 beziehungsweise 15 als
+  Fachschritte integriert; die übrigen Spezialeditoren folgen in ihren
+  jeweiligen Phasen innerhalb desselben Zweigs.
 
 ---
 
@@ -351,14 +352,14 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 14
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 15
 
-- `project`, `category`/`subtype`, `baseProfile`, `characterDetails` und die
-  Capability-Schritte
+- `project`, `category`/`subtype`, `baseProfile`, `characterDetails`,
+  `movingObjectDetails` und die Capability-Schritte
   sind stabil und deklarativ konfiguriert; jeder besitzt Zod-Schema und
   RHF-Feldpfade. Die Reihenfolge ist
-  `project → category/subtype → baseProfile → characterDetails, falls
-  Character → Capability-Schritte`.
+  `project → category/subtype → baseProfile → characterDetails oder
+  movingObjectDetails, falls relevant → Capability-Schritte`.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
   Draft-Mapping, Zusammenfassung und optionale `isApplicable`-Prädikate bereit
@@ -442,7 +443,31 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Live-Zusammenfassung und Dashboard-Aktivitätsprojektion zeigen die
   tatsächliche Character-Rolle, Richtungszahl und Aktionen mit Frames statt
   bloßer Capability-Potenziale.
-- Prompt 15 ergänzt als nächste Phase den Moving-Object-Editor. Prompt 14
+- Der Moving-Object-Detail-Editor ist ein eigener Fachschritt direkt nach der
+  Basisprofilwahl und erscheint nur für `movingObject`. Er erfasst die aus dem
+  Untertyp konsistent abgeleitete Objektklasse, Zweck, Grundform,
+  Beschreibung, Footprint (je Achse 1–64 Tiles), Höhe (16–2048 px), Anker,
+  Bewegung, Mechanik, Material, Zustand, Licht und Schatten.
+- Moving-Object-Felder bleiben vollständig in RHF und laufen über dieselbe
+  Draft↔Form-Projektion, den transienten Rohzustand, Dirty-Erkennung,
+  300-ms-Autosave und exaktes Resume. Mount, Profil-Hydration und Resume
+  bleiben schreibfrei; Basiswechsel erhalten die Antworten,
+  Klassifikationswechsel bereinigen sie.
+- Die Profilauflösung führt Moving-Object-Fachwerte deterministisch in der
+  Reihenfolge Base→Category→Asset zusammen. Ein ausdrücklich geleerter,
+  geerbter Wert löst Kategorie-/Assetprovenienz und materialisiert alle
+  übrigen wirksamen Fach- und Technikwerte relativ zur Base, damit der
+  entfernte Default beim Resume nicht zurückkehrt.
+- Moving-Object-Animationen bleiben von Richtungen getrennt. Der
+  Animationseditor schreibt eindeutige, kanonisch sortierte
+  `animationSequences: [{ type, frames }]` mit jeweils 1–16 Frames. Alte
+  `animationType`-/`framesPerDirection`-Werte werden schreibfrei gelesen und
+  erst bei einer bewussten Änderung kanonisch projiziert.
+- Ein Karren kann als `directional` einen separaten 4/8-Schritt besitzen. Der
+  animierte `floatingCrystal` bietet Sequenzen, aber keine Richtungsfrage.
+  Zusammenfassung und Dashboard zeigen Klasse, Bewegung, Standfläche, Anker,
+  capability-gültige Richtungen, Sequenzen mit Frames, Material und Zustand.
+- Prompt 16 ergänzt als nächste Phase den Texture-/Material-Editor. Prompt 15
   enthält weder Prompt Engine beziehungsweise Review-/Output-Erzeugung noch
   In-place-Mutation oder Reparenting einer bestehenden Basisfamilie.
 
@@ -701,12 +726,40 @@ Umgesetzt seit Prompt 14:
 ## 13.2 Moving Object
 
 - Objektklasse
-- Bewegungsart
-- Anker / Footprint
+- Zweck, Grundform und Beschreibung
+- Bewegungsart und sichtbare Mechanik
+- Tile-Footprint, Höhe und Anker
+- Material und Materialdetails
+- Zustand, Lichtverhalten und Kontaktschatten
 - directional ja/nein aus Untertyp
 - 4/8 Richtungen nur wenn directional
-- Animationsphasen optional
+- mehrere optionale Animationssequenzen mit eigenen Framezahlen
 - Rollen / Gleiten / Schweben / Laufen usw.
+
+Umgesetzt seit Prompt 15:
+
+- `src/domain/moving-objects/` veröffentlicht stabile Kataloge,
+  Sequenz-Frame-Defaults für die bewusste Aktivierung und die pure Abbildung
+  vom Moving-Object-Untertyp zur Objektklasse. Reine Hydration setzt keine
+  Detaildefaults.
+- `MovingObjectAnswersSchema` ist strikt und additiv. Footprint-Achsen sind
+  auf 1–64 Tiles, die Höhe auf 16–2048 px und jede eindeutige
+  Animationssequenz auf 1–16 Frames begrenzt.
+- `src/features/moving-object-editor/` trennt den Produktionsdetail- vom
+  Animationseditor. Der Wizard bindet `movingObjectDetails` direkt nach dem
+  Basisprofil ein und zeigt den Animationsschritt nur bei `animated`.
+- Neue Persistenz verwendet kanonisch sortierte
+  `animationSequences: [{ type, frames }]`; bestehende Ein-Sequenz-Daten mit
+  `animationType` und `framesPerDirection` bleiben ohne schreibende Migration
+  lesbar.
+- Richtungen bleiben ein eigener `directional`-Schritt. Damit besitzt ein
+  Karren bei passendem Untertyp 4/8 Richtungen, ein pulsierender schwebender
+  Kristall aber ausschließlich Animation.
+- Fachantworten werden über Base→Category→Asset geerbt und minimal lokal
+  gespeichert. Explicit Clear löst die Kategorie-/Assetprovenienz und
+  materialisiert die übrigen wirksamen Werte relativ zur Base.
+- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
+  Prompts.
 
 ## 13.3 Static Object
 
@@ -889,6 +942,9 @@ Mit Vitest:
 - Zod-Schemas
 - Character-Antwortgrenzen, eindeutige Aktionslisten und Legacy-Lesbarkeit
 - Character-Draft↔RHF-Roundtrip sowie Bereinigung bei Klassifikationswechseln
+- Moving-Object-Antwortgrenzen, eindeutige Sequenzlisten und Legacy-Lesbarkeit
+- Moving-Object-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
+- Karren als directional gegen animierten `floatingCrystal` ohne Richtungen
 - Migrationslogik
 - Promptmodule
 - Canvas-/Frame-Metriken
@@ -905,6 +961,9 @@ Mit React Testing Library + user-event:
 - Character-Detailstep, NPC-/Humanoid-Gating und geerbte/gesperrte Figurenhöhe
 - mehrere Character-Aktionen mit jeweils 1–8 Frames und Walk-Default 5
 - Character-Autosave, schreibfreie Hydration/Resume und Live-Zusammenfassung
+- Moving-Object-Detailstep mit Footprint, Anker, Mechanik, Material und Zustand
+- mehrere Moving-Object-Sequenzen mit jeweils 1–16 Frames
+- Moving-Object-Autosave, schreibfreie Hydration/Resume sowie Summary/Dashboard
 - Theme-Wechsel
 - Profil laden/speichern
 - Lock-Konfliktworkflow

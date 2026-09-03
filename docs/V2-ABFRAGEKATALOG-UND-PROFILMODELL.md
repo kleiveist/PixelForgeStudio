@@ -97,13 +97,14 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 14
+## 4.3 Umgesetzter Einstieg bis Prompt 15
 
 Der aktuell implementierte Core-Flow lautet:
 
 ```text
 Projekt → Hauptkategorie/Untertyp → Basisprofil
-→ Character-Details, falls relevant → Capability-Schritte
+→ Character- oder Moving-Object-Details, falls relevant
+→ Capability-Schritte
 ```
 
 Ein klassifizierter Entwurf darf vor der Basiswahl auf `wizard/profile`
@@ -111,8 +112,9 @@ fortsetzbar bleiben. Erst eine in der aktuellen Bibliothek vorhandene oder dort
 erfolgreich neu angelegte Basisfamilie öffnet die nachfolgenden Richtungs-,
 Animations- oder Kachelbarkeitsfragen. Deren Sichtbarkeit stammt ausschließlich
 aus `resolveCapabilities()`. Für die Hauptkategorie `character` liegt zwischen
-Basisprofil und Capability-Schritten ein eigener Character-/NPC-Fachschritt;
-alle anderen Kategorien überspringen ihn.
+Basisprofil und Capability-Schritten ein eigener Character-/NPC-Fachschritt.
+`movingObject` nutzt an derselben Stelle den eigenen
+`movingObjectDetails`-Schritt; alle anderen Kategorien überspringen beide.
 
 Der Basisprofil-Schritt zeigt für alle relevanten Produktionswerte den
 wirksamen Wert, seine Quelle (Basisprofil, Kategorieprofil oder lokaler Entwurf)
@@ -135,9 +137,19 @@ die Draft-Projektion die Kategorieverknüpfung und materialisiert alle übrigen
 wirksamen Fach- und Technikwerte relativ zur Base. So bleibt der leere Wert
 auch nach Resume erhalten.
 
-Prompt 15 ergänzt als nächste Phase den Editor für bewegliche Nicht-Figuren.
+Der Moving-Object-Schritt erfasst Objektklasse, Zweck, Grundform,
+Beschreibung, Footprint, Höhe, Anker, Bewegung, Mechanik, Material, Zustand,
+Licht und Schatten im selben RHF-/Draft-/Autosave-/Resume-Pfad. Animation wird
+getrennt als kanonische Sequenz-/Frame-Liste erfasst. Ein Basiswechsel erhält
+diese Antworten, ein Kategorie- oder Untertypwechsel entfernt sie. Beim
+ausdrücklichen Leeren eines geerbten Moving-Object-Defaults werden die
+Kategorie-/Assetverknüpfungen gelöst und die übrigen wirksamen Fach- und
+Technikwerte relativ zur Base materialisiert. Summary und Dashboard zeigen
+nur tatsächlich konfigurierte, capability-gültige Moving-Object-Fakten.
+
+Prompt 16 ergänzt als nächste Phase den Texture-/Material-Editor.
 Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
-Tabelle oben werden durch Prompt 14 noch nicht als fertig erklärt.
+Tabelle oben werden durch Prompt 15 noch nicht als fertig erklärt.
 
 ---
 
@@ -457,17 +469,47 @@ keine schreibende Migration beim bloßen Laden statt.
 | Gruppe | Felder |
 |---|---|
 | Objektkern | Typ, Zweck, Grundform, kurze Beschreibung |
-| Maßstab | Tile-Footprint, Höhe, Anker |
+| Maßstab | Tile-Footprint je Achse 1–64, Höhe 16–2048 px, Anker |
 | Bewegung | rollen, gleiten, schweben, laufen, kriechen, fliegen, rotieren |
 | Richtungsbedarf | keiner, 4, 8; nur wenn Form richtungsabhängig ist |
-| Animation | keine, Idle-Loop, Bewegung, Rotation, Interaktion, Öffnen/Schließen |
-| Frames | Frames je Aktion und gegebenenfalls je Richtung |
+| Animation | keine, Idle-Loop, Bewegung, Rotation, Interaktion, Öffnen/Schließen, Pulsieren |
+| Frames | eindeutige Sequenzen mit jeweils 1–16 Frames; bei `directional` für alle Richtungen |
 | Mechanik | Räder, Gelenke, Flügel, Schienen, magischer Antrieb |
 | Material | Holz, Metall, Stoff, Stein, Magie, Mischmaterial |
 | Zustand | neu, gebraucht, beschädigt, provisorisch |
 | Licht | neutral, emissiv, warm, kühl, diffus |
 | Schatten | keiner, Kontakt, bewegungsabhängige kleine Anpassung |
 | Output | Einzelasset, Richtungsset, Animationssheet, Variantenpaket |
+
+### Implementierungsstand seit Prompt 15
+
+- `movingObjectDetails` folgt direkt auf die Basisprofilwahl und erscheint
+  ausschließlich für die Hauptkategorie `movingObject`. Die Objektklasse wird
+  konsistent aus dem Untertyp abgeleitet.
+- `MovingObjectAnswersSchema` bildet Objektkern, Footprint, Höhe, Anker,
+  Bewegung, Mechanik, Material, Zustand, Licht und Schatten strikt und
+  additiv ab. Ein nur halb ausgefüllter Footprint wird abgewiesen.
+- Die separate Animationsauswahl speichert eindeutige, kanonisch sortierte
+  `animationSequences: [{ type, frames }]` mit 1–16 Frames pro Sequenz.
+  Bereits gespeicherte `animationType`-/`framesPerDirection`-Werte bleiben
+  beim Laden und Resume lesbar; die Hydration selbst schreibt nicht.
+- Richtung wird weiterhin ausschließlich über `directional` eingeblendet.
+  Der Karren kann daher 4 oder 8 Richtungen besitzen, während ein pulsierender
+  `floatingCrystal` animiert, aber nicht automatisch richtungsabhängig ist.
+- Wirksame Moving-Object-Antworten werden Base→Category→Asset aufgelöst und
+  nur als nicht redundante lokale Werte projiziert. Ein Basiswechsel erhält
+  sie, ein Klassifikationswechsel bereinigt sie.
+- Beim ausdrücklichen Leeren eines geerbten Moving-Object-Defaults werden
+  Kategorie-/Assetprovenienz gelöst und die verbleibenden Fach- und
+  Technikwerte relativ zur Base materialisiert. Der gelöschte Wert kehrt
+  dadurch beim Resume nicht zurück.
+- Transiente Rohwerte, Dirty State, 300-ms-Autosave, sofortige
+  Schritt-Persistenz und exaktes Resume gelten für Detail- und
+  Animationsfelder. Live-Zusammenfassung und Dashboard zeigen Klasse,
+  Bewegung, Standfläche, Anker, capability-gültige Richtungen, Sequenzen mit
+  Frames, Material und Zustand.
+- Die Output-Auswahl aus der Katalogtabelle, Prompt Engine und Output Workspace
+  folgen in späteren Phasen.
 
 ---
 
@@ -949,6 +991,14 @@ gespeicherte Schema-V2-Daten mit einem einzelnen `animationAction` und
 `framesPerDirection` bleiben parse- und resume-fähig; neue Wizard-Projektionen
 schreiben diese Legacy-Felder nicht mehr.
 
+Für Moving Objects gilt seit Prompt 15 derselbe additive Kompatibilitätsweg
+mit eigenem Modell: Neue Daten speichern eindeutige, in Domain-Reihenfolge
+sortierte `animationSequences: [{ type, frames }]` mit 1–16 Frames. Bereits
+gespeicherte `animationType`-/`framesPerDirection`-Paare bleiben lesbar. Bei
+einer Ebene gewinnt die kanonische Liste; eine explizite Repräsentation auf
+Asset-Ebene ersetzt die geerbte Category-Repräsentation als zusammengehörigen
+Animationswert.
+
 ## 12.4 Wizard-Draft
 
 ```json
@@ -991,6 +1041,9 @@ die kategoriespezifischen beziehungsweise capability-gesteuerten Schritte.
 Für Figuren folgt `characterDetails` direkt danach. Ein exaktes Resume eines
 klassifizierten Pre-Base-Drafts landet wieder beim Basisprofil und schreibt bei
 der Hydration nicht; auch Character-Resume bleibt schreibfrei.
+Für Moving Objects folgt stattdessen `movingObjectDetails`; seine Fachfelder
+und die getrennte Sequenz-/Frame-Auswahl gehören ebenfalls zum rohen
+Session-Snapshot, Autosave und exakten schreibfreien Resume.
 Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
 und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
 Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale
@@ -1007,6 +1060,12 @@ Kategorieprofil- und Assetprovenienz. Der Wechsel mutiert oder reparentet keine
 persistierten Profile. Entsperrte Änderungen innerhalb derselben Familie
 werden beim nächsten gültigen Draft-Snapshot erneut auf minimale Overrides
 normalisiert.
+
+Das ausdrückliche Leeren eines vom Kategorieprofil geerbten Character- oder
+Moving-Object-Feldes löst Kategorie- und Assetprovenienz. Alle anderen
+wirksamen Fachantworten und technischen Werte werden relativ zur Base
+materialisiert, damit der entfernte Default nach Autosave und Resume nicht
+erneut erscheint.
 
 ---
 

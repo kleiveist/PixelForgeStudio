@@ -225,7 +225,26 @@ Walk startet bei Neuauswahl mit 5 Frames. Bestehende Schema-V2-Werte
 verstanden; neue Projektionen schreiben kanonisch sortierte
 `animationActions`.
 
-Prompt 15 ergänzt als nächste Phase den Moving-Object-Editor. Prompt 14 nimmt
+Seit Prompt 15 folgt für `movingObject` direkt nach dem Basisprofil der eigene
+Schritt `movingObjectDetails`. Objektklasse, Zweck, Grundform, Beschreibung,
+Tile-Footprint, Höhe, Anker, Bewegung, Mechanik, Material, Zustand, Licht und
+Schatten verbleiben vollständig in React Hook Form und nutzen denselben
+Rohzustands-, Dirty-, Autosave- und Resume-Vertrag wie der Wizard-Core.
+Kategorie- oder Untertypwechsel bereinigen die Daten, ein Basiswechsel erhält
+sie. Beim ausdrücklichen Leeren eines geerbten Moving-Object-Defaults werden
+Kategorie-/Assetprovenienz gelöst und alle übrigen wirksamen Fach- und
+Technikwerte relativ zur Base materialisiert.
+
+Animation und Richtung bleiben auch für Moving Objects getrennt. Ein eigener
+Animationseditor schreibt eindeutige, kanonisch sortierte
+`animationSequences` mit 1 bis 16 Frames je Sequenz. Vorhandene
+`animationType`-/`framesPerDirection`-Daten werden weiterhin schreibfrei
+gelesen. Ein Karren kann 4/8 Richtungen erhalten; ein animierter
+`floatingCrystal` erhält trotz Bewegung keine Richtungsfrage. Live-
+Zusammenfassung und Dashboard zeigen nur tatsächlich konfigurierte und
+capability-gültige Moving-Object-Fakten.
+
+Prompt 16 ergänzt als nächste Phase den Texture-/Material-Editor. Prompt 15 nimmt
 weder die Prompt Engine noch Review-/Output-Erzeugung oder weitere
 Spezialeditoren vorweg.
 
@@ -289,6 +308,11 @@ Pflichtbereiche:
 - Character/NPC-Feldgrenzen, Untertyp-Gating und Draft↔RHF-Roundtrip
 - eindeutige Character-Aktionen, 1–8 Frames, Walk-Default und Legacy-Lesbarkeit
 - geerbte/gesperrte Figurenhöhe ohne Duplikation in Character-Antworten
+- Moving-Object-Feldgrenzen, Subtyp/Objektklasse, Footprint und
+  Draft↔RHF-Roundtrip
+- eindeutige Moving-Object-Sequenzen, 1–16 Frames und Legacy-Lesbarkeit
+- Base→Category→Asset-Vererbung sowie Explicit-Clear-Detach für Moving Objects
+- Karren mit Richtungen gegen animierten `floatingCrystal` ohne Richtungen
 - 8 Richtungen nur bei richtungsabhängig beweglichen Assets
 - Speichern / Laden / Import / Export
 - Theme-Umschaltung

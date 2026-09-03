@@ -547,6 +547,269 @@ describe("guided Wizard integration", () => {
     ).toBeVisible();
   });
 
+  it("routes a cart through object details, directions, and canonical animation sequences", async () => {
+    const user = userEvent.setup();
+    const { adapter } = renderStudio();
+
+    await user.type(projectNameInput(), "Versorgungswagen");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(
+      user,
+      /Bewegliches Objekt/,
+      "cart"
+    );
+
+    const progress = screen.getByRole("navigation", {
+      name: "Wizard-Fortschritt"
+    });
+    expect(within(progress).queryByText("Objekt und Bewegung")).not.toBeInTheDocument();
+    expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+    expect(within(progress).getByText("Objekt und Bewegung")).toBeVisible();
+    expect(within(progress).getByText("Richtungen")).toBeVisible();
+    expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
+    expect(within(progress).queryByText("Figur und Rolle")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Objekt und Bewegung" })
+    ).toHaveFocus();
+    expect(screen.getByText("Karren / Wagen", { selector: "output" })).toBeVisible();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Zweck / Funktion" }),
+      "Versorgung zwischen Dorf und Mine"
+    );
+    await user.type(
+      screen.getByRole("textbox", { name: "Grundform" }),
+      "breiter Holzkasten mit zwei großen Rädern"
+    );
+    await user.type(
+      screen.getByRole("spinbutton", {
+        name: "Standfläche · Breite in Tiles"
+      }),
+      "2"
+    );
+    await user.type(
+      screen.getByRole("spinbutton", {
+        name: "Standfläche · Tiefe in Tiles"
+      }),
+      "1"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Ausrichtungsanker" }),
+      "footprintCenter"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Bewegungsart" }),
+      "roll"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Mechanik / Antrieb" }),
+      "wheels"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Hauptmaterial" }),
+      "wood"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Zustand" }),
+      "used"
+    );
+
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        currentStep: "movingObjectDetails",
+        category: "movingObject",
+        subtype: "cart",
+        answers: {
+          objectClass: "cart",
+          purpose: "Versorgung zwischen Dorf und Mine",
+          basicShape: "breiter Holzkasten mit zwei großen Rädern",
+          footprint: { widthTiles: 2, depthTiles: 1 },
+          anchorMode: "footprintCenter",
+          movementType: "roll",
+          mechanism: "wheels",
+          material: "wood",
+          condition: "used"
+        }
+      })
+    );
+    const detailSummary = screen.getByRole("complementary", {
+      name: "Technische Zusammenfassung"
+    });
+    expect(
+      within(detailSummary).getByText("Objektklasse").nextElementSibling
+    ).toHaveTextContent("Karren / Wagen");
+    expect(
+      within(detailSummary).getByText("Standfläche").nextElementSibling
+    ).toHaveTextContent("2 × 1 Tiles");
+    expect(
+      within(detailSummary).getByText("Bewegungsart").nextElementSibling
+    ).toHaveTextContent("Rollen");
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Richtungen" })
+    ).toHaveFocus();
+    await user.click(screen.getByRole("radio", { name: /8 Richtungen/ }));
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Bewegung und Animation"
+      })
+    ).toHaveFocus();
+    await user.click(
+      screen.getByRole("checkbox", { name: "Idle-Loop aktivieren" })
+    );
+    const idleFrames = screen.getByRole("spinbutton", {
+      name: "Frames für Idle-Loop"
+    });
+    await user.clear(idleFrames);
+    await user.type(idleFrames, "3");
+    await user.click(
+      screen.getByRole("checkbox", { name: "Bewegung aktivieren" })
+    );
+    const moveFrames = screen.getByRole("spinbutton", {
+      name: "Frames für Bewegung"
+    });
+    await user.clear(moveFrames);
+    await user.type(moveFrames, "6");
+
+    await waitFor(() => {
+      const saved = readValidDraft(adapter);
+      expect(saved).toMatchObject({
+        currentStep: "animation",
+        category: "movingObject",
+        subtype: "cart",
+        answers: {
+          directionCount: 8,
+          animationSequences: [
+            { type: "idle", frames: 3 },
+            { type: "move", frames: 6 }
+          ]
+        }
+      });
+      expect(saved).not.toHaveProperty("answers.animationType");
+      expect(saved).not.toHaveProperty("answers.framesPerDirection");
+    });
+    const animationSummary = screen.getByRole("complementary", {
+      name: "Technische Zusammenfassung"
+    });
+    expect(
+      within(animationSummary).getByText("Richtungsset").nextElementSibling
+    ).toHaveTextContent("8 Richtungen");
+    expect(
+      within(animationSummary).getByText("Animationen").nextElementSibling
+    ).toHaveTextContent("Idle · 3 Frames; Bewegung · 6 Frames");
+  });
+
+  it("animates and resumes a floating crystal without creating directions", async () => {
+    const storage = populatedStorage();
+    const user = userEvent.setup();
+    const rendered = renderStudio({ storage });
+
+    await user.type(projectNameInput(), "Schwebender Resonanzkristall");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(
+      user,
+      /Bewegliches Objekt/,
+      "floatingCrystal"
+    );
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+
+    const progress = screen.getByRole("navigation", {
+      name: "Wizard-Fortschritt"
+    });
+    expect(within(progress).getByText("Objekt und Bewegung")).toBeVisible();
+    expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
+    expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(screen.getByText("Schwebendes Objekt", { selector: "output" })).toBeVisible();
+    expect(screen.getByText("Keine Richtungsansichten")).toBeVisible();
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Bewegungsart" }),
+      "hover"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Hauptmaterial" }),
+      "magic"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Lichtverhalten" }),
+      "emissive"
+    );
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Bewegung und Animation"
+      })
+    ).toHaveFocus();
+    expect(screen.queryByRole("radio", { name: /Richtungen/ })).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Sequenzen erhalten eigene Frames, ohne Richtungsansichten zu erzeugen.")
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole("checkbox", { name: "Pulsieren aktivieren" })
+    );
+    const pulseFrames = screen.getByRole("spinbutton", {
+      name: "Frames für Pulsieren"
+    });
+    await user.clear(pulseFrames);
+    await user.type(pulseFrames, "7");
+
+    await waitFor(() => {
+      const saved = readValidDraft(createV2StorageAdapter(storage));
+      expect(saved).toMatchObject({
+        currentStep: "animation",
+        category: "movingObject",
+        subtype: "floatingCrystal",
+        answers: {
+          objectClass: "floatingObject",
+          movementType: "hover",
+          material: "magic",
+          lightingBehavior: "emissive",
+          animationSequences: [{ type: "pulse", frames: 7 }]
+        }
+      });
+      expect(saved).not.toHaveProperty("answers.directionCount");
+    });
+    const summary = screen.getByRole("complementary", {
+      name: "Technische Zusammenfassung"
+    });
+    expect(within(summary).queryByText("Richtungsset")).not.toBeInTheDocument();
+    expect(
+      within(summary).getByText("Animationen").nextElementSibling
+    ).toHaveTextContent("Pulsieren · 7 Frames");
+
+    rendered.unmount();
+    storage.mutations.splice(0);
+    renderStudio({ storage });
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Bewegung und Animation"
+      })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("checkbox", { name: "Pulsieren aktivieren" })
+    ).toBeChecked();
+    expect(
+      screen.getByRole("spinbutton", { name: "Frames für Pulsieren" })
+    ).toHaveValue(7);
+    expect(screen.queryByText("Richtungen")).not.toBeInTheDocument();
+    expect(storage.mutations).toEqual([]);
+  });
+
   it("validates category before subtype and focuses the missing classification field", async () => {
     const user = userEvent.setup();
     const { storage } = renderStudio();

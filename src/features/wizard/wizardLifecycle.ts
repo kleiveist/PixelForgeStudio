@@ -234,6 +234,8 @@ export function resolveWizardCoreStep(draft: WizardDraft): ResolvedWizardCoreSte
     switch (stepId) {
       case "characterDetails":
         return draft.category === "character";
+      case "movingObjectDetails":
+        return draft.category === "movingObject";
       case "directions":
         return capabilities.directional;
       case "animation":

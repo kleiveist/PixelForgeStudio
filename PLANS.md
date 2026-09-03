@@ -4,9 +4,39 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Abgeschlossene Aufgabe:** Prompt 14 — Character/NPC Editor
-- **Nächste Aufgabe:** Prompt 15 — Moving Object Editor
+- **Aktuelle Aufgabe:** keine — Prompt 15 ist abgeschlossen
+- **Nächste Aufgabe:** Prompt 16 — Texture/Material Editor
+- **Zuletzt abgeschlossen:** Prompt 15 — Moving Object Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 15
+
+1. Das strikte `MovingObjectAnswersSchema` additiv um Objektklasse,
+   Grundform, Maßstab/Footprint, Anker, Mechanik, Material, Zustand und
+   bewegungsbezogene Produktionsangaben erweitern. Bestehende V2-Felder
+   bleiben lesbar; persistierte Typen stammen weiterhin aus Zod.
+2. Moving-Object-Animationen als eigenes, Character-unabhängiges Modell mit
+   eindeutigen Sequenzen und eigener Framezahl definieren. Bestehende
+   `animationType`-/`framesPerDirection`-Daten bleiben ein schreibfreier
+   Lesepfad und werden erst bei einer gültigen Nutzeränderung kanonisch
+   projiziert.
+3. Einen eigenständigen responsiven `moving-object-editor` direkt nach der
+   Basisprofilwahl integrieren. Bewegung, Footprint, Anker, Mechanik,
+   Material und Zustand werden in RHF bearbeitet; Animation bleibt im
+   capability-gesteuerten Animationsschritt, Richtung ausschließlich im
+   vorhandenen `directional`-Schritt.
+4. Sämtliche Moving-Object-Werte durch Form-Snapshot, minimale
+   Base→Category→Asset-Projektion, Autosave, Profilstart und Resume führen.
+   Klassifikationswechsel bereinigen die Daten, ein Basiswechsel erhält sie;
+   ausdrücklich geleerte Elternwerte dürfen beim Resume nicht zurückkehren.
+5. Summary, Dashboard und Profilkarten um tatsächliche Objektklasse,
+   Bewegung, Footprint, Anker und konfigurierte Sequenzen ergänzen, ohne beim
+   pulsierenden nicht-directional Kristall ein Richtungsset zu erfinden.
+6. Domain-, Schema-, Routing-, Lifecycle- und RTL-Tests für Wagen und
+   schwebenden Kristall, Vererbung, Legacy-Hydration, Framegrenzen,
+   Richtungs-Gating, Autosave/Resume und Datenbereinigung ergänzen. Danach
+   Dokumentation, Vollverifikation, Abschlussaudit und separaten Prompt-15-
+   Commit ausführen.
 
 ## Ausführungsplan Prompt 14
 
@@ -628,6 +658,54 @@
   ein reiner Basiswechsel behält sie. Prompt Engine, Review und Export bleiben
   weiterhin späteren Phasen vorbehalten.
 
+## Ergebnis Prompt 15
+
+1. Eine öffentliche, frameworkfreie Moving-Object-Domain definiert
+   Objektklassen, Bewegung, Anker, Mechanik, Material, Zustand, Licht,
+   Schatten und kanonisch geordnete Animationssequenzen. Das additive strikte
+   Schema akzeptiert pro eindeutiger Sequenz 1 bis 16 Frames und hält die
+   bisherigen `animationType`-/`framesPerDirection`-Daten lesbar.
+2. Der eigene responsive Schritt `Objekt und Bewegung` folgt direkt auf die
+   Basisprofilwahl. Er erfasst Objektklasse, Zweck, Grundform, Beschreibung,
+   Footprint, Höhe, Anker, Bewegungsart, Mechanik, Material, Zustand sowie
+   Licht- und Schattenverhalten; die aus dem Untertyp abgeleitete Objektklasse
+   bleibt read-only sichtbar.
+3. Richtung und Animation sind unabhängig: Ein Wagen erhält den
+   capability-gesteuerten 4-/8-Richtungs-Schritt, während ein pulsierender
+   schwebender Kristall Sequenzen und Frames ohne Richtungsfrage bearbeiten
+   kann. Animationsdefaults entstehen ausschließlich durch das ausdrückliche
+   Aktivieren einer Sequenz.
+4. Moving-Object-Werte laufen durch Base→Category→Asset-Auflösung,
+   RHF-Rohsnapshot, minimale Draft-Projektion, Autosave und schreibfreies
+   Resume. Ein Basiswechsel erhält wirksame Fachdaten; Kategorie- oder
+   Untertypwechsel entfernt sie. Ausdrückliches Leeren geerbter Werte löst die
+   Elternprovenienz und verhindert deren Wiederkehr beim Resume.
+5. Wizard-Zusammenfassung und Dashboard zeigen Objektklasse, Bewegung,
+   Footprint, Anker, capability-gesteuerte Richtungen, Sequenzen mit Frames,
+   Material und Zustand. Legacy-Einzelanimationen werden weiterhin angezeigt,
+   ohne beim reinen Lesen kanonische Writes auszulösen.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle-, Dashboard- und RTL-Tests
+   decken insbesondere den Wagen- und Kristall-Flow, Legacy→Canonical,
+   Vererbung, Detach, Basiswechsel, Bereinigung, Autosave und Resume ab.
+
+## Übergabe an Prompt 16
+
+- Ergänze ausschließlich den fokussierten Texture-/Material-Editor aus
+  `docs/CODEX-V2-PROMPTS.md`: Materialart, Einsatz, Seamless-Verhalten,
+  Tilegröße, Strukturgrad, Zustand, Oberfläche, Feuchtigkeit/Vereisung und
+  Licht.
+- Texture-Daten erhalten einen eigenen strikt typisierten Schema-, Domain- und
+  Feature-Zweig. Character- und Moving-Object-Felder werden nicht
+  wiederverwendet; Richtung, Kleidung und Figurenfragen bleiben vollständig
+  ausgeblendet.
+- Neue Werte müssen wieder durch Klassifikationsbereinigung,
+  Base→Category→Asset-Vererbung, Rohsnapshot, minimale Draft-Projektion,
+  Autosave, schreibfreies Resume, Summary und Dashboard laufen.
+- Ein Holzprofil ist der verbindliche End-to-End-Fall. Es darf ausschließlich
+  Texturfragen und relevante gespeicherte Texturdaten erzeugen.
+- Prompt Engine, Review-/Output-Workspace und alle Editoren ab Prompt 17
+  bleiben späteren, getrennt zu committenden Phasen vorbehalten.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -669,7 +747,7 @@
 | 11 | Kategorie-Routing | Capability-gesteuerte Fragen | abgeschlossen |
 | 12 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | abgeschlossen |
 | 13 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | abgeschlossen |
-| 14 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | offen |
+| 14 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | abgeschlossen |
 | 15 | Textur-/Materialeditor | Material, Seamless, Oberfläche | offen |
 | 16 | Natur-/Baumeditor | Klima, Saison, Krone, Stamm etc. | offen |
 | 17 | Statische Objekte | Objektparameter ohne unnötige Bewegung | offen |

@@ -9,8 +9,13 @@ import {
 } from "../../domain/assets";
 import { CHARACTER_ANIMATION_ACTION_IDS } from "../../domain/characters";
 import {
+  MOVING_OBJECT_ANIMATION_TYPE_IDS,
+  getDefaultMovingObjectClass
+} from "../../domain/moving-objects";
+import {
   BaseProfileValuesSchema,
   CharacterAnswersSchema,
+  MovingObjectAnswersSchema,
   type BaseProfileValues
 } from "../../schemas";
 
@@ -67,6 +72,15 @@ const CharacterAnimationFramesSchema = z
   )
   .optional();
 
+const movingObjectAnswerShape = MovingObjectAnswersSchema.unwrap().shape;
+
+const MovingObjectAnimationFramesSchema = z
+  .partialRecord(
+    z.enum(MOVING_OBJECT_ANIMATION_TYPE_IDS),
+    z.number().int().min(1).max(16)
+  )
+  .optional();
+
 export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
   category: z.enum(ASSET_CATEGORY_IDS).optional(),
@@ -112,14 +126,28 @@ export const WizardCoreFormSchema = z.strictObject({
   lightingNotes: z.string().trim().max(2000).optional(),
   ...characterDetailFormShape,
   characterAnimationFrames: CharacterAnimationFramesSchema,
+  movingObjectClass: movingObjectAnswerShape.objectClass,
+  movingObjectPurpose: movingObjectAnswerShape.purpose,
+  movingObjectBasicShape: movingObjectAnswerShape.basicShape,
+  movingObjectDescription: movingObjectAnswerShape.subjectDescription,
+  movingObjectFootprintWidthTiles: z.number().int().min(1).max(64).optional(),
+  movingObjectFootprintDepthTiles: z.number().int().min(1).max(64).optional(),
+  movingObjectHeightPixels: movingObjectAnswerShape.heightPixels,
+  movingObjectAnchorMode: movingObjectAnswerShape.anchorMode,
+  movingObjectMechanism: movingObjectAnswerShape.mechanism,
+  movingObjectMaterial: movingObjectAnswerShape.material,
+  movingObjectMaterialDetails: movingObjectAnswerShape.materialDetails,
+  movingObjectCondition: movingObjectAnswerShape.condition,
+  movingObjectLightingBehavior: movingObjectAnswerShape.lightingBehavior,
+  movingObjectShadowMode: movingObjectAnswerShape.shadowMode,
+  movingObjectExtraDetails: movingObjectAnswerShape.extraDetails,
+  movingObjectAnimationFrames: MovingObjectAnimationFramesSchema,
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
     .enum(CHARACTER_ANIMATION_ACTION_IDS)
     .optional(),
   animationType: AnimationTypeSchema.optional(),
-  movementType: z
-    .enum(["roll", "slide", "hover", "walk", "crawl", "fly", "rotate"])
-    .optional(),
+  movementType: movingObjectAnswerShape.movementType,
   seamless: z.boolean().optional(),
   tileableAxes: z.enum(["horizontal", "vertical", "both", "none"]).optional()
 });
@@ -131,6 +159,7 @@ export type WizardCoreStepId =
   | "category"
   | "baseProfile"
   | "characterDetails"
+  | "movingObjectDetails"
   | "directions"
   | "animation"
   | "tileability";
@@ -213,6 +242,25 @@ export const WIZARD_CHARACTER_DETAIL_FIELD_PATHS = Object.freeze([
   "everydayTool",
   "frontBackDetails",
   "extraDetails"
+] as const satisfies readonly WizardCoreFieldPath[]);
+
+export const WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS = Object.freeze([
+  "movingObjectClass",
+  "movingObjectPurpose",
+  "movingObjectBasicShape",
+  "movingObjectDescription",
+  "movingObjectFootprintWidthTiles",
+  "movingObjectFootprintDepthTiles",
+  "movingObjectHeightPixels",
+  "movingObjectAnchorMode",
+  "movementType",
+  "movingObjectMechanism",
+  "movingObjectMaterial",
+  "movingObjectMaterialDetails",
+  "movingObjectCondition",
+  "movingObjectLightingBehavior",
+  "movingObjectShadowMode",
+  "movingObjectExtraDetails"
 ] as const satisfies readonly WizardCoreFieldPath[]);
 
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
@@ -392,6 +440,25 @@ function validateCapabilityFields(
       "Figurenaktionen sind für diesen Untertyp nicht verfügbar."
     );
   }
+  for (const field of WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS) {
+    if (values[field] !== undefined && category !== "movingObject") {
+      addFieldIssue(
+        context,
+        field,
+        "Bewegungsobjekt-Daten gehören nicht zur gewählten Asset-Kategorie."
+      );
+    }
+  }
+  if (
+    values.movingObjectAnimationFrames !== undefined &&
+    (category !== "movingObject" || !capabilities.animated)
+  ) {
+    addFieldIssue(
+      context,
+      "movingObjectAnimationFrames",
+      "Bewegungsobjekt-Sequenzen sind für diesen Untertyp nicht verfügbar."
+    );
+  }
   if (
     values.movementType !== undefined &&
     (category !== "movingObject" || !capabilities.movable)
@@ -401,6 +468,37 @@ function validateCapabilityFields(
       "movementType",
       "Diese Bewegungsart gehört nicht zum gewählten Untertyp."
     );
+  }
+  if (category === "movingObject") {
+    const width = values.movingObjectFootprintWidthTiles;
+    const depth = values.movingObjectFootprintDepthTiles;
+    if (width !== undefined && depth === undefined) {
+      addFieldIssue(
+        context,
+        "movingObjectFootprintDepthTiles",
+        "Ergänze zur Breite auch die Tiefe der Standfläche."
+      );
+    }
+    if (depth !== undefined && width === undefined) {
+      addFieldIssue(
+        context,
+        "movingObjectFootprintWidthTiles",
+        "Ergänze zur Tiefe auch die Breite der Standfläche."
+      );
+    }
+    if (
+      values.movingObjectClass !== undefined &&
+      values.movingObjectClass !==
+        getDefaultMovingObjectClass(
+          selection.subtype as (typeof ASSET_SUBTYPES.movingObject)[number]
+        )
+    ) {
+      addFieldIssue(
+        context,
+        "movingObjectClass",
+        "Die Objektklasse passt nicht zum gewählten Untertyp."
+      );
+    }
   }
   if (values.animationType !== undefined) {
     const allowedAnimationTypes = ANIMATION_TYPES_BY_CATEGORY[category];
@@ -504,6 +602,17 @@ export const WizardCharacterDetailsStepSchema =
       );
     }
   });
+export const WizardMovingObjectDetailsStepSchema =
+  WizardCoreFormSchema.superRefine((values, context) => {
+    refineSelectedValues(values, context, undefined, true);
+    if (values.category !== undefined && values.category !== "movingObject") {
+      addFieldIssue(
+        context,
+        "category",
+        "Der Bewegungsobjekt-Editor ist nur für bewegliche Objekte verfügbar."
+      );
+    }
+  });
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) =>
     refineSelectedValues(values, context, "directional", true)
@@ -570,6 +679,15 @@ export const WIZARD_CORE_STEPS = Object.freeze([
     schema: WizardCharacterDetailsStepSchema
   }),
   Object.freeze({
+    id: "movingObjectDetails",
+    route: "wizard/editor",
+    title: "Objekt und Bewegung",
+    description:
+      "Beschreibe Objektklasse, Maßstab, Anker, Mechanik, Material und Zustand des beweglichen Assets.",
+    fieldPaths: WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
+    schema: WizardMovingObjectDetailsStepSchema
+  }),
+  Object.freeze({
     id: "directions",
     route: "wizard/editor",
     title: "Richtungen",
@@ -586,10 +704,10 @@ export const WIZARD_CORE_STEPS = Object.freeze([
       "Beschreibe zeitliche Bewegung, ohne Animation automatisch mit Richtungen gleichzusetzen.",
     fieldPaths: Object.freeze(
       [
-        "movementType",
         "animationAction",
         "animationType",
-        "characterAnimationFrames"
+        "characterAnimationFrames",
+        "movingObjectAnimationFrames"
       ] as const
     ),
     schema: WizardAnimationStepSchema

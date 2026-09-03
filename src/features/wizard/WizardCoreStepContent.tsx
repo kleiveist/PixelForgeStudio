@@ -6,12 +6,20 @@ import {
   type AssetSubtype
 } from "../../domain/assets";
 import type { CharacterSubtype } from "../../domain/characters";
+import {
+  getDefaultMovingObjectClass,
+  type MovingObjectSubtype
+} from "../../domain/moving-objects";
 import type { ProfileLibrary } from "../../schemas";
 import {
   CharacterAnimationEditor,
   CharacterDetailsEditor,
   type CharacterHeightSource
 } from "../character-editor";
+import {
+  MovingObjectAnimationEditor,
+  MovingObjectDetailsEditor
+} from "../moving-object-editor";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import {
   DASHBOARD_CATEGORIES,
@@ -31,8 +39,9 @@ import {
   wizardStepIsApplicable
 } from "./wizardCategoryRouting";
 import {
-  WIZARD_CORE_STEPS,
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+  WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
+  getWizardCoreStep,
   type WizardCoreFieldPath,
   type WizardCoreFormValues,
   type WizardCoreStepId
@@ -64,25 +73,7 @@ const CAPABILITY_LABELS = {
   freeComposition: "freie Komposition"
 } as const;
 
-const MOVEMENT_TYPE_OPTIONS = [
-  ["roll", "rollen"],
-  ["slide", "gleiten"],
-  ["hover", "schweben"],
-  ["walk", "laufen"],
-  ["crawl", "kriechen"],
-  ["fly", "fliegen"],
-  ["rotate", "rotieren"]
-] as const;
-
 const ANIMATION_TYPE_OPTIONS = {
-  movingObject: [
-    ["idle", "Idle-Loop"],
-    ["move", "Bewegung"],
-    ["rotate", "Rotation"],
-    ["interact", "Interaktion"],
-    ["openClose", "Öffnen / Schließen"],
-    ["pulse", "Pulsieren"]
-  ],
   staticObject: [
     ["openClose", "Öffnen / Schließen"],
     ["glow", "Leuchten"],
@@ -105,11 +96,12 @@ const ANIMATION_TYPE_OPTIONS = {
 const CLASSIFICATION_FIELDS = [
   "subtype",
   ...WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+  ...WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   "characterAnimationFrames",
+  "movingObjectAnimationFrames",
   "directionCount",
   "animationAction",
   "animationType",
-  "movementType",
   "seamless",
   "tileableAxes"
 ] as const satisfies readonly WizardCoreFieldPath[];
@@ -224,7 +216,21 @@ function CategoryStep({ draft, form }: CoreStepProps) {
   const applySubtype = (nextSubtype: AssetSubtype | ""): void => {
     subtypeController.field.onChange(undefined);
     clearClassificationFields(form, false);
-    if (nextSubtype !== "") subtypeController.field.onChange(nextSubtype);
+    if (nextSubtype !== "") {
+      subtypeController.field.onChange(nextSubtype);
+      const movingObjectSubtypes: readonly string[] =
+        ASSET_SUBTYPES.movingObject;
+      if (
+        category === "movingObject" &&
+        movingObjectSubtypes.includes(nextSubtype)
+      ) {
+        form.setValue(
+          "movingObjectClass",
+          getDefaultMovingObjectClass(nextSubtype as MovingObjectSubtype),
+          { shouldDirty: true, shouldTouch: true, shouldValidate: true }
+        );
+      }
+    }
     setPendingSubtype(null);
   };
 
@@ -551,6 +557,36 @@ function CharacterDetailsStep({ context, draft, form }: CoreStepProps) {
   );
 }
 
+function MovingObjectDetailsStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
+  const knownMovingObjectSubtypes: readonly string[] =
+    ASSET_SUBTYPES.movingObject;
+
+  if (
+    category !== "movingObject" ||
+    subtype === undefined ||
+    !knownMovingObjectSubtypes.includes(subtype)
+  ) {
+    return (
+      <section className={styles.changeWarning} role="alert">
+        <strong>Bewegungsobjekt nicht verfügbar</strong>
+        <p>
+          Kehre zur Bildart zurück und wähle einen gültigen Untertyp für ein
+          bewegliches Objekt.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <MovingObjectDetailsEditor
+      form={form}
+      subtype={subtype as MovingObjectSubtype}
+    />
+  );
+}
+
 function AnimationSelect({
   form,
   options
@@ -578,6 +614,7 @@ function AnimationSelect({
 
 function AnimationStep({ form, notifyProgrammaticChange }: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
   const values = form.getValues();
   const capabilities = resolveWizardCapabilities(values);
 
@@ -605,29 +642,14 @@ function AnimationStep({ form, notifyProgrammaticChange }: CoreStepProps) {
         />
       ) : null}
 
-      {category === "movingObject" ? (
-        <>
-          <div className={styles.fieldGroup}>
-            <label htmlFor="wizard-movement-type">Bewegungsart</label>
-            <select
-              id="wizard-movement-type"
-              {...form.register("movementType", {
-                setValueAs: optionalSelectValue
-              })}
-            >
-              <option value="">Noch nicht festgelegt</option>
-              {MOVEMENT_TYPE_OPTIONS.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <AnimationSelect
-            form={form}
-            options={ANIMATION_TYPE_OPTIONS.movingObject}
-          />
-        </>
+      {category === "movingObject" &&
+      subtype !== undefined &&
+      (ASSET_SUBTYPES.movingObject as readonly string[]).includes(subtype) ? (
+        <MovingObjectAnimationEditor
+          form={form}
+          notifyProgrammaticChange={notifyProgrammaticChange}
+          subtype={subtype as MovingObjectSubtype}
+        />
       ) : null}
 
       {category === "staticObject" ? (
@@ -727,6 +749,7 @@ const STEP_COMPONENTS = {
   category: CategoryStep,
   baseProfile: BaseProfileStep,
   characterDetails: CharacterDetailsStep,
+  movingObjectDetails: MovingObjectDetailsStep,
   directions: DirectionsStep,
   animation: AnimationStep,
   tileability: TileabilityStep
@@ -734,10 +757,16 @@ const STEP_COMPONENTS = {
 
 export const WIZARD_CORE_FLOW = Object.freeze({
   steps: Object.freeze([
-    Object.freeze({ ...WIZARD_CORE_STEPS[0], Component: STEP_COMPONENTS.project }),
-    Object.freeze({ ...WIZARD_CORE_STEPS[1], Component: STEP_COMPONENTS.category }),
     Object.freeze({
-      ...WIZARD_CORE_STEPS[2],
+      ...getWizardCoreStep("project"),
+      Component: STEP_COMPONENTS.project
+    }),
+    Object.freeze({
+      ...getWizardCoreStep("category"),
+      Component: STEP_COMPONENTS.category
+    }),
+    Object.freeze({
+      ...getWizardCoreStep("baseProfile"),
       Component: STEP_COMPONENTS.baseProfile,
       isApplicable: (
         values: WizardCoreFormValues,
@@ -745,7 +774,7 @@ export const WIZARD_CORE_FLOW = Object.freeze({
       ) => wizardStepIsApplicable("baseProfile", values, context.library)
     }),
     Object.freeze({
-      ...WIZARD_CORE_STEPS[3],
+      ...getWizardCoreStep("characterDetails"),
       Component: STEP_COMPONENTS.characterDetails,
       isApplicable: (
         values: WizardCoreFormValues,
@@ -753,7 +782,15 @@ export const WIZARD_CORE_FLOW = Object.freeze({
       ) => wizardStepIsApplicable("characterDetails", values, context.library)
     }),
     Object.freeze({
-      ...WIZARD_CORE_STEPS[4],
+      ...getWizardCoreStep("movingObjectDetails"),
+      Component: STEP_COMPONENTS.movingObjectDetails,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("movingObjectDetails", values, context.library)
+    }),
+    Object.freeze({
+      ...getWizardCoreStep("directions"),
       Component: STEP_COMPONENTS.directions,
       isApplicable: (
         values: WizardCoreFormValues,
@@ -761,7 +798,7 @@ export const WIZARD_CORE_FLOW = Object.freeze({
       ) => wizardStepIsApplicable("directions", values, context.library)
     }),
     Object.freeze({
-      ...WIZARD_CORE_STEPS[5],
+      ...getWizardCoreStep("animation"),
       Component: STEP_COMPONENTS.animation,
       isApplicable: (
         values: WizardCoreFormValues,
@@ -769,7 +806,7 @@ export const WIZARD_CORE_FLOW = Object.freeze({
       ) => wizardStepIsApplicable("animation", values, context.library)
     }),
     Object.freeze({
-      ...WIZARD_CORE_STEPS[6],
+      ...getWizardCoreStep("tileability"),
       Component: STEP_COMPONENTS.tileability,
       isApplicable: (
         values: WizardCoreFormValues,
