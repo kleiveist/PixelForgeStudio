@@ -1,6 +1,16 @@
 import { z } from "zod";
 import { ASSET_SUBTYPES } from "../domain/assets";
 import {
+  ARTWORK_BACKGROUND_IDS,
+  ARTWORK_COMPOSITION_IDS,
+  ARTWORK_DETAIL_LEVEL_IDS,
+  ARTWORK_FOCUS_IDS,
+  ARTWORK_FORMAT_IDS,
+  ARTWORK_LIGHTING_DRAMA_IDS,
+  ARTWORK_MOTIF_IDS,
+  ARTWORK_PURPOSE_IDS
+} from "../domain/artworks";
+import {
   CHARACTER_AGE_IDS,
   CHARACTER_ANIMATION_ACTION_IDS,
   CHARACTER_BODY_BUILD_IDS,
@@ -131,6 +141,7 @@ const BuildingDetailSchema = z.string().trim().min(1).max(500);
 const TilesetDescriptorSchema = z.string().trim().min(1).max(200);
 const TilesetDetailSchema = z.string().trim().min(1).max(500);
 const ItemDetailSchema = z.string().trim().min(1).max(500);
+const ArtworkDetailSchema = z.string().trim().min(1).max(1000);
 
 export const CharacterAnimationActionSchema = z
   .strictObject({
@@ -437,11 +448,18 @@ export const ItemAnswersSchema = z
 export const ArtworkAnswersSchema = z
   .strictObject({
     ...sharedAnswersShape,
-    purpose: z.enum(["concept", "presentation", "productionReference"]).optional(),
-    composition: z.enum(["singleSubject", "group", "scene"]).optional(),
-    format: z.enum(["square", "portrait", "landscape", "free"]).optional(),
-    background: z.enum(["transparent", "simple", "complete"]).optional(),
-    focus: z.enum(["form", "material", "mood", "story", "scale"]).optional()
+    purpose: z.enum(ARTWORK_PURPOSE_IDS).optional(),
+    motif: z.enum(ARTWORK_MOTIF_IDS).optional(),
+    sceneDescription: ArtworkDetailSchema.optional(),
+    composition: z.enum(ARTWORK_COMPOSITION_IDS).optional(),
+    compositionDetails: ArtworkDetailSchema.optional(),
+    format: z.enum(ARTWORK_FORMAT_IDS).optional(),
+    background: z.enum(ARTWORK_BACKGROUND_IDS).optional(),
+    backgroundDetails: ArtworkDetailSchema.optional(),
+    focus: z.enum(ARTWORK_FOCUS_IDS).optional(),
+    lightingDrama: z.enum(ARTWORK_LIGHTING_DRAMA_IDS).optional(),
+    lightingDetails: ArtworkDetailSchema.optional(),
+    detailLevel: z.enum(ARTWORK_DETAIL_LEVEL_IDS).optional()
   })
   .readonly();
 

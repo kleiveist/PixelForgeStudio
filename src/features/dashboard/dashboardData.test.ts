@@ -414,7 +414,13 @@ describe("dashboard data", () => {
     expect(artworkSummary).toMatchObject({
       categoryLabel: "Artwork / Konzeptbild",
       subtypeLabel: "Szene",
-      facts: ["Modern-HD", "Vollständiger Hintergrund", "Stil A + B"],
+      facts: [
+        "Modern-HD",
+        "Vollständiger Hintergrund",
+        "Artworktyp: Szene",
+        "Komposition: Gestaffelte Szene",
+        "Stil A + B"
+      ],
       materials: ["cloth"]
     });
     expect(artworkSummary?.facts.join(" ")).not.toMatch(

@@ -352,16 +352,17 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 21
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 22
 
 - `project`, `category`/`subtype`, `baseProfile`, `characterDetails`,
   `movingObjectDetails`, `staticObjectDetails`, `textureDetails`,
-  `natureDetails`, `buildingDetails`, `tilesetDetails` und die
+  `natureDetails`, `buildingDetails`, `tilesetDetails`, `itemDetails`,
+  `artworkDetails` und die
   Capability-Schritte sind stabil und deklarativ konfiguriert; jeder besitzt
   Zod-Schema und RHF-Feldpfade. Die Reihenfolge ist
   `project → category/subtype → baseProfile → characterDetails,
   movingObjectDetails, staticObjectDetails, textureDetails, natureDetails,
-  buildingDetails oder tilesetDetails, falls relevant
+  buildingDetails, tilesetDetails, itemDetails oder artworkDetails, falls relevant
   → Capability-Schritte`.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
@@ -591,8 +592,23 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   Drafts an dieser Stufe werden beim Resume schreibfrei auf `tilesetDetails`
   umgeleitet. Animation bleibt nur beim animierten Tile separat; kein Tileset
   erhält Richtungen oder Figurenhöhe.
-- Prompts 00 bis 21 sind abgeschlossen. Prompt 22 ergänzt als nächste Phase
-  den Artwork-Editor. Prompt 21 enthält weder Prompt Engine
+- Der Item-/Equipment-Editor ist ein eigener `itemDetails`-Fachschritt direkt
+  nach der Basisprofilwahl. Er erfasst nur Item-Fachwerte; Itemklasse,
+  Hintergrund und Maßstab werden abgeleitet oder read-only gezeigt. Wearable-
+  Felder sind auf tragbare Untertypen begrenzt, Richtung und Animation bleiben
+  ausgeschlossen.
+- Der Artwork-Editor ist ein eigener `artworkDetails`-Fachschritt direkt nach
+  der Basisprofilwahl. Er erfasst Zweck, Motiv, Szene, Komposition, Format,
+  Hintergrund, Fokus, Lichtdramaturgie und Detailgrad. Artworktyp und
+  allgemeine Art Direction werden abgeleitet beziehungsweise read-only
+  gezeigt.
+- Artwork-Felder nutzen Base→Category→Asset-Auflösung, minimale lokale
+  Projektion, Explicit Clear, Rohzustand, 300-ms-Autosave und exaktes
+  schreibfreies Resume. `freeComposition` blendet Tile-, Sprite-, Weltkamera-,
+  Figuren-, Richtungs- und Animationsregeln aus; Summary und Dashboard zeigen
+  nur kompakte tatsächliche Artwork-Fakten.
+- Prompts 00 bis 22 sind abgeschlossen. Prompt 23 ergänzt als nächste Phase
+  die Prompt Engine 2.0. Prompt 22 enthält weder Prompt Engine
   beziehungsweise Review-/Output-Erzeugung noch In-place-Mutation oder
   Reparenting einer bestehenden Basisfamilie.
 
@@ -1105,6 +1121,15 @@ Umgesetzt seit Prompt 20:
   Figurenmaßstabsfragen bleiben vollständig ausgeschlossen. Prompt Engine,
   Review und Output folgen später.
 
+## 13.8 Item / Equipment
+
+- Itemklasse
+- Material
+- Zustand
+- Seltenheits-/Bedeutungsgrad ohne erzwungene UI-Farbe
+- Freistellung
+- Größen-/Lesbarkeitsregeln
+
 Umgesetzt seit Prompt 21:
 
 - `src/domain/items/` veröffentlicht stabile readonly Kataloge, das
@@ -1120,16 +1145,7 @@ Umgesetzt seit Prompt 21:
   Wearable-Untertypen begrenzt. Kein Item ist `directional` oder `animated`.
 - Base→Category→Asset-Hydration, minimale Projektion, Explicit Clear,
   Rohzustand, Autosave, schreibfreies Resume, Summary und Dashboard gelten für
-  alle Item-Felder. Artwork, Prompt Engine, Review und Output folgen später.
-
-## 13.8 Item / Equipment
-
-- Itemklasse
-- Material
-- Zustand
-- Seltenheits-/Bedeutungsgrad ohne erzwungene UI-Farbe
-- Freistellung
-- Größen-/Lesbarkeitsregeln
+  alle Item-Felder. Prompt Engine, Review und Output folgen später.
 
 ## 13.9 Artwork
 
@@ -1141,6 +1157,24 @@ Umgesetzt seit Prompt 21:
 - Fokus
 - Lichtdramaturgie
 - Tile-/Sprite-Regeln nur bei ausdrücklicher Aktivierung
+
+Umgesetzt seit Prompt 22:
+
+- `src/domain/artworks/` veröffentlicht stabile readonly Kataloge und das
+  vollständige Untertyp→Artworktyp-Mapping. Der Typ wird nicht redundant als
+  frei editierbare Antwort gespeichert.
+- `ArtworkAnswersSchema` erweitert den alten V2-Vertrag strikt und additiv um
+  Motiv, Szene, Kompositionsdetails, Lichtdramaturgie, Lichtdetails und
+  Detailgrad. Fehlende Altwerte werden nicht materialisiert.
+- `src/features/artwork-editor/` rendert `ArtworkConceptEditor` ausschließlich
+  im eigenen `artworkDetails`-Schritt. Allgemeine geerbte Art Direction ist
+  read-only; die Fachfragen gehören React Hook Form.
+- Base→Category→Asset-Hydration, minimale Projektion, Explicit Clear,
+  Rohzustand, Autosave, schreibfreies Resume, Summary und Dashboard gelten für
+  alle Artwork-Felder.
+- `freeComposition` aktiviert keine Tile-, Sprite-, Weltkamera-, Figuren-,
+  Richtungs- oder Animationsregeln. Prompt Engine, Review und Output folgen
+  später.
 
 ---
 
@@ -1269,6 +1303,13 @@ Mit Vitest:
 - Tileset-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
 - deterministische Atlasmetriken sowie technische Spezifikation für Raster,
   Kapazität, Leerplätze, Abstände und Canvasgröße
+- Item-Kataloge, Untertyp-/Itemklassen-Konsistenz, Wearable-Guard und additive
+  Schema-V2-Lesbarkeit ohne Defaults
+- Item-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
+- Artwork-Kataloge, Untertyp-/Artworktyp-Konsistenz und additive
+  Schema-V2-Lesbarkeit ohne Defaults
+- Artwork-Vererbung, minimaler Draft-Roundtrip, Explicit-Clear-Detach und
+  Compatibility Key ohne freie Weltgeometrie
 - Migrationslogik
 - Promptmodule
 - Canvas-/Frame-Metriken
@@ -1311,6 +1352,12 @@ Mit React Testing Library + user-event:
 - Tileset-Autosave, schreibfreie Hydration/Resume, zentrale read-only Tilegröße,
   live berechnete Atlasmetriken sowie Summary-/Dashboard-Fakten ohne Richtungs-
   oder Figurenhöhenfrage
+- Item-Detailstep, Wearable-Gating, Autosave, schreibfreie Hydration/Resume und
+  Summary-/Dashboard-Fakten ohne Richtungs- oder Animationsfrage
+- Artwork-Detailstep mit Zweck, Motiv, Szene, Komposition, Format, Hintergrund,
+  Fokus, Licht und Detailgrad sowie schreibfreier Hydration/Resume
+- Artwork-Autosave und Summary-/Dashboard-Fakten ohne Tile-, Sprite-, Kamera-,
+  Figuren-, Richtungs- oder Animationsfrage
 - Theme-Wechsel
 - Profil laden/speichern
 - Lock-Konfliktworkflow

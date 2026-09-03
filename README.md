@@ -69,8 +69,8 @@ V1 inventarisieren ✓
 → Building-/Architecture-Editor mit Fassade, Mapping und Lichtmodell ✓
 → Tileset-Editor mit Kanten-, Seam-, Varianten- und Atlasmodell ✓
 → Item-/Equipment-Editor mit Material-, Funktions- und Lesbarkeitsmodell ✓
-→ Artwork-Editor (nächste Phase)
-→ Prompt Engine 2.0
+→ Artwork-Editor mit freier Komposition und Lichtdramaturgie ✓
+→ Prompt Engine 2.0 (nächste Phase)
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
 ```
@@ -227,14 +227,23 @@ read-only gezeigt. Trageposition und ausgerüstete Ansicht sind auf explizit
 tragbare Untertypen begrenzt. Kein Item erhält eine 4/8-Richtungs- oder
 Animationsfrage.
 
+Der eigene `artworkDetails`-Schritt erfasst Zweck, Motiv, Szene, Komposition,
+Format, Hintergrund, Fokus, Lichtdramaturgie und Detailgrad. Der Artworktyp
+wird aus dem Untertyp abgeleitet; allgemeine Art Direction wird aus der
+Profilkette read-only gezeigt. Freie Komposition aktiviert weder Tile- oder
+Sprite-Raster noch Weltkamera, Figurenmaßstab, Richtungsset oder Animation.
+Artwork-Felder folgen demselben Base→Category→Asset-, Minimalprojektions-,
+Explicit-Clear-, Rohzustands-, Autosave- und schreibfreien Resume-Vertrag;
+Live-Zusammenfassung und Dashboard zeigen nur kompakte Artwork-Fakten.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 21 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 22 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 22 — Artwork Editor
+→ Prompt 23 — Prompt Engine 2.0
 ```
 
 Danach immer genau:
@@ -257,8 +266,8 @@ einer deklarativen, produktspezifischen Flow-Definition. Sie bietet
 Zod-Validierung, sichtbaren Fortschritt, Dirty-/Autosave-Status, exaktes Resume
 und eine technische Zusammenfassung. Der stabile Einstieg lautet
 `Projekt → Hauptkategorie/Untertyp → Basisprofil → Character-, Moving-Object-,
-Static-Object-, Texture-, Nature- oder Building-Details, falls relevant
-→ Capability-Schritte`.
+Static-Object-, Texture-, Nature-, Building-, Tileset-, Item- oder
+Artwork-Details, falls relevant → Capability-Schritte`.
 Der Basisprofil-Schritt zeigt wirksame Werte mit Quelle und Sperrstatus,
 normalisiert entsperrte Abweichungen zu minimalen Draft-Overrides und bietet
 bei Locks einen bewussten Wechsel, ein Duplikat oder eine neue Familie an.
@@ -315,6 +324,10 @@ Tileset-Antworten folgen demselben Vererbungs-, Minimalprojektions-,
 Explicit-Clear-, Rohzustands-, Autosave- und schreibfreien Resume-Vertrag.
 Live-Zusammenfassung und Dashboard zeigen nur tatsächliche Verbindungs-, Seam-,
 Varianten- und berechnete Atlasfakten, niemals Richtungs- oder Figurenwerte.
+Item- und Artwork-Antworten nutzen denselben Vertrag. Artwork bleibt als
+`freeComposition` von Tile-, Sprite-, Weltkamera-, Figuren-, Richtungs- und
+Animationsregeln entkoppelt; Summary und Dashboard zeigen nur tatsächlich
+konfigurierte Fachwerte.
 Prompt-Erzeugung und Output-Flächen folgen erst in ihren späteren Phasen.
 
 ## Legacy-V1 lokal prüfen

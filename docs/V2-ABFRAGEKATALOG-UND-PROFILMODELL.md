@@ -97,14 +97,14 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 21
+## 4.3 Umgesetzter Einstieg bis Prompt 22
 
 Der aktuell implementierte Core-Flow lautet:
 
 ```text
 Projekt → Hauptkategorie/Untertyp → Basisprofil
 → Character-, Moving-Object-, Static-Object-, Texture-, Nature-, Building-,
-Tileset- oder Item-Details, falls relevant
+Tileset-, Item- oder Artwork-Details, falls relevant
 → Capability-Schritte
 ```
 
@@ -114,11 +114,12 @@ erfolgreich neu angelegte Basisfamilie öffnet die nachfolgenden Richtungs-,
 Animations- oder Kachelbarkeitsfragen. Deren Sichtbarkeit stammt ausschließlich
 aus `resolveCapabilities()`. Für die Hauptkategorie `character` liegt zwischen
 Basisprofil und Capability-Schritten ein eigener Character-/NPC-Fachschritt.
-`movingObject`, `staticObject`, `texture`, `nature`, `building` und `tileset` nutzen an derselben
-Stelle ihre eigenen `movingObjectDetails`-, `staticObjectDetails`-,
-`textureDetails`-, `natureDetails`-, `buildingDetails`- beziehungsweise
-`tilesetDetails`-Schritte; alle anderen Kategorien überspringen diese sieben
-Fachschritte.
+`movingObject`, `staticObject`, `texture`, `nature`, `building`, `tileset`,
+`item` und `artwork` nutzen an derselben Stelle ihre eigenen
+`movingObjectDetails`-, `staticObjectDetails`-, `textureDetails`-,
+`natureDetails`-, `buildingDetails`-, `tilesetDetails`-, `itemDetails`-
+beziehungsweise `artworkDetails`-Schritte; nicht passende Kategorien
+überspringen diese neun Fachschritte.
 
 Der Basisprofil-Schritt zeigt für alle relevanten Produktionswerte den
 wirksamen Wert, seine Quelle (Basisprofil, Kategorieprofil oder lokaler Entwurf)
@@ -225,10 +226,20 @@ Ausrüstungsdarstellung, zeigt technische Profilwerte read-only und führt keine
 Richtungs- oder Animationslogik ein. Summary und Dashboard zeigen kompakte
 tatsächliche Item- und Materialfakten.
 
-Prompts 00 bis 21 sind abgeschlossen. Prompt 22 ergänzt als nächste Phase den
-Artwork-Editor.
+Der Artwork-Schritt erfasst den aus dem Untertyp abgeleiteten Artworktyp sowie
+Zweck, Motiv, Szene, Komposition, Format, Hintergrund, Fokus,
+Lichtdramaturgie und Detailgrad im gemeinsamen RHF-/Draft-/Autosave-/Resume-
+Pfad. Allgemeine geerbte Art Direction wird read-only gezeigt.
+`freeComposition` aktiviert weder Tile-/Sprite-Raster noch Weltkamera,
+Figurenmaßstab, Richtung oder Animation. Basiswechsel erhalten Artwork-
+Antworten, Klassifikationswechsel bereinigen sie und Explicit Clear löst
+geerbte Provenienz. Summary und Dashboard zeigen nur kompakte tatsächliche
+Artwork-Fakten.
+
+Prompts 00 bis 22 sind abgeschlossen. Prompt 23 ergänzt als nächste Phase die
+Prompt Engine 2.0.
 Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
-Tabelle oben werden durch Prompt 21 noch nicht als fertig erklärt.
+Tabelle oben werden durch Prompt 22 noch nicht als fertig erklärt.
 
 ---
 
@@ -1042,6 +1053,25 @@ keine schreibende Migration beim bloßen Laden statt.
 | Beschriftung | standardmäßig keine eingebrannte Schrift |
 | Output | Einzelbild oder Varianten |
 
+### Implementierungsstand seit Prompt 22
+
+- Der eigene `artworkDetails`-Schritt erscheint ausschließlich für die
+  Artwork-Kategorie direkt nach der Basisprofilwahl. Er erfasst Zweck, Motiv,
+  Beschreibung, Szene, Komposition, Format, Hintergrund, Fokus,
+  Lichtdramaturgie, Detailgrad und Zusatzdetails.
+- `ARTWORK_TYPE_BY_SUBTYPE` leitet den Artworktyp vollständig und
+  deterministisch ab. Der Typ und allgemeine geerbte Art Direction sind im
+  Editor read-only und werden nicht als widersprüchliche Fachwerte geführt.
+- Base→Category→Asset-Hydration und minimale lokale Projektion gelten für alle
+  Artwork-Felder. Explicit Clear löst Kategorieprovenienz; Basiswechsel
+  erhalten Artwork-Antworten, Klassifikationswechsel bereinigen sie.
+  Rohzustand, Autosave und Resume verwenden den gemeinsamen schreibfreien
+  Wizard-Vertrag.
+- `freeComposition` hält Tile-, Sprite-, Weltkamera-, Figuren-, Richtungs- und
+  Animationsregeln aus Editor, neuer Draft-Projektion, Summary und Dashboard.
+  Vorhandene Profilwerte bleiben verlustfrei lesbar; der Compatibility Key
+  ignoriert ihre für Artwork irrelevante Weltgeometrie.
+
 ---
 
 # 9. Setting- und Lichtkatalog
@@ -1336,6 +1366,15 @@ Wearable-Daten bleiben capability-gültigen Untertypen vorbehalten.
 Technischer Hintergrund, Tilegröße, Pixelmaßstab, Figurenhöhe, Animation und
 Richtungsdaten bleiben vollständig außerhalb von `ItemAnswers`.
 
+Für Artworks erweitert Prompt 22 den strikten Schema-V2-Vertrag additiv um
+`motif`, `sceneDescription`, `compositionDetails`, `backgroundDetails`,
+`lightingDrama`, `lightingDetails` und `detailLevel`. Die bisherigen Felder
+`subjectDescription`, `extraDetails`, `purpose`, `composition`, `format`,
+`background` und `focus` bleiben ohne materialisierte Defaults lesbar. Der
+Artworktyp wird vollständig aus dem Untertyp abgeleitet. Tilegröße,
+Weltkamera, Figurenmaßstab, Sprite-, Animations- und Richtungsdaten bleiben
+vollständig außerhalb von `ArtworkAnswers`.
+
 ## 12.4 Wizard-Draft
 
 ```json
@@ -1410,6 +1449,16 @@ beziehungsweise Profilkette aufgelöst. Die generische `tileability`-Stufe wird
 nicht zusätzlich gerendert; alte Drafts an dieser Position werden schreibfrei
 auf den Fachschritt umgeleitet. Eine optionale Tileanimation bleibt separat und
 erzeugt kein Richtungsset.
+Für Items folgt `itemDetails`; alle Fachfelder und capability-gültigen
+Wearable-Werte gehören zu Rohzustand, Autosave und exaktem schreibfreien
+Resume. Itemklasse und technische Darstellungswerte werden aus Untertyp und
+Profilkette aufgelöst. Richtung und Animation bleiben ausgeschlossen.
+Für Artworks folgt `artworkDetails`; Zweck, Motiv, Beschreibung, Szene,
+Komposition, Format, Hintergrund, Fokus, Lichtdramaturgie, Detailgrad und
+Zusatzdetails gehören zu Rohzustand, Autosave und exaktem schreibfreien
+Resume. Artworktyp und allgemeine Art Direction werden aus Untertyp und
+Profilkette aufgelöst. `freeComposition` erzeugt keine Tile-, Sprite-,
+Weltkamera-, Figuren-, Richtungs- oder Animationsstufe.
 Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
 und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
 Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale
@@ -1428,10 +1477,11 @@ werden beim nächsten gültigen Draft-Snapshot erneut auf minimale Overrides
 normalisiert.
 
 Das ausdrückliche Leeren eines vom Kategorieprofil geerbten Character-,
-Moving-Object-, Static-Object-, Texture-, Nature-, Building- oder Tileset-Feldes löst
-Kategorie- und Assetprovenienz. Alle anderen wirksamen Fachantworten und
-technischen Werte werden relativ zur Base materialisiert, damit der entfernte
-Default nach Autosave und Resume nicht erneut erscheint.
+Moving-Object-, Static-Object-, Texture-, Nature-, Building-, Tileset-, Item-
+oder Artwork-Feldes löst Kategorie- und Assetprovenienz. Alle anderen
+wirksamen Fachantworten und technischen Werte werden relativ zur Base
+materialisiert, damit der entfernte Default nach Autosave und Resume nicht
+erneut erscheint.
 
 ---
 

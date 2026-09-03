@@ -248,6 +248,8 @@ export function resolveWizardCoreStep(draft: WizardDraft): ResolvedWizardCoreSte
         return draft.category === "tileset";
       case "itemDetails":
         return draft.category === "item";
+      case "artworkDetails":
+        return draft.category === "artwork";
       case "directions":
         return capabilities.directional;
       case "animation":

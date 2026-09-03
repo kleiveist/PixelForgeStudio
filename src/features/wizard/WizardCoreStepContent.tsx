@@ -5,6 +5,7 @@ import {
   type AssetCategory,
   type AssetSubtype
 } from "../../domain/assets";
+import type { ArtworkSubtype } from "../../domain/artworks";
 import type { CharacterSubtype } from "../../domain/characters";
 import {
   getDefaultBuildingType,
@@ -47,6 +48,7 @@ import { StaticWorldObjectEditor } from "../static-object-editor";
 import { BuildingArchitectureEditor } from "../building-editor";
 import { TilesetEditor } from "../tileset-editor";
 import { ItemEquipmentEditor } from "../item-editor";
+import { ArtworkConceptEditor } from "../artwork-editor";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import {
   DASHBOARD_CATEGORIES,
@@ -67,6 +69,7 @@ import {
 } from "./wizardCategoryRouting";
 import {
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+  WIZARD_ARTWORK_DETAIL_FIELD_PATHS,
   WIZARD_BUILDING_DETAIL_FIELD_PATHS,
   WIZARD_ITEM_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
@@ -140,6 +143,7 @@ const CLASSIFICATION_FIELDS = [
   ...WIZARD_BUILDING_DETAIL_FIELD_PATHS,
   ...WIZARD_TILESET_DETAIL_FIELD_PATHS,
   ...WIZARD_ITEM_DETAIL_FIELD_PATHS,
+  ...WIZARD_ARTWORK_DETAIL_FIELD_PATHS,
   "characterAnimationFrames",
   "movingObjectAnimationFrames",
   "directionCount",
@@ -1020,6 +1024,35 @@ function ItemDetailsStep({ form }: CoreStepProps) {
   return <ItemEquipmentEditor form={form} subtype={subtype as ItemSubtype} />;
 }
 
+function ArtworkDetailsStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
+  const knownArtworkSubtypes: readonly string[] = ASSET_SUBTYPES.artwork;
+
+  if (
+    category !== "artwork" ||
+    subtype === undefined ||
+    !knownArtworkSubtypes.includes(subtype)
+  ) {
+    return (
+      <section className={styles.changeWarning} role="alert">
+        <strong>Artwork-Profil nicht verfügbar</strong>
+        <p>
+          Kehre zur Bildart zurück und wähle einen gültigen Konzept- oder
+          Artwork-Untertyp.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <ArtworkConceptEditor
+      form={form}
+      subtype={subtype as ArtworkSubtype}
+    />
+  );
+}
+
 function AnimationSelect({
   form,
   options
@@ -1145,6 +1178,7 @@ const STEP_COMPONENTS = {
   buildingDetails: BuildingDetailsStep,
   tilesetDetails: TilesetDetailsStep,
   itemDetails: ItemDetailsStep,
+  artworkDetails: ArtworkDetailsStep,
   directions: DirectionsStep,
   animation: AnimationStep
 } as const;
@@ -1231,6 +1265,14 @@ export const WIZARD_CORE_FLOW = Object.freeze({
         values: WizardCoreFormValues,
         context: WizardCoreFlowContext
       ) => wizardStepIsApplicable("itemDetails", values, context.library)
+    }),
+    Object.freeze({
+      ...getWizardCoreStep("artworkDetails"),
+      Component: STEP_COMPONENTS.artworkDetails,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("artworkDetails", values, context.library)
     }),
     Object.freeze({
       ...getWizardCoreStep("directions"),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   WIZARD_CORE_STEPS,
+  WIZARD_ARTWORK_DETAIL_FIELD_PATHS,
   WIZARD_BUILDING_DETAIL_FIELD_PATHS,
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_ITEM_DETAIL_FIELD_PATHS,
@@ -10,6 +11,7 @@ import {
   WIZARD_TILESET_DETAIL_FIELD_PATHS,
   WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   WizardAnimationStepSchema,
+  WizardArtworkDetailsStepSchema,
   WizardBaseProfileStepSchema,
   WizardBuildingDetailsStepSchema,
   WizardCategoryStepSchema,
@@ -61,6 +63,7 @@ describe("wizard core steps", () => {
       "buildingDetails",
       "tilesetDetails",
       "itemDetails",
+      "artworkDetails",
       "directions",
       "animation",
       "tileability"
@@ -126,6 +129,13 @@ describe("wizard core steps", () => {
       route: "wizard/editor",
       title: "Item und Ausrüstung"
     });
+    expect(getWizardCoreStep("artworkDetails").fieldPaths).toBe(
+      WIZARD_ARTWORK_DETAIL_FIELD_PATHS
+    );
+    expect(getWizardCoreStep("artworkDetails")).toMatchObject({
+      route: "wizard/editor",
+      title: "Artwork und Konzeptbild"
+    });
     expect(getWizardCoreStep("directions").fieldPaths).toEqual(["directionCount"]);
     expect(getWizardCoreStep("animation").fieldPaths).toEqual([
       "animationAction",
@@ -145,7 +155,35 @@ describe("wizard core steps", () => {
     expect(getWizardCoreStepIndex("buildingDetails")).toBe(8);
     expect(getWizardCoreStepIndex("tilesetDetails")).toBe(9);
     expect(getWizardCoreStepIndex("itemDetails")).toBe(10);
-    expect(getWizardCoreStepIndex("directions")).toBe(11);
+    expect(getWizardCoreStepIndex("artworkDetails")).toBe(11);
+    expect(getWizardCoreStepIndex("directions")).toBe(12);
+  });
+
+  it("owns the free Artwork boundary without game-asset fields", () => {
+    expect(WIZARD_ARTWORK_DETAIL_FIELD_PATHS).toEqual([
+      "artworkPurpose",
+      "artworkMotif",
+      "artworkDescription",
+      "artworkSceneDescription",
+      "artworkComposition",
+      "artworkCompositionDetails",
+      "artworkFormat",
+      "artworkBackground",
+      "artworkBackgroundDetails",
+      "artworkFocus",
+      "artworkLightingDrama",
+      "artworkLightingDetails",
+      "artworkDetailLevel",
+      "artworkExtraDetails"
+    ]);
+    expect(WIZARD_ARTWORK_DETAIL_FIELD_PATHS).not.toContain("tileSize");
+    expect(WIZARD_ARTWORK_DETAIL_FIELD_PATHS).not.toContain("directionCount");
+    expect(WIZARD_ARTWORK_DETAIL_FIELD_PATHS).not.toContain("animationType");
+    expect(WizardArtworkDetailsStepSchema.safeParse({
+      projectName: "Artwork",
+      category: "artwork",
+      subtype: "scene"
+    }).success).toBe(false);
   });
 
   it("owns the complete Item boundary without technical or direction fields", () => {

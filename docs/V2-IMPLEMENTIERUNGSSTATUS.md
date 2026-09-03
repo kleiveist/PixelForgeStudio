@@ -6,18 +6,19 @@
 
 ## Stand
 
-Der letzte vollständig implementierte Funktionsabschnitt ist **Prompt 21 —
-Item/Equipment Editor**. Er ist im separaten Feature-Commit mit dem Betreff
-`🎒 feat: add item and equipment editor` abgeschlossen. Prompt 22 ist als
-nächste Phase vorbereitet, aber noch nicht implementiert; ein eigener
-Artwork-Editor existiert deshalb noch nicht.
+Der letzte vollständig implementierte Funktionsabschnitt ist **Prompt 22 —
+Artwork Editor**. Er ist im separaten Feature-Commit mit dem Betreff
+`🖼️ feat: add flexible artwork editor` abgeschlossen. Prompt 23 ist als
+nächste Phase vorbereitet, aber noch nicht implementiert; eine Prompt Engine
+2.0 existiert deshalb noch nicht.
 
 Prompt 18 ist vollständig in Commit `6dabbbb` enthalten. Dessen Betreff
 (`♻️ refactor: Code vereinfachen und strukturieren`) beschreibt den Inhalt
 unzutreffend, denn der Commit führt den Static-Object-Editor samt Domain,
 Schema-, Wizard-, Dashboard- und Testintegration ein. Prompt 19 und Prompt 20
 folgen als getrennte Feature-Commits `433eeda` beziehungsweise `2557c94`;
-der Dokumentationsstand vor Prompt 21 liegt in `446cbd0`.
+der Dokumentationsstand vor Prompt 21 liegt in `446cbd0`, Prompt 21 selbst in
+`bb90757`.
 
 Die Anwendung besitzt aktuell React, TypeScript und Vite als aktive
 V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
@@ -33,7 +34,7 @@ V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
 | 03 | neun Asset-Kategorien, Untertypen und getrennte Capabilities für Richtung und Animation |
 | 04 | strikte Schema-V2-Verträge mit Zod und daraus abgeleitete TypeScript-Typen |
 
-## Abgeschlossene beauftragte Phasen 05–21
+## Abgeschlossene beauftragte Phasen 05–22
 
 | Prompt | Commit | Umgesetzter Stand |
 |---:|---|---|
@@ -53,7 +54,8 @@ V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
 | 18 | `6dabbbb` | Static-Object-Editor mit Form, Material, Footprint, Interaktion und Animation ohne Richtung |
 | 19 | `433eeda` | Building-/Architecture-Editor mit Footprint, Fassade, Mapping, Modularität und Licht |
 | 20 | `2557c94` | Tileset-Editor mit Kanten, Ecken, Übergängen, Seam-Regeln, Varianten und berechnetem Atlaslayout |
-| 21 | `🎒 Feature-Commit` | Item-/Equipment-Editor mit Material, Zustand, Funktion, Bedeutung, Größe und Lesbarkeitsregeln |
+| 21 | `bb90757` | Item-/Equipment-Editor mit Material, Zustand, Funktion, Bedeutung, Größe und Lesbarkeitsregeln |
+| 22 | `🖼️ Feature-Commit` | freier Artwork-/Konzeptbild-Editor mit Motiv, Szene, Komposition, Format, Hintergrund, Fokus, Licht und Detailgrad |
 
 Durchgehend umgesetzt sind außerdem:
 
@@ -70,14 +72,14 @@ Durchgehend umgesetzt sind außerdem:
 
 ## Letzter vollständiger Prüfstand
 
-Der Funktionsstand bis Prompt 21 wurde am 3. September 2026 mit folgenden
+Der Funktionsstand bis Prompt 22 wurde am 3. September 2026 mit folgenden
 Ergebnissen geprüft:
 
 - TypeScript-Typecheck erfolgreich;
 - Legacy-Strukturprüfung für 13 JavaScript-Dateien und 51 Formularfelder
   erfolgreich;
 - 10 von 10 Legacy-Tests erfolgreich;
-- 89 Vitest-Dateien mit 542 von 542 Tests erfolgreich;
+- 98 Vitest-Dateien mit 563 von 563 Tests erfolgreich;
 - Vite-Produktionsbuild erfolgreich;
 - `git diff --check` sauber.
 
@@ -92,22 +94,22 @@ dokumentiert und jeweils separat committet:
 
 | Prompt | Offene Aufgabe |
 |---:|---|
-| 22 | Artwork-Editor ohne standardmäßig erzwungene Tile-/Sprite-/Richtungslogik |
 | 23 | modulare frameworkfreie Prompt Engine 2.0 mit allen vier Ausgabearten |
 | 24 | produktionsreife Review- und Output-Ansichten samt Copy, TXT, JSON und Profilspeicherung |
 | 25 | kontrollierter Profilkonflikt- und Konvertierungsworkflow |
 | 26 | abschließende Accessibility-, Keyboard-, Responsive- und visuelle Politur |
 | 27 | vollständige V2-Release-Abnahme; Legacy-UI nur bei belegter Parität entfernen |
 
-Die nächste einzeln auszuführende Phase ist **Prompt 22 — Artwork
-Editor**. Übergabe und Arbeitsgrenze stehen in `PLANS.md`; der verbindliche
+Die nächste einzeln auszuführende Phase ist **Prompt 23 — Prompt Engine
+2.0**. Übergabe und Arbeitsgrenze stehen in `PLANS.md`; der verbindliche
 Phasenscope bleibt `docs/CODEX-V2-PROMPTS.md`.
 
 ## Git- und Remote-Hinweis
 
 `origin/main` steht weiterhin auf `6dabbbb`; die Branches sind nicht
 divergiert. Der lokale Branch enthält zusätzlich die getrennten Prompt-19-,
-Prompt-20-, Statusdokumentations- und Prompt-21-Commits. Der Remote-Stand
+Prompt-20-, Statusdokumentations-, Prompt-21- und Prompt-22-Commits. Der
+Remote-Stand
 enthält damit den funktionalen Prompt-18-Inhalt unter dem unzutreffenden
-Refactor-Betreff, während die späteren Phasen bisher nur lokal vorliegen. Es
-wurde nicht gepusht.
+Refactor-Betreff, während die späteren Phasen einschließlich Prompt 22 bisher
+nur lokal vorliegen. Es wurde nicht gepusht.

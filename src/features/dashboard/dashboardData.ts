@@ -1,5 +1,16 @@
 import type { AssetSubtype } from "../../domain/assets";
 import {
+  getDefaultArtworkType,
+  type ArtworkComposition,
+  type ArtworkDetailLevel,
+  type ArtworkFocus,
+  type ArtworkFormat,
+  type ArtworkLightingDrama,
+  type ArtworkMotif,
+  type ArtworkPurpose,
+  type ArtworkType
+} from "../../domain/artworks";
+import {
   getDefaultBuildingType,
   type BuildingCollisionMode,
   type BuildingCondition,
@@ -767,6 +778,39 @@ const itemShadowLabels: Readonly<Record<ItemShadowMode, string>> = {
   none: "Kein eigener Schatten", contact: "Kontaktschatten"
 };
 
+const artworkTypeLabels: Readonly<Record<ArtworkType, string>> = {
+  characterConcept: "Charakterkonzept",
+  environmentConcept: "Umgebungskonzept",
+  buildingConcept: "Gebäudeentwurf",
+  materialStudy: "Materialstudie",
+  scene: "Szene",
+  promoArtwork: "Promo-Artwork",
+  moodPainting: "Stimmungsbild"
+};
+const artworkPurposeLabels: Readonly<Record<ArtworkPurpose, string>> = {
+  concept: "Konzept",
+  presentation: "Präsentation",
+  productionReference: "Produktionsreferenz"
+};
+const artworkMotifLabels: Readonly<Record<ArtworkMotif, string>> = {
+  figure: "Figur", object: "Objekt", environment: "Umgebung", scene: "Szene"
+};
+const artworkCompositionLabels: Readonly<Record<ArtworkComposition, string>> = {
+  singleSubject: "Einzelmotiv", group: "Gruppe", scene: "Gestaffelte Szene"
+};
+const artworkFormatLabels: Readonly<Record<ArtworkFormat, string>> = {
+  square: "Quadratisch", portrait: "Hochformat", landscape: "Querformat", free: "Freies Format"
+};
+const artworkFocusLabels: Readonly<Record<ArtworkFocus, string>> = {
+  form: "Form", material: "Material", mood: "Stimmung", story: "Geschichte", scale: "Maßstab"
+};
+const artworkLightingLabels: Readonly<Record<ArtworkLightingDrama, string>> = {
+  neutral: "Neutral", warm: "Warm", gloomy: "Düster", night: "Nacht", custom: "Individuell"
+};
+const artworkDetailLabels: Readonly<Record<ArtworkDetailLevel, string>> = {
+  overview: "Übersicht", productionConcept: "Produktionskonzept", showcase: "Showcase"
+};
+
 const animationLabels = {
   idle: "Idle",
   walk: "Walk",
@@ -1321,8 +1365,29 @@ function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
         ...(variantCount === undefined ? [] : [`Varianten: ${String(variantCount)}`])
       ];
     }
-    case "artwork":
-      return [];
+    case "artwork": {
+      const {
+        composition,
+        detailLevel,
+        focus,
+        format,
+        lightingDrama,
+        motif,
+        purpose,
+        sceneDescription
+      } = profile.categoryData.answers;
+      return [
+        `Artworktyp: ${artworkTypeLabels[getDefaultArtworkType(profile.categoryData.subtype)]}`,
+        ...(purpose === undefined ? [] : [`Zweck: ${artworkPurposeLabels[purpose]}`]),
+        ...(motif === undefined ? [] : [`Motiv: ${artworkMotifLabels[motif]}`]),
+        ...(composition === undefined ? [] : [`Komposition: ${artworkCompositionLabels[composition]}`]),
+        ...(format === undefined ? [] : [`Format: ${artworkFormatLabels[format]}`]),
+        ...(focus === undefined ? [] : [`Fokus: ${artworkFocusLabels[focus]}`]),
+        ...(lightingDrama === undefined ? [] : [`Licht: ${artworkLightingLabels[lightingDrama]}`]),
+        ...(detailLevel === undefined ? [] : [`Detailgrad: ${artworkDetailLabels[detailLevel]}`]),
+        ...(sceneDescription === undefined ? [] : [`Szene: ${sceneDescription}`])
+      ];
+    }
   }
 }
 

@@ -41,6 +41,7 @@ import {
 } from "../../domain/tilesets";
 import {
   BaseProfileValuesSchema,
+  ArtworkAnswersSchema,
   BuildingAnswersSchema,
   CharacterAnswersSchema,
   ItemAnswersSchema,
@@ -120,6 +121,7 @@ const staticObjectAnswerShape = StaticObjectAnswersSchema.unwrap().shape;
 const buildingAnswerShape = BuildingAnswersSchema.unwrap().shape;
 const tilesetAnswerShape = TilesetAnswersSchema.unwrap().shape;
 const itemAnswerShape = ItemAnswersSchema.unwrap().shape;
+const artworkAnswerShape = ArtworkAnswersSchema.unwrap().shape;
 
 export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
@@ -311,6 +313,20 @@ export const WizardCoreFormSchema = z.strictObject({
   itemShadowMode: itemAnswerShape.shadowMode,
   itemVariantCount: itemAnswerShape.variantCount,
   itemExtraDetails: itemAnswerShape.extraDetails,
+  artworkPurpose: artworkAnswerShape.purpose,
+  artworkMotif: artworkAnswerShape.motif,
+  artworkDescription: artworkAnswerShape.subjectDescription,
+  artworkSceneDescription: artworkAnswerShape.sceneDescription,
+  artworkComposition: artworkAnswerShape.composition,
+  artworkCompositionDetails: artworkAnswerShape.compositionDetails,
+  artworkFormat: artworkAnswerShape.format,
+  artworkBackground: artworkAnswerShape.background,
+  artworkBackgroundDetails: artworkAnswerShape.backgroundDetails,
+  artworkFocus: artworkAnswerShape.focus,
+  artworkLightingDrama: artworkAnswerShape.lightingDrama,
+  artworkLightingDetails: artworkAnswerShape.lightingDetails,
+  artworkDetailLevel: artworkAnswerShape.detailLevel,
+  artworkExtraDetails: artworkAnswerShape.extraDetails,
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
     .enum(CHARACTER_ANIMATION_ACTION_IDS)
@@ -335,6 +351,7 @@ export type WizardCoreStepId =
   | "buildingDetails"
   | "tilesetDetails"
   | "itemDetails"
+  | "artworkDetails"
   | "directions"
   | "animation"
   | "tileability";
@@ -587,6 +604,23 @@ export const WIZARD_ITEM_DETAIL_FIELD_PATHS = Object.freeze([
   "itemExtraDetails"
 ] as const satisfies readonly WizardCoreFieldPath[]);
 
+export const WIZARD_ARTWORK_DETAIL_FIELD_PATHS = Object.freeze([
+  "artworkPurpose",
+  "artworkMotif",
+  "artworkDescription",
+  "artworkSceneDescription",
+  "artworkComposition",
+  "artworkCompositionDetails",
+  "artworkFormat",
+  "artworkBackground",
+  "artworkBackgroundDetails",
+  "artworkFocus",
+  "artworkLightingDrama",
+  "artworkLightingDetails",
+  "artworkDetailLevel",
+  "artworkExtraDetails"
+] as const satisfies readonly WizardCoreFieldPath[]);
+
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
   Partial<Record<AssetCategory, readonly string[]>>
 > = Object.freeze({
@@ -825,6 +859,15 @@ function validateCapabilityFields(
         context,
         field,
         "Item- und Ausrüstungsdaten gehören nicht zur gewählten Asset-Kategorie."
+      );
+    }
+  }
+  for (const field of WIZARD_ARTWORK_DETAIL_FIELD_PATHS) {
+    if (values[field] !== undefined && category !== "artwork") {
+      addFieldIssue(
+        context,
+        field,
+        "Artwork- und Konzeptdaten gehören nicht zur gewählten Asset-Kategorie."
       );
     }
   }
@@ -1333,6 +1376,17 @@ export const WizardItemDetailsStepSchema =
       );
     }
   });
+export const WizardArtworkDetailsStepSchema =
+  WizardCoreFormSchema.superRefine((values, context) => {
+    refineSelectedValues(values, context, undefined, true);
+    if (values.category !== undefined && values.category !== "artwork") {
+      addFieldIssue(
+        context,
+        "category",
+        "Der Artwork-Editor ist nur für Konzeptbilder und Artworks verfügbar."
+      );
+    }
+  });
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) =>
     refineSelectedValues(values, context, "directional", true)
@@ -1460,6 +1514,15 @@ export const WIZARD_CORE_STEPS = Object.freeze([
       "Beschreibe Klasse, Material, Zustand, Funktion, Bedeutung, Größe und Lesbarkeit des freigestellten Items.",
     fieldPaths: WIZARD_ITEM_DETAIL_FIELD_PATHS,
     schema: WizardItemDetailsStepSchema
+  }),
+  Object.freeze({
+    id: "artworkDetails",
+    route: "wizard/editor",
+    title: "Artwork und Konzeptbild",
+    description:
+      "Beschreibe Motiv, Szene, Komposition, Format, Hintergrund, Fokus, Lichtdramaturgie und Detailgrad frei.",
+    fieldPaths: WIZARD_ARTWORK_DETAIL_FIELD_PATHS,
+    schema: WizardArtworkDetailsStepSchema
   }),
   Object.freeze({
     id: "directions",

@@ -4,10 +4,37 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** Prompt 22 — Artwork Editor (noch nicht begonnen)
-- **Nächste Aufgabe:** Prompt 23 — Prompt Engine 2.0
-- **Zuletzt abgeschlossen:** Prompt 21 — Item/Equipment Editor
+- **Aktuelle Aufgabe:** Prompt 22 — Artwork Editor (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 23 — Prompt Engine 2.0 (noch nicht begonnen)
+- **Zuletzt abgeschlossen:** Prompt 22 — Artwork Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 22
+
+1. Eine frameworkfreie Artwork-Domain mit stabilen Katalogen und einem
+   vollständigen Untertyp→Artworktyp-Mapping für Zweck, Motiv, Komposition,
+   Format, Hintergrund, Fokus, Lichtdramaturgie und Detailgrad anlegen. Der
+   Artworktyp bleibt aus dem Untertyp abgeleitet und wird nicht als
+   widersprüchlicher freier Wert dupliziert.
+2. Den bestehenden strikten `ArtworkAnswersSchema`-Vertrag additiv erweitern.
+   Frühere Schema-V2-Artworkdaten bleiben ohne eager Defaults lesbar;
+   Tilegröße, Weltkamera, Figurenmaßstab, Sprite-, Animations- und
+   Richtungsdaten bleiben vollständig außerhalb der Artwork-Fachantworten.
+3. Einen responsiven RHF-gesteuerten `ArtworkConceptEditor` als eigenen
+   `artworkDetails`-Schritt direkt nach der Basisprofilwahl integrieren. Er
+   zeigt Artworktyp und freie Produktionsmerkmale, aber weder Tile-/Sprite-
+   noch 4/8-Richtungsregeln.
+4. Artwork-Felder durch Base→Category→Asset-Auflösung, minimale lokale
+   Projektion, Explicit Clear, Basis-/Klassifikationswechsel, transienten
+   Rohzustand, Autosave und schreibfreies Resume führen. Freie Komposition
+   behält den bestehenden Ausschluss technischer Weltgeometrie bei.
+5. Live-Zusammenfassung und Dashboard um kompakte, tatsächlich konfigurierte
+   Artworktyp-, Motiv-, Szenen-, Kompositions-, Format-, Hintergrund-, Fokus-,
+   Licht- und Detailfakten ergänzen.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und
+   RTL-Tests ergänzen. Danach Dokumentation, `npm run verify`,
+   `git diff --check`, Abschlussaudit und den separaten Prompt-22-Commit
+   ausführen; Prompt 23 bleibt unangetastet.
 
 ## Ausführungsplan Prompt 21
 
@@ -1084,6 +1111,46 @@
 - Prompt Engine, Review und Output bleiben späteren, separat zu committenden
   Phasen vorbehalten.
 
+## Ergebnis Prompt 22
+
+1. `domain/artworks` stellt stabile readonly Kataloge und das vollständige
+   Untertyp→Artworktyp-Mapping bereit. Der Typ wird aus dem Untertyp abgeleitet
+   und nicht redundant in Artwork-Antworten gespeichert.
+2. `ArtworkAnswersSchema` ist strikt und additiv um Motiv, Szene,
+   Kompositionsdetails, Lichtdramaturgie, Lichtdetails und Detailgrad
+   erweitert. Frühere V2-Artworks bleiben ohne eager Defaults lesbar;
+   Tile-, Kamera-, Figuren-, Sprite-, Animations- und Richtungswerte sind keine
+   Artwork-Fachantworten.
+3. `ArtworkConceptEditor` ist als eigener `artworkDetails`-Schritt direkt nach
+   der Basisprofilwahl integriert. Er erfasst Zweck, Motiv, Szene,
+   Komposition, Format, Hintergrund, Fokus, Licht und Detailgrad in React Hook
+   Form und zeigt ausschließlich allgemeine geerbte Art Direction read-only.
+4. Base→Category→Asset-Hydration, minimale lokale Projektion, Explicit Clear,
+   Klassifikationsbereinigung, Rohsnapshot, Autosave und schreibfreies Resume
+   umfassen sämtliche Artwork-Felder. Der Wizard speichert für
+   `freeComposition` keine Weltgeometrie-Overrides neu; der Compatibility Key
+   ignoriert diese Dimensionen ebenfalls.
+5. Live-Zusammenfassung und Dashboard zeigen kompakte tatsächliche
+   Artworktyp-, Zweck-, Motiv-, Szenen-, Kompositions-, Format-, Hintergrund-,
+   Fokus-, Licht- und Detailfakten ohne Tile-, Kamera-, Richtungs- oder
+   Animationsregeln.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und
+   RTL-Tests sichern den vollständigen Artwork-Roundtrip und die Lesbarkeit
+   alter Schema-V2-Daten ab.
+
+## Übergabe an Prompt 23
+
+- Implementiere ausschließlich die modulare, frameworkfreie Prompt Engine 2.0
+  aus `docs/CODEX-V2-PROMPTS.md`; die neun Kategorieeditoren sind dafür die
+  validierten Eingabegrenzen.
+- Erzeuge Hauptprompt, Negativprompt, technische Spezifikation und kombinierte
+  Ausgabe deterministisch und ignoriere kategoriefremde Felder.
+- Richtungsregeln dürfen nur bei `directional` erscheinen. Freie Artworks
+  dürfen keine Tile-, Sprite- oder Weltkameraregeln aus geerbten Altwerten in
+  die Ausgabe übernehmen.
+- Review-/Output-UI, Copy-/Export-Flows und Profilkonvertierung bleiben den
+  späteren Prompts 24 und 25 vorbehalten.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -1132,7 +1199,7 @@
 | 18 | Gebäudeeditor | Architektur und Mappingparameter | abgeschlossen |
 | 19 | Tileset-Editor | Tile-/Transition-/Seam-Regeln | abgeschlossen |
 | 20 | Item-/Ausrüstungseditor | Spielasset-spezifische Darstellung | abgeschlossen |
-| 21 | Artwork-Editor | freie Komposition ohne erzwungene Tilelogik | offen |
+| 21 | Artwork-Editor | freie Komposition ohne erzwungene Tilelogik | abgeschlossen |
 | 22 | Prompt Engine 2.0 | modulare TS-Promptbausteine | offen |
 | 23 | Review + Output Workspace | vier Ausgaben, Kopieren, Export | offen |
 | 24 | Profilkonvertierung | technische Konflikte sichtbar lösen | offen |

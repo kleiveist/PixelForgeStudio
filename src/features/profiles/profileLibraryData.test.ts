@@ -252,6 +252,9 @@ describe("profile library data", () => {
     expect(artwork.facts).toEqual([
       "Modern-HD",
       "Vollständiger Hintergrund",
+      "Artworktyp: Promo-Artwork",
+      "Zweck: Präsentation",
+      "Komposition: Gestaffelte Szene",
       "Stil A + B"
     ]);
     expect(artwork.facts.join(" ")).not.toMatch(/Tile|Figur|3\/4/);

@@ -4,6 +4,19 @@ import type {
   AssetSubtype
 } from "../../domain/assets";
 import {
+  getDefaultArtworkType,
+  type ArtworkBackground,
+  type ArtworkComposition,
+  type ArtworkDetailLevel,
+  type ArtworkFocus,
+  type ArtworkFormat,
+  type ArtworkLightingDrama,
+  type ArtworkMotif,
+  type ArtworkPurpose,
+  type ArtworkSubtype,
+  type ArtworkType
+} from "../../domain/artworks";
+import {
   CHARACTER_ANIMATION_ACTION_IDS,
   type CharacterAnimationActionId
 } from "../../domain/characters";
@@ -851,6 +864,40 @@ const ITEM_GLOW_LABELS: Readonly<Record<ItemGlowMode, string>> = {
 };
 const ITEM_SHADOW_LABELS: Readonly<Record<ItemShadowMode, string>> = {
   none: "Kein eigener Schatten", contact: "Kontaktschatten"
+};
+
+const ARTWORK_TYPE_LABELS: Readonly<Record<ArtworkType, string>> = {
+  characterConcept: "Charakterkonzept",
+  environmentConcept: "Umgebungskonzept",
+  buildingConcept: "Gebäudeentwurf",
+  materialStudy: "Materialstudie",
+  scene: "Szene",
+  promoArtwork: "Promo-Artwork",
+  moodPainting: "Stimmungsbild"
+};
+const ARTWORK_PURPOSE_LABELS: Readonly<Record<ArtworkPurpose, string>> = {
+  concept: "Konzept", presentation: "Präsentation", productionReference: "Produktionsreferenz"
+};
+const ARTWORK_MOTIF_LABELS: Readonly<Record<ArtworkMotif, string>> = {
+  figure: "Figur", object: "Objekt", environment: "Umgebung", scene: "Szene"
+};
+const ARTWORK_COMPOSITION_LABELS: Readonly<Record<ArtworkComposition, string>> = {
+  singleSubject: "Einzelmotiv", group: "Gruppe", scene: "Gestaffelte Szene"
+};
+const ARTWORK_FORMAT_LABELS: Readonly<Record<ArtworkFormat, string>> = {
+  square: "Quadratisch", portrait: "Hochformat", landscape: "Querformat", free: "Freies Format"
+};
+const ARTWORK_BACKGROUND_LABELS: Readonly<Record<ArtworkBackground, string>> = {
+  transparent: "Transparent", simple: "Einfach", complete: "Vollständig ausgearbeitet"
+};
+const ARTWORK_FOCUS_LABELS: Readonly<Record<ArtworkFocus, string>> = {
+  form: "Form", material: "Material", mood: "Stimmung", story: "Geschichte", scale: "Maßstab"
+};
+const ARTWORK_LIGHTING_LABELS: Readonly<Record<ArtworkLightingDrama, string>> = {
+  neutral: "Neutral", warm: "Warm", gloomy: "Düster", night: "Nacht", custom: "Benutzerdefiniert"
+};
+const ARTWORK_DETAIL_LABELS: Readonly<Record<ArtworkDetailLevel, string>> = {
+  overview: "Übersicht", productionConcept: "Produktionskonzept", showcase: "Showcase"
 };
 
 function natureAnimationSummary(
@@ -1716,6 +1763,84 @@ export function WizardTechnicalSummary({
             {formValues.itemShadowMode !== undefined ? <SummaryFact label="Schatten" value={ITEM_SHADOW_LABELS[formValues.itemShadowMode]} /> : null}
             {formValues.itemIconSize !== undefined ? <SummaryFact label="Icongröße" value={`${String(formValues.itemIconSize)} px`} /> : null}
             {formValues.itemVariantCount !== undefined ? <SummaryFact label="Varianten" value={String(formValues.itemVariantCount)} /> : null}
+          </>
+        ) : null}
+        {selection?.category === "artwork" ? (
+          <>
+            <SummaryFact
+              label="Artworktyp"
+              value={
+                ARTWORK_TYPE_LABELS[
+                  getDefaultArtworkType(
+                    selection.subtype as ArtworkSubtype
+                  )
+                ]
+              }
+            />
+            {formValues.artworkPurpose !== undefined ? (
+              <SummaryFact
+                label="Zweck"
+                value={ARTWORK_PURPOSE_LABELS[formValues.artworkPurpose]}
+              />
+            ) : null}
+            {formValues.artworkMotif !== undefined ? (
+              <SummaryFact
+                label="Motiv"
+                value={ARTWORK_MOTIF_LABELS[formValues.artworkMotif]}
+              />
+            ) : null}
+            {formValues.artworkSceneDescription?.trim() ? (
+              <SummaryFact
+                label="Szene"
+                value={formValues.artworkSceneDescription.trim()}
+              />
+            ) : null}
+            {formValues.artworkComposition !== undefined ? (
+              <SummaryFact
+                label="Komposition"
+                value={
+                  ARTWORK_COMPOSITION_LABELS[
+                    formValues.artworkComposition
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.artworkFormat !== undefined ? (
+              <SummaryFact
+                label="Format"
+                value={ARTWORK_FORMAT_LABELS[formValues.artworkFormat]}
+              />
+            ) : null}
+            {formValues.artworkBackground !== undefined ? (
+              <SummaryFact
+                label="Artwork-Hintergrund"
+                value={
+                  ARTWORK_BACKGROUND_LABELS[formValues.artworkBackground]
+                }
+              />
+            ) : null}
+            {formValues.artworkFocus !== undefined ? (
+              <SummaryFact
+                label="Fokus"
+                value={ARTWORK_FOCUS_LABELS[formValues.artworkFocus]}
+              />
+            ) : null}
+            {formValues.artworkLightingDrama !== undefined ? (
+              <SummaryFact
+                label="Lichtdramaturgie"
+                value={
+                  ARTWORK_LIGHTING_LABELS[
+                    formValues.artworkLightingDrama
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.artworkDetailLevel !== undefined ? (
+              <SummaryFact
+                label="Detailgrad"
+                value={ARTWORK_DETAIL_LABELS[formValues.artworkDetailLevel]}
+              />
+            ) : null}
           </>
         ) : null}
         {selection?.category === "texture" ? (

@@ -7,6 +7,7 @@ import type { CharacterAnimationActionId } from "../../domain/characters";
 import { jsonValuesEqual } from "../../domain/json";
 import type {
   CharacterAnswers,
+  ArtworkAnswers,
   BaseProfileValues,
   BuildingAnswers,
   ItemAnswers,
@@ -266,6 +267,20 @@ export interface WizardRawCoreFormValues {
   readonly itemShadowMode?: ItemAnswers["shadowMode"] | undefined;
   readonly itemVariantCount?: ItemAnswers["variantCount"] | undefined;
   readonly itemExtraDetails?: ItemAnswers["extraDetails"] | undefined;
+  readonly artworkPurpose?: ArtworkAnswers["purpose"] | undefined;
+  readonly artworkMotif?: ArtworkAnswers["motif"] | undefined;
+  readonly artworkDescription?: ArtworkAnswers["subjectDescription"] | undefined;
+  readonly artworkSceneDescription?: ArtworkAnswers["sceneDescription"] | undefined;
+  readonly artworkComposition?: ArtworkAnswers["composition"] | undefined;
+  readonly artworkCompositionDetails?: ArtworkAnswers["compositionDetails"] | undefined;
+  readonly artworkFormat?: ArtworkAnswers["format"] | undefined;
+  readonly artworkBackground?: ArtworkAnswers["background"] | undefined;
+  readonly artworkBackgroundDetails?: ArtworkAnswers["backgroundDetails"] | undefined;
+  readonly artworkFocus?: ArtworkAnswers["focus"] | undefined;
+  readonly artworkLightingDrama?: ArtworkAnswers["lightingDrama"] | undefined;
+  readonly artworkLightingDetails?: ArtworkAnswers["lightingDetails"] | undefined;
+  readonly artworkDetailLevel?: ArtworkAnswers["detailLevel"] | undefined;
+  readonly artworkExtraDetails?: ArtworkAnswers["extraDetails"] | undefined;
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:

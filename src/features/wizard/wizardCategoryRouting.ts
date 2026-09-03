@@ -28,6 +28,7 @@ import {
 } from "../../domain/tilesets";
 import {
   parseWizardDraft,
+  type ArtworkAnswers,
   type BaseProfile,
   type BaseProfileOverrides,
   type BaseProfileValues,
@@ -278,6 +279,23 @@ const ITEM_CONTROLLED_ANSWER_KEYS = new Set<string>([
   "extraDetails"
 ]);
 
+const ARTWORK_CONTROLLED_ANSWER_KEYS = new Set<string>([
+  "purpose",
+  "motif",
+  "subjectDescription",
+  "sceneDescription",
+  "composition",
+  "compositionDetails",
+  "format",
+  "background",
+  "backgroundDetails",
+  "focus",
+  "lightingDrama",
+  "lightingDetails",
+  "detailLevel",
+  "extraDetails"
+]);
+
 const MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS = Object.freeze([
   ["movingObjectClass", "objectClass"],
   ["movingObjectPurpose", "purpose"],
@@ -459,6 +477,26 @@ const ITEM_FIELD_MAPPINGS = Object.freeze([
   keyof ItemAnswers
 ])[]);
 
+const ARTWORK_FIELD_MAPPINGS = Object.freeze([
+  ["artworkPurpose", "purpose"],
+  ["artworkMotif", "motif"],
+  ["artworkDescription", "subjectDescription"],
+  ["artworkSceneDescription", "sceneDescription"],
+  ["artworkComposition", "composition"],
+  ["artworkCompositionDetails", "compositionDetails"],
+  ["artworkFormat", "format"],
+  ["artworkBackground", "background"],
+  ["artworkBackgroundDetails", "backgroundDetails"],
+  ["artworkFocus", "focus"],
+  ["artworkLightingDrama", "lightingDrama"],
+  ["artworkLightingDetails", "lightingDetails"],
+  ["artworkDetailLevel", "detailLevel"],
+  ["artworkExtraDetails", "extraDetails"]
+] as const satisfies readonly (readonly [
+  keyof WizardCoreFormValues,
+  keyof ArtworkAnswers
+])[]);
+
 const PROFILE_VALUE_KEYS = Object.freeze([
   "pixelDensity",
   "styleProfile",
@@ -598,6 +636,8 @@ export function wizardStepIsApplicable(
       return selection?.category === "tileset";
     case "itemDetails":
       return selection?.category === "item";
+    case "artworkDetails":
+      return selection?.category === "artwork";
     case "directions":
       return capabilities.directional;
     case "animation":
@@ -1058,6 +1098,35 @@ function clearsInheritedItemDefault(
   return false;
 }
 
+function artworkFormValue(
+  values: WizardCoreFormValues,
+  formField: keyof WizardCoreFormValues
+): unknown {
+  return values[formField];
+}
+
+function artworkAnswerValue(
+  answers: ArtworkAnswers,
+  answerField: keyof ArtworkAnswers
+): unknown {
+  return answers[answerField];
+}
+
+function clearsInheritedArtworkDefault(
+  values: WizardCoreFormValues,
+  defaults: ArtworkAnswers
+): boolean {
+  for (const [formField, answerField] of ARTWORK_FIELD_MAPPINGS) {
+    if (
+      artworkAnswerValue(defaults, answerField) !== undefined &&
+      artworkFormValue(values, formField) === undefined
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function createWizardCoreFormValues(
   draft: WizardDraft,
   categoryHint: AssetCategory | null = null,
@@ -1074,6 +1143,7 @@ export function createWizardCoreFormValues(
   let resolvedBuildingAnswers: BuildingAnswers | undefined;
   let resolvedTilesetAnswers: TilesetAnswers | undefined;
   let resolvedItemAnswers: ItemAnswers | undefined;
+  let resolvedArtworkAnswers: ArtworkAnswers | undefined;
 
   if (!("category" in draft)) {
     if (categoryHint !== null) values.category = categoryHint;
@@ -1123,6 +1193,8 @@ export function createWizardCoreFormValues(
         resolvedTilesetAnswers = resolution.profile.categoryData.answers;
       } else if (resolution.profile.categoryData.category === "item") {
         resolvedItemAnswers = resolution.profile.categoryData.answers;
+      } else if (resolution.profile.categoryData.category === "artwork") {
+        resolvedArtworkAnswers = resolution.profile.categoryData.answers;
       }
     }
   }
@@ -1242,8 +1314,16 @@ export function createWizardCoreFormValues(
       }
       break;
     }
-    case "artwork":
+    case "artwork": {
+      const answers = resolvedArtworkAnswers ?? draft.answers;
+      for (const [formField, answerField] of ARTWORK_FIELD_MAPPINGS) {
+        const value = artworkAnswerValue(answers, answerField);
+        if (value !== undefined) {
+          (values as Record<string, unknown>)[formField] = value;
+        }
+      }
       break;
+    }
   }
 
   return values;
@@ -1392,7 +1472,8 @@ function controlledAnswers(
   inheritedStaticObjectDefaults: StaticObjectAnswers | undefined,
   inheritedBuildingDefaults: BuildingAnswers | undefined,
   inheritedTilesetDefaults: TilesetAnswers | undefined,
-  inheritedItemDefaults: ItemAnswers | undefined
+  inheritedItemDefaults: ItemAnswers | undefined,
+  inheritedArtworkDefaults: ArtworkAnswers | undefined
 ): Record<string, unknown> {
   const sameSelection = selectionsMatch(draft, selection);
   if (!sameSelection) return {};
@@ -1418,6 +1499,8 @@ function controlledAnswers(
           !TILESET_CONTROLLED_ANSWER_KEYS.has(key)) &&
         (selection.category !== "item" ||
           !ITEM_CONTROLLED_ANSWER_KEYS.has(key)) &&
+        (selection.category !== "artwork" ||
+          !ARTWORK_CONTROLLED_ANSWER_KEYS.has(key)) &&
         value !== undefined
     )
   );
@@ -1787,6 +1870,20 @@ function controlledAnswers(
       }
       break;
     case "artwork":
+      for (const [formField, answerField] of ARTWORK_FIELD_MAPPINGS) {
+        const value = artworkFormValue(values, formField);
+        if (
+          value !== undefined &&
+          !optionalJsonValuesEqual(
+            value,
+            inheritedArtworkDefaults === undefined
+              ? undefined
+              : artworkAnswerValue(inheritedArtworkDefaults, answerField)
+          )
+        ) {
+          answers[answerField] = value;
+        }
+      }
       break;
   }
 
@@ -1828,6 +1925,7 @@ function selectedDraftRoute(
     stepId === "buildingDetails" ||
     stepId === "tilesetDetails" ||
     stepId === "itemDetails" ||
+    stepId === "artworkDetails" ||
     stepId === "directions" ||
     stepId === "animation" ||
     stepId === "tileability"
@@ -2013,6 +2111,13 @@ export function updateWizardDraftFromCoreForm(
     selection.category === "item" &&
     linkedCategoryProfile?.category === "item" &&
     clearsInheritedItemDefault(input.values, linkedCategoryProfile.defaults);
+  const detachArtworkCategoryProfile =
+    selection.category === "artwork" &&
+    linkedCategoryProfile?.category === "artwork" &&
+    clearsInheritedArtworkDefault(
+      input.values,
+      linkedCategoryProfile.defaults
+    );
   const detachCategoryProfile =
     detachCharacterCategoryProfile ||
     detachMovingObjectCategoryProfile ||
@@ -2021,7 +2126,8 @@ export function updateWizardDraftFromCoreForm(
     detachStaticObjectCategoryProfile ||
     detachBuildingCategoryProfile ||
     detachTilesetCategoryProfile ||
-    detachItemCategoryProfile;
+    detachItemCategoryProfile ||
+    detachArtworkCategoryProfile;
   const retainedProfileLinks =
     profileLinksCanBeRetained && !detachCategoryProfile;
 
@@ -2093,6 +2199,11 @@ export function updateWizardDraftFromCoreForm(
     retainedCategoryProfile?.category === "item"
       ? retainedCategoryProfile.defaults
       : undefined;
+  const inheritedArtworkDefaults =
+    selection.category === "artwork" &&
+    retainedCategoryProfile?.category === "artwork"
+      ? retainedCategoryProfile.defaults
+      : undefined;
   const common = {
     schemaVersion: 2,
     kind: "wizardDraft",
@@ -2124,7 +2235,8 @@ export function updateWizardDraftFromCoreForm(
       inheritedStaticObjectDefaults,
       inheritedBuildingDefaults,
       inheritedTilesetDefaults,
-      inheritedItemDefaults
+      inheritedItemDefaults,
+      inheritedArtworkDefaults
     )
   } as const;
 

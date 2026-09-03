@@ -395,9 +395,30 @@ Autosave und schreibfreies Resume folgen dem gemeinsamen Vertrag. Kein
 Item-Untertyp ist `directional` oder `animated`; technische Hintergrund- und
 Maßstabswerte werden nicht in Item-Fachantworten dupliziert.
 
-Prompts 00 bis 21 sind abgeschlossen; Prompt 22 ergänzt als nächste Phase den
-Artwork-Editor. Prompt 21 nimmt weder Prompt Engine noch Review-/
-Output-Erzeugung oder weitere Spezialeditoren vorweg.
+Seit Prompt 22 folgt für `artwork` direkt nach dem Basisprofil der eigene
+Schritt `artworkDetails`. `ArtworkConceptEditor` erfasst Zweck, Motiv, Szene,
+Komposition, Format, Hintergrund, Fokus, Lichtdramaturgie und Detailgrad in
+React Hook Form. Artworktyp wird aus dem Untertyp abgeleitet; Pixelstil,
+Stilprofil und Outline erscheinen als allgemeine geerbte Art Direction
+read-only.
+
+Der öffentliche Katalog unter `src/domain/artworks/` stellt readonly IDs und
+das vollständige `ARTWORK_TYPE_BY_SUBTYPE`-Mapping bereit.
+`ArtworkAnswersSchema` bleibt strikt und additiv; alte V2-Daten werden ohne
+eager Defaults gelesen. Artworktyp sowie Tile-, Kamera-, Figuren-, Sprite-,
+Richtungs- und Animationswerte werden nicht in Artwork-Fachantworten
+dupliziert.
+
+Artwork-Werte werden Base→Category→Asset aufgelöst und minimal lokal
+gespeichert. Explicit Clear, Basis-/Klassifikationswechsel, Rohzustand, Dirty
+State, Autosave, schreibfreies Resume, Summary und Dashboard folgen dem
+gemeinsamen Vertrag. `freeComposition` erzeugt keine neuen Weltgeometrie-
+Overrides; alte Werte bleiben verlustfrei lesbar, werden jedoch weder als
+relevant angezeigt noch in den Compatibility Key aufgenommen.
+
+Prompts 00 bis 22 sind abgeschlossen; Prompt 23 ergänzt als nächste Phase die
+Prompt Engine 2.0. Prompt 22 nimmt weder Prompt-Erzeugung noch Review-/
+Output-Erzeugung oder spätere Konflikt- und Release-Phasen vorweg.
 
 ## Speicherung
 
@@ -508,6 +529,17 @@ Pflichtbereiche:
 - schreibfreie Tileset-Hydration/Resume, Autosave und
   Summary-/Dashboard-Projektion
 - strukturierter Autotile-Flow ohne Richtungsset oder Figurenhöhe
+- Item-Kataloge, vollständiges Untertyp-/Itemklassen-Mapping, Wearable-Guard
+  und additive Schema-V2-Lesbarkeit ohne Defaults
+- Base→Category→Asset-Vererbung, minimale Item-Projektion, Explicit Clear,
+  schreibfreie Hydration/Resume, Autosave sowie Summary-/Dashboard-Projektion
+- Artwork-Kataloge, vollständiges Untertyp-/Artworktyp-Mapping und additive
+  Schema-V2-Lesbarkeit ohne Defaults
+- Base→Category→Asset-Vererbung, minimale Artwork-Projektion, Explicit Clear,
+  Rohzustand, schreibfreie Hydration/Resume, Autosave sowie
+  Summary-/Dashboard-Projektion
+- freier Artwork-Flow ohne Tile-, Sprite-, Weltkamera-, Figuren-, Richtungs-
+  oder Animationsfelder
 - 8 Richtungen nur bei richtungsabhängig beweglichen Assets
 - Speichern / Laden / Import / Export
 - Theme-Umschaltung

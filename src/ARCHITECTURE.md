@@ -25,6 +25,10 @@
     pure subtype-to-building-type mapping
   - `tilesets/`: Tileset catalogs, exhaustive subtype-to-tile-type mapping,
     connection relevance guards, and deterministic atlas metrics/specification
+  - `items/`: Item/Equipment catalogs, exhaustive subtype-to-item-class
+    mapping, and the wearable relevance guard
+  - `artworks/`: Artwork catalogs and exhaustive subtype-to-artwork-type
+    mapping for free-composition production fields
   - `profiles/`: validated profile-chain resolution, base-lock enforcement,
     structured diagnostics, normalized overrides, compatibility keys,
     canonical BaseProfile defaults, immutable BaseProfile creation/duplication,
@@ -44,15 +48,16 @@
   und `wizard/` die deklarative RHF-/Zod-Wizard-Grundlage;
   `character-editor/`, `moving-object-editor/`, `static-object-editor/`,
   `texture-editor/`, `nature-editor/`, `building-editor/` und
-  `tileset-editor/` enthalten die ersten spezialisierten Asset-Editoren;
+  `tileset-editor/`, `item-editor/` und `artwork-editor/` enthalten die neun
+  spezialisierten Asset-Editoren;
   Review-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
   - `categoryData.schema.ts`: strict category-specific answer contracts,
     including additive Character/NPC, Moving Object, Static Object,
-    Texture/Material, Nature/Tree, Building/Architecture, and Tileset catalogs
-    with strict category-specific values
+    Texture/Material, Nature/Tree, Building/Architecture, Tileset,
+    Item/Equipment, and Artwork catalogs with strict category-specific values
   - `profiles.schema.ts`: base, category, and asset profile contracts
   - `appSettings.schema.ts`, `wizardDraft.schema.ts`,
     `exportBundle.schema.ts`: remaining persisted/imported V2 contracts
@@ -510,7 +515,13 @@ condition, function, significance, size, readability, glow, shadow, icon size,
 and variants. Long free-form Item descriptions remain in the Draft for later
 Review/Output and are not duplicated into compact cards. No Item summary
 derives direction or animation facts.
-World-grid geometry remains omitted for resolved free-composition artwork.
+Artwork summaries add the derived type, purpose, motif, scene, composition,
+format, background, focus, lighting drama, and detail level. Long free-form
+Artwork descriptions remain in the Draft for later Review/Output and are not
+duplicated into compact cards. Wizard projection and compatibility omit
+world-grid geometry for `freeComposition`; pre-existing profile values remain
+losslessly readable but are neither displayed nor re-persisted as relevant
+Artwork overrides.
 
 `features/wizard/BaseProfileStep.tsx` is the Prompt-13 UI boundary. It presents
 native radio selection plus effective technical values with explicit Base,
@@ -635,7 +646,25 @@ Persisted Item values continue through the shared strict Zod schemas and
 Base→Category→Asset resolver; technical background and scale are never
 duplicated into `ItemAnswers`.
 
-Prompts 00 through 21 are complete. Prompt 22, the Artwork editor, is the next
-phase. Prompt 21 does not implement Prompt Engine modules,
-review/output generation, or any remaining specialist editor. It also does
-not add in-place Base-family mutation or descendant reparenting.
+`features/artwork-editor/index.ts` is the public React boundary for Prompt 22.
+`ArtworkConceptEditor` is mounted only as the dedicated `artworkDetails` step
+after Base selection. It renders subtype-derived Artwork type plus general
+inherited pixel style, style profile, and outline read-only. RHF owns purpose,
+motif, subject, scene, composition, format, background, focus, lighting drama,
+detail level, and extra details. Base changes preserve Artwork answers,
+classification changes purge them, and deliberate edits use shared minimal
+projection, Explicit Clear, autosave, and exact Resume while mount and
+hydration remain write-free. The editor exposes no Tile, Sprite, world-camera,
+character-scale, direction, or animation controls.
+
+`domain/artworks/index.ts` is the framework-free public boundary for stable
+Artwork catalogs and the complete subtype-to-type mapping. Persisted Artwork
+values continue through the shared strict Zod schemas and
+Base→Category→Asset resolver; Artwork type and game-specific technical values
+are never duplicated into `ArtworkAnswers`.
+
+Prompts 00 through 22 are complete. Prompt 23, the framework-free Prompt
+Engine 2.0, is the next phase. Prompt 22 does not implement prompt generation,
+review/output generation, conflict conversion, final accessibility polish, or
+release cleanup. It also does not add in-place Base-family mutation or
+descendant reparenting.
