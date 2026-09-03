@@ -1566,6 +1566,173 @@ describe("guided Wizard integration", () => {
     ).toHaveValue(4);
   });
 
+  it("autosaves and resumes a structured autotile with calculated atlas metrics", async () => {
+    const user = userEvent.setup();
+    const rendered = renderStudio();
+    const { adapter, storage } = rendered;
+
+    await user.type(projectNameInput(), "Waldweg-Autotile");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Tileset \/ Mapping/, "autotile");
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+
+    const progress = screen.getByRole("navigation", {
+      name: "Wizard-Fortschritt"
+    });
+    expect(within(progress).getByText("Tileset und Kartenelement")).toBeVisible();
+    expect(within(progress).queryByText("Kachelbarkeit")).not.toBeInTheDocument();
+    expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+    expect(
+      within(progress).queryByText("Bewegung und Animation")
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Tileset und Kartenelement" })
+    ).toBeVisible();
+    expect(
+      screen.getByText("Regelbasiertes Autotile", { selector: "output" })
+    ).toBeVisible();
+    expect(screen.getByText("32 × 32 px", { selector: "output" })).toBeVisible();
+    expect(screen.queryByLabelText(/Figurenhöhe/i)).not.toBeInTheDocument();
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Einsatz im Mapping" }),
+      "transition"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Kantenset" }),
+      "cardinalAndDiagonal"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Innen-/Außenecken" }),
+      "innerAndOuter"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Übergangslogik" }),
+      "bidirectional"
+    );
+    await user.type(
+      screen.getByRole("textbox", { name: "Ausgangsmaterial" }),
+      "Waldgras"
+    );
+    await user.type(
+      screen.getByRole("textbox", { name: "Nachbarmaterial" }),
+      "Steinweg"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Kachelbare Achsen" }),
+      "both"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Seam-Regel" }),
+      "matchedEdges"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Wiederholungsmuster" }),
+      "randomized"
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Varianten pro Zustand" }),
+      "3"
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: "Saubere Basisvariante" })
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: "Beschädigte Variante" })
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: "Dekorierte Variante" })
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Atlas-Tiles insgesamt" }),
+      "47"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Atlaslayout" }),
+      "fixedColumns"
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Feste Spaltenzahl" }),
+      "8"
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Zwischenraum in Pixeln" }),
+      "1"
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Außenrand in Pixeln" }),
+      "2"
+    );
+
+    expect(screen.getByText("8 × 6 Zellen")).toBeVisible();
+    expect(screen.getByText("267 × 201 px")).toBeVisible();
+    expect(screen.getByText("47 von 48 Slots")).toBeVisible();
+
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        category: "tileset",
+        subtype: "autotile",
+        currentStep: "tilesetDetails",
+        answers: {
+          tilesetType: "autotile",
+          tileUsage: "transition",
+          edgeSet: "cardinalAndDiagonal",
+          cornerSet: "innerAndOuter",
+          transitionMode: "bidirectional",
+          sourceMaterial: "Waldgras",
+          targetMaterial: "Steinweg",
+          seamMode: "matchedEdges",
+          tileableAxes: "both",
+          repeatMode: "randomized",
+          variantCount: 3,
+          variantKinds: ["clean", "damaged", "decorated"],
+          atlasLayout: "fixedColumns",
+          atlasTileCount: 47,
+          atlasColumns: 8,
+          atlasGutterPixels: 1,
+          atlasMarginPixels: 2
+        }
+      })
+    );
+    expect(readValidDraft(adapter)).not.toHaveProperty("answers.directionCount");
+    expect(readValidDraft(adapter)).not.toHaveProperty("answers.characterHeight");
+
+    rendered.unmount();
+    storage.mutations.splice(0);
+    renderStudio({ storage });
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Tileset und Kartenelement" })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("combobox", { name: "Einsatz im Mapping" })
+    ).toHaveValue("transition");
+    expect(screen.getByRole("combobox", { name: "Kantenset" })).toHaveValue(
+      "cardinalAndDiagonal"
+    );
+    expect(
+      screen.getByRole("combobox", { name: "Innen-/Außenecken" })
+    ).toHaveValue("innerAndOuter");
+    expect(screen.getByRole("textbox", { name: "Ausgangsmaterial" })).toHaveValue(
+      "Waldgras"
+    );
+    expect(
+      screen.getByRole("spinbutton", { name: "Atlas-Tiles insgesamt" })
+    ).toHaveValue(47);
+    expect(screen.getByRole("combobox", { name: "Atlaslayout" })).toHaveValue(
+      "fixedColumns"
+    );
+    expect(
+      screen.getByRole("spinbutton", { name: "Feste Spaltenzahl" })
+    ).toHaveValue(8);
+    expect(screen.getByText("267 × 201 px")).toBeVisible();
+    expect(screen.queryByText("Richtungen")).not.toBeInTheDocument();
+    expect(storage.mutations).toEqual([]);
+  });
+
   it("goes back without a validation barrier and restores resumed form values", async () => {
     const draft = categoryDraft();
     const storage = new MemoryStorage();

@@ -351,10 +351,34 @@ zeigen kompakte tatsächliche Architekturfakten.
 
 Nur ein Tor erhält den separaten `animated`-Capability-Schritt. Kein
 Building-Untertyp ist `directional`, daher erscheinen weder 4/8 Richtungen
-noch Figurenhöhe. Prompts 00 bis 19 sind abgeschlossen; Prompt 20 ergänzt als
-nächste Phase den Tileset-Editor.
-Prompt 19 nimmt weder Prompt Engine noch Review-/Output-Erzeugung oder weitere
-Spezialeditoren vorweg.
+noch Figurenhöhe.
+
+Seit Prompt 20 folgt für `tileset` direkt nach dem Basisprofil der eigene
+Schritt `tilesetDetails`. `TilesetEditor` erfasst Mapping-Einsatz,
+untertyprelevante Kanten, Ecken, Übergänge und Materialgrenzen, Seam-Regeln,
+Wiederholung, Varianten und Atlasparameter in React Hook Form. Tiletyp,
+wirksame Tilegröße und Pixelmaßstab werden read-only aus Untertyp und
+Base→Category→Asset-Vererbung gezeigt und nicht in Fachantworten dupliziert.
+
+Der öffentliche Katalog unter `src/domain/tilesets/` stellt readonly IDs, das
+vollständige `TILESET_TYPE_BY_SUBTYPE`-Mapping sowie pure Relevanz-Guards
+bereit. `resolveTilesetAtlasMetrics()` und
+`createTilesetTechnicalSpecification()` berechnen Zeilen, Spalten, Kapazität,
+freie Slots und Canvasgröße deterministisch. `TilesetAnswersSchema` bleibt
+strikt und additiv; alte V2-Daten werden ohne eager Defaults gelesen, während
+Typ-/Untertyp-, Verbindungs- und Atlaslayoutkonflikte abgewiesen werden.
+
+Tileset-Werte werden Base→Category→Asset aufgelöst und minimal lokal
+gespeichert. Explicit Clear, Basis-/Klassifikationswechsel, Rohzustand, Dirty
+State, Autosave und schreibfreies Resume folgen dem gemeinsamen Vertrag.
+Der generische `tileability`-Schritt wird für Tilesets durch den Fachschritt
+ersetzt; alte Drafts werden in-memory dorthin umgeleitet. Nur das animierte
+Tile erhält einen separaten Animationsschritt, kein Tileset 4/8 Richtungen oder
+Figurenhöhe.
+
+Prompts 00 bis 20 sind abgeschlossen; Prompt 21 ergänzt als nächste Phase den
+Item-/Equipment-Editor. Prompt 20 nimmt weder Prompt Engine noch Review-/
+Output-Erzeugung oder weitere Spezialeditoren vorweg.
 
 ## Speicherung
 
@@ -456,6 +480,15 @@ Pflichtbereiche:
 - schreibfreie Building-Hydration/Resume, Autosave und
   Summary-/Dashboard-Projektion
 - modularer animierter Torbau ohne Richtungsset oder Figurenhöhe
+- Tileset-Kataloge, vollständiges Untertyp-/Tiletyp-Mapping, pure
+  Verbindungs-Guards und additive Schema-V2-Lesbarkeit ohne Defaults
+- deterministische Atlasmetriken und technische Spezifikation aus zentraler
+  Tilegröße, Slotzahl, Layout, Zwischenraum und Rand
+- Base→Category→Asset-Vererbung, minimale Tileset-Projektion und
+  Explicit-Clear-Detach
+- schreibfreie Tileset-Hydration/Resume, Autosave und
+  Summary-/Dashboard-Projektion
+- strukturierter Autotile-Flow ohne Richtungsset oder Figurenhöhe
 - 8 Richtungen nur bei richtungsabhängig beweglichen Assets
 - Speichern / Laden / Import / Export
 - Theme-Umschaltung

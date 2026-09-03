@@ -67,6 +67,7 @@ V1 inventarisieren ✓
 → Nature-/Tree-Editor mit Anatomie-, Bewuchs- und Footprintmodell ✓
 → Static-Object-Editor mit Material-, Interaktions- und Footprintmodell ✓
 → Building-/Architecture-Editor mit Fassade, Mapping und Lichtmodell ✓
+→ Tileset-Editor mit Kanten-, Seam-, Varianten- und Atlasmodell ✓
 → weitere spezialisierte Editormodelle
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -135,10 +136,9 @@ die zur Capability passenden Fragen und Editoren.
 ## Spezialisierte Editoren
 
 Character-/NPC-, Moving-Object-, Texture-/Material-, Nature-/Tree-,
-Static-Object- und Building-/Architecture-Editor
+Static-Object-, Building-/Architecture- und Tileset-Editor
 sind als getrennte React-Features umgesetzt. Weitere geplante Features sind:
 
-- Tileset
 - Item/Equipment
 - Artwork
 
@@ -208,14 +208,24 @@ Optionen erscheinen nur bei Tor, Befestigung und Dungeon-Modul; nur das Tor
 erhält eine getrennte Animation. Kein Gebäude erhält Figurenhöhe oder ein
 4/8-Richtungsset.
 
+Der eigene `tilesetDetails`-Schritt erfasst den aus dem Untertyp abgeleiteten
+Tiletyp, Mapping-Einsatz, untertyprelevante Kanten, Innen-/Außenecken,
+Übergänge und Materialnachbarschaften sowie Seam-Regeln, Wiederholung,
+Varianten und Atlaslayout. Tilegröße und Pixelmaßstab bleiben zentrale
+read-only Werte der Profilkette. Zeilen, Spalten, Kapazität, freie Slots und
+Canvasgröße werden live durch pure Domain-Logik berechnet. Der Fachschritt
+ersetzt für Tilesets die frühere generische Kachelbarkeitsstufe; alte Drafts
+werden schreibfrei umgeleitet. Nur das animierte Tile erhält einen getrennten
+Animationsschritt, kein Tileset ein 4/8-Richtungsset oder Figurenmaßstab.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 19 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 20 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 20 — Tileset Editor
+→ Prompt 21 — Item/Equipment Editor
 ```
 
 Danach immer genau:
@@ -292,6 +302,10 @@ Rohzustand, Autosave und exaktes Resume umfassen alle Building-Felder, während
 Mount und Hydration schreibfrei bleiben. Live-Zusammenfassung und Dashboard
 zeigen kompakte Gebäude-, Footprint-, Material-, Dach-, Fassaden-, Öffnungs-,
 Mapping-, Belegungs- und Lichtfakten ohne Richtungs- oder Figurenmaßstab.
+Tileset-Antworten folgen demselben Vererbungs-, Minimalprojektions-,
+Explicit-Clear-, Rohzustands-, Autosave- und schreibfreien Resume-Vertrag.
+Live-Zusammenfassung und Dashboard zeigen nur tatsächliche Verbindungs-, Seam-,
+Varianten- und berechnete Atlasfakten, niemals Richtungs- oder Figurenwerte.
 Prompt-Erzeugung und Output-Flächen folgen erst in ihren späteren Phasen.
 
 ## Legacy-V1 lokal prüfen
@@ -387,6 +401,12 @@ Zustands-, Belegungs-, Mapping-, Kollisions-, Licht- und Animationswerte.
 Gebäude-Untertyp deterministisch ab, ohne beim Laden fehlende Antwortwerte zu
 materialisieren.
 
+Der öffentliche Tileset-Katalog unter `src/domain/tilesets/` bündelt readonly
+Tiletyp-, Einsatz-, Kanten-, Ecken-, Übergangs-, Seam-, Wiederholungs-,
+Varianten-, Atlas- und Animationswerte. `TILESET_TYPE_BY_SUBTYPE` sowie die
+Relevanz-Guards bilden Untertypen deterministisch ab. Die pure Atlaslogik
+berechnet technische Raster- und Canvasmetriken ohne React oder Browserzustand.
+
 Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
 Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
 werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
@@ -423,6 +443,12 @@ Kollision, lokales Licht und Toranimation. Vorhandene Schema-V2-Felder bleiben
 ohne eager Defaults lesbar; der Gebäudetyp muss zum Untertyp passen und
 modulare Werte werden capability-gesteuert validiert. Tilegröße, Weltkamera,
 Figurenhöhe und Richtungsdaten bleiben außerhalb der Building-Fachantworten.
+Das strikt additive `TilesetAnswersSchema` ergänzt Tiletyp, Verbindungen,
+Materialgrenze, Seam-/Wiederholungsregeln, Variantenarten und Atlasparameter.
+Alte Schema-V2-Felder bleiben ohne eager Defaults lesbar; Typ, Untertyp,
+Verbindungsrelevanz und feste Spalten werden konsistent validiert. Tilegröße,
+Pixelmaßstab, Figurenhöhe und Richtungsdaten bleiben außerhalb der
+Tileset-Fachantworten.
 
 Die öffentliche Profilauflösung unter `src/domain/profiles/` führt validierte
 Base-, Kategorie- und Assetprofile zusammen. Sie setzt Locks durch, meldet
@@ -473,6 +499,10 @@ Building-Profile zeigen Gebäudetyp, Footprint, Stockwerke und Höhe, Materialie
 Dach, Fassade, Öffnungen, Zustand, Belegung, Mapping, Kollision, Modularität,
 lokales Licht und eine capability-gültige Toranimation. Richtungs- oder
 Figurenfakten werden dabei nicht erzeugt.
+Tileset-Profile zeigen Tiletyp, Mapping-Einsatz, relevante Verbindungen,
+Materialgrenze, Seam-/Wiederholungsregeln, Varianten und berechnete
+Atlasabmessungen. Nur tatsächlich konfigurierte Animationen animierter Tiles
+erscheinen; Richtungs- oder Figurenfakten werden nicht erzeugt.
 
 Die Profilbibliothek unter `src/features/profiles/` durchsucht und filtert
 Assetprofile, gruppiert sie wahlweise nach Kategorie oder ihrem neu
@@ -594,6 +624,13 @@ Building-Fachwerte in React Hook Form und nutzt den gemeinsamen Rohzustands-,
 Autosave- und schreibfreien Resume-Pfad. Modulare Optionen sind auf passende
 Untertypen begrenzt; Toranimation wird separat capability-gesteuert und
 Richtung vollständig ausgeschlossen.
+
+Der spezialisierte Tileset-Editor unter `src/features/tileset-editor/` ist im
+eigenen `tilesetDetails`-Schritt direkt nach der Basisprofilwahl eingebunden.
+`TilesetEditor` zeigt Tiletyp, Tilegröße und Pixelmaßstab read-only, erfasst
+ausschließlich Tileset-Fachwerte in React Hook Form und zeigt die berechnete
+technische Atlas-Spezifikation live. Untertypwechsel entfernen irrelevante
+Verbindungsfelder; Animation bleibt separat und Richtung ausgeschlossen.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

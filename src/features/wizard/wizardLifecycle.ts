@@ -244,12 +244,18 @@ export function resolveWizardCoreStep(draft: WizardDraft): ResolvedWizardCoreSte
         return draft.category === "staticObject";
       case "buildingDetails":
         return draft.category === "building";
+      case "tilesetDetails":
+        return draft.category === "tileset";
       case "directions":
         return capabilities.directional;
       case "animation":
         return capabilities.animated;
       case "tileability":
-        return capabilities.tileable && draft.category !== "texture";
+        return (
+          capabilities.tileable &&
+          draft.category !== "texture" &&
+          draft.category !== "tileset"
+        );
     }
   };
 
@@ -260,17 +266,18 @@ export function resolveWizardCoreStep(draft: WizardDraft): ResolvedWizardCoreSte
     return Object.freeze({ stepId: draft.currentStep, usedFallback: false });
   }
 
-  // Prompt 16 moved Texture's seamless decision out of the generic
-  // tileability step. Resume older Texture drafts at the replacement step
+  // Prompts 16 and 20 moved Texture/Tileset repetition settings out of the
+  // generic tileability step. Resume older drafts at their replacement step
   // instead of sending users back to the Base-profile selection.
   if (
     "category" in draft &&
-    draft.category === "texture" &&
+    (draft.category === "texture" || draft.category === "tileset") &&
     draft.baseProfileId !== undefined &&
     draft.currentStep === "tileability"
   ) {
     return Object.freeze({
-      stepId: "textureDetails",
+      stepId:
+        draft.category === "texture" ? "textureDetails" : "tilesetDetails",
       usedFallback: true,
       unknownStep: draft.currentStep
     });

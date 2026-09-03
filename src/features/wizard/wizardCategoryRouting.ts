@@ -22,6 +22,11 @@ import {
   type ProfileResolutionConflict
 } from "../../domain/profiles";
 import {
+  tilesetSubtypeSupportsCorners,
+  tilesetSubtypeSupportsEdges,
+  tilesetSubtypeSupportsTransitions
+} from "../../domain/tilesets";
+import {
   parseWizardDraft,
   type BaseProfile,
   type BaseProfileOverrides,
@@ -35,6 +40,7 @@ import {
   type ProfileLibrary,
   type StaticObjectAnswers,
   type TextureAnswers,
+  type TilesetAnswers,
   type WizardDraft
 } from "../../schemas";
 import { resolveWizardDraftSnapshot } from "./wizardLifecycle";
@@ -223,6 +229,31 @@ const BUILDING_CONTROLLED_ANSWER_KEYS = new Set<string>([
   "extraDetails"
 ]);
 
+const TILESET_CONTROLLED_ANSWER_KEYS = new Set<string>([
+  "tilesetType",
+  "tileUsage",
+  "subjectDescription",
+  "edgeSet",
+  "edgeDetails",
+  "cornerSet",
+  "transitionMode",
+  "sourceMaterial",
+  "targetMaterial",
+  "seamMode",
+  "seamDetails",
+  "tileableAxes",
+  "repeatMode",
+  "variantCount",
+  "variantKinds",
+  "atlasLayout",
+  "atlasTileCount",
+  "atlasColumns",
+  "atlasGutterPixels",
+  "atlasMarginPixels",
+  "animationType",
+  "extraDetails"
+]);
+
 const MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS = Object.freeze([
   ["movingObjectClass", "objectClass"],
   ["movingObjectPurpose", "purpose"],
@@ -349,6 +380,33 @@ const BUILDING_FIELD_MAPPINGS = Object.freeze([
 ] as const satisfies readonly (readonly [
   keyof WizardCoreFormValues,
   keyof BuildingAnswers
+])[]);
+
+const TILESET_FIELD_MAPPINGS = Object.freeze([
+  ["tilesetType", "tilesetType"],
+  ["tilesetUsage", "tileUsage"],
+  ["tilesetDescription", "subjectDescription"],
+  ["tilesetEdgeSet", "edgeSet"],
+  ["tilesetEdgeDetails", "edgeDetails"],
+  ["tilesetCornerSet", "cornerSet"],
+  ["tilesetTransitionMode", "transitionMode"],
+  ["tilesetSourceMaterial", "sourceMaterial"],
+  ["tilesetTargetMaterial", "targetMaterial"],
+  ["tilesetSeamMode", "seamMode"],
+  ["tilesetSeamDetails", "seamDetails"],
+  ["tileableAxes", "tileableAxes"],
+  ["tilesetRepeatMode", "repeatMode"],
+  ["tilesetVariantCount", "variantCount"],
+  ["tilesetVariantKinds", "variantKinds"],
+  ["tilesetAtlasLayout", "atlasLayout"],
+  ["tilesetAtlasTileCount", "atlasTileCount"],
+  ["tilesetAtlasColumns", "atlasColumns"],
+  ["tilesetAtlasGutterPixels", "atlasGutterPixels"],
+  ["tilesetAtlasMarginPixels", "atlasMarginPixels"],
+  ["tilesetExtraDetails", "extraDetails"]
+] as const satisfies readonly (readonly [
+  keyof WizardCoreFormValues,
+  keyof TilesetAnswers
 ])[]);
 
 const PROFILE_VALUE_KEYS = Object.freeze([
@@ -486,12 +544,18 @@ export function wizardStepIsApplicable(
       return selection?.category === "staticObject";
     case "buildingDetails":
       return selection?.category === "building";
+    case "tilesetDetails":
+      return selection?.category === "tileset";
     case "directions":
       return capabilities.directional;
     case "animation":
       return capabilities.animated;
     case "tileability":
-      return capabilities.tileable && selection?.category !== "texture";
+      return (
+        capabilities.tileable &&
+        selection?.category !== "texture" &&
+        selection?.category !== "tileset"
+      );
   }
 }
 
@@ -881,6 +945,38 @@ function clearsInheritedBuildingDefault(
   );
 }
 
+function tilesetFormValue(
+  values: WizardCoreFormValues,
+  formField: keyof WizardCoreFormValues
+): unknown {
+  return values[formField];
+}
+
+function tilesetAnswerValue(
+  answers: TilesetAnswers,
+  answerField: keyof TilesetAnswers
+): unknown {
+  return answers[answerField];
+}
+
+function clearsInheritedTilesetDefault(
+  values: WizardCoreFormValues,
+  defaults: TilesetAnswers
+): boolean {
+  for (const [formField, answerField] of TILESET_FIELD_MAPPINGS) {
+    if (
+      tilesetAnswerValue(defaults, answerField) !== undefined &&
+      tilesetFormValue(values, formField) === undefined
+    ) {
+      return true;
+    }
+  }
+
+  return (
+    defaults.animationType !== undefined && values.animationType === undefined
+  );
+}
+
 export function createWizardCoreFormValues(
   draft: WizardDraft,
   categoryHint: AssetCategory | null = null,
@@ -895,6 +991,7 @@ export function createWizardCoreFormValues(
   let resolvedNatureAnswers: NatureAnswers | undefined;
   let resolvedStaticObjectAnswers: StaticObjectAnswers | undefined;
   let resolvedBuildingAnswers: BuildingAnswers | undefined;
+  let resolvedTilesetAnswers: TilesetAnswers | undefined;
 
   if (!("category" in draft)) {
     if (categoryHint !== null) values.category = categoryHint;
@@ -938,6 +1035,10 @@ export function createWizardCoreFormValues(
         resolution.profile.categoryData.category === "building"
       ) {
         resolvedBuildingAnswers = resolution.profile.categoryData.answers;
+      } else if (
+        resolution.profile.categoryData.category === "tileset"
+      ) {
+        resolvedTilesetAnswers = resolution.profile.categoryData.answers;
       }
     }
   }
@@ -1036,10 +1137,17 @@ export function createWizardCoreFormValues(
       addDefinedValue(values, "animationType", answers.animationType);
       break;
     }
-    case "tileset":
-      addDefinedValue(values, "animationType", draft.answers.animationType);
-      addDefinedValue(values, "tileableAxes", draft.answers.tileableAxes);
+    case "tileset": {
+      const answers = resolvedTilesetAnswers ?? draft.answers;
+      for (const [formField, answerField] of TILESET_FIELD_MAPPINGS) {
+        const value = tilesetAnswerValue(answers, answerField);
+        if (value !== undefined) {
+          (values as Record<string, unknown>)[formField] = value;
+        }
+      }
+      addDefinedValue(values, "animationType", answers.animationType);
       break;
+    }
     case "item":
     case "artwork":
       break;
@@ -1189,7 +1297,8 @@ function controlledAnswers(
   inheritedTextureDefaults: TextureAnswers | undefined,
   inheritedNatureDefaults: NatureAnswers | undefined,
   inheritedStaticObjectDefaults: StaticObjectAnswers | undefined,
-  inheritedBuildingDefaults: BuildingAnswers | undefined
+  inheritedBuildingDefaults: BuildingAnswers | undefined,
+  inheritedTilesetDefaults: TilesetAnswers | undefined
 ): Record<string, unknown> {
   const sameSelection = selectionsMatch(draft, selection);
   if (!sameSelection) return {};
@@ -1211,6 +1320,8 @@ function controlledAnswers(
           !STATIC_OBJECT_CONTROLLED_ANSWER_KEYS.has(key)) &&
         (selection.category !== "building" ||
           !BUILDING_CONTROLLED_ANSWER_KEYS.has(key)) &&
+        (selection.category !== "tileset" ||
+          !TILESET_CONTROLLED_ANSWER_KEYS.has(key)) &&
         value !== undefined
     )
   );
@@ -1395,11 +1506,53 @@ function controlledAnswers(
       }
       break;
     }
-    case "tileset":
-      if (capabilities.animated && values.animationType !== undefined) {
+    case "tileset": {
+      const supportsEdges = tilesetSubtypeSupportsEdges(selection.subtype);
+      const supportsCorners = tilesetSubtypeSupportsCorners(selection.subtype);
+      const supportsTransitions =
+        tilesetSubtypeSupportsTransitions(selection.subtype);
+
+      for (const [formField, answerField] of TILESET_FIELD_MAPPINGS) {
+        if (
+          (!supportsEdges &&
+            (answerField === "edgeSet" || answerField === "edgeDetails")) ||
+          (!supportsCorners && answerField === "cornerSet") ||
+          (!supportsTransitions &&
+            (answerField === "transitionMode" ||
+              answerField === "sourceMaterial" ||
+              answerField === "targetMaterial")) ||
+          (answerField === "atlasColumns" &&
+            values.tilesetAtlasLayout !== "fixedColumns")
+        ) {
+          continue;
+        }
+
+        const value = tilesetFormValue(values, formField);
+        if (
+          value !== undefined &&
+          !optionalJsonValuesEqual(
+            value,
+            inheritedTilesetDefaults === undefined
+              ? undefined
+              : tilesetAnswerValue(inheritedTilesetDefaults, answerField)
+          )
+        ) {
+          answers[answerField] = value;
+        }
+      }
+
+      if (
+        capabilities.animated &&
+        values.animationType !== undefined &&
+        !optionalJsonValuesEqual(
+          values.animationType,
+          inheritedTilesetDefaults?.animationType
+        )
+      ) {
         answers.animationType = values.animationType;
       }
       break;
+    }
     case "nature": {
       for (const [formField, answerField] of NATURE_FIELD_MAPPINGS) {
         const value = natureFormValue(values, formField);
@@ -1517,14 +1670,6 @@ function controlledAnswers(
       break;
   }
 
-  if (
-    selection.category === "tileset" &&
-    capabilities.tileable &&
-    values.tileableAxes !== undefined
-  ) {
-    answers.tileableAxes = values.tileableAxes;
-  }
-
   if (selection.category !== "character") {
     const framesPerDirection = answers.framesPerDirection;
     const hasAnimation = answers.animationType !== undefined;
@@ -1561,6 +1706,7 @@ function selectedDraftRoute(
     stepId === "natureDetails" ||
     stepId === "staticObjectDetails" ||
     stepId === "buildingDetails" ||
+    stepId === "tilesetDetails" ||
     stepId === "directions" ||
     stepId === "animation" ||
     stepId === "tileability"
@@ -1735,13 +1881,21 @@ export function updateWizardDraftFromCoreForm(
       input.values,
       linkedCategoryProfile.defaults
     );
+  const detachTilesetCategoryProfile =
+    selection.category === "tileset" &&
+    linkedCategoryProfile?.category === "tileset" &&
+    clearsInheritedTilesetDefault(
+      input.values,
+      linkedCategoryProfile.defaults
+    );
   const detachCategoryProfile =
     detachCharacterCategoryProfile ||
     detachMovingObjectCategoryProfile ||
     detachTextureCategoryProfile ||
     detachNatureCategoryProfile ||
     detachStaticObjectCategoryProfile ||
-    detachBuildingCategoryProfile;
+    detachBuildingCategoryProfile ||
+    detachTilesetCategoryProfile;
   const retainedProfileLinks =
     profileLinksCanBeRetained && !detachCategoryProfile;
 
@@ -1803,6 +1957,11 @@ export function updateWizardDraftFromCoreForm(
     retainedCategoryProfile?.category === "building"
       ? retainedCategoryProfile.defaults
       : undefined;
+  const inheritedTilesetDefaults =
+    selection.category === "tileset" &&
+    retainedCategoryProfile?.category === "tileset"
+      ? retainedCategoryProfile.defaults
+      : undefined;
   const common = {
     schemaVersion: 2,
     kind: "wizardDraft",
@@ -1832,7 +1991,8 @@ export function updateWizardDraftFromCoreForm(
       inheritedTextureDefaults,
       inheritedNatureDefaults,
       inheritedStaticObjectDefaults,
-      inheritedBuildingDefaults
+      inheritedBuildingDefaults,
+      inheritedTilesetDefaults
     )
   } as const;
 

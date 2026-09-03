@@ -6,6 +6,7 @@ import {
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_NATURE_DETAIL_FIELD_PATHS,
   WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
+  WIZARD_TILESET_DETAIL_FIELD_PATHS,
   WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   WizardAnimationStepSchema,
   WizardBaseProfileStepSchema,
@@ -17,6 +18,7 @@ import {
   WizardNatureDetailsStepSchema,
   WizardProjectStepSchema,
   WizardStaticObjectDetailsStepSchema,
+  WizardTilesetDetailsStepSchema,
   WizardTextureDetailsStepSchema,
   WizardTileabilityStepSchema,
   getWizardCoreFallbackStepId,
@@ -55,6 +57,7 @@ describe("wizard core steps", () => {
       "natureDetails",
       "staticObjectDetails",
       "buildingDetails",
+      "tilesetDetails",
       "directions",
       "animation",
       "tileability"
@@ -106,6 +109,13 @@ describe("wizard core steps", () => {
       route: "wizard/editor",
       title: "Gebäude und Architektur"
     });
+    expect(getWizardCoreStep("tilesetDetails").fieldPaths).toBe(
+      WIZARD_TILESET_DETAIL_FIELD_PATHS
+    );
+    expect(getWizardCoreStep("tilesetDetails")).toMatchObject({
+      route: "wizard/editor",
+      title: "Tileset und Kartenelement"
+    });
     expect(getWizardCoreStep("directions").fieldPaths).toEqual(["directionCount"]);
     expect(getWizardCoreStep("animation").fieldPaths).toEqual([
       "animationAction",
@@ -123,7 +133,37 @@ describe("wizard core steps", () => {
     expect(getWizardCoreStepIndex("natureDetails")).toBe(6);
     expect(getWizardCoreStepIndex("staticObjectDetails")).toBe(7);
     expect(getWizardCoreStepIndex("buildingDetails")).toBe(8);
-    expect(getWizardCoreStepIndex("directions")).toBe(9);
+    expect(getWizardCoreStepIndex("tilesetDetails")).toBe(9);
+    expect(getWizardCoreStepIndex("directions")).toBe(10);
+  });
+
+  it("owns the complete Tileset boundary without duplicated Grid or directions", () => {
+    expect(WIZARD_TILESET_DETAIL_FIELD_PATHS).toEqual([
+      "tilesetType",
+      "tilesetUsage",
+      "tilesetDescription",
+      "tilesetEdgeSet",
+      "tilesetEdgeDetails",
+      "tilesetCornerSet",
+      "tilesetTransitionMode",
+      "tilesetSourceMaterial",
+      "tilesetTargetMaterial",
+      "tilesetSeamMode",
+      "tilesetSeamDetails",
+      "tileableAxes",
+      "tilesetRepeatMode",
+      "tilesetVariantCount",
+      "tilesetVariantKinds",
+      "tilesetAtlasLayout",
+      "tilesetAtlasTileCount",
+      "tilesetAtlasColumns",
+      "tilesetAtlasGutterPixels",
+      "tilesetAtlasMarginPixels",
+      "tilesetExtraDetails"
+    ]);
+    expect(WIZARD_TILESET_DETAIL_FIELD_PATHS).not.toContain("tileSize");
+    expect(WIZARD_TILESET_DETAIL_FIELD_PATHS).not.toContain("directionCount");
+    expect(WIZARD_TILESET_DETAIL_FIELD_PATHS).not.toContain("animationType");
   });
 
   it("owns the complete Building boundary without technical scale or directions", () => {
@@ -587,6 +627,68 @@ describe("wizard core steps", () => {
         animationType: "openClose"
       }).success
     ).toBe(true);
+  });
+
+  it("validates Tileset connections, repetition, and Atlas layout at its own boundary", () => {
+    const autotile = {
+      projectName: "Wiesen-Autotile",
+      category: "tileset" as const,
+      subtype: "autotile" as const,
+      ...technicalValues,
+      tilesetType: "autotile" as const,
+      tilesetUsage: "transition" as const,
+      tilesetEdgeSet: "cardinalAndDiagonal" as const,
+      tilesetCornerSet: "innerAndOuter" as const,
+      tilesetTransitionMode: "bidirectional" as const,
+      tilesetSourceMaterial: "Gras",
+      tilesetTargetMaterial: "Erde",
+      tilesetSeamMode: "matchedEdges" as const,
+      tileableAxes: "both" as const,
+      tilesetRepeatMode: "randomized" as const,
+      tilesetVariantCount: 6,
+      tilesetVariantKinds: ["clean", "damaged"] as const,
+      tilesetAtlasLayout: "fixedColumns" as const,
+      tilesetAtlasTileCount: 47,
+      tilesetAtlasColumns: 8,
+      tilesetAtlasGutterPixels: 1,
+      tilesetAtlasMarginPixels: 2
+    };
+
+    expect(WizardTilesetDetailsStepSchema.safeParse(autotile).success).toBe(
+      true
+    );
+    expect(
+      WizardTilesetDetailsStepSchema.safeParse({
+        ...autotile,
+        tilesetType: "edge"
+      }).success
+    ).toBe(false);
+    expect(
+      WizardTilesetDetailsStepSchema.safeParse({
+        ...autotile,
+        subtype: "groundTile",
+        tilesetType: "ground"
+      }).success
+    ).toBe(false);
+    expect(
+      WizardTilesetDetailsStepSchema.safeParse({
+        ...autotile,
+        tilesetAtlasColumns: undefined
+      }).success
+    ).toBe(false);
+    expect(
+      WizardTilesetDetailsStepSchema.safeParse({
+        ...autotile,
+        tilesetRepeatMode: "nonRepeating",
+        tileableAxes: "both"
+      }).success
+    ).toBe(false);
+    expect(
+      WizardDirectionStepSchema.safeParse({
+        ...autotile,
+        directionCount: 8
+      }).success
+    ).toBe(false);
   });
 
   it("scopes the Character-details boundary to a classified character with a Base profile", () => {

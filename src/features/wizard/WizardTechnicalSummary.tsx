@@ -85,6 +85,22 @@ import {
   type StaticObjectSubtype,
   type StaticObjectSymmetry
 } from "../../domain/static-objects";
+import {
+  createTilesetTechnicalSpecification,
+  getDefaultTilesetType,
+  type TilesetAtlasLayout,
+  type TilesetCornerSet,
+  type TilesetEdgeSet,
+  type TilesetRepeatMode,
+  type TilesetSeamMode,
+  type TilesetSubtype,
+  type TilesetTechnicalSpecification,
+  type TilesetTileableAxes,
+  type TilesetTransitionMode,
+  type TilesetType,
+  type TilesetUsage,
+  type TilesetVariantKind
+} from "../../domain/tilesets";
 import type { ResolvedProfile } from "../../domain/profiles";
 import type {
   BaseProfile,
@@ -697,6 +713,91 @@ const BUILDING_LIGHTING_LABELS: Readonly<Record<BuildingLighting, string>> = {
   custom: "Individuell"
 };
 
+const TILESET_TYPE_LABELS: Readonly<Record<TilesetType, string>> = {
+  ground: "Boden",
+  wall: "Wand",
+  roof: "Dach",
+  transition: "Materialübergang",
+  corner: "Eckverbindung",
+  edge: "Kantenverbindung",
+  autotile: "Regelbasiertes Autotile",
+  decal: "Tile-Dekal",
+  animated: "Animiertes Tile"
+};
+
+const TILESET_USAGE_LABELS: Readonly<Record<TilesetUsage, string>> = {
+  floor: "Bodenfläche",
+  wall: "Wandfläche",
+  roof: "Dachfläche",
+  transition: "Übergang / Anschluss",
+  decor: "Dekoration"
+};
+
+const TILESET_EDGE_LABELS: Readonly<Record<TilesetEdgeSet, string>> = {
+  none: "Keine eigenen Kanten",
+  cardinal: "Vier Kardinalkanten",
+  cardinalAndDiagonal: "Kardinal- und Diagonalkanten",
+  custom: "Individuelles Kantenset"
+};
+
+const TILESET_CORNER_LABELS: Readonly<Record<TilesetCornerSet, string>> = {
+  none: "Keine Eckvarianten",
+  outer: "Außenecken",
+  inner: "Innenecken",
+  innerAndOuter: "Innen- und Außenecken",
+  custom: "Individuelles Eckset"
+};
+
+const TILESET_TRANSITION_LABELS: Readonly<
+  Record<TilesetTransitionMode, string>
+> = {
+  none: "Kein Materialübergang",
+  oneWay: "Einseitig",
+  bidirectional: "Beidseitig",
+  multiMaterial: "Mehrere Materialien",
+  custom: "Individuell"
+};
+
+const TILESET_SEAM_LABELS: Readonly<Record<TilesetSeamMode, string>> = {
+  seamless: "Vollständig nahtlos",
+  matchedEdges: "Passende Randpixel",
+  intentionalBoundary: "Sichtbare Grenze",
+  overlap: "Überlappender Rand",
+  custom: "Individuell"
+};
+
+const TILESET_AXES_LABELS: Readonly<Record<TilesetTileableAxes, string>> = {
+  horizontal: "Horizontal",
+  vertical: "Vertikal",
+  both: "Horizontal und vertikal",
+  none: "Keine Achsenwiederholung"
+};
+
+const TILESET_REPEAT_LABELS: Readonly<Record<TilesetRepeatMode, string>> = {
+  strict: "Strikt regelmäßig",
+  staggered: "Versetzt",
+  randomized: "Kontrolliert variiert",
+  nonRepeating: "Nicht wiederholend"
+};
+
+const TILESET_VARIANT_LABELS: Readonly<Record<TilesetVariantKind, string>> = {
+  clean: "sauber",
+  damaged: "beschädigt",
+  decorated: "dekoriert",
+  decal: "Dekal",
+  seasonal: "saisonal",
+  randomized: "zufällig variiert"
+};
+
+const TILESET_ATLAS_LAYOUT_LABELS: Readonly<
+  Record<TilesetAtlasLayout, string>
+> = {
+  automatic: "Automatisch kompakt",
+  singleRow: "Eine Zeile",
+  singleColumn: "Eine Spalte",
+  fixedColumns: "Feste Spaltenzahl"
+};
+
 function natureAnimationSummary(
   animationType: WizardCoreFormValues["animationType"]
 ): string {
@@ -739,6 +840,77 @@ function buildingAnimationSummary(
       return "Individuell";
     default:
       return "Noch nicht ausgewählt";
+  }
+}
+
+function tilesetAnimationSummary(
+  animationType: WizardCoreFormValues["animationType"]
+): string {
+  switch (animationType) {
+    case "water":
+      return "Wasser";
+    case "lava":
+      return "Lava";
+    case "magic":
+      return "Magie";
+    case "custom":
+      return "Individuell";
+    default:
+      return "Noch nicht ausgewählt";
+  }
+}
+
+function validTilesetMetricInteger(
+  value: number | undefined,
+  minimum: number,
+  maximum: number
+): value is number {
+  return (
+    value !== undefined &&
+    Number.isInteger(value) &&
+    value >= minimum &&
+    value <= maximum
+  );
+}
+
+function tilesetTechnicalSpecification(
+  values: WizardCoreFormValues
+): TilesetTechnicalSpecification | null {
+  if (
+    !validTilesetMetricInteger(values.tileSize, 1, 8192) ||
+    !validTilesetMetricInteger(values.tilesetAtlasTileCount, 1, 256) ||
+    (values.tilesetAtlasLayout === "fixedColumns" &&
+      !validTilesetMetricInteger(values.tilesetAtlasColumns, 1, 64)) ||
+    (values.tilesetAtlasLayout !== undefined &&
+      values.tilesetAtlasLayout !== "fixedColumns" &&
+      values.tilesetAtlasColumns !== undefined) ||
+    (values.tilesetAtlasGutterPixels !== undefined &&
+      !validTilesetMetricInteger(values.tilesetAtlasGutterPixels, 0, 64)) ||
+    (values.tilesetAtlasMarginPixels !== undefined &&
+      !validTilesetMetricInteger(values.tilesetAtlasMarginPixels, 0, 64))
+  ) {
+    return null;
+  }
+
+  try {
+    return createTilesetTechnicalSpecification({
+      tileSizePixels: values.tileSize,
+      tileCount: values.tilesetAtlasTileCount,
+      ...(values.tilesetAtlasLayout === undefined
+        ? {}
+        : { layout: values.tilesetAtlasLayout }),
+      ...(values.tilesetAtlasColumns === undefined
+        ? {}
+        : { fixedColumns: values.tilesetAtlasColumns }),
+      ...(values.tilesetAtlasGutterPixels === undefined
+        ? {}
+        : { gutterPixels: values.tilesetAtlasGutterPixels }),
+      ...(values.tilesetAtlasMarginPixels === undefined
+        ? {}
+        : { marginPixels: values.tilesetAtlasMarginPixels })
+    });
+  } catch {
+    return null;
   }
 }
 
@@ -894,6 +1066,10 @@ export function WizardTechnicalSummary({
     natureSubtype !== null && natureSubtypeHasCrown(natureSubtype);
   const natureHasRoots =
     natureSubtype !== null && natureSubtypeHasRoots(natureSubtype);
+  const activeTilesetSpecification =
+    selection?.category === "tileset"
+      ? tilesetTechnicalSpecification(formValues)
+      : null;
 
   return (
     <aside
@@ -1340,6 +1516,119 @@ export function WizardTechnicalSummary({
               <SummaryFact
                 label="Animation"
                 value={buildingAnimationSummary(formValues.animationType)}
+              />
+            ) : null}
+          </>
+        ) : null}
+        {selection?.category === "tileset" ? (
+          <>
+            <SummaryFact
+              label="Tiletyp"
+              value={
+                TILESET_TYPE_LABELS[
+                  formValues.tilesetType ??
+                    getDefaultTilesetType(
+                      selection.subtype as TilesetSubtype
+                    )
+                ]
+              }
+            />
+            {formValues.tilesetUsage !== undefined ? (
+              <SummaryFact
+                label="Mapping-Einsatz"
+                value={TILESET_USAGE_LABELS[formValues.tilesetUsage]}
+              />
+            ) : null}
+            {formValues.tilesetEdgeSet !== undefined ? (
+              <SummaryFact
+                label="Kanten"
+                value={TILESET_EDGE_LABELS[formValues.tilesetEdgeSet]}
+              />
+            ) : null}
+            {formValues.tilesetCornerSet !== undefined ? (
+              <SummaryFact
+                label="Ecken"
+                value={TILESET_CORNER_LABELS[formValues.tilesetCornerSet]}
+              />
+            ) : null}
+            {formValues.tilesetTransitionMode !== undefined ? (
+              <SummaryFact
+                label="Übergang"
+                value={
+                  TILESET_TRANSITION_LABELS[
+                    formValues.tilesetTransitionMode
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.tilesetSourceMaterial?.trim() ||
+            formValues.tilesetTargetMaterial?.trim() ? (
+              <SummaryFact
+                label="Materialgrenze"
+                value={`${formValues.tilesetSourceMaterial?.trim() || "offen"} → ${formValues.tilesetTargetMaterial?.trim() || "offen"}`}
+              />
+            ) : null}
+            {formValues.tilesetSeamMode !== undefined ? (
+              <SummaryFact
+                label="Seam-Regel"
+                value={TILESET_SEAM_LABELS[formValues.tilesetSeamMode]}
+              />
+            ) : null}
+            {formValues.tileableAxes !== undefined ? (
+              <SummaryFact
+                label="Kachelbare Achsen"
+                value={TILESET_AXES_LABELS[formValues.tileableAxes]}
+              />
+            ) : null}
+            {formValues.tilesetRepeatMode !== undefined ? (
+              <SummaryFact
+                label="Wiederholung"
+                value={TILESET_REPEAT_LABELS[formValues.tilesetRepeatMode]}
+              />
+            ) : null}
+            {formValues.tilesetVariantCount !== undefined ? (
+              <SummaryFact
+                label="Varianten pro Zustand"
+                value={String(formValues.tilesetVariantCount)}
+              />
+            ) : null}
+            {formValues.tilesetVariantKinds !== undefined ? (
+              <SummaryFact
+                label="Variantenarten"
+                value={formValues.tilesetVariantKinds
+                  .map((variant) => TILESET_VARIANT_LABELS[variant])
+                  .join(", ")}
+              />
+            ) : null}
+            {activeTilesetSpecification !== null ? (
+              <>
+                <SummaryFact
+                  label="Atlaslayout"
+                  value={
+                    TILESET_ATLAS_LAYOUT_LABELS[
+                      activeTilesetSpecification.metrics.layout
+                    ]
+                  }
+                />
+                <SummaryFact
+                  label="Atlas-Spezifikation"
+                  value={`${String(activeTilesetSpecification.metrics.columns)} × ${String(activeTilesetSpecification.metrics.rows)} Zellen · ${String(activeTilesetSpecification.metrics.atlasWidthPixels)} × ${String(activeTilesetSpecification.metrics.atlasHeightPixels)} px · ${String(activeTilesetSpecification.metrics.tileCount)}/${String(activeTilesetSpecification.metrics.capacity)} Slots`}
+                />
+              </>
+            ) : formValues.tilesetAtlasLayout !== undefined ? (
+              <SummaryFact
+                label="Atlaslayout"
+                value={
+                  TILESET_ATLAS_LAYOUT_LABELS[
+                    formValues.tilesetAtlasLayout
+                  ]
+                }
+              />
+            ) : null}
+            {selection.capabilities.animated ? (
+              <SummaryFact
+                label="Animation"
+                value={tilesetAnimationSummary(formValues.animationType)}
               />
             ) : null}
           </>

@@ -807,6 +807,93 @@ describe("wizard draft lifecycle", () => {
     });
   });
 
+  it("resumes Tileset details and redirects the obsolete Tileability step", () => {
+    const library = createProfileLibraryFixture();
+    const base = library.baseProfiles[0];
+    if (!base) throw new Error("Expected a Base-profile fixture.");
+    const tilesetDraft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_tileset_details",
+      projectName: "Wiesen-Autotile",
+      route: "wizard/editor",
+      currentStep: "tilesetDetails",
+      baseProfileId: base.id,
+      category: "tileset",
+      subtype: "autotile",
+      answers: {
+        tilesetType: "autotile",
+        edgeSet: "cardinalAndDiagonal",
+        cornerSet: "innerAndOuter",
+        transitionMode: "bidirectional",
+        tileableAxes: "both",
+        atlasLayout: "fixedColumns",
+        atlasTileCount: 47,
+        atlasColumns: 8
+      },
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+
+    expect(resolveWizardCoreStep(tilesetDraft)).toEqual({
+      stepId: "tilesetDetails",
+      usedFallback: false
+    });
+    expect(
+      validateWizardResume({
+        requestedDraftId: tilesetDraft.draftId,
+        draft: tilesetDraft,
+        profileLibrary: library
+      })
+    ).toEqual({ status: "ready", draft: tilesetDraft, notices: [] });
+
+    const obsoleteTileabilityDraft = parseWizardDraft({
+      ...tilesetDraft,
+      currentStep: "tileability"
+    });
+    expect(resolveWizardCoreStep(obsoleteTileabilityDraft)).toEqual({
+      stepId: "tilesetDetails",
+      usedFallback: true,
+      unknownStep: "tileability"
+    });
+    expect(
+      validateWizardResume({
+        requestedDraftId: obsoleteTileabilityDraft.draftId,
+        draft: obsoleteTileabilityDraft,
+        profileLibrary: library
+      })
+    ).toMatchObject({
+      status: "ready",
+      draft: { currentStep: "tilesetDetails" },
+      notices: [
+        {
+          unknownStep: "tileability",
+          fallbackStep: "tilesetDetails"
+        }
+      ]
+    });
+
+    const wrongCategory = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_texture_tileset_step",
+      projectName: "Stein",
+      route: "wizard/editor",
+      currentStep: "tilesetDetails",
+      baseProfileId: base.id,
+      category: "texture",
+      subtype: "stone",
+      answers: {},
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+    expect(resolveWizardCoreStep(wrongCategory)).toEqual({
+      stepId: "baseProfile",
+      usedFallback: true,
+      unknownStep: "tilesetDetails"
+    });
+  });
+
   it("rejects malformed resume payloads before lifecycle handling", () => {
     const result = validateWizardResume({
       requestedDraftId: draftId,

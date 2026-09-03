@@ -88,6 +88,19 @@ import {
   TEXTURE_SURFACE_IDS,
   TEXTURE_USAGE_IDS
 } from "../domain/textures";
+import {
+  TILESET_ANIMATION_TYPE_IDS,
+  TILESET_ATLAS_LAYOUT_IDS,
+  TILESET_CORNER_SET_IDS,
+  TILESET_EDGE_SET_IDS,
+  TILESET_REPEAT_MODE_IDS,
+  TILESET_SEAM_MODE_IDS,
+  TILESET_TILEABLE_AXES_IDS,
+  TILESET_TRANSITION_MODE_IDS,
+  TILESET_TYPE_IDS,
+  TILESET_USAGE_IDS,
+  TILESET_VARIANT_KIND_IDS
+} from "../domain/tilesets";
 import { validateCategoryDataCapabilities } from "./categoryData.refinement";
 import { DirectionCountSchema, FootprintSchema } from "./common.schema";
 
@@ -102,6 +115,8 @@ const NatureDescriptorSchema = z.string().trim().min(1).max(200);
 const NatureDetailSchema = z.string().trim().min(1).max(500);
 const StaticObjectDetailSchema = z.string().trim().min(1).max(500);
 const BuildingDetailSchema = z.string().trim().min(1).max(500);
+const TilesetDescriptorSchema = z.string().trim().min(1).max(200);
+const TilesetDetailSchema = z.string().trim().min(1).max(500);
 
 export const CharacterAnimationActionSchema = z
   .strictObject({
@@ -340,10 +355,44 @@ export const BuildingAnswersSchema = z
 export const TilesetAnswersSchema = z
   .strictObject({
     ...sharedAnswersShape,
-    tileUsage: z.enum(["floor", "wall", "roof", "transition", "decor"]).optional(),
-    tileableAxes: z.enum(["horizontal", "vertical", "both", "none"]).optional(),
-    animationType: z.enum(["water", "lava", "magic", "custom"]).optional(),
-    variantCount: z.number().int().min(1).max(64).optional()
+    tilesetType: z.enum(TILESET_TYPE_IDS).optional(),
+    tileUsage: z.enum(TILESET_USAGE_IDS).optional(),
+    edgeSet: z.enum(TILESET_EDGE_SET_IDS).optional(),
+    edgeDetails: TilesetDetailSchema.optional(),
+    cornerSet: z.enum(TILESET_CORNER_SET_IDS).optional(),
+    transitionMode: z.enum(TILESET_TRANSITION_MODE_IDS).optional(),
+    sourceMaterial: TilesetDescriptorSchema.optional(),
+    targetMaterial: TilesetDescriptorSchema.optional(),
+    seamMode: z.enum(TILESET_SEAM_MODE_IDS).optional(),
+    seamDetails: TilesetDetailSchema.optional(),
+    tileableAxes: z.enum(TILESET_TILEABLE_AXES_IDS).optional(),
+    repeatMode: z.enum(TILESET_REPEAT_MODE_IDS).optional(),
+    variantCount: z.number().int().min(1).max(64).optional(),
+    variantKinds: z
+      .array(z.enum(TILESET_VARIANT_KIND_IDS))
+      .min(1)
+      .max(TILESET_VARIANT_KIND_IDS.length)
+      .superRefine((variants, context) => {
+        const seen = new Set<string>();
+        variants.forEach((variant, index) => {
+          if (seen.has(variant)) {
+            context.addIssue({
+              code: "custom",
+              path: [index],
+              message: `Duplicate Tileset variant kind "${variant}".`
+            });
+          }
+          seen.add(variant);
+        });
+      })
+      .readonly()
+      .optional(),
+    atlasLayout: z.enum(TILESET_ATLAS_LAYOUT_IDS).optional(),
+    atlasTileCount: z.number().int().min(1).max(256).optional(),
+    atlasColumns: z.number().int().min(1).max(64).optional(),
+    atlasGutterPixels: z.number().int().min(0).max(64).optional(),
+    atlasMarginPixels: z.number().int().min(0).max(64).optional(),
+    animationType: z.enum(TILESET_ANIMATION_TYPE_IDS).optional()
   })
   .readonly();
 

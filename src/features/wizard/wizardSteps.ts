@@ -32,6 +32,13 @@ import {
   type StaticObjectSubtype
 } from "../../domain/static-objects";
 import {
+  getDefaultTilesetType,
+  tilesetSubtypeSupportsCorners,
+  tilesetSubtypeSupportsEdges,
+  tilesetSubtypeSupportsTransitions,
+  type TilesetSubtype
+} from "../../domain/tilesets";
+import {
   BaseProfileValuesSchema,
   BuildingAnswersSchema,
   CharacterAnswersSchema,
@@ -39,6 +46,7 @@ import {
   NatureAnswersSchema,
   StaticObjectAnswersSchema,
   TextureAnswersSchema,
+  TilesetAnswersSchema,
   type BaseProfileValues
 } from "../../schemas";
 
@@ -108,6 +116,7 @@ const textureAnswerShape = TextureAnswersSchema.unwrap().shape;
 const natureAnswerShape = NatureAnswersSchema.unwrap().shape;
 const staticObjectAnswerShape = StaticObjectAnswersSchema.unwrap().shape;
 const buildingAnswerShape = BuildingAnswersSchema.unwrap().shape;
+const tilesetAnswerShape = TilesetAnswersSchema.unwrap().shape;
 
 export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
@@ -259,6 +268,26 @@ export const WizardCoreFormSchema = z.strictObject({
   buildingLighting: buildingAnswerShape.lighting,
   buildingLightSourceDetails: buildingAnswerShape.lightSourceDetails,
   buildingExtraDetails: buildingAnswerShape.extraDetails,
+  tilesetType: tilesetAnswerShape.tilesetType,
+  tilesetUsage: tilesetAnswerShape.tileUsage,
+  tilesetDescription: tilesetAnswerShape.subjectDescription,
+  tilesetEdgeSet: tilesetAnswerShape.edgeSet,
+  tilesetEdgeDetails: tilesetAnswerShape.edgeDetails,
+  tilesetCornerSet: tilesetAnswerShape.cornerSet,
+  tilesetTransitionMode: tilesetAnswerShape.transitionMode,
+  tilesetSourceMaterial: tilesetAnswerShape.sourceMaterial,
+  tilesetTargetMaterial: tilesetAnswerShape.targetMaterial,
+  tilesetSeamMode: tilesetAnswerShape.seamMode,
+  tilesetSeamDetails: tilesetAnswerShape.seamDetails,
+  tilesetRepeatMode: tilesetAnswerShape.repeatMode,
+  tilesetVariantCount: tilesetAnswerShape.variantCount,
+  tilesetVariantKinds: tilesetAnswerShape.variantKinds,
+  tilesetAtlasLayout: tilesetAnswerShape.atlasLayout,
+  tilesetAtlasTileCount: tilesetAnswerShape.atlasTileCount,
+  tilesetAtlasColumns: tilesetAnswerShape.atlasColumns,
+  tilesetAtlasGutterPixels: tilesetAnswerShape.atlasGutterPixels,
+  tilesetAtlasMarginPixels: tilesetAnswerShape.atlasMarginPixels,
+  tilesetExtraDetails: tilesetAnswerShape.extraDetails,
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
     .enum(CHARACTER_ANIMATION_ACTION_IDS)
@@ -266,7 +295,7 @@ export const WizardCoreFormSchema = z.strictObject({
   animationType: AnimationTypeSchema.optional(),
   movementType: movingObjectAnswerShape.movementType,
   seamless: textureAnswerShape.seamless,
-  tileableAxes: z.enum(["horizontal", "vertical", "both", "none"]).optional()
+  tileableAxes: tilesetAnswerShape.tileableAxes
 });
 
 export type WizardCoreFormValues = z.infer<typeof WizardCoreFormSchema>;
@@ -281,6 +310,7 @@ export type WizardCoreStepId =
   | "natureDetails"
   | "staticObjectDetails"
   | "buildingDetails"
+  | "tilesetDetails"
   | "directions"
   | "animation"
   | "tileability";
@@ -484,6 +514,30 @@ export const WIZARD_BUILDING_DETAIL_FIELD_PATHS = Object.freeze([
   "buildingLighting",
   "buildingLightSourceDetails",
   "buildingExtraDetails"
+] as const satisfies readonly WizardCoreFieldPath[]);
+
+export const WIZARD_TILESET_DETAIL_FIELD_PATHS = Object.freeze([
+  "tilesetType",
+  "tilesetUsage",
+  "tilesetDescription",
+  "tilesetEdgeSet",
+  "tilesetEdgeDetails",
+  "tilesetCornerSet",
+  "tilesetTransitionMode",
+  "tilesetSourceMaterial",
+  "tilesetTargetMaterial",
+  "tilesetSeamMode",
+  "tilesetSeamDetails",
+  "tileableAxes",
+  "tilesetRepeatMode",
+  "tilesetVariantCount",
+  "tilesetVariantKinds",
+  "tilesetAtlasLayout",
+  "tilesetAtlasTileCount",
+  "tilesetAtlasColumns",
+  "tilesetAtlasGutterPixels",
+  "tilesetAtlasMarginPixels",
+  "tilesetExtraDetails"
 ] as const satisfies readonly WizardCoreFieldPath[]);
 
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
@@ -709,6 +763,15 @@ function validateCapabilityFields(
       );
     }
   }
+  for (const field of WIZARD_TILESET_DETAIL_FIELD_PATHS) {
+    if (values[field] !== undefined && category !== "tileset") {
+      addFieldIssue(
+        context,
+        field,
+        "Tileset- und Mappingdaten gehören nicht zur gewählten Asset-Kategorie."
+      );
+    }
+  }
   if (
     values.movingObjectAnimationFrames !== undefined &&
     (category !== "movingObject" || !capabilities.animated)
@@ -921,6 +984,84 @@ function validateCapabilityFields(
       );
     }
   }
+  if (category === "tileset") {
+    const tilesetSubtype = selection.subtype as TilesetSubtype;
+    if (
+      values.tilesetType !== undefined &&
+      values.tilesetType !== getDefaultTilesetType(tilesetSubtype)
+    ) {
+      addFieldIssue(
+        context,
+        "subtype",
+        "Der abgeleitete Tiletyp passt nicht zum gewählten Tileset-Untertyp. Bitte bestätige oder korrigiere den Untertyp."
+      );
+    }
+
+    const rejectIrrelevantFields = (
+      fields: readonly WizardCoreFieldPath[],
+      relevant: boolean,
+      message: string
+    ): void => {
+      if (relevant) return;
+      for (const field of fields) {
+        if (values[field] !== undefined) {
+          addFieldIssue(context, field, message);
+        }
+      }
+    };
+
+    rejectIrrelevantFields(
+      ["tilesetEdgeSet", "tilesetEdgeDetails"],
+      tilesetSubtypeSupportsEdges(tilesetSubtype),
+      "Kantensets sind für diesen Tileset-Untertyp nicht verfügbar."
+    );
+    rejectIrrelevantFields(
+      ["tilesetCornerSet"],
+      tilesetSubtypeSupportsCorners(tilesetSubtype),
+      "Innen-/Außenecken sind für diesen Tileset-Untertyp nicht verfügbar."
+    );
+    rejectIrrelevantFields(
+      [
+        "tilesetTransitionMode",
+        "tilesetSourceMaterial",
+        "tilesetTargetMaterial"
+      ],
+      tilesetSubtypeSupportsTransitions(tilesetSubtype),
+      "Materialübergänge sind für diesen Tileset-Untertyp nicht verfügbar."
+    );
+
+    if (
+      values.tilesetAtlasLayout === "fixedColumns" &&
+      values.tilesetAtlasColumns === undefined
+    ) {
+      addFieldIssue(
+        context,
+        "tilesetAtlasColumns",
+        "Gib für das feste Atlaslayout eine Spaltenzahl an."
+      );
+    }
+    if (
+      values.tilesetAtlasColumns !== undefined &&
+      values.tilesetAtlasLayout !== "fixedColumns"
+    ) {
+      addFieldIssue(
+        context,
+        "tilesetAtlasColumns",
+        "Eine feste Spaltenzahl ist nur beim entsprechenden Atlaslayout gültig."
+      );
+    }
+    if (
+      values.tilesetRepeatMode === "nonRepeating" &&
+      values.tileableAxes !== undefined &&
+      values.tileableAxes !== "none"
+    ) {
+      addFieldIssue(
+        context,
+        "tileableAxes",
+        "Ein nicht wiederholendes Tileset kann auf keiner Achse kachelbar sein."
+      );
+    }
+  }
   if (values.animationType !== undefined) {
     const allowedAnimationTypes = ANIMATION_TYPES_BY_CATEGORY[category];
     if (
@@ -948,7 +1089,8 @@ function validateCapabilityFields(
   }
   if (
     values.tileableAxes !== undefined &&
-    (category !== "tileset" || !capabilities.tileable)
+    category === "tileset" &&
+    !capabilities.tileable
   ) {
     addFieldIssue(
       context,
@@ -1079,6 +1221,17 @@ export const WizardBuildingDetailsStepSchema =
       );
     }
   });
+export const WizardTilesetDetailsStepSchema =
+  WizardCoreFormSchema.superRefine((values, context) => {
+    refineSelectedValues(values, context, undefined, true);
+    if (values.category !== undefined && values.category !== "tileset") {
+      addFieldIssue(
+        context,
+        "category",
+        "Der Tileset-Editor ist nur für Tilesets und Kartenelemente verfügbar."
+      );
+    }
+  });
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) =>
     refineSelectedValues(values, context, "directional", true)
@@ -1188,6 +1341,15 @@ export const WIZARD_CORE_STEPS = Object.freeze([
       "Beschreibe Bauform, Footprint, Materialien, Dach, Fassade, Öffnungen, Mapping und Licht des Gebäudes.",
     fieldPaths: WIZARD_BUILDING_DETAIL_FIELD_PATHS,
     schema: WizardBuildingDetailsStepSchema
+  }),
+  Object.freeze({
+    id: "tilesetDetails",
+    route: "wizard/editor",
+    title: "Tileset und Kartenelement",
+    description:
+      "Definiere Grid, Verbindungen, Seam-Regeln, Wiederholung, Varianten und das berechnete Atlaslayout.",
+    fieldPaths: WIZARD_TILESET_DETAIL_FIELD_PATHS,
+    schema: WizardTilesetDetailsStepSchema
   }),
   Object.freeze({
     id: "directions",

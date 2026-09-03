@@ -13,6 +13,12 @@ import {
 } from "../domain/nature";
 import { getDefaultStaticObjectClass } from "../domain/static-objects";
 import { getDefaultTextureMaterialType } from "../domain/textures";
+import {
+  getDefaultTilesetType,
+  tilesetSubtypeSupportsCorners,
+  tilesetSubtypeSupportsEdges,
+  tilesetSubtypeSupportsTransitions
+} from "../domain/tilesets";
 
 export type CategoryDataCarrier = AssetSelection;
 
@@ -70,6 +76,79 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
       addIssue(
         "materialType",
         `Material type "${String(categoryData.materialType)}" does not match texture subtype "${value.subtype}"; expected "${expectedMaterialType}".`
+      );
+    }
+  }
+
+  if (value.category === "tileset") {
+    if (categoryData.tilesetType !== undefined) {
+      const expectedType = getDefaultTilesetType(value.subtype);
+      if (categoryData.tilesetType !== expectedType) {
+        addIssue(
+          "tilesetType",
+          `Tileset type "${String(categoryData.tilesetType)}" does not match Tileset subtype "${value.subtype}"; expected "${expectedType}".`
+        );
+      }
+    }
+
+    const rejectIrrelevantFields = (
+      fields: readonly string[],
+      relevant: boolean,
+      connectionKind: string
+    ): void => {
+      if (relevant) return;
+      for (const field of fields) {
+        if (categoryData[field] !== undefined) {
+          addIssue(
+            field,
+            `${connectionKind} data is not valid for Tileset subtype "${value.subtype}".`
+          );
+        }
+      }
+    };
+
+    rejectIrrelevantFields(
+      ["edgeSet", "edgeDetails"],
+      tilesetSubtypeSupportsEdges(value.subtype),
+      "Edge"
+    );
+    rejectIrrelevantFields(
+      ["cornerSet"],
+      tilesetSubtypeSupportsCorners(value.subtype),
+      "Corner"
+    );
+    rejectIrrelevantFields(
+      ["transitionMode", "sourceMaterial", "targetMaterial"],
+      tilesetSubtypeSupportsTransitions(value.subtype),
+      "Transition"
+    );
+
+    if (
+      categoryData.atlasLayout === "fixedColumns" &&
+      categoryData.atlasColumns === undefined
+    ) {
+      addIssue(
+        "atlasColumns",
+        "A fixed-column Atlas layout requires a column count."
+      );
+    }
+    if (
+      categoryData.atlasColumns !== undefined &&
+      categoryData.atlasLayout !== "fixedColumns"
+    ) {
+      addIssue(
+        "atlasColumns",
+        "An Atlas column count is only valid for a fixed-column layout."
+      );
+    }
+    if (
+      categoryData.repeatMode === "nonRepeating" &&
+      categoryData.tileableAxes !== undefined &&
+      categoryData.tileableAxes !== "none"
+    ) {
+      addIssue(
+        "tileableAxes",
+        "A non-repeating Tileset cannot repeat on a Tile axis."
       );
     }
   }

@@ -225,6 +225,26 @@ export interface WizardRawCoreFormValues {
   readonly buildingLighting?: BuildingAnswers["lighting"] | undefined;
   readonly buildingLightSourceDetails?: BuildingAnswers["lightSourceDetails"] | undefined;
   readonly buildingExtraDetails?: BuildingAnswers["extraDetails"] | undefined;
+  readonly tilesetType?: TilesetAnswers["tilesetType"] | undefined;
+  readonly tilesetUsage?: TilesetAnswers["tileUsage"] | undefined;
+  readonly tilesetDescription?: TilesetAnswers["subjectDescription"] | undefined;
+  readonly tilesetEdgeSet?: TilesetAnswers["edgeSet"] | undefined;
+  readonly tilesetEdgeDetails?: TilesetAnswers["edgeDetails"] | undefined;
+  readonly tilesetCornerSet?: TilesetAnswers["cornerSet"] | undefined;
+  readonly tilesetTransitionMode?: TilesetAnswers["transitionMode"] | undefined;
+  readonly tilesetSourceMaterial?: TilesetAnswers["sourceMaterial"] | undefined;
+  readonly tilesetTargetMaterial?: TilesetAnswers["targetMaterial"] | undefined;
+  readonly tilesetSeamMode?: TilesetAnswers["seamMode"] | undefined;
+  readonly tilesetSeamDetails?: TilesetAnswers["seamDetails"] | undefined;
+  readonly tilesetRepeatMode?: TilesetAnswers["repeatMode"] | undefined;
+  readonly tilesetVariantCount?: TilesetAnswers["variantCount"] | undefined;
+  readonly tilesetVariantKinds?: TilesetAnswers["variantKinds"] | undefined;
+  readonly tilesetAtlasLayout?: TilesetAnswers["atlasLayout"] | undefined;
+  readonly tilesetAtlasTileCount?: TilesetAnswers["atlasTileCount"] | undefined;
+  readonly tilesetAtlasColumns?: TilesetAnswers["atlasColumns"] | undefined;
+  readonly tilesetAtlasGutterPixels?: TilesetAnswers["atlasGutterPixels"] | undefined;
+  readonly tilesetAtlasMarginPixels?: TilesetAnswers["atlasMarginPixels"] | undefined;
+  readonly tilesetExtraDetails?: TilesetAnswers["extraDetails"] | undefined;
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:

@@ -26,6 +26,10 @@ import {
   getDefaultStaticObjectClass,
   type StaticObjectSubtype
 } from "../../domain/static-objects";
+import {
+  getDefaultTilesetType,
+  type TilesetSubtype
+} from "../../domain/tilesets";
 import type { ProfileLibrary } from "../../schemas";
 import {
   CharacterAnimationEditor,
@@ -40,6 +44,7 @@ import { TextureMaterialEditor } from "../texture-editor";
 import { NatureTreeEditor } from "../nature-editor";
 import { StaticWorldObjectEditor } from "../static-object-editor";
 import { BuildingArchitectureEditor } from "../building-editor";
+import { TilesetEditor } from "../tileset-editor";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import {
   DASHBOARD_CATEGORIES,
@@ -64,6 +69,7 @@ import {
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_NATURE_DETAIL_FIELD_PATHS,
   WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
+  WIZARD_TILESET_DETAIL_FIELD_PATHS,
   WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   getWizardCoreStep,
   type WizardCoreFieldPath,
@@ -129,12 +135,12 @@ const CLASSIFICATION_FIELDS = [
   ...WIZARD_NATURE_DETAIL_FIELD_PATHS,
   ...WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
   ...WIZARD_BUILDING_DETAIL_FIELD_PATHS,
+  ...WIZARD_TILESET_DETAIL_FIELD_PATHS,
   "characterAnimationFrames",
   "movingObjectAnimationFrames",
   "directionCount",
   "animationAction",
-  "animationType",
-  "tileableAxes"
+  "animationType"
 ] as const satisfies readonly WizardCoreFieldPath[];
 
 function optionalSelectValue(value: string): string | undefined {
@@ -224,6 +230,10 @@ function CategoryStep({
     control: form.control,
     name: "buildingType"
   });
+  const tilesetType = useWatch({
+    control: form.control,
+    name: "tilesetType"
+  });
   const [pendingCategory, setPendingCategory] = useState<AssetCategory | null>(
     null
   );
@@ -267,6 +277,17 @@ function CategoryStep({
     expectedBuildingType !== null &&
     buildingType !== undefined &&
     buildingType !== expectedBuildingType;
+  const knownTilesetSubtypes: readonly string[] = ASSET_SUBTYPES.tileset;
+  const expectedTilesetType =
+    category === "tileset" &&
+    subtype !== undefined &&
+    knownTilesetSubtypes.includes(subtype)
+      ? getDefaultTilesetType(subtype as TilesetSubtype)
+      : null;
+  const tilesetTypeMismatch =
+    expectedTilesetType !== null &&
+    tilesetType !== undefined &&
+    tilesetType !== expectedTilesetType;
 
   useEffect(() => {
     if (categoryError) {
@@ -344,6 +365,14 @@ function CategoryStep({
         form.setValue(
           "buildingType",
           getDefaultBuildingType(nextSubtype as BuildingSubtype),
+          { shouldDirty: true, shouldTouch: true, shouldValidate: true }
+        );
+      }
+      const tilesetSubtypes: readonly string[] = ASSET_SUBTYPES.tileset;
+      if (category === "tileset" && tilesetSubtypes.includes(nextSubtype)) {
+        form.setValue(
+          "tilesetType",
+          getDefaultTilesetType(nextSubtype as TilesetSubtype),
           { shouldDirty: true, shouldTouch: true, shouldValidate: true }
         );
       }
@@ -539,6 +568,25 @@ function CategoryStep({
                 }}
               >
                 Gebäudetyp aus Untertyp wiederherstellen
+              </button>
+            </div>
+          ) : null}
+          {tilesetTypeMismatch ? (
+            <div className={styles.inlineActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  form.setValue("tilesetType", expectedTilesetType, {
+                    shouldDirty: true,
+                    shouldTouch: true
+                  });
+                  void form.trigger("subtype");
+                  notifyProgrammaticChange();
+                  subtypeRef.current?.focus();
+                }}
+              >
+                Tiletyp aus Untertyp wiederherstellen
               </button>
             </div>
           ) : null}
@@ -878,6 +926,30 @@ function BuildingDetailsStep({ form }: CoreStepProps) {
   );
 }
 
+function TilesetDetailsStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
+  const knownTilesetSubtypes: readonly string[] = ASSET_SUBTYPES.tileset;
+
+  if (
+    category !== "tileset" ||
+    subtype === undefined ||
+    !knownTilesetSubtypes.includes(subtype)
+  ) {
+    return (
+      <section className={styles.changeWarning} role="alert">
+        <strong>Tileset-Profil nicht verfügbar</strong>
+        <p>
+          Kehre zur Bildart zurück und wähle einen gültigen Tileset- oder
+          Kartenelement-Untertyp.
+        </p>
+      </section>
+    );
+  }
+
+  return <TilesetEditor form={form} subtype={subtype as TilesetSubtype} />;
+}
+
 function AnimationSelect({
   form,
   options
@@ -959,36 +1031,6 @@ function AnimationStep({ form, notifyProgrammaticChange }: CoreStepProps) {
   );
 }
 
-function TileabilityStep({ form }: CoreStepProps) {
-  const category = useWatch({ control: form.control, name: "category" });
-
-  return (
-    <div className={styles.capabilityQuestions}>
-      {category === "tileset" ? (
-        <div className={styles.fieldGroup}>
-          <label htmlFor="wizard-tileable-axes">Kachelbare Achsen</label>
-          <select
-            id="wizard-tileable-axes"
-            {...form.register("tileableAxes", {
-              setValueAs: optionalSelectValue
-            })}
-          >
-            <option value="">Noch nicht festgelegt</option>
-            <option value="horizontal">Horizontal</option>
-            <option value="vertical">Vertikal</option>
-            <option value="both">Horizontal und vertikal</option>
-            <option value="none">Keine Wiederholung</option>
-          </select>
-        </div>
-      ) : null}
-      <p className={styles.logicNote}>
-        Richtungsfragen bleiben in diesem Schritt ausgeschlossen. Kachelbarkeit
-        beschreibt Oberflächenwiederholung, nicht Bewegung.
-      </p>
-    </div>
-  );
-}
-
 function CoreSummary({
   context,
   draft,
@@ -1031,9 +1073,9 @@ const STEP_COMPONENTS = {
   natureDetails: NatureDetailsStep,
   staticObjectDetails: StaticObjectDetailsStep,
   buildingDetails: BuildingDetailsStep,
+  tilesetDetails: TilesetDetailsStep,
   directions: DirectionsStep,
-  animation: AnimationStep,
-  tileability: TileabilityStep
+  animation: AnimationStep
 } as const;
 
 export const WIZARD_CORE_FLOW = Object.freeze({
@@ -1104,6 +1146,14 @@ export const WIZARD_CORE_FLOW = Object.freeze({
       ) => wizardStepIsApplicable("buildingDetails", values, context.library)
     }),
     Object.freeze({
+      ...getWizardCoreStep("tilesetDetails"),
+      Component: STEP_COMPONENTS.tilesetDetails,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("tilesetDetails", values, context.library)
+    }),
+    Object.freeze({
       ...getWizardCoreStep("directions"),
       Component: STEP_COMPONENTS.directions,
       isApplicable: (
@@ -1118,14 +1168,6 @@ export const WIZARD_CORE_FLOW = Object.freeze({
         values: WizardCoreFormValues,
         context: WizardCoreFlowContext
       ) => wizardStepIsApplicable("animation", values, context.library)
-    }),
-    Object.freeze({
-      ...getWizardCoreStep("tileability"),
-      Component: STEP_COMPONENTS.tileability,
-      isApplicable: (
-        values: WizardCoreFormValues,
-        context: WizardCoreFlowContext
-      ) => wizardStepIsApplicable("tileability", values, context.library)
     })
   ]),
   updateDraft: updateWizardDraftFromCoreForm,

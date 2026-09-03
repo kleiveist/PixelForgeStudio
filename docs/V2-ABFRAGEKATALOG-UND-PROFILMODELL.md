@@ -97,14 +97,14 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 19
+## 4.3 Umgesetzter Einstieg bis Prompt 20
 
 Der aktuell implementierte Core-Flow lautet:
 
 ```text
 Projekt → Hauptkategorie/Untertyp → Basisprofil
-→ Character-, Moving-Object-, Static-Object-, Texture-, Nature- oder
-Building-Details, falls relevant
+→ Character-, Moving-Object-, Static-Object-, Texture-, Nature-, Building-
+oder Tileset-Details, falls relevant
 → Capability-Schritte
 ```
 
@@ -114,10 +114,11 @@ erfolgreich neu angelegte Basisfamilie öffnet die nachfolgenden Richtungs-,
 Animations- oder Kachelbarkeitsfragen. Deren Sichtbarkeit stammt ausschließlich
 aus `resolveCapabilities()`. Für die Hauptkategorie `character` liegt zwischen
 Basisprofil und Capability-Schritten ein eigener Character-/NPC-Fachschritt.
-`movingObject`, `staticObject`, `texture`, `nature` und `building` nutzen an derselben
+`movingObject`, `staticObject`, `texture`, `nature`, `building` und `tileset` nutzen an derselben
 Stelle ihre eigenen `movingObjectDetails`-, `staticObjectDetails`-,
-`textureDetails`-, `natureDetails`- beziehungsweise `buildingDetails`-Schritte;
-alle anderen Kategorien überspringen diese sechs Fachschritte.
+`textureDetails`-, `natureDetails`-, `buildingDetails`- beziehungsweise
+`tilesetDetails`-Schritte; alle anderen Kategorien überspringen diese sieben
+Fachschritte.
 
 Der Basisprofil-Schritt zeigt für alle relevanten Produktionswerte den
 wirksamen Wert, seine Quelle (Basisprofil, Kategorieprofil oder lokaler Entwurf)
@@ -206,10 +207,24 @@ separater `animated`-Capability-Schritt; kein Building-Untertyp erhält
 Figurenhöhe oder 4/8 Richtungen. Summary und Dashboard zeigen nur kompakte
 tatsächliche Architekturfakten.
 
-Prompts 00 bis 19 sind abgeschlossen. Prompt 20 ergänzt als nächste Phase den
-Tileset-Editor.
+Der Tileset-Schritt erfasst den aus dem Untertyp abgeleiteten Tiletyp,
+Mapping-Einsatz, untertyprelevante Kanten, Innen-/Außenecken, Übergänge und
+Materialnachbarschaften, Seam-Regeln, Kachelachsen, Wiederholung, Varianten und
+Atlasparameter im gemeinsamen RHF-/Draft-/Autosave-/Resume-Pfad. Tiletyp,
+Tilegröße und Pixelmaßstab sind read-only beziehungsweise technische Werte und
+werden nicht in Fachantworten dupliziert. Eine pure Berechnung liefert
+Atlaszeilen, Spalten, Kapazität, Leerplätze und exakte Canvasmaße. Basiswechsel
+erhalten Tileset-Antworten, Klassifikationswechsel bereinigen sie und Explicit
+Clear löst geerbte Provenienz. Der Fachschritt ersetzt die generische
+`tileability`-Stufe; alte Drafts werden beim Resume schreibfrei umgeleitet. Nur
+das animierte Tile erhält einen getrennten Animationsschritt, kein Tileset
+Figurenhöhe oder 4/8 Richtungen. Summary und Dashboard zeigen kompakte
+tatsächliche Tileset- und Atlasfakten.
+
+Prompts 00 bis 20 sind abgeschlossen. Prompt 21 ergänzt als nächste Phase den
+Item-/Equipment-Editor.
 Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
-Tabelle oben werden durch Prompt 19 noch nicht als fertig erklärt.
+Tabelle oben werden durch Prompt 20 noch nicht als fertig erklärt.
 
 ---
 
@@ -910,6 +925,38 @@ keine schreibende Migration beim bloßen Laden statt.
 | Atlaslayout | automatisch berechnete Zeilen/Spalten |
 | Output | einzelnes Tile, Miniset, vollständiges Tileset |
 
+### Implementierungsstand seit Prompt 20
+
+- `tilesetDetails` folgt direkt auf die Basisprofilwahl und erscheint
+  ausschließlich für `tileset`. Das vollständige
+  `TILESET_TYPE_BY_SUBTYPE`-Mapping ordnet Boden-, Wand-, Dach-, Übergangs-,
+  Ecken-, Kanten-, Autotile-, Dekal- und animierte Untertypen deterministisch
+  einem Tiletyp zu.
+- `TilesetAnswersSchema` bildet Einsatz, Beschreibung, Kanten, Ecken,
+  Übergangsmodus, Materialgrenze, Seam-Regeln, Kachelachsen, Wiederholungsart,
+  Variantenarten und Atlasparameter strikt und additiv ab. Frühere
+  Schema-V2-Werte bleiben ohne eager Defaults lesbar.
+- Kanten-, Ecken- und Übergangsfelder sind nur für die passenden Untertypen
+  gültig. Variantenanzahl liegt bei 1–64, Atlas-Slotzahl bei 1–256,
+  Spaltenzahl bei 1–64 sowie Zwischenraum und Außenrand bei 0–64 px. Feste
+  Spalten erfordern das passende Layout; nicht wiederholende Sets verwenden
+  keine kachelbare Achse.
+- `tileSize` und Pixelmaßstab bleiben sperrbare technische
+  Base→Category→Asset-Werte. `TilesetEditor` zeigt sie zusammen mit dem
+  abgeleiteten Tiletyp read-only und dupliziert sie nicht in
+  `TilesetAnswers`. Die pure Atlaslogik berechnet Raster, Kapazität,
+  Leerplätze und Canvasgröße für UI und technische Zusammenfassung.
+- Tileset-Fachantworten werden Base→Category→Asset aufgelöst und nur als nicht
+  redundante lokale Abweichungen gespeichert. Basiswechsel erhalten sie,
+  Klassifikationswechsel entfernen sie; Explicit Clear löst
+  Elternprovenienz. Rohzustand, Dirty State, 300-ms-Autosave, unmittelbare
+  Schritt-Persistenz und exaktes Resume gelten für alle Tileset-Felder.
+- Der Fachschritt besitzt Seam-, Achsen- und Wiederholungsregeln selbst und
+  ersetzt daher die generische Kachelbarkeitsstufe. Alte Drafts an dieser
+  Stufe werden in-memory auf `tilesetDetails` umgeleitet. Nur `animatedTile`
+  erhält einen separaten Animationsschritt; kein Tileset ist `directional`.
+  Prompt Engine und Review-/Output-Erzeugung folgen später.
+
 ---
 
 ## 8.8 Item / Ausrüstung
@@ -1245,6 +1292,16 @@ zum vollständigen Untertyp-Mapping passen; modulare Ausgabe und
 Tilegröße, Perspektive, Kamera, Projektion, Figurenhöhe und Richtungsdaten
 bleiben vollständig außerhalb von `BuildingAnswers`.
 
+Für Tilesets erweitert Prompt 20 den strikten Schema-V2-Vertrag additiv um
+`tilesetType`, Kanten-, Ecken-, Übergangs-, Materialgrenzen-, Seam-,
+Wiederholungs-, Variantenarten- und Atlaswerte. Die bisherigen Felder
+`subjectDescription`, `extraDetails`, `tileUsage`, `tileableAxes`,
+`variantCount` und `animationType` bleiben ohne materialisierte Defaults
+lesbar. Ein vorhandener Tiletyp muss zum vollständigen Untertyp-Mapping passen;
+Verbindungsfelder und Atlas-Spalten werden cross-field validiert. Tilegröße,
+Pixelmaßstab, Figurenhöhe und Richtungsdaten bleiben vollständig außerhalb von
+`TilesetAnswers`.
+
 ## 12.4 Wizard-Draft
 
 ```json
@@ -1312,6 +1369,13 @@ schreibfreien Resume. Gebäudetyp und wirksame Weltgeometrie werden aus
 Untertyp beziehungsweise Profilkette aufgelöst. Modulare Optionen sind
 capability-gesteuert; eine Toranimation bleibt im folgenden separaten Schritt
 und erzeugt kein Richtungsset.
+Für Tilesets folgt `tilesetDetails`; alle Verbindungs-, Seam-, Wiederholungs-,
+Varianten- und Atlasfelder gehören zu Rohzustand, Autosave und exaktem
+schreibfreien Resume. Tiletyp und technische Gridwerte werden aus Untertyp
+beziehungsweise Profilkette aufgelöst. Die generische `tileability`-Stufe wird
+nicht zusätzlich gerendert; alte Drafts an dieser Position werden schreibfrei
+auf den Fachschritt umgeleitet. Eine optionale Tileanimation bleibt separat und
+erzeugt kein Richtungsset.
 Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
 und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
 Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale
@@ -1330,7 +1394,7 @@ werden beim nächsten gültigen Draft-Snapshot erneut auf minimale Overrides
 normalisiert.
 
 Das ausdrückliche Leeren eines vom Kategorieprofil geerbten Character-,
-Moving-Object-, Static-Object-, Texture-, Nature- oder Building-Feldes löst
+Moving-Object-, Static-Object-, Texture-, Nature-, Building- oder Tileset-Feldes löst
 Kategorie- und Assetprovenienz. Alle anderen wirksamen Fachantworten und
 technischen Werte werden relativ zur Base materialisiert, damit der entfernte
 Default nach Autosave und Resume nicht erneut erscheint.

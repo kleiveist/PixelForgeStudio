@@ -94,6 +94,11 @@
 - eigenen `buildingDetails`-Schritt mit `BuildingArchitectureEditor` direkt nach der Basisprofilwahl integriert; Gebäudetyp und technische Weltgeometrie werden read-only abgeleitet, ohne Tile-, Kamera-, Figuren- oder Richtungswerte in Fachantworten zu duplizieren
 - Building-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte Architekturfakten in Live-Zusammenfassung und Dashboard ergänzt
 - modulare Ausgabe auf Tor, Befestigung und Dungeon-Modul begrenzt, Toranimation getrennt über `animated` modelliert und alle Gebäude konsequent ohne 4/8-Richtungs- oder Figurenhöhenfrage gehalten
+- frameworkfreien Tileset-Katalog mit vollständigem Untertyp-/Tiletyp-Mapping, puren Kanten-/Ecken-/Übergangs-Guards und deterministischer Atlasmetrik samt technischer Spezifikation ergänzt
+- strikt additives `TilesetAnswersSchema` um Verbindungen, Materialgrenzen, Seam-/Wiederholungsregeln, Variantenarten und Atlasparameter erweitert; bestehende Schema-V2-Daten bleiben ohne eager Defaults lesbar
+- eigenen `tilesetDetails`-Schritt mit `TilesetEditor` direkt nach der Basisprofilwahl integriert; Tiletyp, zentrale Tilegröße und Pixelmaßstab werden read-only abgeleitet und das technische Atlasraster live berechnet
+- Tileset-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte Verbindungs- und Atlasfakten in Live-Zusammenfassung und Dashboard ergänzt
+- generischen Tileability-Schritt für Tilesets durch den strukturierten Fachschritt ersetzt, alte Drafts schreibfrei umgeleitet, Animation nur für animierte Tiles separat angeboten und alle Tilesets ohne 4/8-Richtungs- oder Figurenhöhenfrage gehalten
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

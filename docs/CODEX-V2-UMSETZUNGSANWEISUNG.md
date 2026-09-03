@@ -352,16 +352,16 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 19
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 20
 
 - `project`, `category`/`subtype`, `baseProfile`, `characterDetails`,
   `movingObjectDetails`, `staticObjectDetails`, `textureDetails`,
-  `natureDetails`, `buildingDetails` und die
+  `natureDetails`, `buildingDetails`, `tilesetDetails` und die
   Capability-Schritte sind stabil und deklarativ konfiguriert; jeder besitzt
   Zod-Schema und RHF-Feldpfade. Die Reihenfolge ist
   `project → category/subtype → baseProfile → characterDetails,
-  movingObjectDetails, staticObjectDetails, textureDetails, natureDetails oder
-  buildingDetails, falls relevant
+  movingObjectDetails, staticObjectDetails, textureDetails, natureDetails,
+  buildingDetails oder tilesetDetails, falls relevant
   → Capability-Schritte`.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
@@ -571,8 +571,28 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zusammenfassung und Dashboard zeigen ausschließlich kompakte, tatsächlich
   konfigurierte Architekturfakten einschließlich capability-gültiger
   Toranimation.
-- Prompts 00 bis 19 sind abgeschlossen. Prompt 20 ergänzt als nächste Phase
-  den Tileset-Editor. Prompt 19 enthält weder Prompt Engine
+- Der Tileset-Editor ist ein eigener `tilesetDetails`-Fachschritt direkt nach
+  der Basisprofilwahl und erscheint nur für `tileset`. Er erfasst Mapping-
+  Einsatz, untertyprelevante Kanten, Ecken, Übergänge und Materialgrenzen,
+  Seam-Regeln, Wiederholung, Varianten und Atlasparameter.
+- Tiletyp, wirksame Tilegröße und Pixelmaßstab erscheinen read-only. Der Typ
+  wird vollständig aus dem Untertyp abgeleitet; technische Werte verbleiben in
+  der Base→Category→Asset-Kette und werden nicht in `TilesetAnswers` dupliziert.
+- Tileset-Felder nutzen Draft↔Form-Projektion, transienten Rohzustand,
+  Dirty-Erkennung, 300-ms-Autosave und exaktes Resume. Mount,
+  Profil-Hydration und Resume schreiben nicht; Basiswechsel erhalten
+  Fachwerte, Klassifikationswechsel bereinigen sie.
+- `resolveTilesetAtlasMetrics()` und
+  `createTilesetTechnicalSpecification()` berechnen Raster, Kapazität,
+  Leerplätze und Canvasgröße als pure TypeScript-Funktionen. Summary und
+  Dashboard zeigen diese Werte nur bei gültigen Eingaben.
+- Der Fachschritt besitzt Achsen- und Wiederholungsregeln selbst; deshalb wird
+  die generische `tileability`-Stufe nicht zusätzlich gezeigt. Alte Tileset-
+  Drafts an dieser Stufe werden beim Resume schreibfrei auf `tilesetDetails`
+  umgeleitet. Animation bleibt nur beim animierten Tile separat; kein Tileset
+  erhält Richtungen oder Figurenhöhe.
+- Prompts 00 bis 20 sind abgeschlossen. Prompt 21 ergänzt als nächste Phase
+  den Item-/Equipment-Editor. Prompt 20 enthält weder Prompt Engine
   beziehungsweise Review-/Output-Erzeugung noch In-place-Mutation oder
   Reparenting einer bestehenden Basisfamilie.
 
@@ -1059,6 +1079,32 @@ Umgesetzt seit Prompt 19:
 - Wiederholbarkeit
 - Varianten
 
+Umgesetzt seit Prompt 20:
+
+- `src/domain/tilesets/` veröffentlicht stabile readonly Kataloge und ein
+  vollständiges Untertyp→Tiletyp-Mapping. Pure Guards entscheiden, ob Kanten,
+  Innen-/Außenecken und Übergänge für einen Untertyp relevant sind.
+- `TilesetAnswersSchema` ist strikt und additiv. Frühere Schema-V2-Felder
+  bleiben ohne Defaults lesbar; Tiletyp muss zum Untertyp passen, irrelevante
+  Verbindungsfelder werden abgewiesen, feste Atlas-Spalten erfordern das
+  passende Layout und `nonRepeating` widerspricht kachelbaren Achsen.
+  Varianten liegen bei 1–64, Atlas-Slots bei 1–256, Spalten bei 1–64 sowie
+  Zwischenraum und Rand bei 0–64 px.
+- `src/features/tileset-editor/` rendert `TilesetEditor` ausschließlich im
+  eigenen `tilesetDetails`-Schritt. Tiletyp, zentrale Tilegröße und
+  Pixelmaßstab sind read-only; alle Fachfragen gehören React Hook Form.
+- Atlaszeilen, Kapazität, freie Slots und Canvasmaße werden aus Tilegröße,
+  Slotzahl, Layout, Zwischenraum und Rand deterministisch berechnet. Die pure
+  technische Spezifikation ist dieselbe Grenze für UI, Summary und Tests.
+- Tileset-Antworten werden Base→Category→Asset aufgelöst und minimal lokal
+  projiziert. Basiswechsel erhalten sie, Klassifikationswechsel entfernen sie;
+  Explicit Clear löst Elternprovenienz. Rohzustand, Autosave, schreibfreie
+  Hydration und exaktes Resume gelten für sämtliche Felder.
+- Der Fachschritt ersetzt für Tilesets die generische Kachelbarkeitsstufe. Nur
+  `animatedTile` erhält den getrennten `animated`-Schritt; Richtungs- und
+  Figurenmaßstabsfragen bleiben vollständig ausgeschlossen. Prompt Engine,
+  Review und Output folgen später.
+
 ## 13.8 Item / Equipment
 
 - Itemklasse
@@ -1201,6 +1247,11 @@ Mit Vitest:
 - Building-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
 - vollständiger Building-Footprint von 1–64 Tiles, Höhe, Stockwerke,
   Öffnungen, Mapping, Kollision und Licht sowie Toranimation ohne Richtungsset
+- Tileset-Kataloge, Untertyp-/Tiletyp-Konsistenz, Verbindungs-Guards und
+  additive Schema-V2-Lesbarkeit ohne Defaults
+- Tileset-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
+- deterministische Atlasmetriken sowie technische Spezifikation für Raster,
+  Kapazität, Leerplätze, Abstände und Canvasgröße
 - Migrationslogik
 - Promptmodule
 - Canvas-/Frame-Metriken
@@ -1238,6 +1289,11 @@ Mit React Testing Library + user-event:
 - Building-Autosave, schreibfreie Hydration/Resume, zentrale read-only
   Weltgeometrie sowie Summary-/Dashboard-Fakten und animiertes Tor ohne
   Richtungs- oder Figurenhöhenfrage
+- Tileset-Detailstep mit Kanten, Ecken, Übergängen, Seam-Regeln, Wiederholung,
+  Varianten und Atlaslayout
+- Tileset-Autosave, schreibfreie Hydration/Resume, zentrale read-only Tilegröße,
+  live berechnete Atlasmetriken sowie Summary-/Dashboard-Fakten ohne Richtungs-
+  oder Figurenhöhenfrage
 - Theme-Wechsel
 - Profil laden/speichern
 - Lock-Konfliktworkflow

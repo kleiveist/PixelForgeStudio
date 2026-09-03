@@ -63,6 +63,19 @@ import {
   type StaticObjectShadowMode,
   type StaticObjectSymmetry
 } from "../../domain/static-objects";
+import {
+  createTilesetTechnicalSpecification,
+  getDefaultTilesetType,
+  type TilesetAtlasLayout,
+  type TilesetCornerSet,
+  type TilesetEdgeSet,
+  type TilesetRepeatMode,
+  type TilesetSeamMode,
+  type TilesetTransitionMode,
+  type TilesetType,
+  type TilesetUsage,
+  type TilesetVariantKind
+} from "../../domain/tilesets";
 import { resolveProfile, type ResolvedProfile } from "../../domain/profiles";
 import type {
   AssetProfile,
@@ -625,6 +638,89 @@ const buildingLightingLabels: Readonly<Record<BuildingLighting, string>> = {
   custom: "Individuell"
 };
 
+const tilesetTypeLabels: Readonly<Record<TilesetType, string>> = {
+  ground: "Boden",
+  wall: "Wand",
+  roof: "Dach",
+  transition: "Materialübergang",
+  corner: "Eckverbindung",
+  edge: "Kantenverbindung",
+  autotile: "Regelbasiertes Autotile",
+  decal: "Tile-Dekal",
+  animated: "Animiertes Tile"
+};
+
+const tilesetUsageLabels: Readonly<Record<TilesetUsage, string>> = {
+  floor: "Bodenfläche",
+  wall: "Wandfläche",
+  roof: "Dachfläche",
+  transition: "Übergang / Anschluss",
+  decor: "Dekoration"
+};
+
+const tilesetEdgeLabels: Readonly<Record<TilesetEdgeSet, string>> = {
+  none: "Keine eigenen Kanten",
+  cardinal: "Vier Kardinalkanten",
+  cardinalAndDiagonal: "Kardinal- und Diagonalkanten",
+  custom: "Individuelles Kantenset"
+};
+
+const tilesetCornerLabels: Readonly<Record<TilesetCornerSet, string>> = {
+  none: "Keine Eckvarianten",
+  outer: "Außenecken",
+  inner: "Innenecken",
+  innerAndOuter: "Innen- und Außenecken",
+  custom: "Individuelles Eckset"
+};
+
+const tilesetTransitionLabels: Readonly<
+  Record<TilesetTransitionMode, string>
+> = {
+  none: "Kein Materialübergang",
+  oneWay: "Einseitig",
+  bidirectional: "Beidseitig",
+  multiMaterial: "Mehrere Materialien",
+  custom: "Individuell"
+};
+
+const tilesetSeamLabels: Readonly<Record<TilesetSeamMode, string>> = {
+  seamless: "Vollständig nahtlos",
+  matchedEdges: "Passende Randpixel",
+  intentionalBoundary: "Sichtbare Grenze",
+  overlap: "Überlappender Rand",
+  custom: "Individuell"
+};
+
+const tilesetAxesLabels = {
+  horizontal: "Horizontal",
+  vertical: "Vertikal",
+  both: "Horizontal und vertikal",
+  none: "Keine Achsenwiederholung"
+} as const;
+
+const tilesetRepeatLabels: Readonly<Record<TilesetRepeatMode, string>> = {
+  strict: "Strikt regelmäßig",
+  staggered: "Versetzt",
+  randomized: "Kontrolliert variiert",
+  nonRepeating: "Nicht wiederholend"
+};
+
+const tilesetVariantLabels: Readonly<Record<TilesetVariantKind, string>> = {
+  clean: "sauber",
+  damaged: "beschädigt",
+  decorated: "dekoriert",
+  decal: "Dekal",
+  seasonal: "saisonal",
+  randomized: "zufällig variiert"
+};
+
+const tilesetAtlasLayoutLabels: Readonly<Record<TilesetAtlasLayout, string>> = {
+  automatic: "Automatisch kompakt",
+  singleRow: "Eine Zeile",
+  singleColumn: "Eine Spalte",
+  fixedColumns: "Feste Spaltenzahl"
+};
+
 const animationLabels = {
   idle: "Idle",
   walk: "Walk",
@@ -689,6 +785,59 @@ function animationFact(
   return framesPerDirection === undefined
     ? `Animation: ${label}`
     : `${label} · ${framesPerDirection} Frames`;
+}
+
+function validTilesetMetricInteger(
+  value: number | undefined,
+  minimum: number,
+  maximum: number
+): value is number {
+  return (
+    value !== undefined &&
+    Number.isInteger(value) &&
+    value >= minimum &&
+    value <= maximum
+  );
+}
+
+function tilesetAtlasFact(profile: ResolvedProfile): string | null {
+  if (profile.categoryData.category !== "tileset") return null;
+
+  const answers = profile.categoryData.answers;
+  if (
+    !validTilesetMetricInteger(profile.values.tileSize, 1, 8192) ||
+    !validTilesetMetricInteger(answers.atlasTileCount, 1, 256) ||
+    (answers.atlasLayout === "fixedColumns" &&
+      !validTilesetMetricInteger(answers.atlasColumns, 1, 64)) ||
+    (answers.atlasLayout !== undefined &&
+      answers.atlasLayout !== "fixedColumns" &&
+      answers.atlasColumns !== undefined)
+  ) {
+    return null;
+  }
+
+  try {
+    const specification = createTilesetTechnicalSpecification({
+      tileSizePixels: profile.values.tileSize,
+      tileCount: answers.atlasTileCount,
+      ...(answers.atlasLayout === undefined
+        ? {}
+        : { layout: answers.atlasLayout }),
+      ...(answers.atlasColumns === undefined
+        ? {}
+        : { fixedColumns: answers.atlasColumns }),
+      ...(answers.atlasGutterPixels === undefined
+        ? {}
+        : { gutterPixels: answers.atlasGutterPixels }),
+      ...(answers.atlasMarginPixels === undefined
+        ? {}
+        : { marginPixels: answers.atlasMarginPixels })
+    });
+    const { metrics } = specification;
+    return `Atlas: ${String(metrics.columns)} × ${String(metrics.rows)} · ${String(metrics.atlasWidthPixels)} × ${String(metrics.atlasHeightPixels)} px · ${String(metrics.tileCount)}/${String(metrics.capacity)} Slots`;
+  } catch {
+    return null;
+  }
 }
 
 function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
@@ -823,10 +972,71 @@ function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
       ];
     }
     case "tileset": {
-      const { animationType } = profile.categoryData.answers;
-      return animationType === undefined
-        ? []
-        : [animationFact(animationType)];
+      const {
+        animationType,
+        atlasLayout,
+        cornerSet,
+        edgeSet,
+        repeatMode,
+        seamMode,
+        sourceMaterial,
+        targetMaterial,
+        tileableAxes,
+        tilesetType,
+        tileUsage,
+        transitionMode,
+        variantCount,
+        variantKinds
+      } = profile.categoryData.answers;
+      const atlasFact = tilesetAtlasFact(profile);
+      return [
+        `Tiletyp: ${
+          tilesetTypeLabels[
+            tilesetType ?? getDefaultTilesetType(profile.categoryData.subtype)
+          ]
+        }`,
+        ...(tileUsage === undefined
+          ? []
+          : [`Mapping-Einsatz: ${tilesetUsageLabels[tileUsage]}`]),
+        ...(edgeSet === undefined
+          ? []
+          : [`Kanten: ${tilesetEdgeLabels[edgeSet]}`]),
+        ...(cornerSet === undefined
+          ? []
+          : [`Ecken: ${tilesetCornerLabels[cornerSet]}`]),
+        ...(transitionMode === undefined
+          ? []
+          : [`Übergang: ${tilesetTransitionLabels[transitionMode]}`]),
+        ...(sourceMaterial === undefined && targetMaterial === undefined
+          ? []
+          : [`Materialgrenze: ${sourceMaterial ?? "offen"} → ${targetMaterial ?? "offen"}`]),
+        ...(seamMode === undefined
+          ? []
+          : [`Seam-Regel: ${tilesetSeamLabels[seamMode]}`]),
+        ...(tileableAxes === undefined
+          ? []
+          : [`Kachelbare Achsen: ${tilesetAxesLabels[tileableAxes]}`]),
+        ...(repeatMode === undefined
+          ? []
+          : [`Wiederholung: ${tilesetRepeatLabels[repeatMode]}`]),
+        ...(variantCount === undefined
+          ? []
+          : [`Varianten pro Zustand: ${String(variantCount)}`]),
+        ...(variantKinds === undefined
+          ? []
+          : [
+              `Variantenarten: ${variantKinds
+                .map((variant) => tilesetVariantLabels[variant])
+                .join(", ")}`
+            ]),
+        ...(atlasLayout === undefined
+          ? []
+          : [`Atlaslayout: ${tilesetAtlasLayoutLabels[atlasLayout]}`]),
+        ...(atlasFact === null ? [] : [atlasFact]),
+        ...(!profile.capabilities.animated || animationType === undefined
+          ? []
+          : [animationFact(animationType)])
+      ];
     }
     case "nature": {
       const {

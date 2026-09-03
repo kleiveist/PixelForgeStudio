@@ -4,10 +4,39 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** Prompt 19 — Building Editor
-- **Nächste Aufgabe:** Prompt 20 — Tileset Editor
-- **Zuletzt abgeschlossen:** Prompt 18 — Static Object Editor
+- **Aktuelle Aufgabe:** Prompt 21 — Item/Equipment Editor
+- **Nächste Aufgabe:** Prompt 22 — Artwork Editor
+- **Zuletzt abgeschlossen:** Prompt 20 — Tileset Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 20
+
+1. Eine frameworkfreie Tileset-Domain mit stabilen Katalogen, einem
+   vollständigen Untertyp→Tiletyp-Mapping und Relevanzregeln für Kanten,
+   Übergänge sowie Innen-/Außenecken anlegen. Atlasmetriken und die daraus
+   abgeleitete technische Spezifikation bleiben pure TypeScript-Funktionen.
+2. Den bestehenden strikten `TilesetAnswersSchema`-Vertrag additiv um Tiletyp,
+   Verbindungs-, Seam-, Wiederholungs-, Varianten- und Atlaswerte erweitern.
+   Frühere V2-Daten bleiben ohne eager Defaults lesbar; `tileSize` bleibt ein
+   zentraler technischer Base→Category→Asset-Wert.
+3. Einen responsiven RHF-gesteuerten `TilesetEditor` als eigenen
+   `tilesetDetails`-Schritt direkt nach der Basisprofilwahl integrieren. Er
+   zeigt Grid und berechnete Atlas-Spezifikation, blendet nur
+   untertyprelevante Verbindungsfragen ein und enthält keine Richtungs- oder
+   Figurenfelder.
+4. Die Tileset-Felder durch Base→Category→Asset-Auflösung, minimale lokale
+   Projektion, Explicit Clear, Basis-/Klassifikationswechsel, transienten
+   Rohzustand, Autosave und schreibfreies Resume führen. Die bisherige
+   generische Tileability-Stufe wird für alte Tileset-Drafts kontrolliert auf
+   den neuen Fachschritt umgeleitet.
+5. Live-Zusammenfassung und Dashboard um kompakte Tiletyp-, Kanten-, Ecken-,
+   Übergangs-, Seam-, Wiederholungs-, Varianten- und berechnete Atlasfakten
+   ergänzen; Animation bleibt eine getrennte Capability des animierten Tiles.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und
+   RTL-Tests einschließlich Tilemetriken und technischer Spezifikation
+   ergänzen. Danach Dokumentation, `npm run verify`, `git diff --check`,
+   Abschlussaudit und den separaten Prompt-20-Commit ausführen; Prompt 21
+   bleibt unangetastet.
 
 ## Ausführungsplan Prompt 19
 
@@ -971,6 +1000,45 @@
 - Alle neuen Felder müssen wieder durch strikte Schemas, Vererbung,
   Rohsnapshot, Autosave, schreibfreies Resume, Summary und Dashboard laufen.
 
+## Ergebnis Prompt 20
+
+1. Eine öffentliche frameworkfreie Tileset-Domain definiert readonly Kataloge,
+   das vollständige Untertyp→Tiletyp-Mapping und pure Relevanzregeln für
+   Kanten, Innen-/Außenecken und Übergänge.
+2. `resolveTilesetAtlasMetrics()` und
+   `createTilesetTechnicalSpecification()` berechnen Raster, Kapazität,
+   Leerplätze und exakte Canvasmaße deterministisch aus zentraler Tilegröße,
+   Slotzahl, Layout, Zwischenraum und Rand.
+3. Das strikt additive `TilesetAnswersSchema` hält frühere V2-Felder ohne eager
+   Defaults lesbar, prüft Typ-/Untertyp- sowie Layoutkonsistenz und schließt
+   technische, Figuren- und Richtungswerte aus.
+4. `TilesetEditor` erfasst Gridkontext, Kanten, Ecken, Übergänge, Seam-Regeln,
+   Wiederholung, Varianten und Atlaslayout im eigenen `tilesetDetails`-Schritt.
+   Animierte Tiles nutzen weiterhin einen getrennten Capability-Schritt; kein
+   Tileset erhält Richtungsansichten.
+5. Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit Clear,
+   Basis-/Klassifikationswechsel, Rohzustand, Autosave und schreibfreies Resume
+   umfassen alle Tileset-Felder. Alte Tileset-Drafts auf `tileability` werden
+   in-memory auf den Fachschritt umgeleitet.
+6. Live-Zusammenfassung und Dashboard zeigen kompakte tatsächliche
+   Verbindungs-, Seam-, Varianten- und berechnete Atlasfakten. Domain-, Schema-,
+   Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und RTL-Tests decken
+   den vollständigen Autotile-Roundtrip ab.
+
+## Übergabe an Prompt 21
+
+- Ergänze ausschließlich den Item-/Equipment-Editor aus
+  `docs/CODEX-V2-PROMPTS.md`: Itemklasse, Material, Zustand, Funktion,
+  Präsentation und Lesbarkeitsregeln.
+- Nutze die vorhandene Capability- und Base→Category→Asset-Auflösung; trenne
+  Weltasset-, Icon- und ausgerüstete Darstellung ohne Tileset- oder
+  Richtungslogik zu erfinden.
+- Führe alle neuen Item-Felder erneut durch strikte additive Schemas, minimale
+  Projektion, Explicit Clear, Rohsnapshot, Autosave, schreibfreies Resume,
+  Summary und Dashboard.
+- Artwork, Prompt Engine, Review und Output bleiben späteren, separat zu
+  committenden Phasen vorbehalten.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -1017,7 +1085,7 @@
 | 16 | Natur-/Baumeditor | Klima, Saison, Krone, Stamm etc. | abgeschlossen |
 | 17 | Statische Objekte | Objektparameter ohne unnötige Bewegung | abgeschlossen |
 | 18 | Gebäudeeditor | Architektur und Mappingparameter | abgeschlossen |
-| 19 | Tileset-Editor | Tile-/Transition-/Seam-Regeln | offen |
+| 19 | Tileset-Editor | Tile-/Transition-/Seam-Regeln | abgeschlossen |
 | 20 | Item-/Ausrüstungseditor | Spielasset-spezifische Darstellung | offen |
 | 21 | Artwork-Editor | freie Komposition ohne erzwungene Tilelogik | offen |
 | 22 | Prompt Engine 2.0 | modulare TS-Promptbausteine | offen |
