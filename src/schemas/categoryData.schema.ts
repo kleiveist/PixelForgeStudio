@@ -15,6 +15,28 @@ import {
   CHARACTER_WEALTH_IDS
 } from "../domain/characters";
 import {
+  BUILDING_ANIMATION_TYPE_IDS,
+  BUILDING_COLLISION_MODE_IDS,
+  BUILDING_CONDITION_IDS,
+  BUILDING_DOOR_STATE_IDS,
+  BUILDING_DOOR_TYPE_IDS,
+  BUILDING_ENVIRONMENT_IDS,
+  BUILDING_FACADE_STYLE_IDS,
+  BUILDING_LIGHTING_IDS,
+  BUILDING_MAPPING_MODE_IDS,
+  BUILDING_MATERIAL_IDS,
+  BUILDING_OCCUPANCY_IDS,
+  BUILDING_PLAN_SHAPE_IDS,
+  BUILDING_ROOF_CONDITION_IDS,
+  BUILDING_ROOF_MATERIAL_IDS,
+  BUILDING_ROOF_PITCH_IDS,
+  BUILDING_ROOF_SHAPE_IDS,
+  BUILDING_SIZE_IDS,
+  BUILDING_TYPE_IDS,
+  BUILDING_WINDOW_LIGHTING_IDS,
+  BUILDING_WINDOW_SHAPE_IDS
+} from "../domain/buildings";
+import {
   MOVING_OBJECT_ANCHOR_MODE_IDS,
   MOVING_OBJECT_ANIMATION_TYPE_IDS,
   MOVING_OBJECT_CLASS_IDS,
@@ -79,6 +101,7 @@ const CharacterDetailSchema = z.string().trim().min(1).max(500);
 const NatureDescriptorSchema = z.string().trim().min(1).max(200);
 const NatureDetailSchema = z.string().trim().min(1).max(500);
 const StaticObjectDetailSchema = z.string().trim().min(1).max(500);
+const BuildingDetailSchema = z.string().trim().min(1).max(500);
 
 export const CharacterAnimationActionSchema = z
   .strictObject({
@@ -277,13 +300,40 @@ export const NatureAnswersSchema = z
 export const BuildingAnswersSchema = z
   .strictObject({
     ...sharedAnswersShape,
+    buildingType: z.enum(BUILDING_TYPE_IDS).optional(),
     purpose: z.string().trim().min(1).max(200).optional(),
+    planShape: z.enum(BUILDING_PLAN_SHAPE_IDS).optional(),
+    size: z.enum(BUILDING_SIZE_IDS).optional(),
+    heightPixels: z.number().int().min(16).max(8192).optional(),
     floors: z.number().int().min(1).max(20).optional(),
-    condition: z
-      .enum(["maintained", "used", "weathered", "damaged", "abandoned", "overgrown"])
-      .optional(),
+    primaryMaterial: z.enum(BUILDING_MATERIAL_IDS).optional(),
+    secondaryMaterial: z.enum(BUILDING_MATERIAL_IDS).optional(),
+    materialDetails: BuildingDetailSchema.optional(),
+    roofShape: z.enum(BUILDING_ROOF_SHAPE_IDS).optional(),
+    roofPitch: z.enum(BUILDING_ROOF_PITCH_IDS).optional(),
+    roofMaterial: z.enum(BUILDING_ROOF_MATERIAL_IDS).optional(),
+    roofCondition: z.enum(BUILDING_ROOF_CONDITION_IDS).optional(),
+    roofDetails: BuildingDetailSchema.optional(),
+    facadeStyle: z.enum(BUILDING_FACADE_STYLE_IDS).optional(),
+    facadeDetails: BuildingDetailSchema.optional(),
+    doorCount: z.number().int().min(0).max(64).optional(),
+    doorType: z.enum(BUILDING_DOOR_TYPE_IDS).optional(),
+    doorPosition: BuildingDetailSchema.optional(),
+    doorState: z.enum(BUILDING_DOOR_STATE_IDS).optional(),
+    windowCount: z.number().int().min(0).max(256).optional(),
+    windowShape: z.enum(BUILDING_WINDOW_SHAPE_IDS).optional(),
+    windowLighting: z.enum(BUILDING_WINDOW_LIGHTING_IDS).optional(),
+    windowDetails: BuildingDetailSchema.optional(),
+    condition: z.enum(BUILDING_CONDITION_IDS).optional(),
+    occupancy: z.enum(BUILDING_OCCUPANCY_IDS).optional(),
+    environment: z.enum(BUILDING_ENVIRONMENT_IDS).optional(),
+    mappingMode: z.enum(BUILDING_MAPPING_MODE_IDS).optional(),
+    collisionMode: z.enum(BUILDING_COLLISION_MODE_IDS).optional(),
     modular: z.boolean().optional(),
-    footprint: FootprintSchema.optional()
+    footprint: FootprintSchema.optional(),
+    lighting: z.enum(BUILDING_LIGHTING_IDS).optional(),
+    lightSourceDetails: BuildingDetailSchema.optional(),
+    animationType: z.enum(BUILDING_ANIMATION_TYPE_IDS).optional()
   })
   .readonly();
 

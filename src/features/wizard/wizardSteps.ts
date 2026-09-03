@@ -9,6 +9,10 @@ import {
 } from "../../domain/assets";
 import { CHARACTER_ANIMATION_ACTION_IDS } from "../../domain/characters";
 import {
+  getDefaultBuildingType,
+  type BuildingSubtype
+} from "../../domain/buildings";
+import {
   MOVING_OBJECT_ANIMATION_TYPE_IDS,
   getDefaultMovingObjectClass
 } from "../../domain/moving-objects";
@@ -29,6 +33,7 @@ import {
 } from "../../domain/static-objects";
 import {
   BaseProfileValuesSchema,
+  BuildingAnswersSchema,
   CharacterAnswersSchema,
   MovingObjectAnswersSchema,
   NatureAnswersSchema,
@@ -102,6 +107,7 @@ const MovingObjectAnimationFramesSchema = z
 const textureAnswerShape = TextureAnswersSchema.unwrap().shape;
 const natureAnswerShape = NatureAnswersSchema.unwrap().shape;
 const staticObjectAnswerShape = StaticObjectAnswersSchema.unwrap().shape;
+const buildingAnswerShape = BuildingAnswersSchema.unwrap().shape;
 
 export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
@@ -217,6 +223,42 @@ export const WizardCoreFormSchema = z.strictObject({
   staticObjectShadowMode: staticObjectAnswerShape.shadowMode,
   staticObjectVariantCount: staticObjectAnswerShape.variantCount,
   staticObjectExtraDetails: staticObjectAnswerShape.extraDetails,
+  buildingType: buildingAnswerShape.buildingType,
+  buildingPurpose: buildingAnswerShape.purpose,
+  buildingDescription: buildingAnswerShape.subjectDescription,
+  buildingPlanShape: buildingAnswerShape.planShape,
+  buildingSize: buildingAnswerShape.size,
+  buildingFootprintWidthTiles: z.number().int().min(1).max(64).optional(),
+  buildingFootprintDepthTiles: z.number().int().min(1).max(64).optional(),
+  buildingHeightPixels: buildingAnswerShape.heightPixels,
+  buildingFloors: buildingAnswerShape.floors,
+  buildingPrimaryMaterial: buildingAnswerShape.primaryMaterial,
+  buildingSecondaryMaterial: buildingAnswerShape.secondaryMaterial,
+  buildingMaterialDetails: buildingAnswerShape.materialDetails,
+  buildingRoofShape: buildingAnswerShape.roofShape,
+  buildingRoofPitch: buildingAnswerShape.roofPitch,
+  buildingRoofMaterial: buildingAnswerShape.roofMaterial,
+  buildingRoofCondition: buildingAnswerShape.roofCondition,
+  buildingRoofDetails: buildingAnswerShape.roofDetails,
+  buildingFacadeStyle: buildingAnswerShape.facadeStyle,
+  buildingFacadeDetails: buildingAnswerShape.facadeDetails,
+  buildingDoorCount: buildingAnswerShape.doorCount,
+  buildingDoorType: buildingAnswerShape.doorType,
+  buildingDoorPosition: buildingAnswerShape.doorPosition,
+  buildingDoorState: buildingAnswerShape.doorState,
+  buildingWindowCount: buildingAnswerShape.windowCount,
+  buildingWindowShape: buildingAnswerShape.windowShape,
+  buildingWindowLighting: buildingAnswerShape.windowLighting,
+  buildingWindowDetails: buildingAnswerShape.windowDetails,
+  buildingCondition: buildingAnswerShape.condition,
+  buildingOccupancy: buildingAnswerShape.occupancy,
+  buildingEnvironment: buildingAnswerShape.environment,
+  buildingMappingMode: buildingAnswerShape.mappingMode,
+  buildingCollisionMode: buildingAnswerShape.collisionMode,
+  buildingModular: buildingAnswerShape.modular,
+  buildingLighting: buildingAnswerShape.lighting,
+  buildingLightSourceDetails: buildingAnswerShape.lightSourceDetails,
+  buildingExtraDetails: buildingAnswerShape.extraDetails,
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
     .enum(CHARACTER_ANIMATION_ACTION_IDS)
@@ -238,6 +280,7 @@ export type WizardCoreStepId =
   | "textureDetails"
   | "natureDetails"
   | "staticObjectDetails"
+  | "buildingDetails"
   | "directions"
   | "animation"
   | "tileability";
@@ -404,6 +447,45 @@ export const WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS = Object.freeze([
   "staticObjectExtraDetails"
 ] as const satisfies readonly WizardCoreFieldPath[]);
 
+export const WIZARD_BUILDING_DETAIL_FIELD_PATHS = Object.freeze([
+  "buildingType",
+  "buildingPurpose",
+  "buildingDescription",
+  "buildingPlanShape",
+  "buildingSize",
+  "buildingFootprintWidthTiles",
+  "buildingFootprintDepthTiles",
+  "buildingHeightPixels",
+  "buildingFloors",
+  "buildingPrimaryMaterial",
+  "buildingSecondaryMaterial",
+  "buildingMaterialDetails",
+  "buildingRoofShape",
+  "buildingRoofPitch",
+  "buildingRoofMaterial",
+  "buildingRoofCondition",
+  "buildingRoofDetails",
+  "buildingFacadeStyle",
+  "buildingFacadeDetails",
+  "buildingDoorCount",
+  "buildingDoorType",
+  "buildingDoorPosition",
+  "buildingDoorState",
+  "buildingWindowCount",
+  "buildingWindowShape",
+  "buildingWindowLighting",
+  "buildingWindowDetails",
+  "buildingCondition",
+  "buildingOccupancy",
+  "buildingEnvironment",
+  "buildingMappingMode",
+  "buildingCollisionMode",
+  "buildingModular",
+  "buildingLighting",
+  "buildingLightSourceDetails",
+  "buildingExtraDetails"
+] as const satisfies readonly WizardCoreFieldPath[]);
+
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
   Partial<Record<AssetCategory, readonly string[]>>
 > = Object.freeze({
@@ -417,6 +499,7 @@ const ANIMATION_TYPES_BY_CATEGORY: Readonly<
   ]),
   staticObject: Object.freeze(["openClose", "glow", "break", "custom"]),
   nature: Object.freeze(["wind", "magic", "custom"]),
+  building: Object.freeze(["openClose", "custom"]),
   tileset: Object.freeze(["water", "lava", "magic", "custom"])
 });
 
@@ -617,6 +700,15 @@ function validateCapabilityFields(
       );
     }
   }
+  for (const field of WIZARD_BUILDING_DETAIL_FIELD_PATHS) {
+    if (values[field] !== undefined && category !== "building") {
+      addFieldIssue(
+        context,
+        field,
+        "Gebäude- und Architekturdaten gehören nicht zur gewählten Asset-Kategorie."
+      );
+    }
+  }
   if (
     values.movingObjectAnimationFrames !== undefined &&
     (category !== "movingObject" || !capabilities.animated)
@@ -784,6 +876,51 @@ function validateCapabilityFields(
       );
     }
   }
+  if (category === "building") {
+    const buildingSubtype = selection.subtype as BuildingSubtype;
+    const width = values.buildingFootprintWidthTiles;
+    const depth = values.buildingFootprintDepthTiles;
+    if (width !== undefined && depth === undefined) {
+      addFieldIssue(
+        context,
+        "buildingFootprintDepthTiles",
+        "Ergänze zur Breite auch die Tiefe des Gebäude-Footprints."
+      );
+    }
+    if (depth !== undefined && width === undefined) {
+      addFieldIssue(
+        context,
+        "buildingFootprintWidthTiles",
+        "Ergänze zur Tiefe auch die Breite des Gebäude-Footprints."
+      );
+    }
+    if (
+      values.buildingType !== undefined &&
+      values.buildingType !== getDefaultBuildingType(buildingSubtype)
+    ) {
+      addFieldIssue(
+        context,
+        "subtype",
+        "Der abgeleitete Gebäudetyp passt nicht zum gewählten Untertyp. Bitte bestätige oder korrigiere den Untertyp."
+      );
+    }
+    if (
+      (values.buildingModular === true ||
+        values.buildingMappingMode === "modularSet" ||
+        values.buildingPlanShape === "modular") &&
+      !selection.capabilities.modular
+    ) {
+      addFieldIssue(
+        context,
+        values.buildingModular === true
+          ? "buildingModular"
+          : values.buildingPlanShape === "modular"
+            ? "buildingPlanShape"
+            : "buildingMappingMode",
+        "Ein modularer Gebäudesatz ist für diesen Untertyp nicht verfügbar."
+      );
+    }
+  }
   if (values.animationType !== undefined) {
     const allowedAnimationTypes = ANIMATION_TYPES_BY_CATEGORY[category];
     if (
@@ -931,6 +1068,17 @@ export const WizardStaticObjectDetailsStepSchema =
       );
     }
   });
+export const WizardBuildingDetailsStepSchema =
+  WizardCoreFormSchema.superRefine((values, context) => {
+    refineSelectedValues(values, context, undefined, true);
+    if (values.category !== undefined && values.category !== "building") {
+      addFieldIssue(
+        context,
+        "category",
+        "Der Gebäudeeditor ist nur für Gebäude und Architektur verfügbar."
+      );
+    }
+  });
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) =>
     refineSelectedValues(values, context, "directional", true)
@@ -1031,6 +1179,15 @@ export const WIZARD_CORE_STEPS = Object.freeze([
       "Beschreibe Funktion, Form, Material, Zustand, Standfläche und Interaktion des statischen Weltobjekts.",
     fieldPaths: WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
     schema: WizardStaticObjectDetailsStepSchema
+  }),
+  Object.freeze({
+    id: "buildingDetails",
+    route: "wizard/editor",
+    title: "Gebäude und Architektur",
+    description:
+      "Beschreibe Bauform, Footprint, Materialien, Dach, Fassade, Öffnungen, Mapping und Licht des Gebäudes.",
+    fieldPaths: WIZARD_BUILDING_DETAIL_FIELD_PATHS,
+    schema: WizardBuildingDetailsStepSchema
   }),
   Object.freeze({
     id: "directions",

@@ -8,6 +8,7 @@ import { jsonValuesEqual } from "../../domain/json";
 import type {
   CharacterAnswers,
   BaseProfileValues,
+  BuildingAnswers,
   MovingObjectAnswers,
   NatureAnswers,
   StableId,
@@ -184,12 +185,53 @@ export interface WizardRawCoreFormValues {
   readonly staticObjectShadowMode?: StaticObjectAnswers["shadowMode"] | undefined;
   readonly staticObjectVariantCount?: StaticObjectAnswers["variantCount"] | undefined;
   readonly staticObjectExtraDetails?: StaticObjectAnswers["extraDetails"] | undefined;
+  readonly buildingType?: BuildingAnswers["buildingType"] | undefined;
+  readonly buildingPurpose?: BuildingAnswers["purpose"] | undefined;
+  readonly buildingDescription?: BuildingAnswers["subjectDescription"] | undefined;
+  readonly buildingPlanShape?: BuildingAnswers["planShape"] | undefined;
+  readonly buildingSize?: BuildingAnswers["size"] | undefined;
+  readonly buildingFootprintWidthTiles?: NonNullable<
+    BuildingAnswers["footprint"]
+  >["widthTiles"] | undefined;
+  readonly buildingFootprintDepthTiles?: NonNullable<
+    BuildingAnswers["footprint"]
+  >["depthTiles"] | undefined;
+  readonly buildingHeightPixels?: BuildingAnswers["heightPixels"] | undefined;
+  readonly buildingFloors?: BuildingAnswers["floors"] | undefined;
+  readonly buildingPrimaryMaterial?: BuildingAnswers["primaryMaterial"] | undefined;
+  readonly buildingSecondaryMaterial?: BuildingAnswers["secondaryMaterial"] | undefined;
+  readonly buildingMaterialDetails?: BuildingAnswers["materialDetails"] | undefined;
+  readonly buildingRoofShape?: BuildingAnswers["roofShape"] | undefined;
+  readonly buildingRoofPitch?: BuildingAnswers["roofPitch"] | undefined;
+  readonly buildingRoofMaterial?: BuildingAnswers["roofMaterial"] | undefined;
+  readonly buildingRoofCondition?: BuildingAnswers["roofCondition"] | undefined;
+  readonly buildingRoofDetails?: BuildingAnswers["roofDetails"] | undefined;
+  readonly buildingFacadeStyle?: BuildingAnswers["facadeStyle"] | undefined;
+  readonly buildingFacadeDetails?: BuildingAnswers["facadeDetails"] | undefined;
+  readonly buildingDoorCount?: BuildingAnswers["doorCount"] | undefined;
+  readonly buildingDoorType?: BuildingAnswers["doorType"] | undefined;
+  readonly buildingDoorPosition?: BuildingAnswers["doorPosition"] | undefined;
+  readonly buildingDoorState?: BuildingAnswers["doorState"] | undefined;
+  readonly buildingWindowCount?: BuildingAnswers["windowCount"] | undefined;
+  readonly buildingWindowShape?: BuildingAnswers["windowShape"] | undefined;
+  readonly buildingWindowLighting?: BuildingAnswers["windowLighting"] | undefined;
+  readonly buildingWindowDetails?: BuildingAnswers["windowDetails"] | undefined;
+  readonly buildingCondition?: BuildingAnswers["condition"] | undefined;
+  readonly buildingOccupancy?: BuildingAnswers["occupancy"] | undefined;
+  readonly buildingEnvironment?: BuildingAnswers["environment"] | undefined;
+  readonly buildingMappingMode?: BuildingAnswers["mappingMode"] | undefined;
+  readonly buildingCollisionMode?: BuildingAnswers["collisionMode"] | undefined;
+  readonly buildingModular?: BuildingAnswers["modular"] | undefined;
+  readonly buildingLighting?: BuildingAnswers["lighting"] | undefined;
+  readonly buildingLightSourceDetails?: BuildingAnswers["lightSourceDetails"] | undefined;
+  readonly buildingExtraDetails?: BuildingAnswers["extraDetails"] | undefined;
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:
     | MovingObjectAnswers["animationType"]
     | StaticObjectAnswers["animationType"]
     | NatureAnswers["animationType"]
+    | BuildingAnswers["animationType"]
     | TilesetAnswers["animationType"];
   readonly movementType?: MovingObjectAnswers["movementType"];
   readonly seamless?: TextureAnswers["seamless"];

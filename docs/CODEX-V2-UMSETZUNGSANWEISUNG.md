@@ -352,16 +352,16 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 18
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 19
 
 - `project`, `category`/`subtype`, `baseProfile`, `characterDetails`,
   `movingObjectDetails`, `staticObjectDetails`, `textureDetails`,
-  `natureDetails` und die
+  `natureDetails`, `buildingDetails` und die
   Capability-Schritte sind stabil und deklarativ konfiguriert; jeder besitzt
   Zod-Schema und RHF-Feldpfade. Die Reihenfolge ist
   `project → category/subtype → baseProfile → characterDetails,
-  movingObjectDetails, staticObjectDetails, textureDetails oder natureDetails,
-  falls relevant
+  movingObjectDetails, staticObjectDetails, textureDetails, natureDetails oder
+  buildingDetails, falls relevant
   → Capability-Schritte`.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
@@ -545,8 +545,34 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zusammenfassung und Dashboard zeigen nur kompakte, tatsächlich
   konfigurierte Static-Object-Fakten einschließlich capability-gültiger
   Animation.
-- Prompts 00 bis 18 sind abgeschlossen. Prompt 19 ergänzt als nächste Phase
-  den Building-Editor. Prompt 18 enthält weder Prompt Engine
+- Der Building-/Architecture-Editor ist ein eigener `buildingDetails`-
+  Fachschritt direkt nach der Basisprofilwahl und erscheint nur für
+  `building`. Er erfasst Gebäudetyp, Nutzung, Bauform, Größe, vollständigen
+  Footprint, Höhe, Stockwerke, Materialien, Dach, Fassade, Türen, Fenster,
+  Zustand, Belegung, Umgebung, Mapping, Kollision, Modularität und lokales
+  Licht.
+- Gebäudetyp sowie wirksame Tilegröße, Perspektive, Kameraneigung und
+  Projektion erscheinen read-only. Der Typ wird vollständig aus dem Untertyp
+  abgeleitet; technische Werte bleiben in der Base→Category→Asset-Kette und
+  werden nicht in `BuildingAnswers` dupliziert.
+- Building-Felder bleiben vollständig in RHF und nutzen Draft↔Form-Projektion,
+  transienten Rohzustand, Dirty-Erkennung, 300-ms-Autosave und exaktes Resume.
+  Mount, Profil-Hydration und Resume schreiben nicht; Basiswechsel erhalten
+  Fachwerte, Klassifikationswechsel bereinigen sie.
+- Profilauflösung und Draft-Mapping führen Building-Fachwerte
+  Base→Category→Asset zusammen und speichern nur nicht redundante lokale
+  Abweichungen. Explicit Clear löst Elternprovenienz und materialisiert die
+  übrigen wirksamen Fach- und Technikwerte relativ zur Base.
+- Modulare Ausgabe und `modularSet`-Mapping erscheinen nur für Tor,
+  Befestigung und Dungeon-Modul. Ein Tor kann im getrennten
+  `animated`-Capability-Schritt Öffnen/Schließen oder eine individuelle
+  Animation erhalten. Kein Building-Untertyp ist `directional`; Figurenhöhe
+  und 4/8 Richtungen bleiben vollständig aus dem Flow.
+- Zusammenfassung und Dashboard zeigen ausschließlich kompakte, tatsächlich
+  konfigurierte Architekturfakten einschließlich capability-gültiger
+  Toranimation.
+- Prompts 00 bis 19 sind abgeschlossen. Prompt 20 ergänzt als nächste Phase
+  den Tileset-Editor. Prompt 19 enthält weder Prompt Engine
   beziehungsweise Review-/Output-Erzeugung noch In-place-Mutation oder
   Reparenting einer bestehenden Basisfamilie.
 
@@ -991,6 +1017,37 @@ Umgesetzt seit Prompt 17:
 - Mapping-Kompatibilität
 - Beleuchtung
 
+Umgesetzt seit Prompt 19:
+
+- `src/domain/buildings/` veröffentlicht stabile readonly Kataloge für
+  Gebäudetyp, Größe, Grundriss, Material, Dach, Fassade, Türen, Fenster,
+  Zustand, Belegung, Umgebung, Mapping, Kollision, Licht und Toranimation.
+  `BUILDING_TYPE_BY_SUBTYPE` und `getDefaultBuildingType()` bilden jeden
+  Building-Untertyp deterministisch ab; Hydration setzt keine Detaildefaults.
+- `BuildingAnswersSchema` ist strikt und additiv. Frühere Schema-V2-Felder
+  bleiben lesbar; Gebäudehöhe liegt bei 16–8192 px, Stockwerke bei 1–20,
+  Türanzahl bei 0–64, Fensteranzahl bei 0–256 und beide Footprint-Achsen bei
+  1–64 Tiles. Ein vorhandener Gebäudetyp muss zum Untertyp passen.
+  `tileSize`, Perspektive, Kamera, Projektion, Figurenhöhe und Richtungen sind
+  keine Building-Fachantworten.
+- `src/features/building-editor/` rendert
+  `BuildingArchitectureEditor` ausschließlich im eigenen
+  `buildingDetails`-Schritt. Gebäudetyp und wirksame technische Weltgeometrie
+  sind read-only; alle Fachfragen gehören React Hook Form.
+- Modulare Ausgabe und `modularSet`-Mapping sind auf Tor, Befestigung und
+  Dungeon-Modul begrenzt. Eine Toranimation bleibt vom Fachschritt getrennt
+  und wird nur über `animated` angeboten. Kein Building-Untertyp erhält einen
+  Richtungs- oder Figurenmaßstabsschritt.
+- Building-Antworten werden Base→Category→Asset aufgelöst und minimal lokal
+  projiziert. Basiswechsel erhalten sie, Klassifikationswechsel entfernen sie;
+  Explicit Clear löst Elternprovenienz und materialisiert die übrigen
+  wirksamen Fach- und Technikwerte relativ zur Base.
+- Rohzustand, Dirty State, Autosave, schreibfreie Hydration und exaktes Resume
+  gelten für alle Building-Felder. Zusammenfassung und Dashboard zeigen nur
+  kompakte tatsächliche Architektur-, Mapping- und Lichtfakten.
+- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
+  Prompts.
+
 ## 13.7 Tileset
 
 - Tiletyp
@@ -1139,6 +1196,11 @@ Mit Vitest:
 - Static-Object-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
 - vollständiger Static-Object-Footprint von 1–64 Tiles, 1–12 Varianten und
   optionale Animation ohne Richtungsset
+- Building-Kataloge, Untertyp-/Gebäudetyp-Konsistenz und additive
+  Schema-V2-Lesbarkeit ohne Defaults
+- Building-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
+- vollständiger Building-Footprint von 1–64 Tiles, Höhe, Stockwerke,
+  Öffnungen, Mapping, Kollision und Licht sowie Toranimation ohne Richtungsset
 - Migrationslogik
 - Promptmodule
 - Canvas-/Frame-Metriken
@@ -1171,6 +1233,11 @@ Mit React Testing Library + user-event:
 - Static-Object-Autosave, schreibfreie Hydration/Resume, zentrale read-only
   Tilegröße sowie Summary-/Dashboard-Fakten und animierte Truhe ohne
   Richtungsfrage
+- Building-Detailstep mit Footprint, Material, Dach, Fassade, Türen, Fenstern,
+  Mapping, Kollision, Belegung und Licht
+- Building-Autosave, schreibfreie Hydration/Resume, zentrale read-only
+  Weltgeometrie sowie Summary-/Dashboard-Fakten und animiertes Tor ohne
+  Richtungs- oder Figurenhöhenfrage
 - Theme-Wechsel
 - Profil laden/speichern
 - Lock-Konfliktworkflow

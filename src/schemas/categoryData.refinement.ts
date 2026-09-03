@@ -3,6 +3,7 @@ import {
   resolveCapabilities,
   type AssetSelection
 } from "../domain/assets";
+import { getDefaultBuildingType } from "../domain/buildings";
 import { getDefaultMovingObjectClass } from "../domain/moving-objects";
 import {
   getDefaultNaturePlantType,
@@ -49,6 +50,16 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
       addIssue(
         "objectClass",
         `Object class "${String(categoryData.objectClass)}" does not match static-object subtype "${value.subtype}"; expected "${expectedClass}".`
+      );
+    }
+  }
+
+  if (value.category === "building" && categoryData.buildingType !== undefined) {
+    const expectedType = getDefaultBuildingType(value.subtype);
+    if (categoryData.buildingType !== expectedType) {
+      addIssue(
+        "buildingType",
+        `Building type "${String(categoryData.buildingType)}" does not match building subtype "${value.subtype}"; expected "${expectedType}".`
       );
     }
   }
@@ -174,5 +185,27 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
 
   if (categoryData.modular === true && !capabilities.modular) {
     addIssue("modular", "Modular output is only valid for modular asset subtypes.");
+  }
+
+  if (
+    value.category === "building" &&
+    categoryData.mappingMode === "modularSet" &&
+    !capabilities.modular
+  ) {
+    addIssue(
+      "mappingMode",
+      "Modular mapping is only valid for modular building subtypes."
+    );
+  }
+
+  if (
+    value.category === "building" &&
+    categoryData.planShape === "modular" &&
+    !capabilities.modular
+  ) {
+    addIssue(
+      "planShape",
+      "A modular plan is only valid for modular building subtypes."
+    );
   }
 }

@@ -97,14 +97,14 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 18
+## 4.3 Umgesetzter Einstieg bis Prompt 19
 
 Der aktuell implementierte Core-Flow lautet:
 
 ```text
 Projekt → Hauptkategorie/Untertyp → Basisprofil
-→ Character-, Moving-Object-, Static-Object-, Texture- oder Nature-Details,
-falls relevant
+→ Character-, Moving-Object-, Static-Object-, Texture-, Nature- oder
+Building-Details, falls relevant
 → Capability-Schritte
 ```
 
@@ -114,10 +114,10 @@ erfolgreich neu angelegte Basisfamilie öffnet die nachfolgenden Richtungs-,
 Animations- oder Kachelbarkeitsfragen. Deren Sichtbarkeit stammt ausschließlich
 aus `resolveCapabilities()`. Für die Hauptkategorie `character` liegt zwischen
 Basisprofil und Capability-Schritten ein eigener Character-/NPC-Fachschritt.
-`movingObject`, `staticObject`, `texture` und `nature` nutzen an derselben
+`movingObject`, `staticObject`, `texture`, `nature` und `building` nutzen an derselben
 Stelle ihre eigenen `movingObjectDetails`-, `staticObjectDetails`-,
-`textureDetails`- beziehungsweise `natureDetails`-Schritte; alle anderen
-Kategorien überspringen diese fünf Fachschritte.
+`textureDetails`-, `natureDetails`- beziehungsweise `buildingDetails`-Schritte;
+alle anderen Kategorien überspringen diese sechs Fachschritte.
 
 Der Basisprofil-Schritt zeigt für alle relevanten Produktionswerte den
 wirksamen Wert, seine Quelle (Basisprofil, Kategorieprofil oder lokaler Entwurf)
@@ -193,10 +193,23 @@ Static-Object-Untertyp ist `directional`, daher erscheint nie eine
 4/8-Richtungsfrage. Summary und Dashboard zeigen nur kompakte tatsächliche
 Objektfakten.
 
-Prompts 00 bis 18 sind abgeschlossen. Prompt 19 ergänzt als nächste Phase den
-Building-Editor.
+Der Building-Schritt erfasst den aus dem Untertyp abgeleiteten Gebäudetyp,
+Nutzung, Bauform, Größe, vollständigen Footprint, Gebäudehöhe, Stockwerke,
+Materialien, Dach, Fassade, Türen, Fenster, Zustand, Belegung, Umgebung,
+Mapping, Kollision, Modularität und lokales Licht im gemeinsamen
+RHF-/Draft-/Autosave-/Resume-Pfad. Gebäudetyp und wirksame technische
+Weltgeometrie sind read-only und werden nicht in Fachantworten dupliziert.
+Basiswechsel erhalten Building-Antworten, Klassifikationswechsel bereinigen
+sie und Explicit Clear löst geerbte Provenienz. Modulare Optionen erscheinen
+nur für Tor, Befestigung und Dungeon-Modul. Eine Toranimation bleibt ein
+separater `animated`-Capability-Schritt; kein Building-Untertyp erhält
+Figurenhöhe oder 4/8 Richtungen. Summary und Dashboard zeigen nur kompakte
+tatsächliche Architekturfakten.
+
+Prompts 00 bis 19 sind abgeschlossen. Prompt 20 ergänzt als nächste Phase den
+Tileset-Editor.
 Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
-Tabelle oben werden durch Prompt 18 noch nicht als fertig erklärt.
+Tabelle oben werden durch Prompt 19 noch nicht als fertig erklärt.
 
 ---
 
@@ -829,6 +842,42 @@ keine schreibende Migration beim bloßen Laden statt.
 | Kollisionslesbarkeit | begehbare und blockierende Bereiche klar |
 | Output | freigestelltes Gebäude, Kartenbaustein, modularer Satz |
 
+### Implementierungsstand seit Prompt 19
+
+- `buildingDetails` folgt direkt auf die Basisprofilwahl und erscheint
+  ausschließlich für `building`. Das vollständige
+  `BUILDING_TYPE_BY_SUBTYPE`-Mapping ordnet Wohnhaus, Hütte, Geschäft,
+  Werkstatt, Gasthaus, Turm, Tor, Tempel, Ruine, Befestigung und Dungeon-Modul
+  deterministisch einem Gebäudetyp zu.
+- `BuildingAnswersSchema` bildet Nutzung, Beschreibung, Bauform, Größe,
+  Gebäudehöhe, Stockwerke, Haupt- und Nebenmaterial, Materialdetails, Dach,
+  Fassade, Türen, Fenster, Zustand, Belegung, Umgebung, Mapping, Kollision,
+  Modularität, lokales Licht, Toranimation und vollständigen Footprint strikt
+  und additiv ab. Frühere Schema-V2-Werte bleiben ohne eager Defaults lesbar.
+- `tileSize`, Perspektive, Kameraneigung und Projektion bleiben sperrbare
+  technische Base→Category→Asset-Werte. `BuildingArchitectureEditor` zeigt
+  sie zusammen mit dem abgeleiteten Gebäudetyp read-only; Figurenhöhe und
+  Richtungsfelder gehören nicht zu `BuildingAnswers`.
+- Footprint-Breite und -Tiefe müssen gemeinsam gesetzt sein und liegen je bei
+  1–64 Tiles. Gebäudehöhe ist auf 16–8192 px, Stockwerke auf 1–20, Türen auf
+  0–64 und Fenster auf 0–256 begrenzt.
+- Modulare Ausgabe und `modularSet`-Mapping sind nur für Tor, Befestigung und
+  Dungeon-Modul gültig. Alle anderen Untertypen bleiben vollständige
+  Einzelbauwerke mit freistehendem, kartenintegriertem oder tile-ausgerichtetem
+  Mapping.
+- Building-Fachantworten werden Base→Category→Asset aufgelöst und nur als
+  nicht redundante lokale Abweichungen gespeichert. Basiswechsel erhalten sie,
+  Klassifikationswechsel entfernen sie; Explicit Clear löst Elternprovenienz
+  und materialisiert die übrigen wirksamen Werte relativ zur Base.
+- Transienter Rohzustand, Dirty State, 300-ms-Autosave, unmittelbare
+  Schritt-Persistenz und exaktes Resume gelten für alle Building-Felder.
+  Initialisierung, Profil-Hydration und Resume schreiben nicht.
+- Nur das Tor erhält im separaten `animated`-Capability-Schritt Öffnen/
+  Schließen oder eine individuelle Animation. Kein Building-Untertyp ist
+  `directional`; Kamera, Weltlicht und Footprint bleiben über Animationsphasen
+  konstant. Zusammenfassung und Dashboard zeigen kompakte tatsächliche
+  Architekturfakten. Prompt Engine und Review-/Output-Erzeugung folgen später.
+
 ---
 
 ## 8.7 Tileset / Kartenelement
@@ -1185,6 +1234,17 @@ Eine gespeicherte Objektklasse muss zur vollständigen Untertypabbildung passen;
 `tileSize`, Figurenmaßstab und Richtungsdaten bleiben vollständig außerhalb
 von `StaticObjectAnswers`.
 
+Für Gebäude erweitert Prompt 19 den strikten Schema-V2-Vertrag additiv um
+`buildingType`, `planShape`, `size`, `heightPixels`, Material-, Dach-,
+Fassaden-, Tür-, Fenster-, Belegungs-, Umgebungs-, Mapping-, Kollisions-,
+Licht- und Animationswerte. Die bisherigen Felder `subjectDescription`,
+`extraDetails`, `purpose`, `floors`, `condition`, `modular` und `footprint`
+bleiben ohne materialisierte Defaults lesbar. Ein vorhandener Gebäudetyp muss
+zum vollständigen Untertyp-Mapping passen; modulare Ausgabe und
+`modularSet`-Mapping sind nur für capability-gültige Untertypen zulässig.
+Tilegröße, Perspektive, Kamera, Projektion, Figurenhöhe und Richtungsdaten
+bleiben vollständig außerhalb von `BuildingAnswers`.
+
 ## 12.4 Wizard-Draft
 
 ```json
@@ -1246,6 +1306,12 @@ Rohzustand, Autosave und exaktem schreibfreien Resume. Die Objektklasse wird
 aus dem Untertyp und die technische `tileSize` aus der Profilkette aufgelöst.
 Eine optionale Animation bleibt im folgenden Capability-Schritt und erzeugt
 kein Richtungsset.
+Für Gebäude folgt `buildingDetails`; alle Fachfelder und die beiden gemeinsam
+erforderlichen Footprint-Achsen gehören zu Rohzustand, Autosave und exaktem
+schreibfreien Resume. Gebäudetyp und wirksame Weltgeometrie werden aus
+Untertyp beziehungsweise Profilkette aufgelöst. Modulare Optionen sind
+capability-gesteuert; eine Toranimation bleibt im folgenden separaten Schritt
+und erzeugt kein Richtungsset.
 Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
 und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
 Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale
@@ -1264,10 +1330,10 @@ werden beim nächsten gültigen Draft-Snapshot erneut auf minimale Overrides
 normalisiert.
 
 Das ausdrückliche Leeren eines vom Kategorieprofil geerbten Character-,
-Moving-Object-, Static-Object-, Texture- oder Nature-Feldes löst Kategorie- und
-Assetprovenienz. Alle anderen wirksamen Fachantworten und technischen Werte
-werden relativ zur Base materialisiert, damit der entfernte Default nach
-Autosave und Resume nicht erneut erscheint.
+Moving-Object-, Static-Object-, Texture-, Nature- oder Building-Feldes löst
+Kategorie- und Assetprovenienz. Alle anderen wirksamen Fachantworten und
+technischen Werte werden relativ zur Base materialisiert, damit der entfernte
+Default nach Autosave und Resume nicht erneut erscheint.
 
 ---
 

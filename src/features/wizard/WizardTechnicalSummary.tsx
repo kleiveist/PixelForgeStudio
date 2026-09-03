@@ -8,6 +8,25 @@ import {
   type CharacterAnimationActionId
 } from "../../domain/characters";
 import {
+  getDefaultBuildingType,
+  type BuildingCollisionMode,
+  type BuildingCondition,
+  type BuildingDoorState,
+  type BuildingDoorType,
+  type BuildingFacadeStyle,
+  type BuildingLighting,
+  type BuildingMappingMode,
+  type BuildingMaterial,
+  type BuildingOccupancy,
+  type BuildingRoofMaterial,
+  type BuildingRoofShape,
+  type BuildingSize,
+  type BuildingSubtype,
+  type BuildingType,
+  type BuildingWindowLighting,
+  type BuildingWindowShape
+} from "../../domain/buildings";
+import {
   MOVING_OBJECT_ANIMATION_TYPE_IDS,
   getDefaultMovingObjectClass,
   type MovingObjectAnchorMode,
@@ -521,6 +540,163 @@ const STATIC_OBJECT_SHADOW_LABELS: Readonly<
   contact: "Kontaktschatten"
 };
 
+const BUILDING_TYPE_LABELS: Readonly<Record<BuildingType, string>> = {
+  residential: "Wohngebäude",
+  commercial: "Geschäftsgebäude",
+  workshop: "Werkstattgebäude",
+  hospitality: "Beherbergung / Gasthaus",
+  tower: "Turmbau",
+  gate: "Torbau",
+  sacred: "Sakralbau",
+  ruin: "Ruinenbau",
+  fortification: "Befestigungsbau",
+  dungeonModule: "Dungeon-Modul"
+};
+
+const BUILDING_SIZE_LABELS: Readonly<Record<BuildingSize, string>> = {
+  compact: "Kompakt",
+  small: "Klein",
+  medium: "Mittel",
+  large: "Groß",
+  monumental: "Monumental"
+};
+
+const BUILDING_MATERIAL_LABELS: Readonly<Record<BuildingMaterial, string>> = {
+  wood: "Holz",
+  stone: "Stein",
+  clay: "Lehm",
+  brick: "Ziegel",
+  plaster: "Putz",
+  metal: "Metall",
+  timberFrame: "Fachwerk",
+  mixed: "Mischbau",
+  custom: "Eigenes Material"
+};
+
+const BUILDING_ROOF_SHAPE_LABELS: Readonly<
+  Record<BuildingRoofShape, string>
+> = {
+  gable: "Satteldach",
+  hipped: "Walmdach",
+  flat: "Flachdach",
+  shed: "Pultdach",
+  conical: "Kegeldach",
+  domed: "Kuppeldach",
+  collapsed: "Eingestürzt",
+  none: "Kein Dach",
+  custom: "Individuell"
+};
+
+const BUILDING_ROOF_MATERIAL_LABELS: Readonly<
+  Record<BuildingRoofMaterial, string>
+> = {
+  thatch: "Reet / Stroh",
+  woodShingle: "Holzschindeln",
+  slate: "Schiefer",
+  tile: "Dachziegel",
+  metal: "Metall",
+  stone: "Stein",
+  earth: "Erde / Grassoden",
+  mixed: "Mischmaterial",
+  none: "Kein Dachmaterial",
+  custom: "Eigenes Material"
+};
+
+const BUILDING_FACADE_LABELS: Readonly<Record<BuildingFacadeStyle, string>> = {
+  timberFrame: "Fachwerk",
+  plastered: "Verputzt",
+  masonry: "Sichtmauerwerk",
+  brick: "Ziegelfassade",
+  fortified: "Befestigt",
+  carved: "Verziert / gemeißelt",
+  ruined: "Aufgebrochen / ruinös",
+  mixed: "Gemischt",
+  custom: "Individuell"
+};
+
+const BUILDING_DOOR_TYPE_LABELS: Readonly<Record<BuildingDoorType, string>> = {
+  single: "Einflügelige Tür",
+  double: "Doppeltür",
+  arched: "Bogentür",
+  reinforced: "Verstärktes Tor",
+  portcullis: "Fallgatter",
+  openPassage: "Offener Durchgang",
+  custom: "Individuell"
+};
+
+const BUILDING_DOOR_STATE_LABELS: Readonly<Record<BuildingDoorState, string>> = {
+  open: "Offen",
+  closed: "Geschlossen",
+  ajar: "Angelehnt",
+  blocked: "Blockiert",
+  broken: "Beschädigt"
+};
+
+const BUILDING_WINDOW_SHAPE_LABELS: Readonly<
+  Record<BuildingWindowShape, string>
+> = {
+  square: "Quadratisch",
+  rectangular: "Rechteckig",
+  arched: "Bogenfenster",
+  round: "Rund",
+  narrowSlit: "Schmale Schießscharte",
+  irregular: "Unregelmäßig",
+  none: "Keine Fenster"
+};
+
+const BUILDING_WINDOW_LIGHTING_LABELS: Readonly<
+  Record<BuildingWindowLighting, string>
+> = {
+  dark: "Dunkel",
+  neutral: "Neutral",
+  warmLit: "Warm beleuchtet",
+  coolLit: "Kühl beleuchtet",
+  mixed: "Gemischte Lichtzustände",
+  boarded: "Vernagelt / verdeckt"
+};
+
+const BUILDING_CONDITION_LABELS: Readonly<Record<BuildingCondition, string>> = {
+  maintained: "Gepflegt",
+  used: "Genutzt",
+  weathered: "Verwittert",
+  damaged: "Beschädigt",
+  abandoned: "Verlassen",
+  overgrown: "Überwuchert"
+};
+
+const BUILDING_OCCUPANCY_LABELS: Readonly<Record<BuildingOccupancy, string>> = {
+  inhabited: "Bewohnt",
+  active: "Aktiv genutzt",
+  vacant: "Leerstehend",
+  abandoned: "Verlassen"
+};
+
+const BUILDING_MAPPING_LABELS: Readonly<Record<BuildingMappingMode, string>> = {
+  freestanding: "Freistehend",
+  mapIntegrated: "In Karte integriert",
+  tileAligned: "Am Tile-Raster ausgerichtet",
+  modularSet: "Modularer Bauteilsatz"
+};
+
+const BUILDING_COLLISION_LABELS: Readonly<
+  Record<BuildingCollisionMode, string>
+> = {
+  fullyBlocking: "Vollständig blockierend",
+  walkableEntrance: "Begehbarer Eingang",
+  walkableInterior: "Begehbarer Innenraum",
+  mixed: "Gemischte Kollisionszonen"
+};
+
+const BUILDING_LIGHTING_LABELS: Readonly<Record<BuildingLighting, string>> = {
+  worldAligned: "Nur geerbtes Weltlicht",
+  warmInterior: "Warmes Innenlicht",
+  darkInterior: "Dunkler Innenraum",
+  neutralInterior: "Neutrales Innenlicht",
+  visibleSources: "Sichtbare lokale Lichtquellen",
+  emissive: "Kontrolliert emissiv",
+  custom: "Individuell"
+};
+
 function natureAnimationSummary(
   animationType: WizardCoreFormValues["animationType"]
 ): string {
@@ -546,6 +722,19 @@ function staticObjectAnimationSummary(
       return "Leuchten";
     case "break":
       return "Zerbrechen";
+    case "custom":
+      return "Individuell";
+    default:
+      return "Noch nicht ausgewählt";
+  }
+}
+
+function buildingAnimationSummary(
+  animationType: WizardCoreFormValues["animationType"]
+): string {
+  switch (animationType) {
+    case "openClose":
+      return "Öffnen / Schließen";
     case "custom":
       return "Individuell";
     default:
@@ -975,6 +1164,182 @@ export function WizardTechnicalSummary({
               <SummaryFact
                 label="Animation"
                 value={staticObjectAnimationSummary(formValues.animationType)}
+              />
+            ) : null}
+          </>
+        ) : null}
+        {selection?.category === "building" ? (
+          <>
+            <SummaryFact
+              label="Gebäudetyp"
+              value={
+                BUILDING_TYPE_LABELS[
+                  formValues.buildingType ??
+                    getDefaultBuildingType(
+                      selection.subtype as BuildingSubtype
+                    )
+                ]
+              }
+            />
+            {formValues.buildingPurpose?.trim() ? (
+              <SummaryFact
+                label="Nutzung"
+                value={formValues.buildingPurpose.trim()}
+              />
+            ) : null}
+            {formValues.buildingSize !== undefined ? (
+              <SummaryFact
+                label="Größe"
+                value={BUILDING_SIZE_LABELS[formValues.buildingSize]}
+              />
+            ) : null}
+            {formValues.buildingFootprintWidthTiles !== undefined &&
+            formValues.buildingFootprintDepthTiles !== undefined ? (
+              <SummaryFact
+                label="Standfläche"
+                value={`${formValues.buildingFootprintWidthTiles} × ${formValues.buildingFootprintDepthTiles} Tiles`}
+              />
+            ) : null}
+            {formValues.buildingFloors !== undefined ? (
+              <SummaryFact
+                label="Geschosse"
+                value={String(formValues.buildingFloors)}
+              />
+            ) : null}
+            {formValues.buildingHeightPixels !== undefined ? (
+              <SummaryFact
+                label="Gebäudehöhe"
+                value={`${formValues.buildingHeightPixels} px`}
+              />
+            ) : null}
+            {formValues.buildingPrimaryMaterial !== undefined ? (
+              <SummaryFact
+                label="Hauptmaterial"
+                value={
+                  BUILDING_MATERIAL_LABELS[
+                    formValues.buildingPrimaryMaterial
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.buildingSecondaryMaterial !== undefined ? (
+              <SummaryFact
+                label="Zweitmaterial"
+                value={
+                  BUILDING_MATERIAL_LABELS[
+                    formValues.buildingSecondaryMaterial
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.buildingRoofShape !== undefined ? (
+              <SummaryFact
+                label="Dachform"
+                value={BUILDING_ROOF_SHAPE_LABELS[formValues.buildingRoofShape]}
+              />
+            ) : null}
+            {formValues.buildingRoofMaterial !== undefined ? (
+              <SummaryFact
+                label="Dachmaterial"
+                value={
+                  BUILDING_ROOF_MATERIAL_LABELS[
+                    formValues.buildingRoofMaterial
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.buildingFacadeStyle !== undefined ? (
+              <SummaryFact
+                label="Fassade"
+                value={BUILDING_FACADE_LABELS[formValues.buildingFacadeStyle]}
+              />
+            ) : null}
+            {formValues.buildingDoorCount !== undefined ? (
+              <SummaryFact
+                label="Türen"
+                value={[
+                  String(formValues.buildingDoorCount),
+                  formValues.buildingDoorType === undefined
+                    ? null
+                    : BUILDING_DOOR_TYPE_LABELS[formValues.buildingDoorType],
+                  formValues.buildingDoorState === undefined
+                    ? null
+                    : BUILDING_DOOR_STATE_LABELS[formValues.buildingDoorState]
+                ]
+                  .filter((value): value is string => value !== null)
+                  .join(" · ")}
+              />
+            ) : null}
+            {formValues.buildingWindowCount !== undefined ? (
+              <SummaryFact
+                label="Fenster"
+                value={[
+                  String(formValues.buildingWindowCount),
+                  formValues.buildingWindowShape === undefined
+                    ? null
+                    : BUILDING_WINDOW_SHAPE_LABELS[
+                        formValues.buildingWindowShape
+                      ],
+                  formValues.buildingWindowLighting === undefined
+                    ? null
+                    : BUILDING_WINDOW_LIGHTING_LABELS[
+                        formValues.buildingWindowLighting
+                      ]
+                ]
+                  .filter((value): value is string => value !== null)
+                  .join(" · ")}
+              />
+            ) : null}
+            {formValues.buildingCondition !== undefined ? (
+              <SummaryFact
+                label="Zustand"
+                value={BUILDING_CONDITION_LABELS[formValues.buildingCondition]}
+              />
+            ) : null}
+            {formValues.buildingOccupancy !== undefined ? (
+              <SummaryFact
+                label="Belegung"
+                value={BUILDING_OCCUPANCY_LABELS[formValues.buildingOccupancy]}
+              />
+            ) : null}
+            {formValues.buildingMappingMode !== undefined ? (
+              <SummaryFact
+                label="Mapping"
+                value={BUILDING_MAPPING_LABELS[formValues.buildingMappingMode]}
+              />
+            ) : null}
+            {formValues.buildingCollisionMode !== undefined ? (
+              <SummaryFact
+                label="Kollision"
+                value={
+                  BUILDING_COLLISION_LABELS[
+                    formValues.buildingCollisionMode
+                  ]
+                }
+              />
+            ) : null}
+            {selection.capabilities.modular ? (
+              <SummaryFact
+                label="Modularität"
+                value={
+                  formValues.buildingModular === undefined
+                    ? "Noch nicht ausgewählt"
+                    : formValues.buildingModular
+                      ? "Modular"
+                      : "Einzelbauwerk"
+                }
+              />
+            ) : null}
+            {formValues.buildingLighting !== undefined ? (
+              <SummaryFact
+                label="Gebäudelicht"
+                value={BUILDING_LIGHTING_LABELS[formValues.buildingLighting]}
+              />
+            ) : null}
+            {selection.capabilities.animated ? (
+              <SummaryFact
+                label="Animation"
+                value={buildingAnimationSummary(formValues.animationType)}
               />
             ) : null}
           </>

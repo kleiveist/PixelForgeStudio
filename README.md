@@ -66,6 +66,7 @@ V1 inventarisieren ✓
 → Texture-/Material-Editor mit Kachel- und Oberflächenmodell ✓
 → Nature-/Tree-Editor mit Anatomie-, Bewuchs- und Footprintmodell ✓
 → Static-Object-Editor mit Material-, Interaktions- und Footprintmodell ✓
+→ Building-/Architecture-Editor mit Fassade, Mapping und Lichtmodell ✓
 → weitere spezialisierte Editormodelle
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -133,11 +134,10 @@ die zur Capability passenden Fragen und Editoren.
 
 ## Spezialisierte Editoren
 
-Character-/NPC-, Moving-Object-, Texture-/Material-, Nature-/Tree- und
-Static-Object-Editor
+Character-/NPC-, Moving-Object-, Texture-/Material-, Nature-/Tree-,
+Static-Object- und Building-/Architecture-Editor
 sind als getrennte React-Features umgesetzt. Weitere geplante Features sind:
 
-- Building
 - Tileset
 - Item/Equipment
 - Artwork
@@ -198,14 +198,24 @@ Leuchten, Zerbrechen oder eine individuelle Animation liegen weiterhin im
 getrennten `animated`-Schritt. Kein Static-Object-Untertyp ist `directional`,
 daher erscheint niemals eine 4/8-Richtungsfrage.
 
+Der eigene `buildingDetails`-Schritt erfasst den abgeleiteten Gebäudetyp,
+Nutzung, Bauform, Größe, vollständigen Footprint, Gebäudehöhe, Stockwerke,
+Materialien, Dach, Fassade, Türen, Fenster, Zustand, Belegung, Umgebung,
+Mapping, Kollision, Modularität und lokales Licht. Gebäudetyp, Tilegröße,
+Perspektive, Kameraneigung und Projektion werden read-only aus Untertyp und
+Profilkette gezeigt und nicht in `BuildingAnswers` dupliziert. Modulare
+Optionen erscheinen nur bei Tor, Befestigung und Dungeon-Modul; nur das Tor
+erhält eine getrennte Animation. Kein Gebäude erhält Figurenhöhe oder ein
+4/8-Richtungsset.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 18 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 19 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 19 — Building Editor
+→ Prompt 20 — Tileset Editor
 ```
 
 Danach immer genau:
@@ -228,7 +238,8 @@ einer deklarativen, produktspezifischen Flow-Definition. Sie bietet
 Zod-Validierung, sichtbaren Fortschritt, Dirty-/Autosave-Status, exaktes Resume
 und eine technische Zusammenfassung. Der stabile Einstieg lautet
 `Projekt → Hauptkategorie/Untertyp → Basisprofil → Character-, Moving-Object-,
-Texture- oder Nature-Details, falls relevant → Capability-Schritte`.
+Static-Object-, Texture-, Nature- oder Building-Details, falls relevant
+→ Capability-Schritte`.
 Der Basisprofil-Schritt zeigt wirksame Werte mit Quelle und Sperrstatus,
 normalisiert entsperrte Abweichungen zu minimalen Draft-Overrides und bietet
 bei Locks einen bewussten Wechsel, ein Duplikat oder eine neue Familie an.
@@ -273,6 +284,14 @@ Screenreader-Beschreibungen dupliziert. Ein defensiver Konflikt zwischen
 Untertyp und abgeleitetem Pflanzentyp führt zur fokussierbaren
 Untertyp-Auswahl und kann dort ohne Verlust der übrigen Naturdetails repariert
 werden.
+Building-Antworten nutzen dieselbe wirksame Base→Category→Asset-Auflösung und
+minimale lokale Projektion. Basiswechsel erhalten Architekturwerte,
+Klassifikationswechsel entfernen sie; Explicit Clear löst Elternprovenienz und
+materialisiert die übrigen wirksamen Fach- und Technikwerte relativ zur Base.
+Rohzustand, Autosave und exaktes Resume umfassen alle Building-Felder, während
+Mount und Hydration schreibfrei bleiben. Live-Zusammenfassung und Dashboard
+zeigen kompakte Gebäude-, Footprint-, Material-, Dach-, Fassaden-, Öffnungs-,
+Mapping-, Belegungs- und Lichtfakten ohne Richtungs- oder Figurenmaßstab.
 Prompt-Erzeugung und Output-Flächen folgen erst in ihren späteren Phasen.
 
 ## Legacy-V1 lokal prüfen
@@ -361,6 +380,13 @@ Material-, Zustands-, Interaktions-, Animations- und Schattenwerte.
 jeden statischen Untertyp deterministisch auf seine Objektklasse ab, ohne beim
 Laden fehlende Antwortwerte zu materialisieren.
 
+Der öffentliche Building-Katalog unter `src/domain/buildings/` bündelt
+readonly Gebäude-, Grundriss-, Material-, Dach-, Fassaden-, Öffnungs-,
+Zustands-, Belegungs-, Mapping-, Kollisions-, Licht- und Animationswerte.
+`BUILDING_TYPE_BY_SUBTYPE` und `getDefaultBuildingType()` bilden jeden
+Gebäude-Untertyp deterministisch ab, ohne beim Laden fehlende Antwortwerte zu
+materialisieren.
+
 Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
 Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
 werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
@@ -391,6 +417,12 @@ Zustand, Konstruktion, Inhalt, Schatten und bis zu zwölf Varianten. Vorhandene
 Schema-V2-Felder bleiben ohne eager Defaults lesbar; eine gespeicherte
 Objektklasse muss zum Untertyp passen. Tilegröße, Figurenmaßstab und
 Richtungsdaten bleiben außerhalb der Static-Object-Fachantworten.
+Das strikt additive `BuildingAnswersSchema` ergänzt Gebäudetyp, Bauform, Größe,
+Höhe, Materialien, Dach, Fassade, Türen, Fenster, Belegung, Umgebung, Mapping,
+Kollision, lokales Licht und Toranimation. Vorhandene Schema-V2-Felder bleiben
+ohne eager Defaults lesbar; der Gebäudetyp muss zum Untertyp passen und
+modulare Werte werden capability-gesteuert validiert. Tilegröße, Weltkamera,
+Figurenhöhe und Richtungsdaten bleiben außerhalb der Building-Fachantworten.
 
 Die öffentliche Profilauflösung unter `src/domain/profiles/` führt validierte
 Base-, Kategorie- und Assetprofile zusammen. Sie setzt Locks durch, meldet
@@ -436,6 +468,10 @@ Richtungsfakten werden für Naturassets nie erzeugt.
 Static-Object-Profile zeigen die aufgelöste Objektklasse, Funktion, Form,
 Material, Zustand, Standfläche, Varianten, Interaktion, Schatten und eine
 tatsächlich konfigurierte capability-gültige Animation. Richtungs- oder
+Figurenfakten werden dabei nicht erzeugt.
+Building-Profile zeigen Gebäudetyp, Footprint, Stockwerke und Höhe, Materialien,
+Dach, Fassade, Öffnungen, Zustand, Belegung, Mapping, Kollision, Modularität,
+lokales Licht und eine capability-gültige Toranimation. Richtungs- oder
 Figurenfakten werden dabei nicht erzeugt.
 
 Die Profilbibliothek unter `src/features/profiles/` durchsucht und filtert
@@ -549,6 +585,15 @@ zeigt Objektklasse und zentrale Tilegröße read-only, erfasst ausschließlich
 Static-Object-Fachwerte in React Hook Form und nutzt den gemeinsamen
 Rohzustands-, Autosave- und schreibfreien Resume-Pfad. Animation wird separat
 capability-gesteuert; Richtung bleibt vollständig ausgeschlossen.
+
+Der spezialisierte Building-/Architecture-Editor unter
+`src/features/building-editor/` ist im eigenen `buildingDetails`-Schritt direkt
+nach der Basisprofilwahl eingebunden. `BuildingArchitectureEditor` zeigt
+Gebäudetyp und wirksame Weltgeometrie read-only, erfasst ausschließlich
+Building-Fachwerte in React Hook Form und nutzt den gemeinsamen Rohzustands-,
+Autosave- und schreibfreien Resume-Pfad. Modulare Optionen sind auf passende
+Untertypen begrenzt; Toranimation wird separat capability-gesteuert und
+Richtung vollständig ausgeschlossen.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

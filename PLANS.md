@@ -4,10 +4,36 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** Prompt 18 — Static Object Editor
-- **Nächste Aufgabe:** Prompt 19 — Building Editor
-- **Zuletzt abgeschlossen:** Prompt 17 — Nature/Tree Editor
+- **Aktuelle Aufgabe:** Prompt 19 — Building Editor
+- **Nächste Aufgabe:** Prompt 20 — Tileset Editor
+- **Zuletzt abgeschlossen:** Prompt 18 — Static Object Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 19
+
+1. Eine frameworkfreie Building-Domain mit stabilen Katalogen und einem
+   vollständigen Untertyp→Gebäudetyp-Mapping für Bauform, Größe, Material,
+   Dach, Fassade, Türen, Fenster, Zustand, Belegung, Mapping und Licht anlegen.
+2. Den vorhandenen strikten `BuildingAnswersSchema`-Vertrag additiv erweitern:
+   frühere Schema-V2-Felder bleiben ohne eager Defaults lesbar, Footprint-
+   Achsen bleiben gemeinsam erforderlich und technische Tile-/Kamerawerte
+   werden nicht in Fachantworten dupliziert.
+3. Einen RHF-gesteuerten `BuildingArchitectureEditor` als eigenen
+   `buildingDetails`-Schritt direkt nach der Basisprofilwahl integrieren.
+   Gebäudetyp und wirksame Tilegröße sind read-only; normale Gebäude erhalten
+   niemals Richtungsfelder, eine Toranimation bleibt ein separater
+   `animated`-Capability-Schritt.
+4. Building-Antworten Base→Category→Asset auflösen und nur minimale lokale
+   Abweichungen speichern. Basiswechsel erhalten die Fachwerte,
+   Klassifikationswechsel bereinigen sie und Explicit Clear verhindert das
+   Wiederkehren geerbter Building-Defaults.
+5. Live-Zusammenfassung und Dashboard um kompakte, tatsächlich konfigurierte
+   Gebäude-, Footprint-, Stockwerk-, Material-, Dach-, Fassaden-, Öffnungs-,
+   Mapping-, Belegungs- und Lichtfakten ergänzen.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und
+   RTL-Tests ergänzen. Danach Dokumentation, `npm run verify`,
+   `git diff --check`, Abschlussaudit und den separaten Prompt-19-Commit
+   ausführen; Prompt 20 bleibt unangetastet.
 
 ## Ausführungsplan Prompt 18
 
@@ -884,6 +910,67 @@
 - Gebäudeeditor, Tilesets, Items, Artwork, Prompt Engine, Review und Output
   bleiben späteren, separat zu committenden Phasen vorbehalten.
 
+## Ergebnis Prompt 18
+
+1. Eine öffentliche frameworkfreie Static-Object-Domain definiert stabile
+   Kataloge und das vollständige Untertyp→Objektklassen-Mapping. Das strikte
+   additive Schema hält alte V2-Daten ohne schreibende Defaults lesbar.
+2. `StaticWorldObjectEditor` erfasst im eigenen `staticObjectDetails`-Schritt
+   Funktion, Form, Materialien, Zustand, Interaktion, Footprint, Schatten und
+   Varianten; Objektklasse und zentrale Tilegröße bleiben read-only.
+3. Animation und Richtung bleiben getrennt. Capability-gültige Öffnen-,
+   Leuchten-, Zerbrechen- und benutzerdefinierte Animationen erzeugen kein
+   Richtungsset.
+4. Vererbung, minimale Projektion, Explicit Clear, Basis-/Klassifikationswechsel,
+   Rohsnapshot, Autosave, schreibfreies Resume, Summary und Dashboard umfassen
+   sämtliche Static-Object-Fachwerte.
+
+## Übergabe an Prompt 19
+
+- Ergänze ausschließlich den Building-/Architecture-Editor aus
+  `docs/CODEX-V2-PROMPTS.md`: Nutzung, Footprint und Höhe, Stockwerke,
+  Materialien, Dach, Fassade, Türen, Fenster, Zustand, Belegung,
+  Mapping-Kompatibilität und Licht.
+- Gebäude übernehmen Tilegröße, Perspektive, Kamera und Projektion aus der
+  Base→Category→Asset-Kette. Figurenhöhe und Richtungsset bleiben vollständig
+  ausgeschlossen; eine Toranimation ist eine separate Capability.
+- Führe alle Building-Werte durch striktes additives Schema, minimale
+  Vererbung, Explicit Clear, Basis-/Klassifikationswechsel, Rohsnapshot,
+  Autosave, schreibfreies Resume, kompakte Summary und Dashboard.
+- Tilesets, Items, Artwork, Prompt Engine, Review und Output bleiben späteren,
+  separat zu committenden Phasen vorbehalten.
+
+## Ergebnis Prompt 19
+
+1. Eine öffentliche frameworkfreie Building-Domain definiert readonly
+   Kataloge und ein vollständiges Untertyp→Gebäudetyp-Mapping für Bauform,
+   Größe, Material, Dach, Fassade, Öffnungen, Zustand, Belegung, Mapping,
+   Kollision, Licht und Toranimation.
+2. Das strikt additive `BuildingAnswersSchema` hält frühere V2-Felder ohne
+   eager Defaults lesbar, prüft Typ-/Untertyp-Konsistenz, Wertebereiche und
+   modulare Capability-Grenzen und schließt technische sowie Richtungsfelder
+   aus.
+3. `BuildingArchitectureEditor` erfasst alle Fachwerte im eigenen
+   `buildingDetails`-Schritt. Gebäudetyp, Tilegröße und Weltgeometrie bleiben
+   read-only; modulare Optionen sind untertypabhängig, Toranimation und
+   Richtung bleiben getrennt.
+4. Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit Clear,
+   Basis-/Klassifikationswechsel, transienter Rohzustand, Autosave und
+   schreibfreies Resume umfassen sämtliche Building-Felder.
+5. Live-Zusammenfassung und Dashboard zeigen kompakte tatsächliche Gebäude-,
+   Footprint-, Material-, Dach-, Fassaden-, Öffnungs-, Mapping-, Belegungs-
+   und Lichtfakten ohne Figurenhöhe oder Richtungsset.
+
+## Übergabe an Prompt 20
+
+- Ergänze ausschließlich den Tileset-Editor aus
+  `docs/CODEX-V2-PROMPTS.md`: Tiletyp, Kanten, Innen-/Außenecken, Übergänge,
+  Nachbarschaften, Seam-Regeln, Varianten und Atlaslayout.
+- Nutze die bestehende zentrale Tilegröße und Capability-Auflösung; führe
+  keine Building-Felder oder vorgezogene Prompt-Engine-/Output-Logik fort.
+- Alle neuen Felder müssen wieder durch strikte Schemas, Vererbung,
+  Rohsnapshot, Autosave, schreibfreies Resume, Summary und Dashboard laufen.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -928,8 +1015,8 @@
 | 14 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | abgeschlossen |
 | 15 | Textur-/Materialeditor | Material, Seamless, Oberfläche | abgeschlossen |
 | 16 | Natur-/Baumeditor | Klima, Saison, Krone, Stamm etc. | abgeschlossen |
-| 17 | Statische Objekte | Objektparameter ohne unnötige Bewegung | offen |
-| 18 | Gebäudeeditor | Architektur und Mappingparameter | offen |
+| 17 | Statische Objekte | Objektparameter ohne unnötige Bewegung | abgeschlossen |
+| 18 | Gebäudeeditor | Architektur und Mappingparameter | abgeschlossen |
 | 19 | Tileset-Editor | Tile-/Transition-/Seam-Regeln | offen |
 | 20 | Item-/Ausrüstungseditor | Spielasset-spezifische Darstellung | offen |
 | 21 | Artwork-Editor | freie Komposition ohne erzwungene Tilelogik | offen |

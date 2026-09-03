@@ -1,4 +1,18 @@
 import type { AssetSubtype } from "../../domain/assets";
+import {
+  getDefaultBuildingType,
+  type BuildingCollisionMode,
+  type BuildingCondition,
+  type BuildingFacadeStyle,
+  type BuildingLighting,
+  type BuildingMappingMode,
+  type BuildingMaterial,
+  type BuildingOccupancy,
+  type BuildingRoofMaterial,
+  type BuildingRoofShape,
+  type BuildingSize,
+  type BuildingType
+} from "../../domain/buildings";
 import type {
   MovingObjectAnchorMode,
   MovingObjectClass,
@@ -497,6 +511,120 @@ const staticObjectShadowLabels: Readonly<
   contact: "Kontaktschatten"
 };
 
+const buildingTypeLabels: Readonly<Record<BuildingType, string>> = {
+  residential: "Wohngebäude",
+  commercial: "Geschäftsgebäude",
+  workshop: "Werkstattgebäude",
+  hospitality: "Beherbergung / Gasthaus",
+  tower: "Turmbau",
+  gate: "Torbau",
+  sacred: "Sakralbau",
+  ruin: "Ruinenbau",
+  fortification: "Befestigungsbau",
+  dungeonModule: "Dungeon-Modul"
+};
+
+const buildingSizeLabels: Readonly<Record<BuildingSize, string>> = {
+  compact: "Kompakt",
+  small: "Klein",
+  medium: "Mittel",
+  large: "Groß",
+  monumental: "Monumental"
+};
+
+const buildingMaterialLabels: Readonly<Record<BuildingMaterial, string>> = {
+  wood: "Holz",
+  stone: "Stein",
+  clay: "Lehm",
+  brick: "Ziegel",
+  plaster: "Putz",
+  metal: "Metall",
+  timberFrame: "Fachwerk",
+  mixed: "Mischbau",
+  custom: "Eigenes Material"
+};
+
+const buildingRoofShapeLabels: Readonly<Record<BuildingRoofShape, string>> = {
+  gable: "Satteldach",
+  hipped: "Walmdach",
+  flat: "Flachdach",
+  shed: "Pultdach",
+  conical: "Kegeldach",
+  domed: "Kuppeldach",
+  collapsed: "Eingestürzt",
+  none: "Kein Dach",
+  custom: "Individuell"
+};
+
+const buildingRoofMaterialLabels: Readonly<
+  Record<BuildingRoofMaterial, string>
+> = {
+  thatch: "Reet / Stroh",
+  woodShingle: "Holzschindeln",
+  slate: "Schiefer",
+  tile: "Dachziegel",
+  metal: "Metall",
+  stone: "Stein",
+  earth: "Erde / Grassoden",
+  mixed: "Mischmaterial",
+  none: "Kein Dachmaterial",
+  custom: "Eigenes Material"
+};
+
+const buildingFacadeLabels: Readonly<Record<BuildingFacadeStyle, string>> = {
+  timberFrame: "Fachwerk",
+  plastered: "Verputzt",
+  masonry: "Sichtmauerwerk",
+  brick: "Ziegelfassade",
+  fortified: "Befestigt",
+  carved: "Verziert / gemeißelt",
+  ruined: "Aufgebrochen / ruinös",
+  mixed: "Gemischt",
+  custom: "Individuell"
+};
+
+const buildingConditionLabels: Readonly<Record<BuildingCondition, string>> = {
+  maintained: "Gepflegt",
+  used: "Genutzt",
+  weathered: "Verwittert",
+  damaged: "Beschädigt",
+  abandoned: "Verlassen",
+  overgrown: "Überwuchert"
+};
+
+const buildingOccupancyLabels: Readonly<Record<BuildingOccupancy, string>> = {
+  inhabited: "Bewohnt",
+  active: "Aktiv genutzt",
+  vacant: "Leerstehend",
+  abandoned: "Verlassen"
+};
+
+const buildingMappingLabels: Readonly<Record<BuildingMappingMode, string>> = {
+  freestanding: "Freistehend",
+  mapIntegrated: "In Karte integriert",
+  tileAligned: "Am Tile-Raster ausgerichtet",
+  modularSet: "Modularer Bauteilsatz"
+};
+
+const buildingCollisionLabels: Readonly<
+  Record<BuildingCollisionMode, string>
+> = {
+  fullyBlocking: "Vollständig blockierend",
+  walkableEntrance: "Begehbarer Eingang",
+  walkableInterior: "Begehbarer Innenraum",
+  mixed: "Gemischte Kollisionszonen"
+};
+
+const buildingLightingLabels: Readonly<Record<BuildingLighting, string>> = {
+  worldAligned: "Nur geerbtes Weltlicht",
+  warmInterior: "Warmes Innenlicht",
+  darkInterior: "Dunkler Innenraum",
+  neutralInterior: "Neutrales Innenlicht",
+  visibleSources: "Sichtbare lokale Lichtquellen",
+  emissive: "Kontrolliert emissiv",
+  custom: "Individuell"
+};
+
 const animationLabels = {
   idle: "Idle",
   walk: "Walk",
@@ -825,7 +953,76 @@ function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
           : [textureLightingLabels[lighting]])
       ];
     }
-    case "building":
+    case "building": {
+      const {
+        animationType,
+        buildingType,
+        collisionMode,
+        condition,
+        doorCount,
+        facadeStyle,
+        floors,
+        footprint,
+        heightPixels,
+        lighting,
+        mappingMode,
+        modular,
+        occupancy,
+        primaryMaterial,
+        roofMaterial,
+        roofShape,
+        size,
+        windowCount
+      } = profile.categoryData.answers;
+      const resolvedType =
+        buildingType ?? getDefaultBuildingType(profile.categoryData.subtype);
+      return [
+        `Gebäudetyp: ${buildingTypeLabels[resolvedType]}`,
+        ...(size === undefined ? [] : [`Größe: ${buildingSizeLabels[size]}`]),
+        ...(footprint === undefined
+          ? []
+          : [`Standfläche: ${footprint.widthTiles} × ${footprint.depthTiles} Tiles`]),
+        ...(floors === undefined ? [] : [`Geschosse: ${floors}`]),
+        ...(heightPixels === undefined
+          ? []
+          : [`Gebäudehöhe: ${heightPixels} px`]),
+        ...(primaryMaterial === undefined
+          ? []
+          : [`Hauptmaterial: ${buildingMaterialLabels[primaryMaterial]}`]),
+        ...(roofShape === undefined
+          ? []
+          : [`Dachform: ${buildingRoofShapeLabels[roofShape]}`]),
+        ...(roofMaterial === undefined
+          ? []
+          : [`Dachmaterial: ${buildingRoofMaterialLabels[roofMaterial]}`]),
+        ...(facadeStyle === undefined
+          ? []
+          : [`Fassade: ${buildingFacadeLabels[facadeStyle]}`]),
+        ...(doorCount === undefined ? [] : [`Türen: ${doorCount}`]),
+        ...(windowCount === undefined ? [] : [`Fenster: ${windowCount}`]),
+        ...(condition === undefined
+          ? []
+          : [`Zustand: ${buildingConditionLabels[condition]}`]),
+        ...(occupancy === undefined
+          ? []
+          : [`Belegung: ${buildingOccupancyLabels[occupancy]}`]),
+        ...(mappingMode === undefined
+          ? []
+          : [`Mapping: ${buildingMappingLabels[mappingMode]}`]),
+        ...(collisionMode === undefined
+          ? []
+          : [`Kollision: ${buildingCollisionLabels[collisionMode]}`]),
+        ...(!profile.capabilities.modular || modular === undefined
+          ? []
+          : [modular ? "Modular" : "Einzelbauwerk"]),
+        ...(lighting === undefined
+          ? []
+          : [`Gebäudelicht: ${buildingLightingLabels[lighting]}`]),
+        ...(!profile.capabilities.animated || animationType === undefined
+          ? []
+          : [animationFact(animationType)])
+      ];
+    }
     case "item":
     case "artwork":
       return [];

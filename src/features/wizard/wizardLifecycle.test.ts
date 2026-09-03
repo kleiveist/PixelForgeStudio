@@ -748,6 +748,65 @@ describe("wizard draft lifecycle", () => {
     });
   });
 
+  it("resumes Building details while keeping gate animation separate and directionless", () => {
+    const library = createProfileLibraryFixture();
+    const base = library.baseProfiles[0];
+    if (!base) throw new Error("Expected a Base-profile fixture.");
+    const buildingDraft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_building_details",
+      projectName: "Nordtor",
+      route: "wizard/editor",
+      currentStep: "buildingDetails",
+      baseProfileId: base.id,
+      category: "building",
+      subtype: "gate",
+      answers: {
+        buildingType: "gate",
+        purpose: "Bewachter Eingang",
+        footprint: { widthTiles: 4, depthTiles: 2 },
+        mappingMode: "modularSet",
+        modular: true,
+        animationType: "openClose"
+      },
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+
+    expect(resolveWizardCoreStep(buildingDraft)).toEqual({
+      stepId: "buildingDetails",
+      usedFallback: false
+    });
+    expect(
+      validateWizardResume({
+        requestedDraftId: buildingDraft.draftId,
+        draft: buildingDraft,
+        profileLibrary: library
+      })
+    ).toEqual({ status: "ready", draft: buildingDraft, notices: [] });
+
+    const wrongCategory = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_texture_building_step",
+      projectName: "Stein",
+      route: "wizard/editor",
+      currentStep: "buildingDetails",
+      baseProfileId: base.id,
+      category: "texture",
+      subtype: "stone",
+      answers: {},
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+    expect(resolveWizardCoreStep(wrongCategory)).toEqual({
+      stepId: "baseProfile",
+      usedFallback: true,
+      unknownStep: "buildingDetails"
+    });
+  });
+
   it("rejects malformed resume payloads before lifecycle handling", () => {
     const result = validateWizardResume({
       requestedDraftId: draftId,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   WIZARD_CORE_STEPS,
+  WIZARD_BUILDING_DETAIL_FIELD_PATHS,
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_NATURE_DETAIL_FIELD_PATHS,
@@ -8,6 +9,7 @@ import {
   WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   WizardAnimationStepSchema,
   WizardBaseProfileStepSchema,
+  WizardBuildingDetailsStepSchema,
   WizardCategoryStepSchema,
   WizardCharacterDetailsStepSchema,
   WizardDirectionStepSchema,
@@ -52,6 +54,7 @@ describe("wizard core steps", () => {
       "textureDetails",
       "natureDetails",
       "staticObjectDetails",
+      "buildingDetails",
       "directions",
       "animation",
       "tileability"
@@ -96,6 +99,13 @@ describe("wizard core steps", () => {
       route: "wizard/editor",
       title: "Statisches Weltobjekt"
     });
+    expect(getWizardCoreStep("buildingDetails").fieldPaths).toBe(
+      WIZARD_BUILDING_DETAIL_FIELD_PATHS
+    );
+    expect(getWizardCoreStep("buildingDetails")).toMatchObject({
+      route: "wizard/editor",
+      title: "Gebäude und Architektur"
+    });
     expect(getWizardCoreStep("directions").fieldPaths).toEqual(["directionCount"]);
     expect(getWizardCoreStep("animation").fieldPaths).toEqual([
       "animationAction",
@@ -112,7 +122,53 @@ describe("wizard core steps", () => {
     expect(getWizardCoreStepIndex("textureDetails")).toBe(5);
     expect(getWizardCoreStepIndex("natureDetails")).toBe(6);
     expect(getWizardCoreStepIndex("staticObjectDetails")).toBe(7);
-    expect(getWizardCoreStepIndex("directions")).toBe(8);
+    expect(getWizardCoreStepIndex("buildingDetails")).toBe(8);
+    expect(getWizardCoreStepIndex("directions")).toBe(9);
+  });
+
+  it("owns the complete Building boundary without technical scale or directions", () => {
+    expect(WIZARD_BUILDING_DETAIL_FIELD_PATHS).toEqual([
+      "buildingType",
+      "buildingPurpose",
+      "buildingDescription",
+      "buildingPlanShape",
+      "buildingSize",
+      "buildingFootprintWidthTiles",
+      "buildingFootprintDepthTiles",
+      "buildingHeightPixels",
+      "buildingFloors",
+      "buildingPrimaryMaterial",
+      "buildingSecondaryMaterial",
+      "buildingMaterialDetails",
+      "buildingRoofShape",
+      "buildingRoofPitch",
+      "buildingRoofMaterial",
+      "buildingRoofCondition",
+      "buildingRoofDetails",
+      "buildingFacadeStyle",
+      "buildingFacadeDetails",
+      "buildingDoorCount",
+      "buildingDoorType",
+      "buildingDoorPosition",
+      "buildingDoorState",
+      "buildingWindowCount",
+      "buildingWindowShape",
+      "buildingWindowLighting",
+      "buildingWindowDetails",
+      "buildingCondition",
+      "buildingOccupancy",
+      "buildingEnvironment",
+      "buildingMappingMode",
+      "buildingCollisionMode",
+      "buildingModular",
+      "buildingLighting",
+      "buildingLightSourceDetails",
+      "buildingExtraDetails"
+    ]);
+    expect(WIZARD_BUILDING_DETAIL_FIELD_PATHS).not.toContain("characterHeight");
+    expect(WIZARD_BUILDING_DETAIL_FIELD_PATHS).not.toContain("directionCount");
+    expect(WIZARD_BUILDING_DETAIL_FIELD_PATHS).not.toContain("tileSize");
+    expect(WIZARD_BUILDING_DETAIL_FIELD_PATHS).not.toContain("animationType");
   });
 
   it("owns the complete static-object boundary without animation or directions", () => {
@@ -471,6 +527,63 @@ describe("wizard core steps", () => {
     expect(
       WizardAnimationStepSchema.safeParse({
         ...chest,
+        animationType: "openClose"
+      }).success
+    ).toBe(true);
+  });
+
+  it("validates Building type, footprint, modularity, and independent gate animation", () => {
+    const gate = {
+      projectName: "Nordtor",
+      category: "building" as const,
+      subtype: "gate" as const,
+      ...technicalValues,
+      buildingType: "gate" as const,
+      buildingPurpose: "Bewachter Stadteingang",
+      buildingFootprintWidthTiles: 4,
+      buildingFootprintDepthTiles: 2,
+      buildingFloors: 2,
+      buildingMappingMode: "modularSet" as const,
+      buildingModular: true,
+      buildingLighting: "worldAligned" as const
+    };
+
+    expect(WizardBuildingDetailsStepSchema.safeParse(gate).success).toBe(true);
+    const mismatchedType = WizardBuildingDetailsStepSchema.safeParse({
+      ...gate,
+      buildingType: "residential"
+    });
+    expect(mismatchedType.success).toBe(false);
+    if (mismatchedType.success) {
+      throw new Error("A mismatched derived Building type must not parse.");
+    }
+    expect(mismatchedType.error.issues).toContainEqual(
+      expect.objectContaining({ path: ["subtype"] })
+    );
+    expect(
+      WizardBuildingDetailsStepSchema.safeParse({
+        ...gate,
+        buildingFootprintDepthTiles: undefined
+      }).success
+    ).toBe(false);
+    expect(
+      WizardBuildingDetailsStepSchema.safeParse({
+        ...gate,
+        subtype: "house",
+        buildingType: "residential",
+        buildingMappingMode: "modularSet",
+        buildingModular: true
+      }).success
+    ).toBe(false);
+    expect(
+      WizardDirectionStepSchema.safeParse({
+        ...gate,
+        directionCount: 8
+      }).success
+    ).toBe(false);
+    expect(
+      WizardAnimationStepSchema.safeParse({
+        ...gate,
         animationType: "openClose"
       }).success
     ).toBe(true);

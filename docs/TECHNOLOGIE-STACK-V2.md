@@ -321,9 +321,39 @@ Dashboard zeigen nur kompakte, tatsächlich konfigurierte Objektfakten.
 
 Öffnen, Leuchten, Zerbrechen und benutzerdefinierte Animation bleiben ein
 eigener `animated`-Capability-Schritt. Static-Object-Untertypen sind nicht
-`directional` und erhalten keine 4/8-Richtungsfrage. Prompts 00 bis 18 sind
-abgeschlossen; Prompt 19 ergänzt als nächste Phase den Building-Editor.
-Prompt 18 nimmt weder Prompt Engine noch Review-/Output-Erzeugung oder weitere
+`directional` und erhalten keine 4/8-Richtungsfrage.
+
+Seit Prompt 19 folgt für `building` direkt nach dem Basisprofil der eigene
+Schritt `buildingDetails`. `BuildingArchitectureEditor` erfasst Nutzung,
+Bauform, Größe, vollständigen Tile-Footprint, Gebäudehöhe, Stockwerke,
+Materialien, Dach, Fassade, Türen, Fenster, Zustand, Belegung,
+Umgebungskontext, Mapping, Kollision, Modularität und lokales Licht in React
+Hook Form. Gebäudetyp sowie wirksame Tilegröße, Perspektive, Kameraneigung und
+Projektion werden read-only aus Untertyp und technischer
+Base→Category→Asset-Vererbung gezeigt; diese Technikwerte werden nicht in
+`BuildingAnswers` dupliziert.
+
+Der öffentliche Katalog unter `src/domain/buildings/` stellt readonly IDs, das
+vollständige `BUILDING_TYPE_BY_SUBTYPE`-Mapping und
+`getDefaultBuildingType()` bereit. `BuildingAnswersSchema` erweitert den
+Schema-V2-Vertrag strikt und additiv; vorhandene Building-Werte bleiben ohne
+eager Defaults lesbar. Ein gespeicherter Gebäudetyp muss zum Untertyp passen;
+modulare Ausgabe und `modularSet`-Mapping sind nur für modular fähige
+Untertypen gültig.
+
+Building-Werte werden Base→Category→Asset aufgelöst und minimal lokal
+gespeichert. Explicit Clear löst Elternprovenienz und materialisiert die
+übrigen wirksamen Fach- und Technikwerte relativ zur Base. Basiswechsel
+erhalten die Fachwerte, Klassifikationswechsel bereinigen sie. Rohzustand,
+Dirty State, 300-ms-Autosave und exaktes Resume gelten unverändert; Mount,
+Profil-Hydration und Resume schreiben nicht. Zusammenfassung und Dashboard
+zeigen kompakte tatsächliche Architekturfakten.
+
+Nur ein Tor erhält den separaten `animated`-Capability-Schritt. Kein
+Building-Untertyp ist `directional`, daher erscheinen weder 4/8 Richtungen
+noch Figurenhöhe. Prompts 00 bis 19 sind abgeschlossen; Prompt 20 ergänzt als
+nächste Phase den Tileset-Editor.
+Prompt 19 nimmt weder Prompt Engine noch Review-/Output-Erzeugung oder weitere
 Spezialeditoren vorweg.
 
 ## Speicherung
@@ -417,6 +447,15 @@ Pflichtbereiche:
 - schreibfreie Static-Object-Hydration/Resume, Autosave und
   Summary-/Dashboard-Projektion
 - animierte Truhe oder Tür ohne Richtungsset
+- Building-Kataloge, vollständiges Untertyp-/Gebäudetyp-Mapping und additive
+  Schema-V2-Lesbarkeit ohne Defaults
+- vollständige Building-Footprints von 1–64 Tiles, Höhe, Stockwerke,
+  Materialien, Dach, Fassade, Türen, Fenster, Mapping, Kollision und Licht
+- Base→Category→Asset-Vererbung, minimale Building-Projektion und
+  Explicit-Clear-Detach
+- schreibfreie Building-Hydration/Resume, Autosave und
+  Summary-/Dashboard-Projektion
+- modularer animierter Torbau ohne Richtungsset oder Figurenhöhe
 - 8 Richtungen nur bei richtungsabhängig beweglichen Assets
 - Speichern / Laden / Import / Export
 - Theme-Umschaltung

@@ -7,6 +7,10 @@ import {
 } from "../../domain/assets";
 import type { CharacterSubtype } from "../../domain/characters";
 import {
+  getDefaultBuildingType,
+  type BuildingSubtype
+} from "../../domain/buildings";
+import {
   getDefaultMovingObjectClass,
   type MovingObjectSubtype
 } from "../../domain/moving-objects";
@@ -35,6 +39,7 @@ import {
 import { TextureMaterialEditor } from "../texture-editor";
 import { NatureTreeEditor } from "../nature-editor";
 import { StaticWorldObjectEditor } from "../static-object-editor";
+import { BuildingArchitectureEditor } from "../building-editor";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import {
   DASHBOARD_CATEGORIES,
@@ -55,6 +60,7 @@ import {
 } from "./wizardCategoryRouting";
 import {
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+  WIZARD_BUILDING_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_NATURE_DETAIL_FIELD_PATHS,
   WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
@@ -103,6 +109,10 @@ const ANIMATION_TYPE_OPTIONS = {
     ["magic", "Magischer Loop"],
     ["custom", "Individuell"]
   ],
+  building: [
+    ["openClose", "Öffnen / Schließen"],
+    ["custom", "Individuell"]
+  ],
   tileset: [
     ["water", "Wasser"],
     ["lava", "Lava"],
@@ -118,6 +128,7 @@ const CLASSIFICATION_FIELDS = [
   ...WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   ...WIZARD_NATURE_DETAIL_FIELD_PATHS,
   ...WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
+  ...WIZARD_BUILDING_DETAIL_FIELD_PATHS,
   "characterAnimationFrames",
   "movingObjectAnimationFrames",
   "directionCount",
@@ -209,6 +220,10 @@ function CategoryStep({
     control: form.control,
     name: "staticObjectClass"
   });
+  const buildingType = useWatch({
+    control: form.control,
+    name: "buildingType"
+  });
   const [pendingCategory, setPendingCategory] = useState<AssetCategory | null>(
     null
   );
@@ -241,6 +256,17 @@ function CategoryStep({
     expectedStaticObjectClass !== null &&
     staticObjectClass !== undefined &&
     staticObjectClass !== expectedStaticObjectClass;
+  const knownBuildingSubtypes: readonly string[] = ASSET_SUBTYPES.building;
+  const expectedBuildingType =
+    category === "building" &&
+    subtype !== undefined &&
+    knownBuildingSubtypes.includes(subtype)
+      ? getDefaultBuildingType(subtype as BuildingSubtype)
+      : null;
+  const buildingTypeMismatch =
+    expectedBuildingType !== null &&
+    buildingType !== undefined &&
+    buildingType !== expectedBuildingType;
 
   useEffect(() => {
     if (categoryError) {
@@ -310,6 +336,14 @@ function CategoryStep({
         form.setValue(
           "staticObjectClass",
           getDefaultStaticObjectClass(nextSubtype as StaticObjectSubtype),
+          { shouldDirty: true, shouldTouch: true, shouldValidate: true }
+        );
+      }
+      const buildingSubtypes: readonly string[] = ASSET_SUBTYPES.building;
+      if (category === "building" && buildingSubtypes.includes(nextSubtype)) {
+        form.setValue(
+          "buildingType",
+          getDefaultBuildingType(nextSubtype as BuildingSubtype),
           { shouldDirty: true, shouldTouch: true, shouldValidate: true }
         );
       }
@@ -486,6 +520,25 @@ function CategoryStep({
                 }}
               >
                 Objektklasse aus Untertyp wiederherstellen
+              </button>
+            </div>
+          ) : null}
+          {buildingTypeMismatch ? (
+            <div className={styles.inlineActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  form.setValue("buildingType", expectedBuildingType, {
+                    shouldDirty: true,
+                    shouldTouch: true
+                  });
+                  void form.trigger("subtype");
+                  notifyProgrammaticChange();
+                  subtypeRef.current?.focus();
+                }}
+              >
+                Gebäudetyp aus Untertyp wiederherstellen
               </button>
             </div>
           ) : null}
@@ -796,6 +849,35 @@ function StaticObjectDetailsStep({ form }: CoreStepProps) {
   );
 }
 
+function BuildingDetailsStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
+  const knownBuildingSubtypes: readonly string[] = ASSET_SUBTYPES.building;
+
+  if (
+    category !== "building" ||
+    subtype === undefined ||
+    !knownBuildingSubtypes.includes(subtype)
+  ) {
+    return (
+      <section className={styles.changeWarning} role="alert">
+        <strong>Gebäudeprofil nicht verfügbar</strong>
+        <p>
+          Kehre zur Bildart zurück und wähle einen gültigen Gebäude- oder
+          Architektur-Untertyp.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <BuildingArchitectureEditor
+      form={form}
+      subtype={subtype as BuildingSubtype}
+    />
+  );
+}
+
 function AnimationSelect({
   form,
   options
@@ -871,10 +953,7 @@ function AnimationStep({ form, notifyProgrammaticChange }: CoreStepProps) {
         <AnimationSelect form={form} options={ANIMATION_TYPE_OPTIONS.tileset} />
       ) : null}
       {category === "building" ? (
-        <p className={styles.logicNote}>
-          Dieser Untertyp unterstützt eine Animation. Die konkreten Tor- und
-          Architekturphasen werden im Gebäudeeditor festgelegt.
-        </p>
+        <AnimationSelect form={form} options={ANIMATION_TYPE_OPTIONS.building} />
       ) : null}
     </div>
   );
@@ -951,6 +1030,7 @@ const STEP_COMPONENTS = {
   textureDetails: TextureDetailsStep,
   natureDetails: NatureDetailsStep,
   staticObjectDetails: StaticObjectDetailsStep,
+  buildingDetails: BuildingDetailsStep,
   directions: DirectionsStep,
   animation: AnimationStep,
   tileability: TileabilityStep
@@ -1014,6 +1094,14 @@ export const WIZARD_CORE_FLOW = Object.freeze({
         context: WizardCoreFlowContext
       ) =>
         wizardStepIsApplicable("staticObjectDetails", values, context.library)
+    }),
+    Object.freeze({
+      ...getWizardCoreStep("buildingDetails"),
+      Component: STEP_COMPONENTS.buildingDetails,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("buildingDetails", values, context.library)
     }),
     Object.freeze({
       ...getWizardCoreStep("directions"),

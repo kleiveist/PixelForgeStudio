@@ -242,6 +242,8 @@ export function resolveWizardCoreStep(draft: WizardDraft): ResolvedWizardCoreSte
         return draft.category === "nature";
       case "staticObjectDetails":
         return draft.category === "staticObject";
+      case "buildingDetails":
+        return draft.category === "building";
       case "directions":
         return capabilities.directional;
       case "animation":

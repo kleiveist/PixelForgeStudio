@@ -1417,6 +1417,155 @@ describe("guided Wizard integration", () => {
     expect(screen.queryByText("Richtungen")).not.toBeInTheDocument();
   });
 
+  it("autosaves and resumes a modular animated gate without directions or character scale", async () => {
+    const user = userEvent.setup();
+    const rendered = renderStudio();
+    const { adapter, storage } = rendered;
+
+    await user.type(projectNameInput(), "Nordtor");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Gebäude \/ Architektur/, "gate");
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+
+    const progress = screen.getByRole("navigation", {
+      name: "Wizard-Fortschritt"
+    });
+    expect(within(progress).getByText("Gebäude und Architektur")).toBeVisible();
+    expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
+    expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Gebäude und Architektur" })
+    ).toBeVisible();
+    expect(screen.getByText("Torbau", { selector: "output" })).toBeVisible();
+    expect(screen.getByText("32 × 32 px", { selector: "output" })).toBeVisible();
+    expect(screen.queryByLabelText(/Figurenhöhe/i)).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Nutzung und Bewohnerrolle" }),
+      "Bewachter Stadteingang"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Größenklasse" }),
+      "large"
+    );
+    await user.clear(
+      screen.getByRole("spinbutton", { name: "Footprint · Breite in Tiles" })
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Footprint · Breite in Tiles" }),
+      "4"
+    );
+    await user.clear(
+      screen.getByRole("spinbutton", { name: "Footprint · Tiefe in Tiles" })
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Footprint · Tiefe in Tiles" }),
+      "2"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Hauptmaterial" }),
+      "stone"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Dachform" }),
+      "gable"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Fassadenaufbau" }),
+      "fortified"
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Anzahl Türen / Tore" }),
+      "1"
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Anzahl Fenster" }),
+      "4"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Mapping-Modus" }),
+      "modularSet"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Modularer Ausgabesatz" }),
+      "true"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Lokale Gebäudebeleuchtung" }),
+      "visibleSources"
+    );
+
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        category: "building",
+        subtype: "gate",
+        currentStep: "buildingDetails",
+        answers: {
+          buildingType: "gate",
+          purpose: "Bewachter Stadteingang",
+          size: "large",
+          footprint: { widthTiles: 4, depthTiles: 2 },
+          primaryMaterial: "stone",
+          roofShape: "gable",
+          facadeStyle: "fortified",
+          doorCount: 1,
+          windowCount: 4,
+          mappingMode: "modularSet",
+          modular: true,
+          lighting: "visibleSources"
+        }
+      })
+    );
+    expect(readValidDraft(adapter)).not.toHaveProperty("answers.directionCount");
+    expect(readValidDraft(adapter)).not.toHaveProperty("answers.characterHeight");
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByText("Dieses Asset bleibt am Ort und kann trotzdem animiert sein.")
+    ).toBeVisible();
+    expect(screen.queryByRole("radio", { name: /8 Richtungen/ })).not.toBeInTheDocument();
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Animationsart" }),
+      "openClose"
+    );
+
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        category: "building",
+        subtype: "gate",
+        currentStep: "animation",
+        answers: { animationType: "openClose" }
+      })
+    );
+
+    rendered.unmount();
+    storage.mutations.splice(0);
+    renderStudio({ storage });
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Bewegung und Animation" })
+    ).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Animationsart" })).toHaveValue(
+      "openClose"
+    );
+    expect(screen.queryByText("Richtungen")).not.toBeInTheDocument();
+    expect(storage.mutations).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: /Zurück/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Gebäude und Architektur" })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("textbox", { name: "Nutzung und Bewohnerrolle" })
+    ).toHaveValue("Bewachter Stadteingang");
+    expect(
+      screen.getByRole("spinbutton", { name: "Footprint · Breite in Tiles" })
+    ).toHaveValue(4);
+  });
+
   it("goes back without a validation barrier and restores resumed form values", async () => {
     const draft = categoryDraft();
     const storage = new MemoryStorage();

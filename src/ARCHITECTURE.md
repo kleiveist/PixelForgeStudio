@@ -21,6 +21,8 @@
     and pure trunk, crown, and root relevance guards
   - `static-objects/`: Static Object production catalogs and exhaustive pure
     subtype-to-object-class mapping
+  - `buildings/`: Building/Architecture production catalogs and exhaustive
+    pure subtype-to-building-type mapping
   - `profiles/`: validated profile-chain resolution, base-lock enforcement,
     structured diagnostics, normalized overrides, compatibility keys,
     canonical BaseProfile defaults, immutable BaseProfile creation/duplication,
@@ -39,16 +41,16 @@
   Kategorie-Dashboard, `profiles/` die kategorisierte Assetprofilbibliothek
   und `wizard/` die deklarative RHF-/Zod-Wizard-Grundlage;
   `character-editor/`, `moving-object-editor/`, `static-object-editor/`,
-  `texture-editor/` und `nature-editor/` enthalten die ersten spezialisierten
-  Asset-Editoren;
+  `texture-editor/`, `nature-editor/` und `building-editor/` enthalten die
+  ersten spezialisierten Asset-Editoren;
   Review-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
   - `categoryData.schema.ts`: strict category-specific answer contracts,
     including additive Character/NPC, Moving Object, Static Object,
-    Texture/Material, and Nature/Tree catalogs with strict category-specific
-    values
+    Texture/Material, Nature/Tree, and Building/Architecture catalogs with
+    strict category-specific values
   - `profiles.schema.ts`: base, category, and asset profile contracts
   - `appSettings.schema.ts`, `wizardDraft.schema.ts`,
     `exportBundle.schema.ts`: remaining persisted/imported V2 contracts
@@ -127,6 +129,14 @@ material, condition, interaction, animation, and shadow IDs plus the exhaustive
 `getDefaultStaticObjectClass()`. Schema and React consume the same contract;
 reading an older profile never materializes its derived class.
 
+`domain/buildings/index.ts` is the public, framework-free Building and
+Architecture catalog API. It owns stable IDs for building type, size, plan,
+material, roof, facade, doors, windows, condition, occupancy, environment,
+mapping, collision, lighting, and gate animation. The exhaustive
+`BUILDING_TYPE_BY_SUBTYPE` mapping and `getDefaultBuildingType()` are shared by
+schema and React. Reading an older schema-version-2 profile never materializes
+the derived building type.
+
 `schemas/index.ts` is the public validation boundary. Persisted and imported
 values enter its parse functions as `unknown`; exported TypeScript types are
 inferred from the corresponding Zod schemas rather than maintained separately.
@@ -162,6 +172,15 @@ Optional class, form, proportion, symmetry, material, condition, construction,
 contents, shadow, and 1-to-12 variant fields extend the contract. A present
 class must match the selected subtype. Technical `tileSize`, Character scale,
 and direction data are not Static Object answers.
+`BuildingAnswersSchema` remains strict and additive as well. Existing
+`subjectDescription`, `extraDetails`, `purpose`, `floors`, `condition`,
+`modular`, and `footprint` values stay readable without defaults. Optional
+building type, plan, size, height, materials, roof, facade, door, window,
+occupancy, environment, mapping, collision, local-light, and gate-animation
+fields extend the contract. A present building type must match the subtype,
+and modular output or mapping is accepted only for a modular-capable subtype.
+Technical tile and world-camera geometry, Character scale, and directions are
+not Building answers.
 
 `domain/profiles/index.ts` is the public framework-free profile API.
 `resolveProfile()` accepts already validated profile objects and returns a
@@ -192,6 +211,12 @@ projection. Clearing an inherited optional Static Object value detaches
 Category/Asset provenance and materializes the remaining effective answers and
 technical values relative to the Base, so the cleared parent value cannot
 reappear on Resume.
+
+Building answers follow the same deterministic merge and minimal local
+projection. Clearing an inherited optional Building value detaches
+Category/Asset provenance and materializes the remaining effective answers and
+technical values relative to the Base. Changing the Base keeps architecture
+answers, while changing category or subtype removes them.
 
 The same public profile API exposes immutable BaseProfile and AssetProfile
 operations. A Base family can be created from the canonical defaults or copied
@@ -312,6 +337,10 @@ profile.
 Static Object facts expose the resolved object class, purpose, form, materials,
 condition, footprint, variants, interaction, shadow, and configured
 capability-valid animation. They never emit Character-scale or direction facts.
+Building facts expose the resolved building type, footprint, floors and height,
+materials, roof, facade, openings, condition, occupancy, mapping, collision,
+modularity, local lighting, and configured capability-valid gate animation.
+They inherit world-grid facts but never emit Character-scale or direction facts.
 Unknown badge IDs are ignored safely. The React view
 reads this model through the narrow `DashboardStorage` port
 (`readProfileLibrary` + `readDraft`) and never accesses `localStorage`.
@@ -361,15 +390,15 @@ several RHF values programmatically calls it once to enter the same projection,
 Dirty-state and autosave path as a native control change. Product routing and
 Base-profile semantics remain outside the generic engine.
 
-`features/wizard/wizardCategoryRouting.ts` is the Prompt-18 boundary between
+`features/wizard/wizardCategoryRouting.ts` is the Prompt-19 boundary between
 core form values and the strict Draft union. It validates category/subtype
 pairs against the canonical taxonomy, resolves visibility only through
 `resolveCapabilities()`, preserves hidden answers for an unchanged selection,
 and creates clean answers when classification changes. The stable core flow is
 `project → category/subtype → baseProfile → characterDetails,
-movingObjectDetails, staticObjectDetails, textureDetails, or natureDetails when
-applicable → directions | animation | tileability`, with specialist and
-capability steps conditionally present.
+movingObjectDetails, staticObjectDetails, textureDetails, natureDetails, or
+buildingDetails when applicable → directions | animation | tileability`, with
+specialist and capability steps conditionally present.
 A category-only choice remains a raw
 session value until a matching subtype makes it persistable; a classified
 pre-Base Draft remains on `wizard/profile`. The Draft mapper returns `null` for
@@ -383,7 +412,7 @@ hydrate without an eager write. A confirmed Base switch removes prior
 technical overrides and stale Category/Asset provenance while retaining the
 current category answers; a category or subtype switch purges them. Explicitly
 clearing an inherited optional Character, Moving Object, Static Object,
-Texture, or Nature
+Texture, Nature, or Building
 default detaches Category/Asset provenance and materializes every other
 effective answer and technical override against the Base, so the parent value
 cannot reappear on Resume. Texture `false` for `seamless` remains a deliberate value,
@@ -393,7 +422,8 @@ capability values, including partial Moving Object footprints, invalid
 subtype/object-class combinations, mismatched Texture material types,
 incomplete Nature footprints, mismatched Nature plant types, irrelevant Nature
 anatomy, incomplete Static Object footprints, and mismatched Static Object
-classes.
+classes, plus incomplete Building footprints, mismatched Building types, and
+modular mapping on non-modular building subtypes.
 The Wizard reports a derived Nature plant-type mismatch on the editable
 subtype control and offers an explicit repair that re-enters the normal
 validation and autosave path without discarding the remaining Nature details.
@@ -436,6 +466,11 @@ Static Object summaries add the derived class, purpose, form, materials,
 condition, complete footprint, variants, interaction, shadow, and separate
 capability-valid animation state. Long free-form object descriptions stay in
 the Draft for later Review/Output and are not duplicated into compact cards.
+Building summaries add the derived type, use, footprint, floors and height,
+materials, roof, facade, doors, windows, condition, occupancy, mapping,
+collision, modularity, local light, and separate capability-valid gate
+animation. Long free-form architecture descriptions remain in the Draft for
+later Review/Output and are not duplicated into compact cards.
 World-grid geometry remains omitted for resolved free-composition artwork.
 
 `features/wizard/BaseProfileStep.tsx` is the Prompt-13 UI boundary. It presents
@@ -518,7 +553,21 @@ changes preserve Static Object answers, classification changes purge them,
 and deliberate edits use the shared autosave path while mount, hydration, and
 Resume remain write-free.
 
-Prompts 00 through 18 are complete. Prompt 19, the Building editor, is the
-next phase. Prompt 18 does not implement Prompt Engine modules,
+`features/building-editor/index.ts` is the public React boundary for Prompt 19.
+`BuildingArchitectureEditor` is mounted only as the dedicated
+`buildingDetails` step after Base selection. It renders the subtype-derived
+building type plus effective inherited tile size, perspective, camera angle,
+and projection read-only. RHF owns use, plan, size, complete 1-to-64-tile
+footprint, 16-to-8192-pixel building height, 1-to-20 floors, materials, roof,
+facade, doors, windows, condition, occupancy, environment, mapping, collision,
+modularity, and local-light fields. Modular controls are shown only for gate,
+fortification, and dungeon-module subtypes. A gate may receive an independent
+open/close or custom animation step, but no Building subtype is directional.
+Base changes preserve Building answers, classification changes purge them,
+and deliberate edits use the shared autosave path while mount, hydration, and
+Resume remain write-free.
+
+Prompts 00 through 19 are complete. Prompt 20, the Tileset editor, is the next
+phase. Prompt 19 does not implement Prompt Engine modules,
 review/output generation, or any remaining specialist editor. It also does
 not add in-place Base-family mutation or descendant reparenting.

@@ -89,6 +89,11 @@
 - eigenen `staticObjectDetails`-Schritt mit `StaticWorldObjectEditor` direkt nach der Basisprofilwahl integriert; Objektklasse und zentrale Tilegröße werden read-only abgeleitet, ohne technische Werte in Fachantworten zu duplizieren
 - Static-Object-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte Fakten in Live-Zusammenfassung und Dashboard ergänzt
 - Öffnen, Leuchten, Zerbrechen und individuelle Animation getrennt über `animated` modelliert und alle statischen Weltobjekte konsequent ohne 4/8-Richtungsfrage gehalten
+- frameworkfreien Building-/Architecture-Katalog mit vollständigem Untertyp-/Gebäudetyp-Mapping sowie typisierten Grundriss-, Material-, Dach-, Fassaden-, Öffnungs-, Mapping-, Kollisions-, Licht- und Animationswerten ergänzt
+- strikt additives `BuildingAnswersSchema` um vollständige 1–64-Tile-Footprints, Gebäudehöhe, Stockwerke, Materialien, Dach, Fassade, Türen, Fenster, Belegung, Mapping und Licht erweitert; bestehende Schema-V2-Daten bleiben ohne eager Defaults lesbar
+- eigenen `buildingDetails`-Schritt mit `BuildingArchitectureEditor` direkt nach der Basisprofilwahl integriert; Gebäudetyp und technische Weltgeometrie werden read-only abgeleitet, ohne Tile-, Kamera-, Figuren- oder Richtungswerte in Fachantworten zu duplizieren
+- Building-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte Architekturfakten in Live-Zusammenfassung und Dashboard ergänzt
+- modulare Ausgabe auf Tor, Befestigung und Dungeon-Modul begrenzt, Toranimation getrennt über `animated` modelliert und alle Gebäude konsequent ohne 4/8-Richtungs- oder Figurenhöhenfrage gehalten
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

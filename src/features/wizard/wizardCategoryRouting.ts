@@ -26,6 +26,7 @@ import {
   type BaseProfile,
   type BaseProfileOverrides,
   type BaseProfileValues,
+  type BuildingAnswers,
   type CharacterAnimationActionConfig,
   type CharacterAnswers,
   type MovingObjectAnimationSequenceConfig,
@@ -183,6 +184,45 @@ const STATIC_OBJECT_CONTROLLED_ANSWER_KEYS = new Set<string>([
   "extraDetails"
 ]);
 
+const BUILDING_CONTROLLED_ANSWER_KEYS = new Set<string>([
+  "buildingType",
+  "purpose",
+  "subjectDescription",
+  "planShape",
+  "size",
+  "footprint",
+  "heightPixels",
+  "floors",
+  "primaryMaterial",
+  "secondaryMaterial",
+  "materialDetails",
+  "roofShape",
+  "roofPitch",
+  "roofMaterial",
+  "roofCondition",
+  "roofDetails",
+  "facadeStyle",
+  "facadeDetails",
+  "doorCount",
+  "doorType",
+  "doorPosition",
+  "doorState",
+  "windowCount",
+  "windowShape",
+  "windowLighting",
+  "windowDetails",
+  "condition",
+  "occupancy",
+  "environment",
+  "mappingMode",
+  "collisionMode",
+  "modular",
+  "lighting",
+  "lightSourceDetails",
+  "animationType",
+  "extraDetails"
+]);
+
 const MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS = Object.freeze([
   ["movingObjectClass", "objectClass"],
   ["movingObjectPurpose", "purpose"],
@@ -269,6 +309,46 @@ const STATIC_OBJECT_FIELD_MAPPINGS = Object.freeze([
 ] as const satisfies readonly (readonly [
   keyof WizardCoreFormValues,
   keyof StaticObjectAnswers
+])[]);
+
+const BUILDING_FIELD_MAPPINGS = Object.freeze([
+  ["buildingType", "buildingType"],
+  ["buildingPurpose", "purpose"],
+  ["buildingDescription", "subjectDescription"],
+  ["buildingPlanShape", "planShape"],
+  ["buildingSize", "size"],
+  ["buildingHeightPixels", "heightPixels"],
+  ["buildingFloors", "floors"],
+  ["buildingPrimaryMaterial", "primaryMaterial"],
+  ["buildingSecondaryMaterial", "secondaryMaterial"],
+  ["buildingMaterialDetails", "materialDetails"],
+  ["buildingRoofShape", "roofShape"],
+  ["buildingRoofPitch", "roofPitch"],
+  ["buildingRoofMaterial", "roofMaterial"],
+  ["buildingRoofCondition", "roofCondition"],
+  ["buildingRoofDetails", "roofDetails"],
+  ["buildingFacadeStyle", "facadeStyle"],
+  ["buildingFacadeDetails", "facadeDetails"],
+  ["buildingDoorCount", "doorCount"],
+  ["buildingDoorType", "doorType"],
+  ["buildingDoorPosition", "doorPosition"],
+  ["buildingDoorState", "doorState"],
+  ["buildingWindowCount", "windowCount"],
+  ["buildingWindowShape", "windowShape"],
+  ["buildingWindowLighting", "windowLighting"],
+  ["buildingWindowDetails", "windowDetails"],
+  ["buildingCondition", "condition"],
+  ["buildingOccupancy", "occupancy"],
+  ["buildingEnvironment", "environment"],
+  ["buildingMappingMode", "mappingMode"],
+  ["buildingCollisionMode", "collisionMode"],
+  ["buildingModular", "modular"],
+  ["buildingLighting", "lighting"],
+  ["buildingLightSourceDetails", "lightSourceDetails"],
+  ["buildingExtraDetails", "extraDetails"]
+] as const satisfies readonly (readonly [
+  keyof WizardCoreFormValues,
+  keyof BuildingAnswers
 ])[]);
 
 const PROFILE_VALUE_KEYS = Object.freeze([
@@ -404,6 +484,8 @@ export function wizardStepIsApplicable(
       return selection?.category === "nature";
     case "staticObjectDetails":
       return selection?.category === "staticObject";
+    case "buildingDetails":
+      return selection?.category === "building";
     case "directions":
       return capabilities.directional;
     case "animation":
@@ -759,6 +841,46 @@ function clearsInheritedStaticObjectDefault(
   );
 }
 
+function buildingFormValue(
+  values: WizardCoreFormValues,
+  formField: keyof WizardCoreFormValues
+): unknown {
+  return values[formField];
+}
+
+function buildingAnswerValue(
+  answers: BuildingAnswers,
+  answerField: keyof BuildingAnswers
+): unknown {
+  return answers[answerField];
+}
+
+function clearsInheritedBuildingDefault(
+  values: WizardCoreFormValues,
+  defaults: BuildingAnswers
+): boolean {
+  for (const [formField, answerField] of BUILDING_FIELD_MAPPINGS) {
+    if (
+      buildingAnswerValue(defaults, answerField) !== undefined &&
+      buildingFormValue(values, formField) === undefined
+    ) {
+      return true;
+    }
+  }
+
+  if (
+    defaults.footprint !== undefined &&
+    values.buildingFootprintWidthTiles === undefined &&
+    values.buildingFootprintDepthTiles === undefined
+  ) {
+    return true;
+  }
+
+  return (
+    defaults.animationType !== undefined && values.animationType === undefined
+  );
+}
+
 export function createWizardCoreFormValues(
   draft: WizardDraft,
   categoryHint: AssetCategory | null = null,
@@ -772,6 +894,7 @@ export function createWizardCoreFormValues(
   let resolvedTextureAnswers: TextureAnswers | undefined;
   let resolvedNatureAnswers: NatureAnswers | undefined;
   let resolvedStaticObjectAnswers: StaticObjectAnswers | undefined;
+  let resolvedBuildingAnswers: BuildingAnswers | undefined;
 
   if (!("category" in draft)) {
     if (categoryHint !== null) values.category = categoryHint;
@@ -811,6 +934,10 @@ export function createWizardCoreFormValues(
       ) {
         resolvedStaticObjectAnswers =
           resolution.profile.categoryData.answers;
+      } else if (
+        resolution.profile.categoryData.category === "building"
+      ) {
+        resolvedBuildingAnswers = resolution.profile.categoryData.answers;
       }
     }
   }
@@ -894,8 +1021,21 @@ export function createWizardCoreFormValues(
       addDefinedValue(values, "animationType", answers.animationType);
       break;
     }
-    case "building":
+    case "building": {
+      const answers = resolvedBuildingAnswers ?? draft.answers;
+      for (const [formField, answerField] of BUILDING_FIELD_MAPPINGS) {
+        const value = buildingAnswerValue(answers, answerField);
+        if (value !== undefined) {
+          (values as Record<string, unknown>)[formField] = value;
+        }
+      }
+      if (answers.footprint !== undefined) {
+        values.buildingFootprintWidthTiles = answers.footprint.widthTiles;
+        values.buildingFootprintDepthTiles = answers.footprint.depthTiles;
+      }
+      addDefinedValue(values, "animationType", answers.animationType);
       break;
+    }
     case "tileset":
       addDefinedValue(values, "animationType", draft.answers.animationType);
       addDefinedValue(values, "tileableAxes", draft.answers.tileableAxes);
@@ -1048,7 +1188,8 @@ function controlledAnswers(
   inheritedMovingObjectDefaults: MovingObjectAnswers | undefined,
   inheritedTextureDefaults: TextureAnswers | undefined,
   inheritedNatureDefaults: NatureAnswers | undefined,
-  inheritedStaticObjectDefaults: StaticObjectAnswers | undefined
+  inheritedStaticObjectDefaults: StaticObjectAnswers | undefined,
+  inheritedBuildingDefaults: BuildingAnswers | undefined
 ): Record<string, unknown> {
   const sameSelection = selectionsMatch(draft, selection);
   if (!sameSelection) return {};
@@ -1068,6 +1209,8 @@ function controlledAnswers(
           !NATURE_CONTROLLED_ANSWER_KEYS.has(key)) &&
         (selection.category !== "staticObject" ||
           !STATIC_OBJECT_CONTROLLED_ANSWER_KEYS.has(key)) &&
+        (selection.category !== "building" ||
+          !BUILDING_CONTROLLED_ANSWER_KEYS.has(key)) &&
         value !== undefined
     )
   );
@@ -1317,7 +1460,58 @@ function controlledAnswers(
         }
       }
       break;
-    case "building":
+    case "building": {
+      for (const [formField, answerField] of BUILDING_FIELD_MAPPINGS) {
+        const value = buildingFormValue(values, formField);
+        if (
+          !capabilities.modular &&
+          (answerField === "modular" ||
+            (answerField === "mappingMode" && value === "modularSet") ||
+            (answerField === "planShape" && value === "modular"))
+        ) {
+          continue;
+        }
+        if (
+          value !== undefined &&
+          !optionalJsonValuesEqual(
+            value,
+            inheritedBuildingDefaults === undefined
+              ? undefined
+              : buildingAnswerValue(inheritedBuildingDefaults, answerField)
+          )
+        ) {
+          answers[answerField] = value;
+        }
+      }
+
+      if (
+        capabilities.footprint &&
+        values.buildingFootprintWidthTiles !== undefined &&
+        values.buildingFootprintDepthTiles !== undefined
+      ) {
+        const footprint = {
+          widthTiles: values.buildingFootprintWidthTiles,
+          depthTiles: values.buildingFootprintDepthTiles
+        };
+        if (
+          !optionalJsonValuesEqual(footprint, inheritedBuildingDefaults?.footprint)
+        ) {
+          answers.footprint = footprint;
+        }
+      }
+
+      if (
+        capabilities.animated &&
+        values.animationType !== undefined &&
+        !optionalJsonValuesEqual(
+          values.animationType,
+          inheritedBuildingDefaults?.animationType
+        )
+      ) {
+        answers.animationType = values.animationType;
+      }
+      break;
+    }
     case "item":
     case "artwork":
       break;
@@ -1366,6 +1560,7 @@ function selectedDraftRoute(
     stepId === "textureDetails" ||
     stepId === "natureDetails" ||
     stepId === "staticObjectDetails" ||
+    stepId === "buildingDetails" ||
     stepId === "directions" ||
     stepId === "animation" ||
     stepId === "tileability"
@@ -1533,12 +1728,20 @@ export function updateWizardDraftFromCoreForm(
       input.values,
       linkedCategoryProfile.defaults
     );
+  const detachBuildingCategoryProfile =
+    selection.category === "building" &&
+    linkedCategoryProfile?.category === "building" &&
+    clearsInheritedBuildingDefault(
+      input.values,
+      linkedCategoryProfile.defaults
+    );
   const detachCategoryProfile =
     detachCharacterCategoryProfile ||
     detachMovingObjectCategoryProfile ||
     detachTextureCategoryProfile ||
     detachNatureCategoryProfile ||
-    detachStaticObjectCategoryProfile;
+    detachStaticObjectCategoryProfile ||
+    detachBuildingCategoryProfile;
   const retainedProfileLinks =
     profileLinksCanBeRetained && !detachCategoryProfile;
 
@@ -1595,6 +1798,11 @@ export function updateWizardDraftFromCoreForm(
     retainedCategoryProfile?.category === "staticObject"
       ? retainedCategoryProfile.defaults
       : undefined;
+  const inheritedBuildingDefaults =
+    selection.category === "building" &&
+    retainedCategoryProfile?.category === "building"
+      ? retainedCategoryProfile.defaults
+      : undefined;
   const common = {
     schemaVersion: 2,
     kind: "wizardDraft",
@@ -1623,7 +1831,8 @@ export function updateWizardDraftFromCoreForm(
       inheritedMovingObjectDefaults,
       inheritedTextureDefaults,
       inheritedNatureDefaults,
-      inheritedStaticObjectDefaults
+      inheritedStaticObjectDefaults,
+      inheritedBuildingDefaults
     )
   } as const;
 
