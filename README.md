@@ -68,7 +68,8 @@ V1 inventarisieren ✓
 → Static-Object-Editor mit Material-, Interaktions- und Footprintmodell ✓
 → Building-/Architecture-Editor mit Fassade, Mapping und Lichtmodell ✓
 → Tileset-Editor mit Kanten-, Seam-, Varianten- und Atlasmodell ✓
-→ weitere spezialisierte Editormodelle
+→ Item-/Equipment-Editor (nächste Phase)
+→ Artwork-Editor
 → Prompt Engine 2.0
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
@@ -82,6 +83,7 @@ V1 inventarisieren ✓
 | `PLANS.md` | 29-stufiger Migrations- und Entwicklungsfahrplan |
 | `docs/TECHNOLOGIE-STACK-V2.md` | verbindlicher React/TypeScript/Vite-Stack |
 | `docs/LEGACY-V1-BASELINE.md` | reproduzierbare V1-Inventur, Migrationsverträge und bewusste V2-Korrekturen |
+| `docs/V2-IMPLEMENTIERUNGSSTATUS.md` | geprüfter Prompt-, Commit-, Test- und Remote-Stand |
 | `docs/CODEX-V2-UMSETZUNGSANWEISUNG.md` | Architektur, Migration, Editoren, Prompt Engine, Tests |
 | `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md` | vollständige fachliche Fragen- und Profilstruktur |
 | `docs/CODEX-V2-PROMPTS.md` | einzeln ausführbare Codex-Aufträge 00–27 |
