@@ -27,6 +27,21 @@ import {
   type BuildingWindowShape
 } from "../../domain/buildings";
 import {
+  getDefaultItemClass,
+  type ItemClass,
+  type ItemCondition,
+  type ItemGlowMode,
+  type ItemMaterial,
+  type ItemPresentation,
+  type ItemPurpose,
+  type ItemReadability,
+  type ItemShadowMode,
+  type ItemSignificance,
+  type ItemSize,
+  type ItemSubtype,
+  type ItemWearPosition
+} from "../../domain/items";
+import {
   MOVING_OBJECT_ANIMATION_TYPE_IDS,
   getDefaultMovingObjectClass,
   type MovingObjectAnchorMode,
@@ -796,6 +811,46 @@ const TILESET_ATLAS_LAYOUT_LABELS: Readonly<
   singleRow: "Eine Zeile",
   singleColumn: "Eine Spalte",
   fixedColumns: "Feste Spaltenzahl"
+};
+
+const ITEM_CLASS_LABELS: Readonly<Record<ItemClass, string>> = {
+  weapon: "Waffe", tool: "Werkzeug", clothing: "Kleidung", armor: "Rüstung",
+  bag: "Tasche", jewelry: "Schmuck", consumable: "Verbrauchsgegenstand",
+  keyItem: "Schlüsselgegenstand", questItem: "Questgegenstand", collectible: "Sammelobjekt"
+};
+const ITEM_PURPOSE_LABELS: Readonly<Record<ItemPurpose, string>> = {
+  practical: "Praktisch", decorative: "Dekorativ", wearable: "Tragbar", usable: "Benutzbar"
+};
+const ITEM_PRESENTATION_LABELS: Readonly<Record<ItemPresentation, string>> = {
+  icon: "Inventar-Icon", worldAsset: "Weltobjekt", equipped: "Ausgerüstet"
+};
+const ITEM_WEAR_POSITION_LABELS: Readonly<Record<ItemWearPosition, string>> = {
+  head: "Kopf", neck: "Hals", hand: "Hand", body: "Körper", back: "Rücken", belt: "Gürtel"
+};
+const ITEM_MATERIAL_LABELS: Readonly<Record<ItemMaterial, string>> = {
+  wood: "Holz", metal: "Metall", leather: "Leder", fabric: "Stoff", glass: "Glas",
+  ceramic: "Keramik", stone: "Stein", bone: "Knochen", organic: "Organisch",
+  liquid: "Flüssigkeit", magic: "Magische Substanz", mixed: "Mischmaterial", custom: "Eigenes Material"
+};
+const ITEM_CONDITION_LABELS: Readonly<Record<ItemCondition, string>> = {
+  new: "Neu / makellos", used: "Gebraucht", worn: "Abgenutzt", damaged: "Beschädigt",
+  ancient: "Alt / historisch", magicallyAltered: "Magisch verändert"
+};
+const ITEM_SIGNIFICANCE_LABELS: Readonly<Record<ItemSignificance, string>> = {
+  common: "Alltäglich", valuable: "Wertvoll", rare: "Selten", ceremonial: "Zeremoniell",
+  magical: "Magisch", questCritical: "Handlungsentscheidend"
+};
+const ITEM_SIZE_LABELS: Readonly<Record<ItemSize, string>> = {
+  tiny: "Winzig", small: "Klein", medium: "Mittel", large: "Groß", oversized: "Überdimensioniert"
+};
+const ITEM_READABILITY_LABELS: Readonly<Record<ItemReadability, string>> = {
+  silhouetteFirst: "Silhouette zuerst", balanced: "Ausgewogen", detailRich: "Detailreich"
+};
+const ITEM_GLOW_LABELS: Readonly<Record<ItemGlowMode, string>> = {
+  none: "Kein Leuchten", subtle: "Subtil", emissive: "Emissiv"
+};
+const ITEM_SHADOW_LABELS: Readonly<Record<ItemShadowMode, string>> = {
+  none: "Kein eigener Schatten", contact: "Kontaktschatten"
 };
 
 function natureAnimationSummary(
@@ -1631,6 +1686,36 @@ export function WizardTechnicalSummary({
                 value={tilesetAnimationSummary(formValues.animationType)}
               />
             ) : null}
+          </>
+        ) : null}
+        {selection?.category === "item" ? (
+          <>
+            <SummaryFact
+              label="Itemklasse"
+              value={ITEM_CLASS_LABELS[
+                formValues.itemClass ??
+                  getDefaultItemClass(selection.subtype as ItemSubtype)
+              ]}
+            />
+            {formValues.itemPurpose !== undefined ? <SummaryFact label="Zweck" value={ITEM_PURPOSE_LABELS[formValues.itemPurpose]} /> : null}
+            {formValues.itemPresentation !== undefined ? <SummaryFact label="Darstellung" value={ITEM_PRESENTATION_LABELS[formValues.itemPresentation]} /> : null}
+            {formValues.itemWearPosition !== undefined ? <SummaryFact label="Trageposition" value={ITEM_WEAR_POSITION_LABELS[formValues.itemWearPosition]} /> : null}
+            {formValues.itemPrimaryMaterial !== undefined ? (
+              <SummaryFact
+                label="Material"
+                value={[ITEM_MATERIAL_LABELS[formValues.itemPrimaryMaterial], formValues.itemSecondaryMaterial === undefined ? null : ITEM_MATERIAL_LABELS[formValues.itemSecondaryMaterial]].filter((value): value is string => value !== null).join(" + ")}
+              />
+            ) : null}
+            {formValues.itemCondition !== undefined ? <SummaryFact label="Zustand" value={ITEM_CONDITION_LABELS[formValues.itemCondition]} /> : null}
+            {formValues.itemSize !== undefined ? <SummaryFact label="Relative Größe" value={ITEM_SIZE_LABELS[formValues.itemSize]} /> : null}
+            {formValues.itemReadability !== undefined ? <SummaryFact label="Lesbarkeit" value={ITEM_READABILITY_LABELS[formValues.itemReadability]} /> : null}
+            {formValues.itemSignificance !== undefined ? <SummaryFact label="Bedeutung" value={ITEM_SIGNIFICANCE_LABELS[formValues.itemSignificance]} /> : null}
+            {formValues.itemFunctionDetails?.trim() ? <SummaryFact label="Funktion" value={formValues.itemFunctionDetails.trim()} /> : null}
+            {formValues.itemMeaningDetails?.trim() ? <SummaryFact label="Symbolik" value={formValues.itemMeaningDetails.trim()} /> : null}
+            {formValues.itemGlowMode !== undefined ? <SummaryFact label="Leuchteffekt" value={ITEM_GLOW_LABELS[formValues.itemGlowMode]} /> : null}
+            {formValues.itemShadowMode !== undefined ? <SummaryFact label="Schatten" value={ITEM_SHADOW_LABELS[formValues.itemShadowMode]} /> : null}
+            {formValues.itemIconSize !== undefined ? <SummaryFact label="Icongröße" value={`${String(formValues.itemIconSize)} px`} /> : null}
+            {formValues.itemVariantCount !== undefined ? <SummaryFact label="Varianten" value={String(formValues.itemVariantCount)} /> : null}
           </>
         ) : null}
         {selection?.category === "texture" ? (

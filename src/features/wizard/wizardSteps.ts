@@ -12,6 +12,7 @@ import {
   getDefaultBuildingType,
   type BuildingSubtype
 } from "../../domain/buildings";
+import { getDefaultItemClass, type ItemSubtype } from "../../domain/items";
 import {
   MOVING_OBJECT_ANIMATION_TYPE_IDS,
   getDefaultMovingObjectClass
@@ -42,6 +43,7 @@ import {
   BaseProfileValuesSchema,
   BuildingAnswersSchema,
   CharacterAnswersSchema,
+  ItemAnswersSchema,
   MovingObjectAnswersSchema,
   NatureAnswersSchema,
   StaticObjectAnswersSchema,
@@ -117,6 +119,7 @@ const natureAnswerShape = NatureAnswersSchema.unwrap().shape;
 const staticObjectAnswerShape = StaticObjectAnswersSchema.unwrap().shape;
 const buildingAnswerShape = BuildingAnswersSchema.unwrap().shape;
 const tilesetAnswerShape = TilesetAnswersSchema.unwrap().shape;
+const itemAnswerShape = ItemAnswersSchema.unwrap().shape;
 
 export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
@@ -288,6 +291,26 @@ export const WizardCoreFormSchema = z.strictObject({
   tilesetAtlasGutterPixels: tilesetAnswerShape.atlasGutterPixels,
   tilesetAtlasMarginPixels: tilesetAnswerShape.atlasMarginPixels,
   tilesetExtraDetails: tilesetAnswerShape.extraDetails,
+  itemClass: itemAnswerShape.itemClass,
+  itemPurpose: itemAnswerShape.purpose,
+  itemPresentation: itemAnswerShape.presentation,
+  itemWearPosition: itemAnswerShape.wearPosition,
+  itemIconSize: itemAnswerShape.iconSize,
+  itemSize: itemAnswerShape.size,
+  itemDescription: itemAnswerShape.subjectDescription,
+  itemPrimaryMaterial: itemAnswerShape.primaryMaterial,
+  itemSecondaryMaterial: itemAnswerShape.secondaryMaterial,
+  itemMaterialDetails: itemAnswerShape.materialDetails,
+  itemCondition: itemAnswerShape.condition,
+  itemFunctionDetails: itemAnswerShape.functionDetails,
+  itemSignificance: itemAnswerShape.significance,
+  itemMeaningDetails: itemAnswerShape.meaningDetails,
+  itemSilhouette: itemAnswerShape.silhouette,
+  itemReadability: itemAnswerShape.readability,
+  itemGlowMode: itemAnswerShape.glowMode,
+  itemShadowMode: itemAnswerShape.shadowMode,
+  itemVariantCount: itemAnswerShape.variantCount,
+  itemExtraDetails: itemAnswerShape.extraDetails,
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
     .enum(CHARACTER_ANIMATION_ACTION_IDS)
@@ -311,6 +334,7 @@ export type WizardCoreStepId =
   | "staticObjectDetails"
   | "buildingDetails"
   | "tilesetDetails"
+  | "itemDetails"
   | "directions"
   | "animation"
   | "tileability";
@@ -538,6 +562,29 @@ export const WIZARD_TILESET_DETAIL_FIELD_PATHS = Object.freeze([
   "tilesetAtlasGutterPixels",
   "tilesetAtlasMarginPixels",
   "tilesetExtraDetails"
+] as const satisfies readonly WizardCoreFieldPath[]);
+
+export const WIZARD_ITEM_DETAIL_FIELD_PATHS = Object.freeze([
+  "itemClass",
+  "itemPurpose",
+  "itemPresentation",
+  "itemWearPosition",
+  "itemIconSize",
+  "itemSize",
+  "itemDescription",
+  "itemPrimaryMaterial",
+  "itemSecondaryMaterial",
+  "itemMaterialDetails",
+  "itemCondition",
+  "itemFunctionDetails",
+  "itemSignificance",
+  "itemMeaningDetails",
+  "itemSilhouette",
+  "itemReadability",
+  "itemGlowMode",
+  "itemShadowMode",
+  "itemVariantCount",
+  "itemExtraDetails"
 ] as const satisfies readonly WizardCoreFieldPath[]);
 
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
@@ -769,6 +816,15 @@ function validateCapabilityFields(
         context,
         field,
         "Tileset- und Mappingdaten gehören nicht zur gewählten Asset-Kategorie."
+      );
+    }
+  }
+  for (const field of WIZARD_ITEM_DETAIL_FIELD_PATHS) {
+    if (values[field] !== undefined && category !== "item") {
+      addFieldIssue(
+        context,
+        field,
+        "Item- und Ausrüstungsdaten gehören nicht zur gewählten Asset-Kategorie."
       );
     }
   }
@@ -1062,6 +1118,40 @@ function validateCapabilityFields(
       );
     }
   }
+  if (
+    category === "item" &&
+    values.itemClass !== undefined &&
+    values.itemClass !== getDefaultItemClass(selection.subtype as ItemSubtype)
+  ) {
+    addFieldIssue(
+      context,
+      "subtype",
+      "Die abgeleitete Itemklasse passt nicht zum gewählten Untertyp. Bitte bestätige oder korrigiere den Untertyp."
+    );
+  }
+  if (category === "item" && !capabilities.wearable) {
+    if (values.itemWearPosition !== undefined) {
+      addFieldIssue(
+        context,
+        "itemWearPosition",
+        "Eine Trageposition ist nur für tragbare Item-Untertypen verfügbar."
+      );
+    }
+    if (values.itemPurpose === "wearable") {
+      addFieldIssue(
+        context,
+        "itemPurpose",
+        "Der Zweck „tragbar“ ist für diesen Item-Untertyp nicht verfügbar."
+      );
+    }
+    if (values.itemPresentation === "equipped") {
+      addFieldIssue(
+        context,
+        "itemPresentation",
+        "Eine ausgerüstete Darstellung ist nur für tragbare Item-Untertypen verfügbar."
+      );
+    }
+  }
   if (values.animationType !== undefined) {
     const allowedAnimationTypes = ANIMATION_TYPES_BY_CATEGORY[category];
     if (
@@ -1232,6 +1322,17 @@ export const WizardTilesetDetailsStepSchema =
       );
     }
   });
+export const WizardItemDetailsStepSchema =
+  WizardCoreFormSchema.superRefine((values, context) => {
+    refineSelectedValues(values, context, undefined, true);
+    if (values.category !== undefined && values.category !== "item") {
+      addFieldIssue(
+        context,
+        "category",
+        "Der Item-Editor ist nur für Items und Ausrüstung verfügbar."
+      );
+    }
+  });
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) =>
     refineSelectedValues(values, context, "directional", true)
@@ -1350,6 +1451,15 @@ export const WIZARD_CORE_STEPS = Object.freeze([
       "Definiere Grid, Verbindungen, Seam-Regeln, Wiederholung, Varianten und das berechnete Atlaslayout.",
     fieldPaths: WIZARD_TILESET_DETAIL_FIELD_PATHS,
     schema: WizardTilesetDetailsStepSchema
+  }),
+  Object.freeze({
+    id: "itemDetails",
+    route: "wizard/editor",
+    title: "Item und Ausrüstung",
+    description:
+      "Beschreibe Klasse, Material, Zustand, Funktion, Bedeutung, Größe und Lesbarkeit des freigestellten Items.",
+    fieldPaths: WIZARD_ITEM_DETAIL_FIELD_PATHS,
+    schema: WizardItemDetailsStepSchema
   }),
   Object.freeze({
     id: "directions",

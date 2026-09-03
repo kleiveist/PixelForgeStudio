@@ -352,7 +352,7 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 20
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 21
 
 - `project`, `category`/`subtype`, `baseProfile`, `characterDetails`,
   `movingObjectDetails`, `staticObjectDetails`, `textureDetails`,
@@ -591,8 +591,8 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   Drafts an dieser Stufe werden beim Resume schreibfrei auf `tilesetDetails`
   umgeleitet. Animation bleibt nur beim animierten Tile separat; kein Tileset
   erhält Richtungen oder Figurenhöhe.
-- Prompts 00 bis 20 sind abgeschlossen. Prompt 21 ergänzt als nächste Phase
-  den Item-/Equipment-Editor. Prompt 20 enthält weder Prompt Engine
+- Prompts 00 bis 21 sind abgeschlossen. Prompt 22 ergänzt als nächste Phase
+  den Artwork-Editor. Prompt 21 enthält weder Prompt Engine
   beziehungsweise Review-/Output-Erzeugung noch In-place-Mutation oder
   Reparenting einer bestehenden Basisfamilie.
 
@@ -1104,6 +1104,23 @@ Umgesetzt seit Prompt 20:
   `animatedTile` erhält den getrennten `animated`-Schritt; Richtungs- und
   Figurenmaßstabsfragen bleiben vollständig ausgeschlossen. Prompt Engine,
   Review und Output folgen später.
+
+Umgesetzt seit Prompt 21:
+
+- `src/domain/items/` veröffentlicht stabile readonly Kataloge, das
+  vollständige Untertyp→Itemklassen-Mapping und einen puren Wearable-Guard.
+- `ItemAnswersSchema` erweitert den alten V2-Vertrag strikt und additiv um
+  Material, Zustand, Funktion, Bedeutung, Größe, Silhouette, Lesbarkeit, Glow,
+  Schatten und Varianten. Fehlende Altwerte werden nicht materialisiert.
+- `src/features/item-editor/` rendert `ItemEquipmentEditor` ausschließlich im
+  eigenen `itemDetails`-Schritt. Itemklasse, technischer Hintergrund,
+  Tilegröße und Pixelmaßstab sind read-only; Fachfragen gehören React Hook
+  Form.
+- Ausgerüstete Darstellung und Trageposition sind auf capability-gültige
+  Wearable-Untertypen begrenzt. Kein Item ist `directional` oder `animated`.
+- Base→Category→Asset-Hydration, minimale Projektion, Explicit Clear,
+  Rohzustand, Autosave, schreibfreies Resume, Summary und Dashboard gelten für
+  alle Item-Felder. Artwork, Prompt Engine, Review und Output folgen später.
 
 ## 13.8 Item / Equipment
 

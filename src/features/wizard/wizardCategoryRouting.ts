@@ -34,6 +34,7 @@ import {
   type BuildingAnswers,
   type CharacterAnimationActionConfig,
   type CharacterAnswers,
+  type ItemAnswers,
   type MovingObjectAnimationSequenceConfig,
   type MovingObjectAnswers,
   type NatureAnswers,
@@ -254,6 +255,29 @@ const TILESET_CONTROLLED_ANSWER_KEYS = new Set<string>([
   "extraDetails"
 ]);
 
+const ITEM_CONTROLLED_ANSWER_KEYS = new Set<string>([
+  "itemClass",
+  "purpose",
+  "presentation",
+  "wearPosition",
+  "iconSize",
+  "size",
+  "subjectDescription",
+  "primaryMaterial",
+  "secondaryMaterial",
+  "materialDetails",
+  "condition",
+  "functionDetails",
+  "significance",
+  "meaningDetails",
+  "silhouette",
+  "readability",
+  "glowMode",
+  "shadowMode",
+  "variantCount",
+  "extraDetails"
+]);
+
 const MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS = Object.freeze([
   ["movingObjectClass", "objectClass"],
   ["movingObjectPurpose", "purpose"],
@@ -409,6 +433,32 @@ const TILESET_FIELD_MAPPINGS = Object.freeze([
   keyof TilesetAnswers
 ])[]);
 
+const ITEM_FIELD_MAPPINGS = Object.freeze([
+  ["itemClass", "itemClass"],
+  ["itemPurpose", "purpose"],
+  ["itemPresentation", "presentation"],
+  ["itemWearPosition", "wearPosition"],
+  ["itemIconSize", "iconSize"],
+  ["itemSize", "size"],
+  ["itemDescription", "subjectDescription"],
+  ["itemPrimaryMaterial", "primaryMaterial"],
+  ["itemSecondaryMaterial", "secondaryMaterial"],
+  ["itemMaterialDetails", "materialDetails"],
+  ["itemCondition", "condition"],
+  ["itemFunctionDetails", "functionDetails"],
+  ["itemSignificance", "significance"],
+  ["itemMeaningDetails", "meaningDetails"],
+  ["itemSilhouette", "silhouette"],
+  ["itemReadability", "readability"],
+  ["itemGlowMode", "glowMode"],
+  ["itemShadowMode", "shadowMode"],
+  ["itemVariantCount", "variantCount"],
+  ["itemExtraDetails", "extraDetails"]
+] as const satisfies readonly (readonly [
+  keyof WizardCoreFormValues,
+  keyof ItemAnswers
+])[]);
+
 const PROFILE_VALUE_KEYS = Object.freeze([
   "pixelDensity",
   "styleProfile",
@@ -546,6 +596,8 @@ export function wizardStepIsApplicable(
       return selection?.category === "building";
     case "tilesetDetails":
       return selection?.category === "tileset";
+    case "itemDetails":
+      return selection?.category === "item";
     case "directions":
       return capabilities.directional;
     case "animation":
@@ -977,6 +1029,35 @@ function clearsInheritedTilesetDefault(
   );
 }
 
+function itemFormValue(
+  values: WizardCoreFormValues,
+  formField: keyof WizardCoreFormValues
+): unknown {
+  return values[formField];
+}
+
+function itemAnswerValue(
+  answers: ItemAnswers,
+  answerField: keyof ItemAnswers
+): unknown {
+  return answers[answerField];
+}
+
+function clearsInheritedItemDefault(
+  values: WizardCoreFormValues,
+  defaults: ItemAnswers
+): boolean {
+  for (const [formField, answerField] of ITEM_FIELD_MAPPINGS) {
+    if (
+      itemAnswerValue(defaults, answerField) !== undefined &&
+      itemFormValue(values, formField) === undefined
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function createWizardCoreFormValues(
   draft: WizardDraft,
   categoryHint: AssetCategory | null = null,
@@ -992,6 +1073,7 @@ export function createWizardCoreFormValues(
   let resolvedStaticObjectAnswers: StaticObjectAnswers | undefined;
   let resolvedBuildingAnswers: BuildingAnswers | undefined;
   let resolvedTilesetAnswers: TilesetAnswers | undefined;
+  let resolvedItemAnswers: ItemAnswers | undefined;
 
   if (!("category" in draft)) {
     if (categoryHint !== null) values.category = categoryHint;
@@ -1039,6 +1121,8 @@ export function createWizardCoreFormValues(
         resolution.profile.categoryData.category === "tileset"
       ) {
         resolvedTilesetAnswers = resolution.profile.categoryData.answers;
+      } else if (resolution.profile.categoryData.category === "item") {
+        resolvedItemAnswers = resolution.profile.categoryData.answers;
       }
     }
   }
@@ -1148,7 +1232,16 @@ export function createWizardCoreFormValues(
       addDefinedValue(values, "animationType", answers.animationType);
       break;
     }
-    case "item":
+    case "item": {
+      const answers = resolvedItemAnswers ?? draft.answers;
+      for (const [formField, answerField] of ITEM_FIELD_MAPPINGS) {
+        const value = itemAnswerValue(answers, answerField);
+        if (value !== undefined) {
+          (values as Record<string, unknown>)[formField] = value;
+        }
+      }
+      break;
+    }
     case "artwork":
       break;
   }
@@ -1298,7 +1391,8 @@ function controlledAnswers(
   inheritedNatureDefaults: NatureAnswers | undefined,
   inheritedStaticObjectDefaults: StaticObjectAnswers | undefined,
   inheritedBuildingDefaults: BuildingAnswers | undefined,
-  inheritedTilesetDefaults: TilesetAnswers | undefined
+  inheritedTilesetDefaults: TilesetAnswers | undefined,
+  inheritedItemDefaults: ItemAnswers | undefined
 ): Record<string, unknown> {
   const sameSelection = selectionsMatch(draft, selection);
   if (!sameSelection) return {};
@@ -1322,6 +1416,8 @@ function controlledAnswers(
           !BUILDING_CONTROLLED_ANSWER_KEYS.has(key)) &&
         (selection.category !== "tileset" ||
           !TILESET_CONTROLLED_ANSWER_KEYS.has(key)) &&
+        (selection.category !== "item" ||
+          !ITEM_CONTROLLED_ANSWER_KEYS.has(key)) &&
         value !== undefined
     )
   );
@@ -1666,6 +1762,30 @@ function controlledAnswers(
       break;
     }
     case "item":
+      for (const [formField, answerField] of ITEM_FIELD_MAPPINGS) {
+        if (answerField === "wearPosition" && !capabilities.wearable) continue;
+        if (
+          !capabilities.wearable &&
+          ((answerField === "purpose" && values.itemPurpose === "wearable") ||
+            (answerField === "presentation" &&
+              values.itemPresentation === "equipped"))
+        ) {
+          continue;
+        }
+        const value = itemFormValue(values, formField);
+        if (
+          value !== undefined &&
+          !optionalJsonValuesEqual(
+            value,
+            inheritedItemDefaults === undefined
+              ? undefined
+              : itemAnswerValue(inheritedItemDefaults, answerField)
+          )
+        ) {
+          answers[answerField] = value;
+        }
+      }
+      break;
     case "artwork":
       break;
   }
@@ -1707,6 +1827,7 @@ function selectedDraftRoute(
     stepId === "staticObjectDetails" ||
     stepId === "buildingDetails" ||
     stepId === "tilesetDetails" ||
+    stepId === "itemDetails" ||
     stepId === "directions" ||
     stepId === "animation" ||
     stepId === "tileability"
@@ -1888,6 +2009,10 @@ export function updateWizardDraftFromCoreForm(
       input.values,
       linkedCategoryProfile.defaults
     );
+  const detachItemCategoryProfile =
+    selection.category === "item" &&
+    linkedCategoryProfile?.category === "item" &&
+    clearsInheritedItemDefault(input.values, linkedCategoryProfile.defaults);
   const detachCategoryProfile =
     detachCharacterCategoryProfile ||
     detachMovingObjectCategoryProfile ||
@@ -1895,7 +2020,8 @@ export function updateWizardDraftFromCoreForm(
     detachNatureCategoryProfile ||
     detachStaticObjectCategoryProfile ||
     detachBuildingCategoryProfile ||
-    detachTilesetCategoryProfile;
+    detachTilesetCategoryProfile ||
+    detachItemCategoryProfile;
   const retainedProfileLinks =
     profileLinksCanBeRetained && !detachCategoryProfile;
 
@@ -1962,6 +2088,11 @@ export function updateWizardDraftFromCoreForm(
     retainedCategoryProfile?.category === "tileset"
       ? retainedCategoryProfile.defaults
       : undefined;
+  const inheritedItemDefaults =
+    selection.category === "item" &&
+    retainedCategoryProfile?.category === "item"
+      ? retainedCategoryProfile.defaults
+      : undefined;
   const common = {
     schemaVersion: 2,
     kind: "wizardDraft",
@@ -1992,7 +2123,8 @@ export function updateWizardDraftFromCoreForm(
       inheritedNatureDefaults,
       inheritedStaticObjectDefaults,
       inheritedBuildingDefaults,
-      inheritedTilesetDefaults
+      inheritedTilesetDefaults,
+      inheritedItemDefaults
     )
   } as const;
 

@@ -68,8 +68,8 @@ V1 inventarisieren ✓
 → Static-Object-Editor mit Material-, Interaktions- und Footprintmodell ✓
 → Building-/Architecture-Editor mit Fassade, Mapping und Lichtmodell ✓
 → Tileset-Editor mit Kanten-, Seam-, Varianten- und Atlasmodell ✓
-→ Item-/Equipment-Editor (nächste Phase)
-→ Artwork-Editor
+→ Item-/Equipment-Editor mit Material-, Funktions- und Lesbarkeitsmodell ✓
+→ Artwork-Editor (nächste Phase)
 → Prompt Engine 2.0
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
@@ -138,10 +138,9 @@ die zur Capability passenden Fragen und Editoren.
 ## Spezialisierte Editoren
 
 Character-/NPC-, Moving-Object-, Texture-/Material-, Nature-/Tree-,
-Static-Object-, Building-/Architecture- und Tileset-Editor
-sind als getrennte React-Features umgesetzt. Weitere geplante Features sind:
+Static-Object-, Building-/Architecture-, Tileset- und Item-/Equipment-Editor
+sind als getrennte React-Features umgesetzt. Das nächste geplante Feature ist:
 
-- Item/Equipment
 - Artwork
 
 Der Character-Schritt folgt unmittelbar auf die Basisprofilwahl und erscheint
@@ -220,14 +219,22 @@ ersetzt für Tilesets die frühere generische Kachelbarkeitsstufe; alte Drafts
 werden schreibfrei umgeleitet. Nur das animierte Tile erhält einen getrennten
 Animationsschritt, kein Tileset ein 4/8-Richtungsset oder Figurenmaßstab.
 
+Der eigene `itemDetails`-Schritt erfasst Zweck, Icon-/Welt-/Ausrüstungsansicht,
+Materialien, Zustand, Funktion, Bedeutung, relative Größe, Silhouette,
+Lesbarkeit, Glow, Kontaktschatten und Varianten. Itemklasse, wirksamer
+Hintergrund, Tilegröße und Pixelmaßstab werden aus Untertyp und Profilkette
+read-only gezeigt. Trageposition und ausgerüstete Ansicht sind auf explizit
+tragbare Untertypen begrenzt. Kein Item erhält eine 4/8-Richtungs- oder
+Animationsfrage.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 20 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 21 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 21 — Item/Equipment Editor
+→ Prompt 22 — Artwork Editor
 ```
 
 Danach immer genau:
@@ -409,6 +416,12 @@ Varianten-, Atlas- und Animationswerte. `TILESET_TYPE_BY_SUBTYPE` sowie die
 Relevanz-Guards bilden Untertypen deterministisch ab. Die pure Atlaslogik
 berechnet technische Raster- und Canvasmetriken ohne React oder Browserzustand.
 
+Der öffentliche Item-Katalog unter `src/domain/items/` bündelt readonly
+Klassen-, Zweck-, Präsentations-, Material-, Zustands-, Bedeutungs-, Größen-,
+Lesbarkeits-, Glow- und Schattenwerte. `ITEM_CLASS_BY_SUBTYPE`,
+`getDefaultItemClass()` und der Wearable-Guard halten Ableitung und
+Tragepositionsrelevanz frameworkfrei und deterministisch.
+
 Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
 Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
 werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
@@ -451,6 +464,13 @@ Alte Schema-V2-Felder bleiben ohne eager Defaults lesbar; Typ, Untertyp,
 Verbindungsrelevanz und feste Spalten werden konsistent validiert. Tilegröße,
 Pixelmaßstab, Figurenhöhe und Richtungsdaten bleiben außerhalb der
 Tileset-Fachantworten.
+Das strikt additive `ItemAnswersSchema` ergänzt Itemklasse, Haupt- und
+Nebenmaterial, Zustand, Funktion, Bedeutung, Größe, Silhouette, Lesbarkeit,
+Glow, Schatten und Varianten. Frühere Schema-V2-Felder bleiben ohne eager
+Defaults lesbar; eine gespeicherte Klasse muss zum Untertyp passen und
+Wearable-Daten bleiben capability-gebunden. Technischer Hintergrund,
+Tilegröße, Pixelmaßstab, Figurenhöhe und Richtungsdaten bleiben außerhalb der
+Item-Fachantworten.
 
 Die öffentliche Profilauflösung unter `src/domain/profiles/` führt validierte
 Base-, Kategorie- und Assetprofile zusammen. Sie setzt Locks durch, meldet
@@ -505,6 +525,11 @@ Tileset-Profile zeigen Tiletyp, Mapping-Einsatz, relevante Verbindungen,
 Materialgrenze, Seam-/Wiederholungsregeln, Varianten und berechnete
 Atlasabmessungen. Nur tatsächlich konfigurierte Animationen animierter Tiles
 erscheinen; Richtungs- oder Figurenfakten werden nicht erzeugt.
+Item-Profile zeigen die abgeleitete Klasse, Zweck, Darstellung, Materialien,
+Zustand, Funktion, Bedeutung, Größe, Lesbarkeit, Schatten, Icongröße und
+Varianten. Bekannte Haupt- und Nebenmaterialien erscheinen zusätzlich als
+Materialbadges; Richtungs-, Animations- oder Figurenfakten werden nicht
+erzeugt.
 
 Die Profilbibliothek unter `src/features/profiles/` durchsucht und filtert
 Assetprofile, gruppiert sie wahlweise nach Kategorie oder ihrem neu
@@ -633,6 +658,15 @@ eigenen `tilesetDetails`-Schritt direkt nach der Basisprofilwahl eingebunden.
 ausschließlich Tileset-Fachwerte in React Hook Form und zeigt die berechnete
 technische Atlas-Spezifikation live. Untertypwechsel entfernen irrelevante
 Verbindungsfelder; Animation bleibt separat und Richtung ausgeschlossen.
+
+Der spezialisierte Item-/Equipment-Editor unter
+`src/features/item-editor/` ist im eigenen `itemDetails`-Schritt direkt nach
+der Basisprofilwahl eingebunden. `ItemEquipmentEditor` zeigt Klasse,
+Hintergrund und Produktionsmaßstab read-only, erfasst ausschließlich
+Item-Fachwerte in React Hook Form und nutzt den gemeinsamen Rohzustands-,
+Minimalprojektions-, Autosave- und schreibfreien Resume-Pfad. Wearable-Felder
+sind untertypgebunden; Richtung und Animation bleiben vollständig
+ausgeschlossen.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

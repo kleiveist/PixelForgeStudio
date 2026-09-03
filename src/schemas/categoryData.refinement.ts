@@ -4,6 +4,7 @@ import {
   type AssetSelection
 } from "../domain/assets";
 import { getDefaultBuildingType } from "../domain/buildings";
+import { getDefaultItemClass } from "../domain/items";
 import { getDefaultMovingObjectClass } from "../domain/moving-objects";
 import {
   getDefaultNaturePlantType,
@@ -66,6 +67,16 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
       addIssue(
         "buildingType",
         `Building type "${String(categoryData.buildingType)}" does not match building subtype "${value.subtype}"; expected "${expectedType}".`
+      );
+    }
+  }
+
+  if (value.category === "item" && categoryData.itemClass !== undefined) {
+    const expectedClass = getDefaultItemClass(value.subtype);
+    if (categoryData.itemClass !== expectedClass) {
+      addIssue(
+        "itemClass",
+        `Item class "${String(categoryData.itemClass)}" does not match item subtype "${value.subtype}"; expected "${expectedClass}".`
       );
     }
   }

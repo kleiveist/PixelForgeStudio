@@ -505,6 +505,11 @@ Tileset summaries add the derived type, relevant connection sets, material
 boundary, seams, repetition, variants, atlas layout, and calculated grid/canvas
 metrics. Long free-form Tileset descriptions remain in the Draft for later
 Review/Output and are not duplicated into compact cards.
+Item summaries add the derived class, purpose, presentation, materials,
+condition, function, significance, size, readability, glow, shadow, icon size,
+and variants. Long free-form Item descriptions remain in the Draft for later
+Review/Output and are not duplicated into compact cards. No Item summary
+derives direction or animation facts.
 World-grid geometry remains omitted for resolved free-composition artwork.
 
 `features/wizard/BaseProfileStep.tsx` is the Prompt-13 UI boundary. It presents
@@ -612,7 +617,25 @@ directional. Base changes preserve Tileset answers, classification changes
 purge them, and deliberate edits use shared autosave while mount, hydration,
 and Resume remain write-free.
 
-Prompts 00 through 20 are complete. Prompt 21, the Item/Equipment editor, is the
-next phase. Prompt 20 does not implement Prompt Engine modules,
+`features/item-editor/index.ts` is the public React boundary for Prompt 21.
+`ItemEquipmentEditor` is mounted only as the dedicated `itemDetails` step after
+Base selection. It renders subtype-derived Item class plus inherited
+background, tile size, and pixel density read-only. RHF owns purpose,
+presentation, wear position, icon size, relative size, description, materials,
+condition, function, significance, meaning, silhouette, readability, glow,
+shadow, variants, and extra details. Wear position and equipped presentation
+remain capability-bound. Base changes preserve Item answers, classification
+changes purge them, and deliberate edits use shared minimal projection,
+Explicit Clear, autosave, and exact Resume while mount and hydration remain
+write-free. No Item subtype is directional or animated.
+
+`domain/items/index.ts` is the framework-free public boundary for the Item
+catalog, complete subtype-to-class mapping, and wearable relevance guard.
+Persisted Item values continue through the shared strict Zod schemas and
+Base→Category→Asset resolver; technical background and scale are never
+duplicated into `ItemAnswers`.
+
+Prompts 00 through 21 are complete. Prompt 22, the Artwork editor, is the next
+phase. Prompt 21 does not implement Prompt Engine modules,
 review/output generation, or any remaining specialist editor. It also does
 not add in-place Base-family mutation or descendant reparenting.

@@ -9,6 +9,7 @@ import type {
   CharacterAnswers,
   BaseProfileValues,
   BuildingAnswers,
+  ItemAnswers,
   MovingObjectAnswers,
   NatureAnswers,
   StableId,
@@ -245,6 +246,26 @@ export interface WizardRawCoreFormValues {
   readonly tilesetAtlasGutterPixels?: TilesetAnswers["atlasGutterPixels"] | undefined;
   readonly tilesetAtlasMarginPixels?: TilesetAnswers["atlasMarginPixels"] | undefined;
   readonly tilesetExtraDetails?: TilesetAnswers["extraDetails"] | undefined;
+  readonly itemClass?: ItemAnswers["itemClass"] | undefined;
+  readonly itemPurpose?: ItemAnswers["purpose"] | undefined;
+  readonly itemPresentation?: ItemAnswers["presentation"] | undefined;
+  readonly itemWearPosition?: ItemAnswers["wearPosition"] | undefined;
+  readonly itemIconSize?: ItemAnswers["iconSize"] | undefined;
+  readonly itemSize?: ItemAnswers["size"] | undefined;
+  readonly itemDescription?: ItemAnswers["subjectDescription"] | undefined;
+  readonly itemPrimaryMaterial?: ItemAnswers["primaryMaterial"] | undefined;
+  readonly itemSecondaryMaterial?: ItemAnswers["secondaryMaterial"] | undefined;
+  readonly itemMaterialDetails?: ItemAnswers["materialDetails"] | undefined;
+  readonly itemCondition?: ItemAnswers["condition"] | undefined;
+  readonly itemFunctionDetails?: ItemAnswers["functionDetails"] | undefined;
+  readonly itemSignificance?: ItemAnswers["significance"] | undefined;
+  readonly itemMeaningDetails?: ItemAnswers["meaningDetails"] | undefined;
+  readonly itemSilhouette?: ItemAnswers["silhouette"] | undefined;
+  readonly itemReadability?: ItemAnswers["readability"] | undefined;
+  readonly itemGlowMode?: ItemAnswers["glowMode"] | undefined;
+  readonly itemShadowMode?: ItemAnswers["shadowMode"] | undefined;
+  readonly itemVariantCount?: ItemAnswers["variantCount"] | undefined;
+  readonly itemExtraDetails?: ItemAnswers["extraDetails"] | undefined;
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:

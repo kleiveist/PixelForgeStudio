@@ -19,6 +19,18 @@ import type {
   MovingObjectCondition,
   MovingObjectMaterial
 } from "../../domain/moving-objects";
+import {
+  getDefaultItemClass,
+  type ItemClass,
+  type ItemCondition,
+  type ItemMaterial,
+  type ItemPresentation,
+  type ItemPurpose,
+  type ItemReadability,
+  type ItemShadowMode,
+  type ItemSignificance,
+  type ItemSize
+} from "../../domain/items";
 import { getDefaultMovingObjectClass } from "../../domain/moving-objects";
 import {
   getDefaultTextureMaterialType,
@@ -721,6 +733,40 @@ const tilesetAtlasLayoutLabels: Readonly<Record<TilesetAtlasLayout, string>> = {
   fixedColumns: "Feste Spaltenzahl"
 };
 
+const itemClassLabels: Readonly<Record<ItemClass, string>> = {
+  weapon: "Waffe", tool: "Werkzeug", clothing: "Kleidung", armor: "Rüstung",
+  bag: "Tasche", jewelry: "Schmuck", consumable: "Verbrauchsgegenstand",
+  keyItem: "Schlüsselgegenstand", questItem: "Questgegenstand", collectible: "Sammelobjekt"
+};
+const itemPurposeLabels: Readonly<Record<ItemPurpose, string>> = {
+  practical: "Praktisch", decorative: "Dekorativ", wearable: "Tragbar", usable: "Benutzbar"
+};
+const itemPresentationLabels: Readonly<Record<ItemPresentation, string>> = {
+  icon: "Inventar-Icon", worldAsset: "Weltobjekt", equipped: "Ausgerüstet"
+};
+const itemMaterialLabels: Readonly<Record<ItemMaterial, string>> = {
+  wood: "Holz", metal: "Metall", leather: "Leder", fabric: "Stoff", glass: "Glas",
+  ceramic: "Keramik", stone: "Stein", bone: "Knochen", organic: "Organisch",
+  liquid: "Flüssigkeit", magic: "Magische Substanz", mixed: "Mischmaterial", custom: "Eigenes Material"
+};
+const itemConditionLabels: Readonly<Record<ItemCondition, string>> = {
+  new: "Neu / makellos", used: "Gebraucht", worn: "Abgenutzt", damaged: "Beschädigt",
+  ancient: "Alt / historisch", magicallyAltered: "Magisch verändert"
+};
+const itemSignificanceLabels: Readonly<Record<ItemSignificance, string>> = {
+  common: "Alltäglich", valuable: "Wertvoll", rare: "Selten", ceremonial: "Zeremoniell",
+  magical: "Magisch", questCritical: "Handlungsentscheidend"
+};
+const itemSizeLabels: Readonly<Record<ItemSize, string>> = {
+  tiny: "Winzig", small: "Klein", medium: "Mittel", large: "Groß", oversized: "Überdimensioniert"
+};
+const itemReadabilityLabels: Readonly<Record<ItemReadability, string>> = {
+  silhouetteFirst: "Silhouette zuerst", balanced: "Ausgewogen", detailRich: "Detailreich"
+};
+const itemShadowLabels: Readonly<Record<ItemShadowMode, string>> = {
+  none: "Kein eigener Schatten", contact: "Kontaktschatten"
+};
+
 const animationLabels = {
   idle: "Idle",
   walk: "Walk",
@@ -751,6 +797,16 @@ const materialSubtypeMap: Readonly<
   stone: "stone",
   snow: "snow",
   ice: "ice",
+  metal: "metal",
+  fabric: "cloth",
+  leather: "leather"
+};
+
+const itemMaterialBadgeMap: Readonly<
+  Partial<Record<ItemMaterial, MaterialBadgeId>>
+> = {
+  wood: "wood",
+  stone: "stone",
   metal: "metal",
   fabric: "cloth",
   leather: "leather"
@@ -1233,7 +1289,38 @@ function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
           : [animationFact(animationType)])
       ];
     }
-    case "item":
+    case "item": {
+      const {
+        condition,
+        functionDetails,
+        iconSize,
+        itemClass,
+        primaryMaterial,
+        presentation,
+        purpose,
+        readability,
+        secondaryMaterial,
+        shadowMode,
+        significance,
+        size,
+        variantCount
+      } = profile.categoryData.answers;
+      return [
+        `Itemklasse: ${itemClassLabels[itemClass ?? getDefaultItemClass(profile.categoryData.subtype)]}`,
+        ...(purpose === undefined ? [] : [`Zweck: ${itemPurposeLabels[purpose]}`]),
+        ...(presentation === undefined ? [] : [`Darstellung: ${itemPresentationLabels[presentation]}`]),
+        ...(primaryMaterial === undefined ? [] : [`Hauptmaterial: ${itemMaterialLabels[primaryMaterial]}`]),
+        ...(secondaryMaterial === undefined ? [] : [`Zweitmaterial: ${itemMaterialLabels[secondaryMaterial]}`]),
+        ...(condition === undefined ? [] : [`Zustand: ${itemConditionLabels[condition]}`]),
+        ...(size === undefined ? [] : [`Größe: ${itemSizeLabels[size]}`]),
+        ...(readability === undefined ? [] : [`Lesbarkeit: ${itemReadabilityLabels[readability]}`]),
+        ...(significance === undefined ? [] : [`Bedeutung: ${itemSignificanceLabels[significance]}`]),
+        ...(functionDetails === undefined ? [] : [`Funktion: ${functionDetails}`]),
+        ...(shadowMode === undefined ? [] : [`Schatten: ${itemShadowLabels[shadowMode]}`]),
+        ...(iconSize === undefined ? [] : [`Icongröße: ${String(iconSize)} px`]),
+        ...(variantCount === undefined ? [] : [`Varianten: ${String(variantCount)}`])
+      ];
+    }
     case "artwork":
       return [];
   }
@@ -1289,6 +1376,16 @@ function profileMaterials(profile: AssetProfile): readonly MaterialBadgeId[] {
         getDefaultTextureMaterialType(profile.subtype as TextureSubtype)
     ];
     if (material) selected.add(material);
+  }
+  if (profile.category === "item") {
+    for (const itemMaterial of [
+      profile.answers.primaryMaterial,
+      profile.answers.secondaryMaterial
+    ]) {
+      if (itemMaterial === undefined) continue;
+      const material = itemMaterialBadgeMap[itemMaterial];
+      if (material) selected.add(material);
+    }
   }
 
   for (const iconId of profile.badgeIconIds) {

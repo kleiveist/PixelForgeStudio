@@ -37,6 +37,19 @@ import {
   BUILDING_WINDOW_SHAPE_IDS
 } from "../domain/buildings";
 import {
+  ITEM_CLASS_IDS,
+  ITEM_CONDITION_IDS,
+  ITEM_GLOW_MODE_IDS,
+  ITEM_MATERIAL_IDS,
+  ITEM_PRESENTATION_IDS,
+  ITEM_PURPOSE_IDS,
+  ITEM_READABILITY_IDS,
+  ITEM_SHADOW_MODE_IDS,
+  ITEM_SIGNIFICANCE_IDS,
+  ITEM_SIZE_IDS,
+  ITEM_WEAR_POSITION_IDS
+} from "../domain/items";
+import {
   MOVING_OBJECT_ANCHOR_MODE_IDS,
   MOVING_OBJECT_ANIMATION_TYPE_IDS,
   MOVING_OBJECT_CLASS_IDS,
@@ -117,6 +130,7 @@ const StaticObjectDetailSchema = z.string().trim().min(1).max(500);
 const BuildingDetailSchema = z.string().trim().min(1).max(500);
 const TilesetDescriptorSchema = z.string().trim().min(1).max(200);
 const TilesetDetailSchema = z.string().trim().min(1).max(500);
+const ItemDetailSchema = z.string().trim().min(1).max(500);
 
 export const CharacterAnimationActionSchema = z
   .strictObject({
@@ -399,12 +413,24 @@ export const TilesetAnswersSchema = z
 export const ItemAnswersSchema = z
   .strictObject({
     ...sharedAnswersShape,
-    purpose: z.enum(["practical", "decorative", "wearable", "usable"]).optional(),
-    presentation: z.enum(["icon", "worldAsset", "equipped"]).optional(),
-    wearPosition: z
-      .enum(["head", "neck", "hand", "body", "back", "belt"])
-      .optional(),
-    iconSize: z.number().int().min(8).max(512).optional()
+    itemClass: z.enum(ITEM_CLASS_IDS).optional(),
+    purpose: z.enum(ITEM_PURPOSE_IDS).optional(),
+    presentation: z.enum(ITEM_PRESENTATION_IDS).optional(),
+    wearPosition: z.enum(ITEM_WEAR_POSITION_IDS).optional(),
+    iconSize: z.number().int().min(8).max(512).optional(),
+    size: z.enum(ITEM_SIZE_IDS).optional(),
+    primaryMaterial: z.enum(ITEM_MATERIAL_IDS).optional(),
+    secondaryMaterial: z.enum(ITEM_MATERIAL_IDS).optional(),
+    materialDetails: ItemDetailSchema.optional(),
+    condition: z.enum(ITEM_CONDITION_IDS).optional(),
+    functionDetails: ItemDetailSchema.optional(),
+    significance: z.enum(ITEM_SIGNIFICANCE_IDS).optional(),
+    meaningDetails: ItemDetailSchema.optional(),
+    silhouette: ItemDetailSchema.optional(),
+    readability: z.enum(ITEM_READABILITY_IDS).optional(),
+    glowMode: z.enum(ITEM_GLOW_MODE_IDS).optional(),
+    shadowMode: z.enum(ITEM_SHADOW_MODE_IDS).optional(),
+    variantCount: z.number().int().min(1).max(12).optional()
   })
   .readonly();
 

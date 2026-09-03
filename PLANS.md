@@ -4,10 +4,35 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** Prompt 21 — Item/Equipment Editor
-- **Nächste Aufgabe:** Prompt 22 — Artwork Editor
-- **Zuletzt abgeschlossen:** Prompt 20 — Tileset Editor
+- **Aktuelle Aufgabe:** Prompt 22 — Artwork Editor (noch nicht begonnen)
+- **Nächste Aufgabe:** Prompt 23 — Prompt Engine 2.0
+- **Zuletzt abgeschlossen:** Prompt 21 — Item/Equipment Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 21
+
+1. Eine frameworkfreie Item-Domain mit stabilen Katalogen, vollständigem
+   Untertyp→Itemklassen-Mapping und puren Relevanzregeln für tragbare
+   Darstellung anlegen. Itemklasse und technische Produktionswerte bleiben
+   abgeleitet statt als frei widersprüchliche Eingaben vorzuliegen.
+2. Den bestehenden strikten `ItemAnswersSchema`-Vertrag additiv um Material,
+   Zustand, Funktion, Bedeutung, Größe, Silhouettenlesbarkeit, Leuchteffekt,
+   Schatten und Varianten erweitern. Frühere Schema-V2-Itemdaten bleiben ohne
+   eager Defaults lesbar; Wearable-Daten bleiben capability-gebunden.
+3. Einen responsiven RHF-gesteuerten `ItemEquipmentEditor` als eigenen
+   `itemDetails`-Schritt direkt nach der Basisprofilwahl integrieren. Er zeigt
+   Itemklasse, Hintergrund, Tilegröße und Pixelmaßstab read-only und enthält
+   keine erfundene Richtungs- oder Animationslogik.
+4. Item-Felder durch Base→Category→Asset-Auflösung, minimale lokale
+   Projektion, Explicit Clear, Basis-/Klassifikationswechsel, transienten
+   Rohzustand, Autosave und schreibfreies Resume führen.
+5. Live-Zusammenfassung und Dashboard um kompakte Itemklassen-, Material-,
+   Zustands-, Funktions-, Bedeutungs-, Größen-, Lesbarkeits-, Schatten- und
+   Variantenfakten ergänzen.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und
+   RTL-Tests ergänzen. Danach Dokumentation, `npm run verify`,
+   `git diff --check`, Abschlussaudit und den separaten Prompt-21-Commit
+   ausführen; Prompt 22 bleibt unangetastet.
 
 ## Ausführungsplan Prompt 20
 
@@ -1025,19 +1050,39 @@
    Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und RTL-Tests decken
    den vollständigen Autotile-Roundtrip ab.
 
-## Übergabe an Prompt 21
+## Ergebnis Prompt 21
 
-- Ergänze ausschließlich den Item-/Equipment-Editor aus
-  `docs/CODEX-V2-PROMPTS.md`: Itemklasse, Material, Zustand, Funktion,
-  Präsentation und Lesbarkeitsregeln.
-- Nutze die vorhandene Capability- und Base→Category→Asset-Auflösung; trenne
-  Weltasset-, Icon- und ausgerüstete Darstellung ohne Tileset- oder
-  Richtungslogik zu erfinden.
-- Führe alle neuen Item-Felder erneut durch strikte additive Schemas, minimale
+1. `domain/items` stellt stabile readonly Kataloge, das vollständige
+   Untertyp→Itemklassen-Mapping und einen puren Wearable-Guard bereit.
+2. `ItemAnswersSchema` ist strikt und additiv um Klasse, Material, Zustand,
+   Funktion, Bedeutung, Größe, Silhouette, Lesbarkeit, Glow, Schatten und
+   Varianten erweitert. Frühere V2-Items bleiben ohne eager Defaults lesbar.
+3. `ItemEquipmentEditor` ist als eigener `itemDetails`-Schritt integriert. Er
+   zeigt Itemklasse, Hintergrund und Produktionsmaßstab read-only und erfasst
+   nur RHF-gesteuerte Item-Fachwerte; nicht tragbare Untertypen erhalten keine
+   ausgerüstete Darstellung oder Trageposition.
+4. Base→Category→Asset-Hydration, minimale lokale Projektion, Explicit Clear,
+   Klassifikationsbereinigung, Rohsnapshot, Autosave und schreibfreies Resume
+   umfassen sämtliche Item-Felder.
+5. Live-Zusammenfassung und Dashboard zeigen kompakte tatsächliche
+   Itemklassen-, Material-, Zustands-, Funktions-, Bedeutungs-, Größen-,
+   Lesbarkeits-, Schatten- und Variantenfakten sowie bekannte Materialbadges.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und
+   RTL-Tests sichern den Roundtrip ab. Kein Item-Untertyp erhält Richtungs- oder
+   Animationsfragen.
+
+## Übergabe an Prompt 22
+
+- Ergänze ausschließlich den Artwork-/Konzeptbild-Editor aus
+  `docs/CODEX-V2-PROMPTS.md`: Zweck, Motiv, Komposition, Format, Hintergrund,
+  Fokus, Stimmung und freie Produktionsbeschreibung.
+- Nutze `freeComposition` als zentrale Grenze; erzwinge für Artwork weder
+  Tilegröße, Figurenhöhe, Sprite-Richtung noch Animation.
+- Führe neue Artwork-Felder erneut durch strikte additive Schemas, minimale
   Projektion, Explicit Clear, Rohsnapshot, Autosave, schreibfreies Resume,
   Summary und Dashboard.
-- Artwork, Prompt Engine, Review und Output bleiben späteren, separat zu
-  committenden Phasen vorbehalten.
+- Prompt Engine, Review und Output bleiben späteren, separat zu committenden
+  Phasen vorbehalten.
 
 ## Erfasster Legacy-Ist-Stand
 
@@ -1086,7 +1131,7 @@
 | 17 | Statische Objekte | Objektparameter ohne unnötige Bewegung | abgeschlossen |
 | 18 | Gebäudeeditor | Architektur und Mappingparameter | abgeschlossen |
 | 19 | Tileset-Editor | Tile-/Transition-/Seam-Regeln | abgeschlossen |
-| 20 | Item-/Ausrüstungseditor | Spielasset-spezifische Darstellung | offen |
+| 20 | Item-/Ausrüstungseditor | Spielasset-spezifische Darstellung | abgeschlossen |
 | 21 | Artwork-Editor | freie Komposition ohne erzwungene Tilelogik | offen |
 | 22 | Prompt Engine 2.0 | modulare TS-Promptbausteine | offen |
 | 23 | Review + Output Workspace | vier Ausgaben, Kopieren, Export | offen |

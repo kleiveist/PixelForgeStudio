@@ -97,14 +97,14 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 20
+## 4.3 Umgesetzter Einstieg bis Prompt 21
 
 Der aktuell implementierte Core-Flow lautet:
 
 ```text
 Projekt → Hauptkategorie/Untertyp → Basisprofil
-→ Character-, Moving-Object-, Static-Object-, Texture-, Nature-, Building-
-oder Tileset-Details, falls relevant
+→ Character-, Moving-Object-, Static-Object-, Texture-, Nature-, Building-,
+Tileset- oder Item-Details, falls relevant
 → Capability-Schritte
 ```
 
@@ -220,11 +220,15 @@ Clear löst geerbte Provenienz. Der Fachschritt ersetzt die generische
 das animierte Tile erhält einen getrennten Animationsschritt, kein Tileset
 Figurenhöhe oder 4/8 Richtungen. Summary und Dashboard zeigen kompakte
 tatsächliche Tileset- und Atlasfakten.
+Der Item-Schritt trennt Icon-, Welt- und capability-gültige
+Ausrüstungsdarstellung, zeigt technische Profilwerte read-only und führt keine
+Richtungs- oder Animationslogik ein. Summary und Dashboard zeigen kompakte
+tatsächliche Item- und Materialfakten.
 
-Prompts 00 bis 20 sind abgeschlossen. Prompt 21 ergänzt als nächste Phase den
-Item-/Equipment-Editor.
+Prompts 00 bis 21 sind abgeschlossen. Prompt 22 ergänzt als nächste Phase den
+Artwork-Editor.
 Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
-Tabelle oben werden durch Prompt 20 noch nicht als fertig erklärt.
+Tabelle oben werden durch Prompt 21 noch nicht als fertig erklärt.
 
 ---
 
@@ -988,6 +992,26 @@ keine schreibende Migration beim bloßen Laden statt.
 | Varianten | Qualitätsstufen, Zustände, Farbvarianten |
 | Output | Einzelitem, Iconset, Ausrüstungsansicht |
 
+### Implementierungsstand seit Prompt 21
+
+- Der eigene `itemDetails`-Schritt erscheint ausschließlich für die
+  Item-Kategorie direkt nach der Basisprofilwahl. Er erfasst Zweck,
+  Darstellung, Haupt-/Nebenmaterial, Zustand, Funktion, Bedeutung, relative
+  Größe, Silhouette, Lesbarkeit, Glow, Schatten, Icongröße und Varianten.
+- `ITEM_CLASS_BY_SUBTYPE` leitet die Itemklasse vollständig und deterministisch
+  ab. Itemklasse, technischer Hintergrund, Tilegröße und Pixelmaßstab sind im
+  Editor read-only und werden nicht als widersprüchliche Fachwerte geführt.
+- Trageposition und ausgerüstete Darstellung bleiben auf explizit tragbare
+  Untertypen begrenzt. Kein Item-Untertyp ist `directional` oder `animated`;
+  4/8-Richtungs- und Animationsfragen erscheinen deshalb nie.
+- Base→Category→Asset-Hydration und minimale lokale Projektion gelten für alle
+  Item-Felder. Explicit Clear löst Kategorieprovenienz; Basiswechsel erhalten
+  Item-Antworten, Klassifikationswechsel bereinigen sie. Rohzustand, Autosave
+  und Resume verwenden den gemeinsamen schreibfreien Wizard-Vertrag.
+- Live-Zusammenfassung und Dashboard zeigen nur kompakte konfigurierte
+  Itemfakten. Lange Beschreibungen bleiben für die spätere Prompt Engine und
+  Review-/Output-Phase im Draft.
+
 ---
 
 ## 8.9 Artwork / Konzeptbild
@@ -1301,6 +1325,16 @@ lesbar. Ein vorhandener Tiletyp muss zum vollständigen Untertyp-Mapping passen;
 Verbindungsfelder und Atlas-Spalten werden cross-field validiert. Tilegröße,
 Pixelmaßstab, Figurenhöhe und Richtungsdaten bleiben vollständig außerhalb von
 `TilesetAnswers`.
+
+Für Items erweitert Prompt 21 den strikten Schema-V2-Vertrag additiv um
+`itemClass`, Haupt-/Nebenmaterial, Zustand, Funktion, Bedeutung, relative
+Größe, Silhouette, Lesbarkeit, Glow, Schatten und Varianten. Die bisherigen
+Felder `subjectDescription`, `extraDetails`, `purpose`, `presentation`,
+`wearPosition` und `iconSize` bleiben ohne materialisierte Defaults lesbar.
+Eine vorhandene Itemklasse muss zum vollständigen Untertyp-Mapping passen;
+Wearable-Daten bleiben capability-gültigen Untertypen vorbehalten.
+Technischer Hintergrund, Tilegröße, Pixelmaßstab, Figurenhöhe, Animation und
+Richtungsdaten bleiben vollständig außerhalb von `ItemAnswers`.
 
 ## 12.4 Wizard-Draft
 

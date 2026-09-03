@@ -98,6 +98,10 @@
 - strikt additives `TilesetAnswersSchema` um Verbindungen, Materialgrenzen, Seam-/Wiederholungsregeln, Variantenarten und Atlasparameter erweitert; bestehende Schema-V2-Daten bleiben ohne eager Defaults lesbar
 - eigenen `tilesetDetails`-Schritt mit `TilesetEditor` direkt nach der Basisprofilwahl integriert; Tiletyp, zentrale Tilegröße und Pixelmaßstab werden read-only abgeleitet und das technische Atlasraster live berechnet
 - Tileset-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte Verbindungs- und Atlasfakten in Live-Zusammenfassung und Dashboard ergänzt
+- frameworkfreien Item-/Equipment-Katalog mit vollständigem Untertyp-/Itemklassen-Mapping sowie typisierten Zweck-, Präsentations-, Material-, Zustands-, Bedeutungs-, Größen-, Lesbarkeits-, Glow- und Schattenwerten ergänzt
+- strikt additives `ItemAnswersSchema` um Produktionsdetails, Icongröße und 1–12 Varianten erweitert; bestehende Schema-V2-Itemdaten bleiben ohne eager Defaults lesbar, Klassenkonflikte und capability-fremde Wearable-Daten werden abgewiesen
+- eigenen `itemDetails`-Schritt mit `ItemEquipmentEditor` direkt nach der Basisprofilwahl integriert; Itemklasse, technischer Hintergrund, Tilegröße und Pixelmaßstab werden read-only gezeigt und nicht in Fachantworten dupliziert
+- Item-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte Itemfakten und Materialbadges in Live-Zusammenfassung und Dashboard ergänzt; kein Item-Untertyp erhält Richtungs- oder Animationsfragen
 - generischen Tileability-Schritt für Tilesets durch den strukturierten Fachschritt ersetzt, alte Drafts schreibfrei umgeleitet, Animation nur für animierte Tiles separat angeboten und alle Tilesets ohne 4/8-Richtungs- oder Figurenhöhenfrage gehalten
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt

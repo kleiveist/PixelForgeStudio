@@ -3,6 +3,7 @@ import {
   WIZARD_CORE_STEPS,
   WIZARD_BUILDING_DETAIL_FIELD_PATHS,
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
+  WIZARD_ITEM_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_NATURE_DETAIL_FIELD_PATHS,
   WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
@@ -14,6 +15,7 @@ import {
   WizardCategoryStepSchema,
   WizardCharacterDetailsStepSchema,
   WizardDirectionStepSchema,
+  WizardItemDetailsStepSchema,
   WizardMovingObjectDetailsStepSchema,
   WizardNatureDetailsStepSchema,
   WizardProjectStepSchema,
@@ -58,6 +60,7 @@ describe("wizard core steps", () => {
       "staticObjectDetails",
       "buildingDetails",
       "tilesetDetails",
+      "itemDetails",
       "directions",
       "animation",
       "tileability"
@@ -116,6 +119,13 @@ describe("wizard core steps", () => {
       route: "wizard/editor",
       title: "Tileset und Kartenelement"
     });
+    expect(getWizardCoreStep("itemDetails").fieldPaths).toBe(
+      WIZARD_ITEM_DETAIL_FIELD_PATHS
+    );
+    expect(getWizardCoreStep("itemDetails")).toMatchObject({
+      route: "wizard/editor",
+      title: "Item und Ausrüstung"
+    });
     expect(getWizardCoreStep("directions").fieldPaths).toEqual(["directionCount"]);
     expect(getWizardCoreStep("animation").fieldPaths).toEqual([
       "animationAction",
@@ -134,7 +144,27 @@ describe("wizard core steps", () => {
     expect(getWizardCoreStepIndex("staticObjectDetails")).toBe(7);
     expect(getWizardCoreStepIndex("buildingDetails")).toBe(8);
     expect(getWizardCoreStepIndex("tilesetDetails")).toBe(9);
-    expect(getWizardCoreStepIndex("directions")).toBe(10);
+    expect(getWizardCoreStepIndex("itemDetails")).toBe(10);
+    expect(getWizardCoreStepIndex("directions")).toBe(11);
+  });
+
+  it("owns the complete Item boundary without technical or direction fields", () => {
+    expect(WIZARD_ITEM_DETAIL_FIELD_PATHS).toEqual([
+      "itemClass", "itemPurpose", "itemPresentation", "itemWearPosition",
+      "itemIconSize", "itemSize", "itemDescription", "itemPrimaryMaterial",
+      "itemSecondaryMaterial", "itemMaterialDetails", "itemCondition",
+      "itemFunctionDetails", "itemSignificance", "itemMeaningDetails",
+      "itemSilhouette", "itemReadability", "itemGlowMode", "itemShadowMode",
+      "itemVariantCount", "itemExtraDetails"
+    ]);
+    expect(WIZARD_ITEM_DETAIL_FIELD_PATHS).not.toContain("tileSize");
+    expect(WIZARD_ITEM_DETAIL_FIELD_PATHS).not.toContain("backgroundMode");
+    expect(WIZARD_ITEM_DETAIL_FIELD_PATHS).not.toContain("directionCount");
+    expect(WizardItemDetailsStepSchema.safeParse({
+      projectName: "Item",
+      category: "item",
+      subtype: "weapon"
+    }).success).toBe(false);
   });
 
   it("owns the complete Tileset boundary without duplicated Grid or directions", () => {

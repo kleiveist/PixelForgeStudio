@@ -10,6 +10,7 @@ import {
   getDefaultBuildingType,
   type BuildingSubtype
 } from "../../domain/buildings";
+import { getDefaultItemClass, type ItemSubtype } from "../../domain/items";
 import {
   getDefaultMovingObjectClass,
   type MovingObjectSubtype
@@ -45,6 +46,7 @@ import { NatureTreeEditor } from "../nature-editor";
 import { StaticWorldObjectEditor } from "../static-object-editor";
 import { BuildingArchitectureEditor } from "../building-editor";
 import { TilesetEditor } from "../tileset-editor";
+import { ItemEquipmentEditor } from "../item-editor";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import {
   DASHBOARD_CATEGORIES,
@@ -66,6 +68,7 @@ import {
 import {
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_BUILDING_DETAIL_FIELD_PATHS,
+  WIZARD_ITEM_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_NATURE_DETAIL_FIELD_PATHS,
   WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
@@ -136,6 +139,7 @@ const CLASSIFICATION_FIELDS = [
   ...WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
   ...WIZARD_BUILDING_DETAIL_FIELD_PATHS,
   ...WIZARD_TILESET_DETAIL_FIELD_PATHS,
+  ...WIZARD_ITEM_DETAIL_FIELD_PATHS,
   "characterAnimationFrames",
   "movingObjectAnimationFrames",
   "directionCount",
@@ -234,6 +238,10 @@ function CategoryStep({
     control: form.control,
     name: "tilesetType"
   });
+  const itemClass = useWatch({
+    control: form.control,
+    name: "itemClass"
+  });
   const [pendingCategory, setPendingCategory] = useState<AssetCategory | null>(
     null
   );
@@ -288,6 +296,17 @@ function CategoryStep({
     expectedTilesetType !== null &&
     tilesetType !== undefined &&
     tilesetType !== expectedTilesetType;
+  const knownItemSubtypes: readonly string[] = ASSET_SUBTYPES.item;
+  const expectedItemClass =
+    category === "item" &&
+    subtype !== undefined &&
+    knownItemSubtypes.includes(subtype)
+      ? getDefaultItemClass(subtype as ItemSubtype)
+      : null;
+  const itemClassMismatch =
+    expectedItemClass !== null &&
+    itemClass !== undefined &&
+    itemClass !== expectedItemClass;
 
   useEffect(() => {
     if (categoryError) {
@@ -373,6 +392,14 @@ function CategoryStep({
         form.setValue(
           "tilesetType",
           getDefaultTilesetType(nextSubtype as TilesetSubtype),
+          { shouldDirty: true, shouldTouch: true, shouldValidate: true }
+        );
+      }
+      const itemSubtypes: readonly string[] = ASSET_SUBTYPES.item;
+      if (category === "item" && itemSubtypes.includes(nextSubtype)) {
+        form.setValue(
+          "itemClass",
+          getDefaultItemClass(nextSubtype as ItemSubtype),
           { shouldDirty: true, shouldTouch: true, shouldValidate: true }
         );
       }
@@ -587,6 +614,25 @@ function CategoryStep({
                 }}
               >
                 Tiletyp aus Untertyp wiederherstellen
+              </button>
+            </div>
+          ) : null}
+          {itemClassMismatch ? (
+            <div className={styles.inlineActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  form.setValue("itemClass", expectedItemClass, {
+                    shouldDirty: true,
+                    shouldTouch: true
+                  });
+                  void form.trigger("subtype");
+                  notifyProgrammaticChange();
+                  subtypeRef.current?.focus();
+                }}
+              >
+                Itemklasse aus Untertyp wiederherstellen
               </button>
             </div>
           ) : null}
@@ -950,6 +996,30 @@ function TilesetDetailsStep({ form }: CoreStepProps) {
   return <TilesetEditor form={form} subtype={subtype as TilesetSubtype} />;
 }
 
+function ItemDetailsStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
+  const knownItemSubtypes: readonly string[] = ASSET_SUBTYPES.item;
+
+  if (
+    category !== "item" ||
+    subtype === undefined ||
+    !knownItemSubtypes.includes(subtype)
+  ) {
+    return (
+      <section className={styles.changeWarning} role="alert">
+        <strong>Itemprofil nicht verfügbar</strong>
+        <p>
+          Kehre zur Bildart zurück und wähle einen gültigen Item- oder
+          Ausrüstungs-Untertyp.
+        </p>
+      </section>
+    );
+  }
+
+  return <ItemEquipmentEditor form={form} subtype={subtype as ItemSubtype} />;
+}
+
 function AnimationSelect({
   form,
   options
@@ -1074,6 +1144,7 @@ const STEP_COMPONENTS = {
   staticObjectDetails: StaticObjectDetailsStep,
   buildingDetails: BuildingDetailsStep,
   tilesetDetails: TilesetDetailsStep,
+  itemDetails: ItemDetailsStep,
   directions: DirectionsStep,
   animation: AnimationStep
 } as const;
@@ -1152,6 +1223,14 @@ export const WIZARD_CORE_FLOW = Object.freeze({
         values: WizardCoreFormValues,
         context: WizardCoreFlowContext
       ) => wizardStepIsApplicable("tilesetDetails", values, context.library)
+    }),
+    Object.freeze({
+      ...getWizardCoreStep("itemDetails"),
+      Component: STEP_COMPONENTS.itemDetails,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("itemDetails", values, context.library)
     }),
     Object.freeze({
       ...getWizardCoreStep("directions"),

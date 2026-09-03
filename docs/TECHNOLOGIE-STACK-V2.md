@@ -376,8 +376,27 @@ ersetzt; alte Drafts werden in-memory dorthin umgeleitet. Nur das animierte
 Tile erhält einen separaten Animationsschritt, kein Tileset 4/8 Richtungen oder
 Figurenhöhe.
 
-Prompts 00 bis 20 sind abgeschlossen; Prompt 21 ergänzt als nächste Phase den
-Item-/Equipment-Editor. Prompt 20 nimmt weder Prompt Engine noch Review-/
+Seit Prompt 21 folgt für `item` direkt nach dem Basisprofil der eigene Schritt
+`itemDetails`. `ItemEquipmentEditor` erfasst Zweck, Darstellung, Materialien,
+Zustand, Funktion, Bedeutung, Größe, Silhouette, Lesbarkeit, Glow, Schatten
+und Varianten in React Hook Form. Itemklasse, wirksamer Hintergrund,
+Tilegröße und Pixelmaßstab werden read-only aus Untertyp und
+Base→Category→Asset-Vererbung gezeigt.
+
+Der öffentliche Katalog unter `src/domain/items/` stellt readonly IDs, das
+vollständige `ITEM_CLASS_BY_SUBTYPE`-Mapping sowie den puren Wearable-Guard
+bereit. `ItemAnswersSchema` bleibt strikt und additiv; alte V2-Daten werden
+ohne eager Defaults gelesen, während Klassenkonflikte und Wearable-Daten auf
+nicht tragbaren Untertypen abgewiesen werden.
+
+Item-Werte werden Base→Category→Asset aufgelöst und minimal lokal gespeichert.
+Explicit Clear, Basis-/Klassifikationswechsel, Rohzustand, Dirty State,
+Autosave und schreibfreies Resume folgen dem gemeinsamen Vertrag. Kein
+Item-Untertyp ist `directional` oder `animated`; technische Hintergrund- und
+Maßstabswerte werden nicht in Item-Fachantworten dupliziert.
+
+Prompts 00 bis 21 sind abgeschlossen; Prompt 22 ergänzt als nächste Phase den
+Artwork-Editor. Prompt 21 nimmt weder Prompt Engine noch Review-/
 Output-Erzeugung oder weitere Spezialeditoren vorweg.
 
 ## Speicherung
