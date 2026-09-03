@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Badge, Surface } from "../../components/ui";
@@ -35,6 +35,7 @@ type ConflictPreparation = Extract<
 >;
 type ReadyPlan = Extract<ProfileConversionPlan, { status: "ready" }>;
 type ConversionMode = "choices" | "duplicate" | "new" | "existing";
+type ConversionChoice = Exclude<ConversionMode, "choices">;
 type ConversionDraftStorage = Pick<V2StorageAdapter, "writeDraft">;
 
 const ConversionNameSchema = z.strictObject({ name: ProfileNameSchema });
@@ -172,6 +173,11 @@ export function ProfileConversionWorkflow({
   const [mode, setMode] = useState<ConversionMode>("choices");
   const [selectedTargetId, setSelectedTargetId] = useState<string>("");
   const [localError, setLocalError] = useState<string | null>(null);
+  const choiceButtonRefs = useRef<
+    Partial<Record<ConversionChoice, HTMLButtonElement | null>>
+  >({});
+  const existingHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousModeRef = useRef<ConversionMode>(mode);
   const conversion = useMemo(
     () =>
       prepareProfileConversion({
@@ -205,6 +211,24 @@ export function ProfileConversionWorkflow({
     mode: "onChange",
     defaultValues: { name: "" }
   });
+
+  useEffect(() => {
+    const previousMode = previousModeRef.current;
+    if (previousMode === mode) return;
+    previousModeRef.current = mode;
+
+    if (mode === "duplicate" || mode === "new") {
+      form.setFocus("name", { shouldSelect: true });
+      return;
+    }
+    if (mode === "existing") {
+      existingHeadingRef.current?.focus();
+      return;
+    }
+    if (previousMode !== "choices") {
+      choiceButtonRefs.current[previousMode]?.focus();
+    }
+  }, [form, mode]);
   const watchedName = useWatch({ control: form.control, name: "name" });
   const familyKind = mode === "duplicate" || mode === "new" ? mode : null;
   const familyPreview = useMemo(() => {
@@ -226,7 +250,7 @@ export function ProfileConversionWorkflow({
     }
   }, [familyKind, readyConversion, watchedName]);
 
-  const chooseMode = (nextMode: Exclude<ConversionMode, "choices">) => {
+  const chooseMode = (nextMode: ConversionChoice) => {
     if (readyConversion === null) return;
     setLocalError(null);
     setSelectedTargetId("");
@@ -421,13 +445,31 @@ export function ProfileConversionWorkflow({
           <button type="button" onClick={onCancel}>
             Abbrechen
           </button>
-          <button type="button" onClick={() => chooseMode("duplicate")}>
+          <button
+            ref={(element) => {
+              choiceButtonRefs.current.duplicate = element;
+            }}
+            type="button"
+            onClick={() => chooseMode("duplicate")}
+          >
             Basisprofil duplizieren
           </button>
-          <button type="button" onClick={() => chooseMode("new")}>
+          <button
+            ref={(element) => {
+              choiceButtonRefs.current.new = element;
+            }}
+            type="button"
+            onClick={() => chooseMode("new")}
+          >
             Neues Basisprofil
           </button>
-          <button type="button" onClick={() => chooseMode("existing")}>
+          <button
+            ref={(element) => {
+              choiceButtonRefs.current.existing = element;
+            }}
+            type="button"
+            onClick={() => chooseMode("existing")}
+          >
             Kompatibles Profil wählen
           </button>
         </div>
@@ -499,7 +541,11 @@ export function ProfileConversionWorkflow({
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.eyebrow}>Vorhandene Familie</span>
-              <h3 id="compatible-profile-title">
+              <h3
+                ref={existingHeadingRef}
+                id="compatible-profile-title"
+                tabIndex={-1}
+              >
                 Kompatibles Basisprofil wählen
               </h3>
             </div>

@@ -38,8 +38,11 @@
   max-width: 21ch;
   margin-top: var(--space-2);
   font-size: clamp(2rem, 5vw, 4rem);
+  hyphens: auto;
   line-height: 1;
   letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .description {
@@ -112,6 +115,7 @@
 .outputActions button:focus-visible,
 .outputTabs button:focus-visible,
 .packageControls select:focus-visible,
+.sectionHeading h2:focus-visible,
 .outputContent:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
@@ -182,6 +186,8 @@
 
 .sectionHeading h2 {
   margin-top: var(--space-1);
+  hyphens: auto;
+  overflow-wrap: anywhere;
 }
 
 .summaryGrid {
@@ -368,6 +374,14 @@
 
   .heroAction {
     width: 100%;
+  }
+
+  .sectionHeading > div {
+    width: 100%;
+  }
+
+  .sectionHeading h2 {
+    font-size: 1.125rem;
   }
 
   .packageControls,

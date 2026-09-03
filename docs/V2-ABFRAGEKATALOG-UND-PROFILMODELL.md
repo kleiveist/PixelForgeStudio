@@ -236,14 +236,16 @@ Antworten, Klassifikationswechsel bereinigen sie und Explicit Clear löst
 geerbte Provenienz. Summary und Dashboard zeigen nur kompakte tatsächliche
 Artwork-Fakten.
 
-Prompts 00 bis 25 sind abgeschlossen. Die Prompt Engine 2.0 erzeugt Material-,
+Prompts 00 bis 26 sind abgeschlossen. Die Prompt Engine 2.0 erzeugt Material-,
 Setting-, Haupt-, Negativ-, Technik- und kombinierte Textblöcke als pure
 Domain-Ausgabe. Der Review-/Output-Workspace löst aktive oder gespeicherte
 Drafts fail-closed auf, zeigt Profilquellen, Locks und Warnungen und stellt
 Sprach-/Stilpakete samt Copy-, TXT-, JSON- und Profilspeicheraktionen bereit.
 Ein strukturierter Lock-Konflikt kann nach sichtbarer Wirkungsprüfung in eine
 eigenständige Basisfamilie oder ein kompatibles vorhandenes Basisprofil
-konvertiert werden; bestehende Eltern und Kinder werden nicht umgehängt.
+konvertiert werden; bestehende Eltern und Kinder werden nicht umgehängt. Der
+UI-Querschnitt ist zusätzlich für Theme, Tastatur, Kontrast, reduzierte
+Bewegung und 360-px-Reflow geprüft.
 
 ---
 
@@ -1174,7 +1176,7 @@ Basisprofil
 | Tileset | nicht passende Kanten, sichtbare Wiederholung, falsches Raster |
 | Artwork | unerwünschte Schrift, Wasserzeichen, unklare Hauptkomposition |
 
-## 11.3 Implementierungsstand seit Prompt 25
+## 11.3 Implementierungsstand bis Prompt 26
 
 - `buildPromptPackages()` nimmt ein vollständig `ResolvedProfile` entgegen
   und erzeugt pro gewünschter Sprache und wirksamer Stilvariante ein
@@ -1224,6 +1226,16 @@ Basisprofil
 - Ein geprüfter neuer Draft wird als neues Assetprofil gespeichert; ein aus
   der Bibliothek geladener Draft aktualisiert dessen stabile ID und Metadaten.
   Der vollständige Profilgraph wird vor dem Storage-Write erneut validiert.
+- Prompt 26 ändert keine Fachantwort, Capability, Vererbungsregel oder
+  Promptausgabe. Er stellt sicher, dass dieselben strukturierten Werte in
+  Desktop-, Tablet- und 360-px-Layouts ohne Seiten-Overflow lesbar bleiben.
+- Theme-Radiogruppe, Profilaktionen, Wizard, Konvertierung und Ausgabetabs
+  behalten semantische Namen und vollständige Tastaturpfade. Dynamische
+  Wechsel führen Fokus zum neuen Kontext und Abbruch zum exakten Auslöser.
+- Hell, Dunkel und System verwenden die zentralen Kontrast- und Fokustokens;
+  reduzierte Bewegung und Forced-Colors werden am globalen Stylesheet
+  respektiert. Die Mess- und Viewportdetails stehen in
+  `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
 
 ---
 

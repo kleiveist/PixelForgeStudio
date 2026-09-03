@@ -4,10 +4,65 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** Prompt 25 — Profilkonflikte und Konvertierung (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 26 — Accessibility, Responsive Design und visuelle Politur (noch nicht begonnen)
-- **Zuletzt abgeschlossen:** Prompt 25 — Profilkonflikte und Konvertierung
+- **Aktuelle Aufgabe:** Prompt 26 — Accessibility, Responsive Design und visuelle Politur (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 27 — V2-Release-Abnahme (noch nicht begonnen)
+- **Zuletzt abgeschlossen:** Prompt 26 — Accessibility, Responsive Design und visuelle Politur
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 26
+
+1. Die sechs Shell-Ansichten sowie Theme, Karten, Formulare, Statusmeldungen,
+   Bestätigungsoberflächen und Output auf semantische Namen, Fokusreihenfolge,
+   Tastaturbedienung und sichtbare Fokuszustände prüfen.
+2. Fokus nach Top-Level-Navigation und dynamischen Wizard-/Output-Wechseln
+   gezielt führen, ohne native Tab-Reihenfolgen zu ersetzen; wichtige
+   Tastaturpfade mit React Testing Library absichern.
+3. Globale Motion-, Kontrast- und Overflow-Grundlagen sowie die betroffenen
+   CSS-Module für Desktop, Tablet und 360-px-Viewports härten. Dabei lange
+   Profil-, Technik- und Promptinhalte umbrechen und Bedienelemente ohne
+   horizontales Abschneiden stapeln.
+4. Die manuelle Viewport- und Theme-Prüfung mit überprüften Breiten,
+   Bedienpfaden und bekannten Grenzen als eigenes Auditdokument festhalten.
+5. Öffentliche UI-Grenzen und Implementierungsstatus dokumentieren, danach
+   `npm run verify`, `git diff --check`, Abschlussaudit und den separaten
+   Prompt-26-Commit ausführen; Prompt 27 und Legacy-Entfernung bleiben
+   unangetastet.
+
+## Ergebnis Prompt 26
+
+1. Die produktive Vite-Oberfläche wurde in allen sechs Shell-Ansichten bei
+   1440 × 1000, 768 × 1024 und 360 × 800 px unter heller und dunkler
+   Systemvorgabe geprüft. Befüllte Dashboard-, Profil-, Wizard-, Review- und
+   Output-Zustände sowie der Konvertierungskonflikt besitzen kein
+   horizontales Seiten-Overflow; lange Überschriften und technische Inhalte
+   bleiben innerhalb ihrer Panels.
+2. Die native Theme-Radiogruppe und die vier Output-Tabs sind mit
+   Pfeiltasten bedienbar. Der Konvertierungsworkflow führt den Fokus beim
+   Moduswechsel zum ersten relevanten Feld beziehungsweise zur Überschrift,
+   beim Zurückgehen zum exakten Auslöser und nach erfolgreicher Konvertierung
+   in den freigegebenen Review-/Output-Bereich.
+3. Der querschnittliche 3-px-Fokusring verwendet ausschließlich definierte
+   semantische Tokens und bleibt auch in erzwungenen Systemfarben sichtbar.
+   `prefers-reduced-motion: reduce` deaktiviert Übergänge tatsächlich,
+   begrenzt Animationen und entfernt bewegte Hover-Zustände.
+4. `docs/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` hält Viewportmatrix,
+   Tastaturpfade, Label-/Statusprüfung, Kontrastwerte und die Grenze der
+   Browserprüfung nachvollziehbar fest. Die UI-Politur ändert weder
+   Fachdefaults noch Schema, Persistenz oder Prompt Engine.
+5. RTL-Tests ergänzen Theme-Tastaturbedienung, roving Output-Tabs,
+   Konvertierungsfokus und Erfolgsfokus. Der vollständige Prüfstand umfasst
+   103 Vitest-Dateien mit 598 erfolgreichen Tests sowie 10 Legacy-Tests.
+
+## Übergabe an Prompt 27
+
+- Führe die vollständige Release-Abnahme gegen die Checkliste aus
+  `docs/CODEX-V2-PROMPTS.md` aus und verwende den dokumentierten Prompt-26-
+  Browseraudit als Beleg für Keyboard und Responsive Design.
+- Prüfe Migration, alle Spezialeditoren, Profil-/Lock-/Compatibility-Flows,
+  vier Ausgaben sowie JSON/TXT erneut als zusammenhängenden Releasepfad.
+- Entferne Legacy V1 ausschließlich, wenn Feature-Parität und Migration
+  vollständig belegt sind; verbleibende Lücken werden dokumentiert und nicht
+  als abgeschlossen markiert.
 
 ## Ausführungsplan Prompt 25
 
@@ -66,18 +121,6 @@
    Abbruch, alle vier Optionen, Duplikation, Neuanlage und die Wahl einer
    vorhandenen exakten Familie. Der vollständige Prüfstand umfasst 103
    Vitest-Dateien mit 595 erfolgreichen Tests sowie 10 Legacy-Tests.
-
-## Übergabe an Prompt 26
-
-- Führe die querschnittliche Accessibility- und Responsive-Prüfung über alle
-  sechs Ansichten aus; Prompt 25 hat nur die für seinen neuen Dialog nötigen
-  Labels, Live-Fehler, Fokusrahmen und Breakpoints ergänzt.
-- Prüfe insbesondere Fokusführung nach Moduswechseln, Keyboard-Bedienung der
-  Profilkarten und Dialoge, Kontrast sowie horizontales Overflow der neuen
-  Konvertierungsvorschau zusammen mit Wizard, Profilbibliothek und Output.
-- Dokumentiere die manuelle Desktop-/Tablet-/Schmalviewport-Prüfung und
-  `prefers-reduced-motion`; beginne noch keine Release-Abnahme oder
-  Legacy-Entfernung aus Prompt 27.
 
 ## Ausführungsplan Prompt 24
 
@@ -1321,8 +1364,9 @@
 - Ändere keine gesperrten Basiswerte still und führe kein implizites
   Reparenting von Geschwister- oder Kindprofilen durch. Compatibility-Key-
   Änderungen müssen deterministisch und vor dem Commit sichtbar sein.
-- Abschließende querschnittliche Accessibility-Politur und Release-Cleanup
-  bleiben den späteren Prompts 26 und 27 vorbehalten.
+- Die querschnittliche Accessibility-Politur ist inzwischen mit Prompt 26
+  abgeschlossen; Release-Cleanup und mögliche Legacy-Entfernung bleiben der
+  belegpflichtigen Abnahme aus Prompt 27 vorbehalten.
 
 ## Erfasster Legacy-Ist-Stand
 
@@ -1354,32 +1398,33 @@
 | 0 | Baseline + Migrationsinventar | V1-Verhalten, Storage-Keys und Promptregeln dokumentiert | abgeschlossen |
 | 1 | React/TS/Vite-Grundgerüst | Vite React-TS, npm, strict TS, Testsetup | abgeschlossen |
 | 2 | Legacy-Domain extrahieren | Defaults, Prompt-, Validierungs- und Metriklogik als frameworkfreies TypeScript | abgeschlossen |
-| 3 | Zod-Schemas + V2-Domainmodell | Kategorien, Profile, Capabilities und Importverträge typisiert | abgeschlossen |
-| 4 | Profilauflösung + Locks | Vererbung und Compatibility Key | abgeschlossen |
-| 5 | Storage V2 + V1-Migration | validierte Persistenz mit Backup | abgeschlossen |
-| 6 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | abgeschlossen |
-| 7 | App Shell + Navigation | React-App-Struktur und Views | abgeschlossen |
-| 8 | Dashboard | Kategorie- und Profilkarten | abgeschlossen |
-| 9 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | abgeschlossen |
-| 10 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | abgeschlossen |
-| 11 | Kategorie-Routing | Capability-gesteuerte Fragen | abgeschlossen |
-| 12 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | abgeschlossen |
-| 13 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | abgeschlossen |
-| 14 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | abgeschlossen |
-| 15 | Textur-/Materialeditor | Material, Seamless, Oberfläche | abgeschlossen |
-| 16 | Natur-/Baumeditor | Klima, Saison, Krone, Stamm etc. | abgeschlossen |
-| 17 | Statische Objekte | Objektparameter ohne unnötige Bewegung | abgeschlossen |
-| 18 | Gebäudeeditor | Architektur und Mappingparameter | abgeschlossen |
-| 19 | Tileset-Editor | Tile-/Transition-/Seam-Regeln | abgeschlossen |
-| 20 | Item-/Ausrüstungseditor | Spielasset-spezifische Darstellung | abgeschlossen |
-| 21 | Artwork-Editor | freie Komposition ohne erzwungene Tilelogik | abgeschlossen |
-| 22 | Prompt Engine 2.0 | modulare TS-Promptbausteine | abgeschlossen |
-| 23 | Review + Output Workspace | vier Ausgaben, Kopieren, Export | abgeschlossen |
-| 24 | Profilkonvertierung | technische Konflikte sichtbar lösen | offen |
-| 25 | Accessibility + Responsive | Tastatur, Kontrast, mobile Layouts | offen |
-| 26 | Release-Abnahme | Migration, Tests, Build, Dokumentation | offen |
-| 27 | Optional PWA | erst nach V2-Release | später |
-| 28 | Optional Tauri 2 | erst nach stabiler Web-V2 | später |
+| 3 | Kategorien + Capabilities | neun Assetarten und getrennte Richtungs-/Animationslogik | abgeschlossen |
+| 4 | Zod-Schemas + V2-Domainmodell | Profile und Importverträge typisiert | abgeschlossen |
+| 5 | Profilauflösung + Locks | Vererbung und Compatibility Key | abgeschlossen |
+| 6 | Storage V2 + V1-Migration | validierte Persistenz mit Backup | abgeschlossen |
+| 7 | Design Tokens + Theme | Light/Dark/System und Brand-Konfiguration | abgeschlossen |
+| 8 | App Shell + Navigation | React-App-Struktur und Views | abgeschlossen |
+| 9 | Dashboard | Kategorie- und Profilkarten | abgeschlossen |
+| 10 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | abgeschlossen |
+| 11 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | abgeschlossen |
+| 12 | Kategorie-Routing | Capability-gesteuerte Fragen | abgeschlossen |
+| 13 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | abgeschlossen |
+| 14 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | abgeschlossen |
+| 15 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | abgeschlossen |
+| 16 | Textur-/Materialeditor | Material, Seamless, Oberfläche | abgeschlossen |
+| 17 | Natur-/Baumeditor | Klima, Saison, Krone, Stamm etc. | abgeschlossen |
+| 18 | Statische Objekte | Objektparameter ohne unnötige Bewegung | abgeschlossen |
+| 19 | Gebäudeeditor | Architektur und Mappingparameter | abgeschlossen |
+| 20 | Tileset-Editor | Tile-/Transition-/Seam-Regeln | abgeschlossen |
+| 21 | Item-/Ausrüstungseditor | Spielasset-spezifische Darstellung | abgeschlossen |
+| 22 | Artwork-Editor | freie Komposition ohne erzwungene Tilelogik | abgeschlossen |
+| 23 | Prompt Engine 2.0 | modulare TS-Promptbausteine | abgeschlossen |
+| 24 | Review + Output Workspace | vier Ausgaben, Kopieren, Export | abgeschlossen |
+| 25 | Profilkonvertierung | technische Konflikte sichtbar lösen | abgeschlossen |
+| 26 | Accessibility + Responsive | Tastatur, Kontrast, mobile Layouts | abgeschlossen |
+| 27 | Release-Abnahme | Migration, Tests, Build, Dokumentation | offen |
+| 28 | Optional PWA | erst nach V2-Release | später |
+| 29 | Optional Tauri 2 | erst nach stabiler Web-V2 | später |
 
 ## Definition of Done pro Phase
 

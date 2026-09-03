@@ -35,6 +35,8 @@
 .header h2,
 .sectionHeading h3 {
   margin-top: var(--space-1);
+  hyphens: auto;
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {

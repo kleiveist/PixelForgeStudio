@@ -163,3 +163,11 @@ Neuanlage oder Wahl einer kompatiblen vorhandenen Basis ändern niemals die
 gesperrte Ausgangsfamilie oder deren bestehende Kinder. Erst ein erneut
 vollständig aufgelöster und persistierter Draft gelangt zurück in die Prompt-
 Erzeugung.
+
+Prompt 26 verändert Inhalt, Reihenfolge und Determinismus dieser vier
+Ausgaben nicht. Er härtet ausschließlich ihre Darstellung: Die Tabs behalten
+Pfeil-, Home- und End-Steuerung samt sichtbarem Fokus, lange Prompt- und
+Technikzeilen bleiben bei 360 px innerhalb des Output-Panels und reduzierte
+Bewegung deaktiviert Übergänge. Die reproduzierte Viewport-, Theme-,
+Keyboard- und Kontrastprüfung ist in
+`V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` dokumentiert.

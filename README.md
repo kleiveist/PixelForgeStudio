@@ -73,8 +73,8 @@ V1 inventarisieren ✓
 → modulare Prompt Engine 2.0 mit vier Ausgaben ✓
 → Review und Output Workspace ✓
 → kontrollierte Profilkonflikte und Konvertierung ✓
-→ Accessibility, Responsive Design und visuelle Politur (nächste Phase)
-→ Release-Abnahme
+→ Accessibility, Responsive Design und visuelle Politur ✓
+→ Release-Abnahme (nächste Phase)
 → Legacy-UI erst danach entfernen
 ```
 
@@ -83,7 +83,7 @@ V1 inventarisieren ✓
 | Datei | Zweck |
 |---|---|
 | `AGENTS.md` | verbindliche Repository-Regeln und Produktdefaults |
-| `PLANS.md` | 29-stufiger Migrations- und Entwicklungsfahrplan |
+| `PLANS.md` | nummerierter Migrations- und Entwicklungsfahrplan |
 | `docs/TECHNOLOGIE-STACK-V2.md` | verbindlicher React/TypeScript/Vite-Stack |
 | `docs/LEGACY-V1-BASELINE.md` | reproduzierbare V1-Inventur, Migrationsverträge und bewusste V2-Korrekturen |
 | `docs/V2-IMPLEMENTIERUNGSSTATUS.md` | geprüfter Prompt-, Commit-, Test- und Remote-Stand |
@@ -91,6 +91,7 @@ V1 inventarisieren ✓
 | `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md` | vollständige fachliche Fragen- und Profilstruktur |
 | `docs/CODEX-V2-PROMPTS.md` | einzeln ausführbare Codex-Aufträge 00–27 |
 | `docs/PROMPT-SPECIFICATION.md` | bestehende Prompt-Spezifikation |
+| `docs/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` | geprüfte Viewports, Keyboard-Flows und Kontrastwerte |
 | `v2-template/` | Referenz für Zielabhängigkeiten und `src/`-Architektur |
 
 ## Wichtigste Produktregeln
@@ -141,10 +142,9 @@ die zur Capability passenden Fragen und Editoren.
 ## Spezialisierte Editoren
 
 Character-/NPC-, Moving-Object-, Texture-/Material-, Nature-/Tree-,
-Static-Object-, Building-/Architecture-, Tileset- und Item-/Equipment-Editor
-sind als getrennte React-Features umgesetzt. Das nächste geplante Feature ist:
-
-- Artwork
+Static-Object-, Building-/Architecture-, Tileset-, Item-/Equipment- und
+Artwork-Editor sind als getrennte React-Features umgesetzt. Als nächste Phase
+folgt ihre zusammenhängende Release-Abnahme.
 
 Der Character-Schritt folgt unmittelbar auf die Basisprofilwahl und erscheint
 nur für Figuren-Untertypen. Er gruppiert Identität, Körper, Gesicht,
@@ -267,14 +267,20 @@ kompatibles vorhandenes Basisprofil wählen. Originale Basen und ihre
 Category-/Asset-Kinder werden niemals still geändert oder umgehängt; das
 interne Compatibility-Key-Format bleibt in der Oberfläche verborgen.
 
+Prompt 26 härtet diese Oberfläche querschnittlich für Desktop, Tablet und
+360-px-Viewports. Hell, Dunkel und System, Fokus, Labels, Fehlerzustände,
+Dialoge, Karten, Wizard, Profile, Output, reduzierte Bewegung, Kontrast und
+horizontales Overflow sind geprüft; die reproduzierbare Matrix steht in
+`docs/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 25 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 26 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 26 — Accessibility, Responsive Design und visuelle Politur
+→ Prompt 27 — V2 Release-Abnahme
 ```
 
 Danach immer genau:

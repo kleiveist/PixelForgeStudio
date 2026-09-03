@@ -235,7 +235,7 @@ export function AppShell({
                 view="wizard"
                 onNavigate={() => requestNewAsset(null)}
               >
-                <span aria-hidden="true">＋</span>
+                <span aria-hidden="true">+</span>
                 Neues Asset
               </ViewLink>
             </nav>

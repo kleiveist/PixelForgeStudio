@@ -412,9 +412,9 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   transition:
-    border-color var(--motion-fast),
-    background-color var(--motion-fast),
-    transform var(--motion-fast);
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 }
 
 .categoryChoice:hover {
@@ -423,8 +423,8 @@
 }
 
 .categoryChoice:has(input:focus-visible) {
-  outline: 3px solid var(--color-focus-ring);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .categoryChoice[data-selected="true"] {
@@ -789,5 +789,11 @@
   .inlineActions,
   .dangerButton {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .categoryChoice:hover {
+    transform: none;
   }
 }

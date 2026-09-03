@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -183,6 +184,9 @@ export function ReviewOutputWorkspace({
     kind: "idle"
   });
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const reviewHeadingRef = useRef<HTMLHeadingElement>(null);
+  const outputHeadingRef = useRef<HTMLHeadingElement>(null);
+  const [focusAfterConversion, setFocusAfterConversion] = useState(false);
   const [storedDraftResult] = useState(() => storageAdapter.readDraft());
 
   const library =
@@ -223,6 +227,14 @@ export function ReviewOutputWorkspace({
       ) ??
       ready.packages[0]
     : undefined;
+
+  useEffect(() => {
+    if (!focusAfterConversion || ready === null) return;
+    const target =
+      view === "review" ? reviewHeadingRef.current : outputHeadingRef.current;
+    target?.focus();
+    setFocusAfterConversion(false);
+  }, [focusAfterConversion, ready, view]);
 
   const setStatusError = (action: "copy" | "text" | "json") => {
     setActionStatus({ kind: "error", message: actionErrorMessage(action) });
@@ -373,6 +385,7 @@ export function ReviewOutputWorkspace({
           onConverted={(convertedDraft, message) => {
             activateDraft(convertedDraft, "saved");
             setActionStatus({ kind: "success", message });
+            setFocusAfterConversion(true);
           }}
         />
       ) : preparation?.status === "missingDraft" ||
@@ -423,7 +436,13 @@ export function ReviewOutputWorkspace({
               <div className={styles.sectionHeading}>
                 <div>
                   <span className={styles.sectionIndex}>01 · Review</span>
-                  <h2 id="review-summary-title">Produktionszusammenfassung</h2>
+                  <h2
+                    ref={reviewHeadingRef}
+                    id="review-summary-title"
+                    tabIndex={-1}
+                  >
+                    Produktionszusammenfassung
+                  </h2>
                 </div>
                 <Badge tone="success">Konfliktfrei</Badge>
               </div>
@@ -468,7 +487,13 @@ export function ReviewOutputWorkspace({
               <div className={styles.sectionHeading}>
                 <div>
                   <span className={styles.sectionIndex}>02 · Output</span>
-                  <h2 id="prompt-output-title">Prompt-Paket</h2>
+                  <h2
+                    ref={outputHeadingRef}
+                    id="prompt-output-title"
+                    tabIndex={-1}
+                  >
+                    Prompt-Paket
+                  </h2>
                 </div>
                 <Badge tone="accent">{activePackage.styleProfileLabel}</Badge>
               </div>

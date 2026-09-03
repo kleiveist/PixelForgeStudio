@@ -168,7 +168,7 @@ export function ProfileLibraryView({
           type="button"
           onClick={onStartNewAsset}
         >
-          <span aria-hidden="true">＋</span>
+          <span aria-hidden="true">+</span>
           Neues Asset
         </button>
       </header>

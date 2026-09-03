@@ -734,6 +734,22 @@ after that graph mutation succeeds, and only then becomes the active Session
 Draft. A failed second write is reported without pretending to roll back an
 already persisted standalone family.
 
-Prompts 00 through 25 are complete. Prompt 26, cross-application accessibility,
-responsive design, and visual polish, is the next phase; Prompt 27 release
-cleanup and any Legacy removal remain untouched.
+Prompt 26 defines the cross-application accessibility and responsive UI
+contract without adding a new domain boundary. Native controls and semantic
+roles retain their browser keyboard behavior; App Shell navigation, Wizard
+validation, profile dialogs, conversion modes, and Output tabs own explicit
+focus only when a route or dynamic context changes. Conversion success moves
+focus into the newly available Review/Output region, while cancelling a mode
+returns it to the exact trigger.
+
+Global focus, motion, and forced-color behavior remains token-driven in
+`styles/`. CSS Modules own local reflow: panels and grids collapse at their
+feature breakpoint, every flex/grid child may shrink, and long profile,
+technical, and prompt content wraps inside its surface. At
+`prefers-reduced-motion: reduce`, transitions are disabled and animations are
+reduced to a single 1 ms iteration. The verified desktop/tablet/360-px matrix,
+keyboard paths, and contrast measurements are recorded in
+`docs/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
+
+Prompts 00 through 26 are complete. Prompt 27 release acceptance and any
+evidence-gated Legacy removal remain untouched.

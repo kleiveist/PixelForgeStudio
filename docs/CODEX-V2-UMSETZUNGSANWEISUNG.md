@@ -607,14 +607,17 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   schreibfreies Resume. `freeComposition` blendet Tile-, Sprite-, Weltkamera-,
   Figuren-, Richtungs- und Animationsregeln aus; Summary und Dashboard zeigen
   nur kompakte tatsächliche Artwork-Fakten.
-- Prompts 00 bis 25 sind abgeschlossen. Die frameworkfreie Prompt Engine 2.0
+- Prompts 00 bis 26 sind abgeschlossen. Die frameworkfreie Prompt Engine 2.0
   verarbeitet aufgelöste Profile vollständig; der Review-/Output-Workspace
   bindet sie an aktiven oder lokal gesicherten Draft, Profilbibliothek,
   Konfliktanzeige, Clipboard, TXT-/JSON-Export und Assetprofil-Speicherung an.
   Lock-Konflikte können nach sichtbarer Folgenvorschau abgebrochen, in eine
   duplizierte oder neue Basisfamilie überführt oder mit einer kompatiblen
   vorhandenen Familie aufgelöst werden. In-place-Mutation und Reparenting
-  einer bestehenden Basisfamilie bleiben ausgeschlossen.
+  einer bestehenden Basisfamilie bleiben ausgeschlossen. Der abschließende
+  UI-Querschnitt ist für Desktop, Tablet und 360-px-Viewports, Hell/Dunkel/
+  System, Tastaturfokus, Kontrast und reduzierte Bewegung geprüft und in
+  `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` dokumentiert.
 
 ---
 
@@ -1335,6 +1338,23 @@ Erweitert seit Prompt 25:
   samt vollständiger Graphvalidierung gespeichert; erst danach folgt der
   Draft-Write. Ein Draft-Fehler aktiviert keinen Teilstand und weist auf eine
   bereits angelegte, weiterhin erhaltene Familie hin.
+
+Querschnitt seit Prompt 26:
+
+- Alle sechs Shell-Ansichten besitzen einen dokumentierten Desktop-, Tablet-
+  und 360-px-Reflow. Flex-/Grid-Kinder dürfen schrumpfen, lange Profil- und
+  Technikwerte umbrechen innerhalb ihrer Oberfläche und Controls werden auf
+  schmalen Viewports ohne Seiten-Overflow gestapelt.
+- Native Formcontrols bleiben semantisch und tastaturbedienbar. App-
+  Navigation, Wizard-Validierung, Dialoge, Konvertierungsmodi und Output-Tabs
+  führen Fokus nur bei tatsächlichen Kontextwechseln; Abbruch stellt den
+  jeweiligen Auslöser wieder her.
+- Semantische Design-Tokens liefern in Hell, Dunkel und System ausreichenden
+  Text-, UI- und Fokuskontrast. `prefers-reduced-motion: reduce` deaktiviert
+  Übergänge, begrenzt Animationen und entfernt bewegte Hover-Effekte;
+  Forced-Colors behält einen sichtbaren Systemfokusring.
+- Viewportmatrix, Keyboard-Flows, gemessene Kontrastwerte und die Grenze der
+  Browserprüfung stehen in `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
 
 ---
 

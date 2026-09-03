@@ -129,6 +129,30 @@ describe("PixelForge visual foundation", () => {
     expect(storage.mutations).toHaveLength(0);
   });
 
+  it("switches the native theme radio group with arrow keys", async () => {
+    installMatchMedia(false);
+    const user = userEvent.setup();
+    const storage = new MemoryStorage();
+
+    render(<App storageAdapter={createV2StorageAdapter(storage)} />);
+
+    const systemOption = screen.getByRole("radio", { name: "System" });
+    systemOption.focus();
+    await user.keyboard("{ArrowLeft}");
+
+    const darkOption = screen.getByRole("radio", { name: "Dunkel" });
+    expect(darkOption).toBeChecked();
+    expect(darkOption).toHaveFocus();
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+
+    await user.keyboard("{ArrowLeft}");
+
+    const lightOption = screen.getByRole("radio", { name: "Hell" });
+    expect(lightOption).toBeChecked();
+    expect(lightOption).toHaveFocus();
+    expect(document.documentElement).toHaveAttribute("data-theme", "light");
+  });
+
   it("restores a persisted explicit theme without writing during mount", () => {
     installMatchMedia(false);
     const persisted = settingsJson("dark");

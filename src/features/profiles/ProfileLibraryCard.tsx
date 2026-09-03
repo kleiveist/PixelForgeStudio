@@ -108,7 +108,6 @@ export function ProfileLibraryCard({
           aria-label={`Profil „${profile.name}“ duplizieren`}
           onClick={() => onDuplicate(profile.id)}
         >
-          <span aria-hidden="true">⧉</span>
           Duplizieren
         </button>
         <button

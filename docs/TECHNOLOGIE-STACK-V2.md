@@ -462,8 +462,19 @@ kompatiblen Familie erst nach einer Folgenvorschau. Der konvertierte Draft
 materialisiert geerbte Kategorieantworten und löst alte Category-/Asset-
 Provenienz, ohne bestehende Profile oder deren Kinder umzuhängen. Andere
 Referenz- und Klassifikationskonflikte bleiben angehalten und erzeugen keine
-Ausgabe. Prompts 00 bis 25 sind abgeschlossen; Prompt 26 bleibt die nächste
-separate Phase.
+Ausgabe.
+
+Prompt 26 schließt die querschnittliche UI-Härtung ab, ohne eine neue
+Fachschicht einzuführen. Semantische native Controls, sichtbare tokenbasierte
+Fokusringe, kontrollierte Fokusübergaben und roving Output-Tabs bilden den
+Tastaturvertrag. CSS Modules verantworten weiterhin den lokalen Reflow; lange
+Profil-, Technik- und Promptinhalte bleiben bei 360 px innerhalb ihrer
+Oberflächen. Das globale Stylesheet deaktiviert unter
+`prefers-reduced-motion: reduce` Übergänge, begrenzt Animationen und erhält in
+erzwungenen Systemfarben einen sichtbaren Fokusring. Die geprüfte
+Desktop-/Tablet-/Schmalviewport-Matrix und die Kontrastwerte stehen in
+`V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`. Prompts 00 bis 26 sind abgeschlossen;
+Prompt 27 bleibt die nächste separate Phase.
 
 ## Speicherung
 

@@ -152,7 +152,7 @@ export function DashboardView({
               type="button"
               onClick={() => onStartNewAsset(null)}
             >
-              <span aria-hidden="true">＋</span>
+              <span aria-hidden="true">+</span>
               Neues Asset
             </button>
             <ViewLink className={styles.secondaryAction} view="profiles">

@@ -208,6 +208,37 @@ describe("ReviewOutputWorkspace", () => {
     );
   });
 
+  it("moves through output tabs with roving keyboard focus", async () => {
+    const user = userEvent.setup();
+    renderWorkspace({});
+    const tablist = screen.getByRole("tablist", {
+      name: "Prompt-Ausgabeart"
+    });
+    const combinedTab = within(tablist).getByRole("tab", {
+      name: "Kombinierte Ausgabe"
+    });
+
+    combinedTab.focus();
+    await user.keyboard("{ArrowRight}");
+
+    const mainTab = within(tablist).getByRole("tab", { name: "Hauptprompt" });
+    expect(mainTab).toHaveFocus();
+    expect(mainTab).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getByRole("tabpanel", { name: "Hauptprompt" })
+    ).toBeVisible();
+
+    await user.keyboard("{End}");
+    expect(combinedTab).toHaveFocus();
+    expect(combinedTab).toHaveAttribute("aria-selected", "true");
+
+    await user.keyboard("{Home}");
+    expect(mainTab).toHaveFocus();
+
+    await user.keyboard("{ArrowLeft}");
+    expect(combinedTab).toHaveFocus();
+  });
+
   it("uses injected copy/download actions and persists a new reviewed profile", async () => {
     const user = userEvent.setup();
     const rendered = renderWorkspace({ portableDraft: true });
@@ -346,6 +377,66 @@ describe("ReviewOutputWorkspace", () => {
     expect(memory.mutations).toEqual([]);
   });
 
+  it("moves focus into every conversion mode and back to its trigger", async () => {
+    const user = userEvent.setup();
+    renderCharacterHeightConflict();
+
+    const duplicateTrigger = screen.getByRole("button", {
+      name: "Basisprofil duplizieren"
+    });
+    duplicateTrigger.focus();
+    await user.keyboard("{Enter}");
+    const duplicateName = screen.getByRole("textbox", {
+      name: "Name der Produktionsfamilie"
+    });
+    await waitFor(() => expect(duplicateName).toHaveFocus());
+    await user.click(
+      screen.getByRole("button", { name: "Zurück zu den Optionen" })
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Basisprofil duplizieren" })
+      ).toHaveFocus()
+    );
+
+    const newTrigger = screen.getByRole("button", {
+      name: "Neues Basisprofil"
+    });
+    await user.click(newTrigger);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("textbox", {
+          name: "Name der Produktionsfamilie"
+        })
+      ).toHaveFocus()
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Zurück zu den Optionen" })
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Neues Basisprofil" })
+      ).toHaveFocus()
+    );
+
+    const existingTrigger = screen.getByRole("button", {
+      name: "Kompatibles Profil wählen"
+    });
+    await user.click(existingTrigger);
+    const existingHeading = screen.getByRole("heading", {
+      name: "Kompatibles Basisprofil wählen"
+    });
+    await waitFor(() => expect(existingHeading).toHaveFocus());
+    await user.click(
+      screen.getByRole("button", { name: "Zurück zu den Optionen" })
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Kompatibles Profil wählen" })
+      ).toHaveFocus()
+    );
+  });
+
   it("duplicates a locked 80 px family, previews 96 px, and persists an independent converted Draft", async () => {
     const user = userEvent.setup();
     const rendered = renderCharacterHeightConflict();
@@ -377,9 +468,11 @@ describe("ReviewOutputWorkspace", () => {
       })
     );
 
-    expect(
-      await screen.findByRole("heading", { name: "Produktionszusammenfassung" })
-    ).toBeVisible();
+    const summaryHeading = await screen.findByRole("heading", {
+      name: "Produktionszusammenfassung"
+    });
+    expect(summaryHeading).toBeVisible();
+    await waitFor(() => expect(summaryHeading).toHaveFocus());
     expect(screen.getByText("96 px")).toBeVisible();
     expect(
       screen.getByText(/Das Basisprofil wurde dupliziert und der Entwurf/)
