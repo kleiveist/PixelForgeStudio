@@ -41,7 +41,7 @@ export const APP_VIEW_DEFINITIONS: Readonly<
     eyebrow: "Review",
     description:
       "Geerbte Werte, eigene Angaben, Locks und Konflikte werden vor der Ausgabe nachvollziehbar zusammengeführt.",
-    nextStep: "Die vollständige Zusammenfassung folgt mit dem Review Workspace."
+    nextStep: "Zusammenfassung und Konfliktprüfung sind mit dem aktiven Wizard-Entwurf verbunden."
   },
   output: {
     label: "Ausgabe",
@@ -49,7 +49,7 @@ export const APP_VIEW_DEFINITIONS: Readonly<
     eyebrow: "Output Workspace",
     description:
       "Hauptprompt, Negativprompt, technische Spezifikation und kombinierte Ausgabe bekommen hier ihren festen Platz.",
-    nextStep: "Prompt Engine und Exportaktionen folgen in den vorgesehenen Phasen."
+    nextStep: "Sprach- und Stilpakete lassen sich kopieren, als TXT oder zusammen mit dem Profil als JSON exportieren."
   },
   settings: {
     label: "Einstellungen",

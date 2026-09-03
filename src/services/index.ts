@@ -33,3 +33,8 @@ export {
   createBrowserNavigationAdapter,
   type NavigationAdapter
 } from "./navigationAdapter";
+export {
+  createBrowserOutputWorkspaceAdapter,
+  type OutputTextFile,
+  type OutputWorkspaceAdapter
+} from "./outputWorkspaceAdapter";

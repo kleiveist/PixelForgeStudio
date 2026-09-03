@@ -428,8 +428,26 @@ Capability-Gates begrenzen Richtungsregeln auf `directional` und halten
 Animation separat. Kamera, Bodenanker und Weltlicht bleiben im Richtungsset
 konstant; freie Artworks erhalten keine Weltgeometrie-, Figurenmaßstabs- oder
 Animationsregeln. Die technische Tileset-Ausgabe verwendet die bestehende
-pure Atlasmetrik. Prompts 00 bis 23 sind abgeschlossen; Prompt 24 ergänzt als
-nächste Phase die React-basierte Review-/Output-Oberfläche mit Copy und Export.
+pure Atlasmetrik. Prompt 24 ergänzt als React-basierte Review-/Output-
+Oberfläche die sichtbare Produktionsintegration; Prompts 00 bis 24 sind damit
+abgeschlossen.
+
+Seit Prompt 24 liest `src/features/review-output/` ausschließlich einen
+validierten aktiven oder persistierten Wizard-Draft und die validierte
+Profilbibliothek. Die pure Vorbereitung löst Base→Category→Asset auf und ruft
+danach die öffentliche Prompt Engine auf; unvollständige Drafts, ungültige
+Storage-Daten und Profilkonflikte erzeugen keine Teilprompts. Die responsive
+React-Ansicht zeigt Quellen und Locks, Konflikt-/Validierungshinweise,
+Sprach-/Stilpakete sowie vier tastaturbedienbare Output-Tabs.
+
+`src/services/outputWorkspaceAdapter.ts` kapselt Clipboard und lokale Blob-
+Downloads als injizierbaren Port. TXT exportiert die aktive Ausgabe; JSON
+verwendet weiterhin `ExportBundleSchema` samt benötigten Base-/Category-
+Abhängigkeiten und Draft. Das pure `saveAssetProfile()` erzeugt neue
+Assetprofile oder aktualisiert geladene Quellen unter ihrer stabilen ID;
+Provider und Storage-Adapter validieren den vollständigen Graphen vor jedem
+Write. Prompts 00 bis 24 sind abgeschlossen, Prompt 25 bleibt die nächste
+separate Phase.
 
 ## Speicherung
 

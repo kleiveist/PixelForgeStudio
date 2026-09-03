@@ -16,7 +16,9 @@ import {
   deleteAssetProfile,
   duplicateAssetProfile,
   duplicateBaseProfile,
+  saveAssetProfile,
   toggleAssetProfileFavorite,
+  type AssetProfileSaveDefinition,
   type AssetProfileLibraryChange,
   type BaseProfileDefinition,
   type BaseProfileLibraryChange
@@ -396,6 +398,142 @@ describe("asset profile library mutations", () => {
       "Dorfschmied mit Lederschürze (Kopie 3)"
     ]);
     expect(ProfileLibrarySchema.safeParse(third.library).success).toBe(true);
+  });
+
+  it("creates a reviewed Asset profile with clean local metadata", () => {
+    const library = deepFreeze(createProfileLibraryFixture());
+    const source = profileById(library, "asset_oak_wood");
+    if (source.category !== "texture") {
+      throw new Error("Expected the Texture profile fixture.");
+    }
+    const profileId = StableIdSchema.parse("asset_reviewed_oak");
+    const timestamp = "2026-09-03T22:00:00.000Z";
+    const definition: AssetProfileSaveDefinition = {
+      name: "Geprüfte Eichenplanken",
+      baseProfileId: source.baseProfileId,
+      compatibilityKey: source.compatibilityKey,
+      capabilities: source.capabilities,
+      overrides: source.overrides,
+      category: source.category,
+      subtype: source.subtype,
+      answers: { ...source.answers, condition: "old" }
+    };
+
+    const result = saveAssetProfile(
+      library,
+      profileId,
+      timestamp,
+      definition
+    );
+
+    expectChanged(result);
+    expect(result.profile).toMatchObject({
+      id: profileId,
+      name: definition.name,
+      iconId: "wizard-draft",
+      badgeIconIds: [],
+      tags: [],
+      favorite: false,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      answers: definition.answers
+    });
+    expect(result.library.baseProfiles).toBe(library.baseProfiles);
+    expect(result.library.categoryProfiles).toBe(library.categoryProfiles);
+    expect(result.library.assetProfiles).toHaveLength(
+      library.assetProfiles.length + 1
+    );
+    expect(ProfileLibrarySchema.safeParse(result.library).success).toBe(true);
+  });
+
+  it("updates a reviewed source at its stable ID and preserves library metadata", () => {
+    const library = deepFreeze(createProfileLibraryFixture());
+    const source = profileById(library, "asset_smith_80");
+    if (source.category !== "character") {
+      throw new Error("Expected the Character profile fixture.");
+    }
+    const timestamp = "2026-09-03T22:15:00.000Z";
+    const definition: AssetProfileSaveDefinition = {
+      sourceAssetProfileId: source.id,
+      name: "Dorfschmied · geprüft",
+      baseProfileId: source.baseProfileId,
+      ...(source.categoryProfileId === undefined
+        ? {}
+        : { categoryProfileId: source.categoryProfileId }),
+      compatibilityKey: source.compatibilityKey,
+      capabilities: source.capabilities,
+      overrides: source.overrides,
+      category: source.category,
+      subtype: source.subtype,
+      answers: { ...source.answers, role: "master blacksmith" }
+    };
+
+    const result = saveAssetProfile(
+      library,
+      StableIdSchema.parse("asset_unused_generated_id"),
+      timestamp,
+      definition
+    );
+
+    expectChanged(result);
+    expect(result.library.assetProfiles).toHaveLength(
+      library.assetProfiles.length
+    );
+    expect(result.profile).toMatchObject({
+      id: source.id,
+      name: definition.name,
+      iconId: source.iconId,
+      badgeIconIds: source.badgeIconIds,
+      tags: source.tags,
+      favorite: source.favorite,
+      migratedFromVersion: source.migratedFromVersion,
+      legacyData: source.legacyData,
+      createdAt: source.createdAt,
+      updatedAt: timestamp
+    });
+    expect(ProfileLibrarySchema.safeParse(result.library).success).toBe(true);
+    expect(library).toEqual(createProfileLibraryFixture());
+  });
+
+  it("rejects missing save sources and new Asset-id collisions", () => {
+    const library = deepFreeze(createProfileLibraryFixture());
+    const source = profileById(library, "asset_oak_wood");
+    if (source.category !== "texture") {
+      throw new Error("Expected the Texture profile fixture.");
+    }
+    const common = {
+      name: source.name,
+      baseProfileId: source.baseProfileId,
+      compatibilityKey: source.compatibilityKey,
+      capabilities: source.capabilities,
+      overrides: source.overrides,
+      category: source.category,
+      subtype: source.subtype,
+      answers: source.answers
+    } as const satisfies AssetProfileSaveDefinition;
+
+    expect(
+      saveAssetProfile(
+        library,
+        source.id,
+        "2026-09-03T22:30:00.000Z",
+        common
+      )
+    ).toEqual({ status: "idConflict", profileId: source.id });
+    expect(
+      saveAssetProfile(
+        library,
+        StableIdSchema.parse("asset_new"),
+        "2026-09-03T22:30:00.000Z",
+        {
+          ...common,
+          sourceAssetProfileId: StableIdSchema.parse("asset_missing")
+        }
+      )
+    ).toEqual({
+      status: "notFound",
+      profileId: StableIdSchema.parse("asset_missing")
+    });
   });
 
   it("deletes only the requested asset leaf and preserves the complete dependency graph", () => {

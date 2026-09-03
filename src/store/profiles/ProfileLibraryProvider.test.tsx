@@ -5,7 +5,10 @@ import {
   StableIdSchema,
   type ProfileLibrary
 } from "../../schemas";
-import type { BaseProfileDefinition } from "../../domain/profiles";
+import type {
+  AssetProfileSaveDefinition,
+  BaseProfileDefinition
+} from "../../domain/profiles";
 import {
   V2_STORAGE_KEYS,
   createV2StorageAdapter,
@@ -192,6 +195,53 @@ describe("ProfileLibraryProvider", () => {
     expect(
       current.assetProfiles.some((profile) => profile.id === DUPLICATE_PROFILE_ID)
     ).toBe(true);
+  });
+
+  it("persists a reviewed new Asset profile with injected identity and time", () => {
+    const { adapter, library } = populatedStorage();
+    const source = library.assetProfiles.find(
+      (profile) => profile.id === "asset_oak_wood"
+    );
+    if (!source || source.category !== "texture") {
+      throw new Error("Expected the Texture profile fixture.");
+    }
+    const definition: AssetProfileSaveDefinition = {
+      name: "Review-Holz",
+      baseProfileId: source.baseProfileId,
+      compatibilityKey: source.compatibilityKey,
+      capabilities: source.capabilities,
+      overrides: source.overrides,
+      category: source.category,
+      subtype: source.subtype,
+      answers: source.answers
+    };
+    const rendered = renderProvider(adapter, {
+      createProfileId: () => "asset_review_saved",
+      now: () => DUPLICATE_TIMESTAMP
+    });
+    let result: ProfileActionResult | undefined;
+
+    act(() => {
+      result = rendered.getContext().saveAssetProfile(definition);
+    });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      profile: {
+        id: "asset_review_saved",
+        name: "Review-Holz",
+        createdAt: DUPLICATE_TIMESTAMP,
+        updatedAt: DUPLICATE_TIMESTAMP
+      }
+    });
+    expect(contextLibrary(rendered.getContext()).assetProfiles).toHaveLength(
+      library.assetProfiles.length + 1
+    );
+    expect(rendered.getContext().mutation).toMatchObject({
+      status: "saved",
+      operation: "save",
+      profileId: "asset_review_saved"
+    });
   });
 
   it("creates the first Base profile from an empty library through one full-graph write", () => {

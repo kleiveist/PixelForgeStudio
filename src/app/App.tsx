@@ -1,4 +1,8 @@
-import type { NavigationAdapter } from "../services";
+import {
+  createBrowserOutputWorkspaceAdapter,
+  type NavigationAdapter,
+  type OutputWorkspaceAdapter
+} from "../services";
 import type { DashboardStorage } from "../features/dashboard/dashboardData";
 import type { WizardStorage } from "../features/wizard";
 import type { SettingsStorage } from "../store/settings";
@@ -21,16 +25,19 @@ export interface AppProps {
   readonly createProfileId?: () => string;
   readonly createBaseProfileId?: () => string;
   readonly createDraftId?: () => string;
+  readonly outputAdapter?: OutputWorkspaceAdapter;
 }
 
 function NavigationRoot({
   navigationAdapter,
   storageAdapter,
+  outputAdapter,
   now,
   createDraftId
 }: Readonly<{
   navigationAdapter: NavigationAdapter;
   storageAdapter: DashboardStorage & WizardStorage;
+  outputAdapter: OutputWorkspaceAdapter;
   now?: () => string;
   createDraftId?: () => string;
 }>) {
@@ -44,6 +51,7 @@ function NavigationRoot({
       <WizardSessionProvider>
         <AppShell
           activeBaseProfileId={settings.activeBaseProfileId}
+          outputAdapter={outputAdapter}
           storageAdapter={storageAdapter}
           {...(now ? { now } : {})}
           {...(createDraftId ? { createDraftId } : {})}
@@ -59,7 +67,8 @@ export function App({
   now,
   createProfileId,
   createBaseProfileId,
-  createDraftId
+  createDraftId,
+  outputAdapter = createBrowserOutputWorkspaceAdapter()
 }: AppProps) {
   const optionalProviderProps = now ? { now } : {};
   const optionalProfileProviderProps = {
@@ -75,6 +84,7 @@ export function App({
       >
         <NavigationRoot
           navigationAdapter={navigationAdapter}
+          outputAdapter={outputAdapter}
           storageAdapter={storageAdapter}
           {...(now ? { now } : {})}
           {...(createDraftId ? { createDraftId } : {})}

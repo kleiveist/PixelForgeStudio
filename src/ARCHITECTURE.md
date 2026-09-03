@@ -683,9 +683,39 @@ constraints. Tileset canvas values delegate to the existing pure atlas metric.
 Stable whitespace normalization and first-occurrence deduplication make output
 ordering deterministic without modifying profile data.
 
-Prompts 00 through 23 are complete. Prompt 24, the Review and Output
-Workspace, is the next phase and must consume this public engine boundary
-instead of rebuilding prompt rules in React. Prompt 23 does not implement UI,
-clipboard/export actions, profile conversion, final accessibility polish, or
-release cleanup. It also does not add in-place Base-family mutation or
-descendant reparenting.
+`features/review-output/index.ts` is the public React/feature boundary for
+Prompt 24. `prepareReviewOutput()` reads a validated active or persisted
+Wizard Draft plus a validated `ProfileLibrary`, delegates Base→Category→Asset
+resolution to the existing Wizard lifecycle, and calls only the public
+`buildPromptPackages()` engine boundary. Missing/incomplete drafts and
+resolution conflicts are discriminated fail-closed states; React never builds
+a partial production prompt. Synthetic draft-snapshot key notices are hidden,
+while real Draft warnings, resolver notices, value sources, Base locks, and
+capabilities remain visible.
+
+`ReviewOutputWorkspace` serves both `review` and `output` shell routes. It
+provides package selectors for German/English and every effective style
+variant, plus ARIA tabs for `main`, `negative`, `technical`, and `combined`
+with Arrow/Home/End keyboard navigation. An active Session Draft wins; after
+a reload, the workspace reads the validated stored Draft without writing.
+Unavailable or invalid Draft/library storage has an explicit recovery state.
+
+`services/outputWorkspaceAdapter.ts` is the browser effect boundary for
+Clipboard and Blob-backed file downloads. The App composition root injects
+it, so React tests substitute deterministic spies. TXT contains exactly the
+active output. JSON continues through `createProfileExportBundle()` and
+`ExportBundleSchema`, selects only the reviewed Asset plus its required Base/
+Category dependencies, and includes the portable Draft.
+
+`domain/profiles.saveAssetProfile()` is the pure Prompt-24 library mutation.
+It creates clean metadata for a new reviewed Asset or updates an existing
+source at its stable ID while preserving source metadata. The existing
+`ProfileLibraryProvider` owns ID/time injection, full graph validation, and
+the atomic storage write; a successful new save links and persists the Draft
+to prevent duplicate profiles on later saves.
+
+Prompts 00 through 24 are complete. Prompt 25, profile conflicts and
+conversion, is the next phase. Prompt 24 displays conflicts but intentionally
+does not resolve, convert, re-parent, or mutate Base families in place; final
+cross-application accessibility polish and release cleanup also remain in
+their dedicated later prompts.

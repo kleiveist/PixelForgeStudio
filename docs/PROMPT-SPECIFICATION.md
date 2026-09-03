@@ -146,4 +146,13 @@ mindestens 128 × 128 px abgeleitet; daraus entstehen für vier Richtungen ein
 4×1- und für acht Richtungen ein 4×2-Canvas. Kamera, Bodenanker und Weltlicht
 bleiben konstant. Freie Artworks überspringen dagegen Spielraster,
 Weltkamera, Figurenmaßstab, Richtungsset und Animation vollständig. Die
-sichtbare Review-, Copy- und Exportintegration folgt in Prompt 24.
+sichtbare Integration ist seit Prompt 24 unter
+`src/features/review-output/` verfügbar: Ein validierter Wizard-Draft wird
+fail-closed über Base→Category→Asset aufgelöst und anschließend ohne
+Promptlogik in React an `buildPromptPackages()` übergeben. Die Oberfläche
+stellt alle vier Ausgaben pro deutscher/englischer Sprache und wirksamer
+Stilvariante als tastaturbedienbare Tabs dar. Die aktive Fassung ist über
+einen injizierbaren Browser-Port kopierbar und als TXT exportierbar; der
+geprüfte Profilstand wird über das bestehende V2-ExportBundle als JSON mit
+seinen Abhängigkeiten ausgegeben. Konflikte erzeugen bewusst keine
+Produktionsausgabe.

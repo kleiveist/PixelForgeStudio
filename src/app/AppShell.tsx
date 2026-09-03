@@ -7,6 +7,7 @@ import { BRAND } from "../config";
 import { APP_VIEW_IDS, type AppView } from "../domain/navigation";
 import type { AssetCategory } from "../domain/assets";
 import { PlaceholderView } from "../features/app-views/PlaceholderView";
+import { ReviewOutputWorkspace } from "../features/review-output";
 import { WizardView, type WizardStorage } from "../features/wizard";
 import { ProfileLibraryView } from "../features/profiles";
 import {
@@ -15,6 +16,7 @@ import {
 } from "../features/dashboard/DashboardView";
 import type { DashboardStorage } from "../features/dashboard/dashboardData";
 import type { StableId } from "../schemas";
+import type { OutputWorkspaceAdapter } from "../services";
 import { useNavigation } from "../store/navigation";
 import { useSettings } from "../store/settings";
 import { useWizardSession } from "../store/wizard";
@@ -30,6 +32,7 @@ interface ActiveViewProps {
   readonly onResumeDraft: (draftId: StableId) => void;
   readonly onSelectBaseProfile: DashboardViewProps["onSelectBaseProfile"];
   readonly onStartNewAsset: (category: AssetCategory | null) => void;
+  readonly outputAdapter: OutputWorkspaceAdapter;
   readonly sessionRevision: number;
   readonly storageAdapter: DashboardStorage & WizardStorage;
   readonly view: AppView;
@@ -44,6 +47,7 @@ function ActiveView({
   onResumeDraft,
   onSelectBaseProfile,
   onStartNewAsset,
+  outputAdapter,
   sessionRevision,
   storageAdapter,
   view
@@ -82,6 +86,17 @@ function ActiveView({
     );
   }
 
+  if (view === "review" || view === "output") {
+    return (
+      <ReviewOutputWorkspace
+        outputAdapter={outputAdapter}
+        storageAdapter={storageAdapter}
+        view={view}
+        {...(now ? { now } : {})}
+      />
+    );
+  }
+
   return (
     <PlaceholderView
       definition={APP_VIEW_DEFINITIONS[view]}
@@ -94,6 +109,7 @@ export interface AppShellProps {
   readonly activeBaseProfileId: StableId | null;
   readonly createDraftId?: () => string;
   readonly now?: () => string;
+  readonly outputAdapter: OutputWorkspaceAdapter;
   readonly storageAdapter: DashboardStorage & WizardStorage;
 }
 
@@ -101,6 +117,7 @@ export function AppShell({
   activeBaseProfileId,
   createDraftId,
   now,
+  outputAdapter,
   storageAdapter
 }: AppShellProps) {
   const { activeView, navigate } = useNavigation();
@@ -241,6 +258,7 @@ export function AppShell({
             onResumeDraft={resumeDraft}
             onSelectBaseProfile={setActiveBaseProfile}
             onStartNewAsset={startNewAsset}
+            outputAdapter={outputAdapter}
             sessionRevision={sessionRevision}
             storageAdapter={storageAdapter}
             view={activeView}

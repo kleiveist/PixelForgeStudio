@@ -4,6 +4,7 @@ import { App } from "./app/App";
 import { BRAND } from "./config";
 import {
   createBrowserNavigationAdapter,
+  createBrowserOutputWorkspaceAdapter,
   createBrowserV2StorageAdapter
 } from "./services";
 import "./styles/tokens.css";
@@ -17,11 +18,13 @@ if (!rootElement) {
 
 const storageAdapter = createBrowserV2StorageAdapter();
 const navigationAdapter = createBrowserNavigationAdapter();
+const outputAdapter = createBrowserOutputWorkspaceAdapter();
 
 createRoot(rootElement).render(
   <StrictMode>
     <App
       navigationAdapter={navigationAdapter}
+      outputAdapter={outputAdapter}
       storageAdapter={storageAdapter}
     />
   </StrictMode>

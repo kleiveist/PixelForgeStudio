@@ -243,17 +243,27 @@ deterministisch Hauptprompt, Negativprompt, technische Spezifikation und die
 kombinierte Ausgabe; `both` liefert getrennte klassische und düstere Pakete.
 Kategorie- und Capability-Gates verhindern Richtungsregeln bei statischen
 Assets und halten freie Artworks frei von Spielraster, Weltkamera,
-Figurenmaßstab und Animation. Die React-Ansicht für Review, Copy und Export
-folgt separat in Prompt 24.
+Figurenmaßstab und Animation.
+
+Der produktionsreife Review-/Output-Workspace löst den aktiven oder lokal
+gesicherten Wizard-Entwurf über seine vollständige Profilkette auf. Er zeigt
+geerbte und eigene Produktionswerte samt Locks und Warnungen, hält bei
+Konflikten fail-closed an und bietet je Sprache und Stilvariante Tabs für
+Hauptprompt, Negativprompt, technische Spezifikation und kombinierte Ausgabe.
+Clipboard und Dateidownload liegen hinter einem injizierbaren Browser-Adapter;
+die aktive Ausgabe kann kopiert oder als TXT gespeichert werden. Das geprüfte
+Asset lässt sich als validiertes Profil upserten und zusammen mit Base-/
+Category-Abhängigkeiten und Draft im bestehenden V2-Bundleformat als JSON
+exportieren.
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 23 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 24 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 24 — Review und Output Workspace
+→ Prompt 25 — Profilkonflikte und Konvertierung
 ```
 
 Danach immer genau:

@@ -4,10 +4,59 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** Prompt 23 — Prompt Engine 2.0 (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 24 — Review und Output Workspace (noch nicht begonnen)
-- **Zuletzt abgeschlossen:** Prompt 23 — Prompt Engine 2.0
+- **Aktuelle Aufgabe:** Prompt 24 — Review und Output Workspace (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 25 — Profilkonflikte und Konvertierung (noch nicht begonnen)
+- **Zuletzt abgeschlossen:** Prompt 24 — Review und Output Workspace
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 24
+
+1. Einen puren Review-Vertrag aus dem aktiven, validierten Wizard-Draft, der
+   Profilbibliothek und der öffentlichen Prompt-Engine-Grenze aufbauen. Nur
+   konfliktfrei aufgelöste Profile erzeugen Prompt-Pakete; fehlende oder
+   widersprüchliche Ketten bleiben mit verständlichen Warnungen fail-closed.
+2. Review und Output als responsive React-Arbeitsfläche an die vorhandenen
+   Shell-Routen anbinden. Die Prüfung zeigt Produktionszusammenfassung,
+   Provenienz-Hinweise und Konflikte; die Ausgabe bietet Paket-, Sprach-,
+   Stil- und vier barrierefrei auswählbare Textansichten.
+3. Clipboard und lokale Dateidownloads hinter einen injizierbaren Browser-Port
+   legen. Copy und TXT arbeiten auf der aktiven Ausgabe; JSON verwendet das
+   bestehende validierte ExportBundle-Format einschließlich benötigter Base-
+   und Category-Abhängigkeiten.
+4. Das aktuelle Draft-Ergebnis über eine pure Assetprofil-Upsert-Operation in
+   der vorhandenen Profilbibliothek speichern. Neue Entwürfe erhalten eine
+   neue ID, geladene Profile werden an ihrer stabilen ID aktualisiert, und
+   jeder Kandidat passiert vor dem Storage-Write erneut die Zod-Grenze.
+5. Domain-, Service-, Provider- und React-Testing-Library-Tests für
+   Auflösung/Fehlerzustände, vier sichtbare Ausgaben, Paketwechsel,
+   mockbares Kopieren, TXT-/JSON-Export und Speichern ergänzen.
+6. Öffentliche Grenzen und Implementierungsstatus dokumentieren, danach
+   `npm run verify`, `git diff --check`, Abschlussaudit und den separaten
+   Prompt-24-Commit ausführen; Prompt 25 bleibt unangetastet.
+
+## Ergebnis Prompt 24
+
+1. `src/features/review-output/` bereitet den aktiven Session-Draft oder nach
+   Reload den gespeicherten Draft pure und fail-closed auf. Unvollständige
+   Entwürfe, ungültige Storage-Daten und Resolver-Konflikte besitzen eigene
+   Zustände; nur ein vollständig aufgelöstes Profil erreicht die Prompt Engine.
+2. Review zeigt Projekt, Kategorie/Untertyp, Base-/Category-Provenienz,
+   wirksame technische Werte, deren Quelle und Basis-Locks sowie aktive
+   Capabilities, Draft-Warnungen und echte Resolver-Hinweise.
+3. Der Output-Bereich bietet deutsche und englische Pakete je wirksamer
+   Stilvariante. Hauptprompt, Negativprompt, technische Spezifikation und
+   kombinierte Ausgabe liegen in ARIA-Tabs mit Pfeil-, Home- und End-Steuerung.
+4. `OutputWorkspaceAdapter` kapselt Clipboard und Blob-Downloads. Copy und TXT
+   arbeiten exakt auf dem aktiven Tab; JSON verwendet das bestehende
+   validierte ExportBundle samt benötigten Base-/Category-Abhängigkeiten und
+   portablem Draft.
+5. `saveAssetProfile()` und der erweiterte `ProfileLibraryProvider` erstellen
+   neue Assetprofile mit injizierter ID/Zeit oder aktualisieren geladene
+   Profile an stabiler ID unter Erhalt ihrer Metadaten. Der gesamte Graph wird
+   vor dem Storage-Write validiert und der Draft anschließend verknüpft.
+6. Die vollständige Prüfung umfasst 102 Vitest-Dateien mit 587 erfolgreichen
+   Tests, 10 erfolgreiche Legacy-Tests, Typecheck und Produktionsbuild. Die
+   bekannte nicht blockierende Vite-Warnung zum Chunk über 500 kB bleibt.
 
 ## Ausführungsplan Prompt 23
 
@@ -1191,16 +1240,19 @@
    RTL-Tests sichern den vollständigen Artwork-Roundtrip und die Lesbarkeit
    alter Schema-V2-Daten ab.
 
-## Übergabe an Prompt 24
+## Übergabe an Prompt 25
 
-- Nutze ausschließlich den öffentlichen `domain/prompt-engine`-Vertrag und
-  bereits aufgelöste Profile; dupliziere keine Promptlogik in React.
-- Baue die vier Ausgaben in den Review-/Output-Workspace ein und mache
-  Paketwahl, Zusammenfassung sowie Konfliktwarnungen zugänglich sichtbar.
-- Copy, TXT-, JSON- und Profilspeicheraktionen erhalten injizierbare,
-  testbare Grenzen und laufen über bestehende Adapter.
-- Profilkonvertierung, abschließende Accessibility-Politur und Release-Cleanup
-  bleiben den späteren Prompts 25 bis 27 vorbehalten.
+- Nutze die strukturierten Resolver-Konflikte und den vorhandenen
+  Review-Zustand; erzeuge aus einem Konflikt weiterhin niemals einen
+  Teilprompt.
+- Biete ausschließlich die vier vorgesehenen kontrollierten Optionen:
+  abbrechen, BaseProfile duplizieren, neues BaseProfile anlegen oder ein
+  kompatibles Profil wählen.
+- Ändere keine gesperrten Basiswerte still und führe kein implizites
+  Reparenting von Geschwister- oder Kindprofilen durch. Compatibility-Key-
+  Änderungen müssen deterministisch und vor dem Commit sichtbar sein.
+- Abschließende querschnittliche Accessibility-Politur und Release-Cleanup
+  bleiben den späteren Prompts 26 und 27 vorbehalten.
 
 ## Erfasster Legacy-Ist-Stand
 
@@ -1252,7 +1304,7 @@
 | 20 | Item-/Ausrüstungseditor | Spielasset-spezifische Darstellung | abgeschlossen |
 | 21 | Artwork-Editor | freie Komposition ohne erzwungene Tilelogik | abgeschlossen |
 | 22 | Prompt Engine 2.0 | modulare TS-Promptbausteine | abgeschlossen |
-| 23 | Review + Output Workspace | vier Ausgaben, Kopieren, Export | offen |
+| 23 | Review + Output Workspace | vier Ausgaben, Kopieren, Export | abgeschlossen |
 | 24 | Profilkonvertierung | technische Konflikte sichtbar lösen | offen |
 | 25 | Accessibility + Responsive | Tastatur, Kontrast, mobile Layouts | offen |
 | 26 | Release-Abnahme | Migration, Tests, Build, Dokumentation | offen |

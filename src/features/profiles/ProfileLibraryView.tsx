@@ -35,6 +35,8 @@ function mutationMessage(
       return `Favoritenstatus für „${mutation.profileName}“ gespeichert.`;
     case "duplicate":
       return `„${mutation.profileName}“ wurde als neues Assetprofil angelegt.`;
+    case "save":
+      return `„${mutation.profileName}“ wurde als Assetprofil gespeichert.`;
     case "delete":
       return `„${mutation.profileName}“ wurde gelöscht.`;
     case "createBase":

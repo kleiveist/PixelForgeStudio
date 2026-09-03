@@ -236,10 +236,11 @@ Antworten, Klassifikationswechsel bereinigen sie und Explicit Clear löst
 geerbte Provenienz. Summary und Dashboard zeigen nur kompakte tatsächliche
 Artwork-Fakten.
 
-Prompts 00 bis 23 sind abgeschlossen. Die Prompt Engine 2.0 erzeugt Material-,
-Setting-, Haupt-, Negativ-, Technik- und kombinierte Textblöcke bereits als
-pure Domain-Ausgabe. Die sichtbaren Review-/Output-Flächen, Copy- und
-Exportaktionen der Tabelle folgen separat mit Prompt 24.
+Prompts 00 bis 24 sind abgeschlossen. Die Prompt Engine 2.0 erzeugt Material-,
+Setting-, Haupt-, Negativ-, Technik- und kombinierte Textblöcke als pure
+Domain-Ausgabe. Der Review-/Output-Workspace löst aktive oder gespeicherte
+Drafts fail-closed auf, zeigt Profilquellen, Locks und Warnungen und stellt
+Sprach-/Stilpakete samt Copy-, TXT-, JSON- und Profilspeicheraktionen bereit.
 
 ---
 
@@ -498,8 +499,9 @@ Die Sichtbarkeit von Fragen wird nicht nur über die Kategorie, sondern über F�
   bilden die Character-Felder vollständig ab. Hydration und Resume schreiben
   nicht; Kategorie- oder Untertypwechsel bereinigen alte Character-Antworten,
   ein Basiswechsel erhält sie.
-- Der Output-Wunsch aus der Katalogtabelle ist noch kein Feld dieses Schritts;
-  Ausgabeauswahl, Promptmodule und Output Workspace folgen in späteren Phasen.
+- Der Output-Wunsch bleibt außerhalb des RHF-Fachschritts; Prompt Engine und
+  Review-/Output-Workspace lesen die validierten Character-Daten seit Prompts
+  23 und 24 aus dem aufgelösten Profil.
 
 ### Richtungs- und Animationsfragen
 
@@ -598,8 +600,8 @@ keine schreibende Migration beim bloßen Laden statt.
   Animationsfelder. Live-Zusammenfassung und Dashboard zeigen Klasse,
   Bewegung, Standfläche, Anker, capability-gültige Richtungen, Sequenzen mit
   Frames, Material und Zustand.
-- Die Output-Auswahl aus der Katalogtabelle, Prompt Engine und Output Workspace
-  folgen in späteren Phasen.
+- Prompt Engine und Review-/Output-Workspace lesen diese validierten
+  Moving-Object-Daten seit Prompts 23 und 24 aus dem aufgelösten Profil.
 
 ---
 
@@ -662,8 +664,8 @@ keine schreibende Migration beim bloßen Laden statt.
   Zerbrechen oder eine individuelle Animation; kein Static-Object-Untertyp
   erhält eine 4/8-Richtungsfrage.
 - Zusammenfassung und Dashboard zeigen nur kompakte tatsächlich konfigurierte
-  Objektfakten. Prompt Engine, Review-/Output-Erzeugung und Ausgabeauswahl
-  folgen in späteren Phasen.
+  Objektfakten. Prompt Engine und Review-/Output-Workspace lesen sie seit
+  Prompts 23 und 24 aus dem aufgelösten Profil.
 
 ---
 
@@ -749,8 +751,8 @@ keine schreibende Migration beim bloßen Laden statt.
 - Zusammenfassung und Dashboard zeigen nur tatsächlich konfigurierte
   Material-, Kachel- und Oberflächenfakten. Figuren-, Kleidungs-, Bewegungs-
   und Richtungsfragen sind aus dem Texture-Flow ausgeschlossen.
-- Prompt Engine, Review-/Output-Erzeugung und die Ausgabeauswahl folgen in
-  späteren Phasen.
+- Prompt Engine und Review-/Output-Workspace lesen diese validierten
+  Texture-Daten seit Prompts 23 und 24 aus dem aufgelösten Profil.
 
 ---
 
@@ -832,8 +834,8 @@ keine schreibende Migration beim bloßen Laden statt.
   aus diesem Flow ausgeschlossen.
 - Zusammenfassung und Dashboard zeigen aufgelösten Pflanzentyp, Art, Umgebung,
   relevante Anatomie, Bewuchs, Schnee, Standfläche, Bodenanschluss, Varianten
-  und capability-gültige Animation. Prompt Engine, Review-/Output-Erzeugung
-  und Ausgabeauswahl folgen erst in späteren Phasen.
+  und capability-gültige Animation. Prompt Engine und Review-/Output-Workspace
+  lesen sie seit Prompts 23 und 24 aus dem aufgelösten Profil.
 
 ---
 
@@ -906,7 +908,8 @@ keine schreibende Migration beim bloßen Laden statt.
   Schließen oder eine individuelle Animation. Kein Building-Untertyp ist
   `directional`; Kamera, Weltlicht und Footprint bleiben über Animationsphasen
   konstant. Zusammenfassung und Dashboard zeigen kompakte tatsächliche
-  Architekturfakten. Prompt Engine und Review-/Output-Erzeugung folgen später.
+  Architekturfakten. Prompt Engine und Review-/Output-Workspace lesen sie seit
+  Prompts 23 und 24 aus dem aufgelösten Profil.
 
 ---
 
@@ -970,7 +973,8 @@ keine schreibende Migration beim bloßen Laden statt.
   ersetzt daher die generische Kachelbarkeitsstufe. Alte Drafts an dieser
   Stufe werden in-memory auf `tilesetDetails` umgeleitet. Nur `animatedTile`
   erhält einen separaten Animationsschritt; kein Tileset ist `directional`.
-  Prompt Engine und Review-/Output-Erzeugung folgen später.
+  Prompt Engine und Review-/Output-Workspace lesen die Atlasdaten seit
+  Prompts 23 und 24 über die bestehende pure Metrik.
 
 ---
 
@@ -1020,8 +1024,8 @@ keine schreibende Migration beim bloßen Laden statt.
   Item-Antworten, Klassifikationswechsel bereinigen sie. Rohzustand, Autosave
   und Resume verwenden den gemeinsamen schreibfreien Wizard-Vertrag.
 - Live-Zusammenfassung und Dashboard zeigen nur kompakte konfigurierte
-  Itemfakten. Lange Beschreibungen bleiben für die spätere Prompt Engine und
-  Review-/Output-Phase im Draft.
+  Itemfakten. Lange Beschreibungen bleiben im Draft und fließen seit Prompts
+  23 und 24 erst in Prompt Engine und Review-/Output-Workspace vollständig ein.
 
 ---
 
@@ -1071,6 +1075,9 @@ keine schreibende Migration beim bloßen Laden statt.
   Animationsregeln aus Editor, neuer Draft-Projektion, Summary und Dashboard.
   Vorhandene Profilwerte bleiben verlustfrei lesbar; der Compatibility Key
   ignoriert ihre für Artwork irrelevante Weltgeometrie.
+- Prompt Engine und Review-/Output-Workspace verarbeiten die freien Artwork-
+  Daten seit Prompts 23 und 24 ohne Spielraster-, Weltkamera-, Figuren-,
+  Richtungs- oder Animationsvorgaben.
 
 ---
 
@@ -1164,7 +1171,7 @@ Basisprofil
 | Tileset | nicht passende Kanten, sichtbare Wiederholung, falsches Raster |
 | Artwork | unerwünschte Schrift, Wasserzeichen, unklare Hauptkomposition |
 
-## 11.3 Implementierungsstand seit Prompt 23
+## 11.3 Implementierungsstand seit Prompt 24
 
 - `buildPromptPackages()` nimmt ein vollständig `ResolvedProfile` entgegen
   und erzeugt pro gewünschter Sprache und wirksamer Stilvariante ein
@@ -1187,6 +1194,21 @@ Basisprofil
   schwankende Reihenfolgen und doppelte Negativ-/Technikzeilen. Direkte Namen
   bestehender Spiele, Marken, Figuren oder Kunstschaffender sind kein Teil der
   Engine-Vorlagen.
+- `prepareReviewOutput()` verarbeitet ausschließlich einen validierten
+  Wizard-Draft und eine validierte Bibliothek. Unvollständige Daten und
+  Resolver-Konflikte liefern eigene Review-Zustände und niemals einen
+  Teilprompt; der synthetische Snapshot-Key wird nicht als Nutzerwarnung
+  ausgegeben.
+- Review zeigt Projekt, Klassifikation, Profilprovenienz, technische Werte,
+  Quellen, Locks, Capabilities sowie echte Draft-/Resolver-Hinweise. Die vier
+  Ausgabearten sind pro deutscher/englischer Sprache und wirksamer
+  Stilvariante als tastaturbedienbare Tabs verfügbar.
+- Copy und TXT verwenden den aktiven Ausgabeblock über einen injizierbaren
+  Browser-Port. JSON verwendet das bestehende validierte ExportBundle mit
+  erforderlichen Base-/Category-Abhängigkeiten und Draft.
+- Ein geprüfter neuer Draft wird als neues Assetprofil gespeichert; ein aus
+  der Bibliothek geladener Draft aktualisiert dessen stabile ID und Metadaten.
+  Der vollständige Profilgraph wird vor dem Storage-Write erneut validiert.
 
 ---
 

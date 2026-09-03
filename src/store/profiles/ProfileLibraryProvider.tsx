@@ -14,7 +14,9 @@ import {
   deleteAssetProfile,
   duplicateBaseProfile as duplicateBaseProfileInLibrary,
   duplicateAssetProfile,
+  saveAssetProfile as saveAssetProfileInLibrary,
   toggleAssetProfileFavorite,
+  type AssetProfileSaveDefinition,
   type BaseProfileDefinition,
   type ProfileLibraryChange
 } from "../../domain/profiles";
@@ -69,6 +71,9 @@ export interface ProfileLibraryContextValue {
   readonly resetFilters: () => void;
   readonly toggleFavorite: (profileId: StableId) => ProfileActionResult;
   readonly duplicateProfile: (profileId: StableId) => ProfileActionResult;
+  readonly saveAssetProfile: (
+    definition: AssetProfileSaveDefinition
+  ) => ProfileActionResult;
   readonly deleteProfile: (profileId: StableId) => ProfileActionResult;
   readonly createBaseProfile: (
     definition: BaseProfileDefinition
@@ -146,6 +151,8 @@ function actionLabel(operation: ProfileMutationOperation): string {
       return "Favoritenstatus";
     case "duplicate":
       return "Duplikat";
+    case "save":
+      return "Assetprofil";
     case "delete":
       return "Löschung";
     case "createBase":
@@ -246,7 +253,9 @@ export function ProfileLibraryProvider({
         return fail(
           operation,
           "idConflict",
-          "Das Duplikat konnte wegen einer bereits verwendeten Profil-ID nicht angelegt werden."
+          operation === "save"
+            ? "Das Assetprofil konnte wegen einer bereits verwendeten Profil-ID nicht gespeichert werden."
+            : "Das Duplikat konnte wegen einer bereits verwendeten Profil-ID nicht angelegt werden."
         );
       }
 
@@ -382,6 +391,69 @@ export function ProfileLibraryProvider({
     [commitChange, currentLibraryOrFailure]
   );
 
+  const saveAssetProfile = useCallback(
+    (definition: AssetProfileSaveDefinition): ProfileActionResult => {
+      const library = currentLibraryOrFailure("save");
+      if (!("assetProfiles" in library)) return library;
+
+      let candidateId: string;
+      try {
+        candidateId =
+          definition.sourceAssetProfileId ?? createProfileId();
+      } catch {
+        return fail(
+          "save",
+          "invalid",
+          "Das Assetprofil konnte nicht mit einer gültigen Profil-ID gespeichert werden."
+        );
+      }
+      const parsedId = StableIdSchema.safeParse(candidateId);
+      if (!parsedId.success) {
+        return fail(
+          "save",
+          "invalid",
+          "Das Assetprofil konnte wegen einer ungültigen Profil-ID nicht gespeichert werden."
+        );
+      }
+
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch {
+        return fail(
+          "save",
+          "invalid",
+          "Das Assetprofil konnte nicht mit einem gültigen Zeitstempel gespeichert werden."
+        );
+      }
+
+      try {
+        return commitChange(
+          "save",
+          saveAssetProfileInLibrary(
+            library,
+            parsedId.data,
+            timestamp,
+            definition
+          )
+        );
+      } catch {
+        return fail(
+          "save",
+          "invalid",
+          "Das Assetprofil konnte aus der geprüften Konfiguration nicht erstellt werden."
+        );
+      }
+    },
+    [
+      commitChange,
+      createProfileId,
+      currentLibraryOrFailure,
+      fail,
+      now
+    ]
+  );
+
   const createBaseProfile = useCallback(
     (definition: BaseProfileDefinition): ProfileActionResult<BaseProfile> => {
       const library = currentLibraryOrFailure("createBase");
@@ -511,6 +583,7 @@ export function ProfileLibraryProvider({
       resetFilters: () => dispatch({ type: "filtersReset" }),
       toggleFavorite,
       duplicateProfile,
+      saveAssetProfile,
       deleteProfile,
       createBaseProfile,
       duplicateBaseProfile,
@@ -521,6 +594,7 @@ export function ProfileLibraryProvider({
       createBaseProfile,
       duplicateBaseProfile,
       duplicateProfile,
+      saveAssetProfile,
       state.filters,
       state.libraryResult,
       state.mutation,

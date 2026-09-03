@@ -18,6 +18,7 @@ export interface ProfileLibraryFilters {
 export type ProfileMutationOperation =
   | "favorite"
   | "duplicate"
+  | "save"
   | "delete"
   | "createBase"
   | "duplicateBase";

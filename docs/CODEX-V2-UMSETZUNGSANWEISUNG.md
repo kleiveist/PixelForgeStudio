@@ -607,11 +607,12 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   schreibfreies Resume. `freeComposition` blendet Tile-, Sprite-, Weltkamera-,
   Figuren-, Richtungs- und Animationsregeln aus; Summary und Dashboard zeigen
   nur kompakte tatsächliche Artwork-Fakten.
-- Prompts 00 bis 23 sind abgeschlossen. Die frameworkfreie Prompt Engine 2.0
-  verarbeitet aufgelöste Profile bereits vollständig; Prompt 24 ergänzt als
-  nächste Phase ausschließlich Review-/Output-UI und Aktionen. In-place-
-  Mutation oder Reparenting einer bestehenden Basisfamilie bleiben außerhalb
-  dieses Stands.
+- Prompts 00 bis 24 sind abgeschlossen. Die frameworkfreie Prompt Engine 2.0
+  verarbeitet aufgelöste Profile vollständig; der Review-/Output-Workspace
+  bindet sie an aktiven oder lokal gesicherten Draft, Profilbibliothek,
+  Konfliktanzeige, Clipboard, TXT-/JSON-Export und Assetprofil-Speicherung an.
+  In-place-Mutation oder Reparenting einer bestehenden Basisfamilie bleiben
+  außerhalb dieses Stands.
 
 ---
 
@@ -862,8 +863,8 @@ Umgesetzt seit Prompt 14:
   1 bis 8 Frames; die kanonische Domainreihenfolge macht die Ausgabe
   deterministisch. Bestehende Ein-Aktions-Daten bleiben nur als Lesepfad
   erhalten.
-- Die Auswahl einer Ausgabeart, Promptmodule und der Output Workspace bleiben
-  Gegenstand späterer Prompts.
+- Prompt Engine und Review-/Output-Workspace verarbeiten diese Daten seit
+  Prompts 23 und 24 über die gemeinsame aufgelöste Profilgrenze.
 
 ## 13.2 Moving Object
 
@@ -900,8 +901,8 @@ Umgesetzt seit Prompt 15:
 - Fachantworten werden über Base→Category→Asset geerbt und minimal lokal
   gespeichert. Explicit Clear löst die Kategorie-/Assetprovenienz und
   materialisiert die übrigen wirksamen Werte relativ zur Base.
-- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
-  Prompts.
+- Prompt Engine und Review-/Output-Workspace verarbeiten diese Daten seit
+  Prompts 23 und 24 über die gemeinsame aufgelöste Profilgrenze.
 
 ## 13.3 Static Object
 
@@ -942,8 +943,8 @@ Umgesetzt seit Prompt 18:
   `animated` markierte Untertypen erhalten Öffnen-, Leuchten-, Zerbrechen- oder
   benutzerdefinierte Animation; kein Static-Object-Untertyp erhält eine
   Richtungsfrage.
-- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
-  Prompts.
+- Prompt Engine und Review-/Output-Workspace verarbeiten diese Daten seit
+  Prompts 23 und 24 über die gemeinsame aufgelöste Profilgrenze.
 
 ## 13.4 Texture / Material
 
@@ -985,8 +986,8 @@ Umgesetzt seit Prompt 16:
   gelten auch für Texture-Felder. Zusammenfassung und Dashboard zeigen
   ausschließlich tatsächlich gesetzte Material-, Kachel- und
   Oberflächenfakten.
-- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
-  Prompts.
+- Prompt Engine und Review-/Output-Workspace verarbeiten diese Daten seit
+  Prompts 23 und 24 über die gemeinsame aufgelöste Profilgrenze.
 
 ## 13.5 Nature / Tree
 
@@ -1037,8 +1038,8 @@ Umgesetzt seit Prompt 17:
 - Wind-/Magieanimation ist von Richtung getrennt und erscheint nur bei
   `animated`. Nature besitzt keine richtungsfähigen Untertypen und zeigt daher
   niemals 4/8 Richtungen.
-- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
-  Prompts.
+- Prompt Engine und Review-/Output-Workspace verarbeiten diese Daten seit
+  Prompts 23 und 24 über die gemeinsame aufgelöste Profilgrenze.
 
 ## 13.6 Building
 
@@ -1082,8 +1083,8 @@ Umgesetzt seit Prompt 19:
 - Rohzustand, Dirty State, Autosave, schreibfreie Hydration und exaktes Resume
   gelten für alle Building-Felder. Zusammenfassung und Dashboard zeigen nur
   kompakte tatsächliche Architektur-, Mapping- und Lichtfakten.
-- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
-  Prompts.
+- Prompt Engine und Review-/Output-Workspace verarbeiten diese Daten seit
+  Prompts 23 und 24 über die gemeinsame aufgelöste Profilgrenze.
 
 ## 13.7 Tileset
 
@@ -1119,8 +1120,8 @@ Umgesetzt seit Prompt 20:
   Hydration und exaktes Resume gelten für sämtliche Felder.
 - Der Fachschritt ersetzt für Tilesets die generische Kachelbarkeitsstufe. Nur
   `animatedTile` erhält den getrennten `animated`-Schritt; Richtungs- und
-  Figurenmaßstabsfragen bleiben vollständig ausgeschlossen. Prompt Engine,
-  Review und Output folgen später.
+  Figurenmaßstabsfragen bleiben vollständig ausgeschlossen. Prompt Engine und
+  Review-/Output-Workspace verarbeiten diese Daten seit Prompts 23 und 24.
 
 ## 13.8 Item / Equipment
 
@@ -1146,7 +1147,8 @@ Umgesetzt seit Prompt 21:
   Wearable-Untertypen begrenzt. Kein Item ist `directional` oder `animated`.
 - Base→Category→Asset-Hydration, minimale Projektion, Explicit Clear,
   Rohzustand, Autosave, schreibfreies Resume, Summary und Dashboard gelten für
-  alle Item-Felder. Prompt Engine, Review und Output folgen später.
+  alle Item-Felder. Prompt Engine und Review-/Output-Workspace verarbeiten
+  diese Daten seit Prompts 23 und 24.
 
 ## 13.9 Artwork
 
@@ -1174,8 +1176,8 @@ Umgesetzt seit Prompt 22:
   Rohzustand, Autosave, schreibfreies Resume, Summary und Dashboard gelten für
   alle Artwork-Felder.
 - `freeComposition` aktiviert keine Tile-, Sprite-, Weltkamera-, Figuren-,
-  Richtungs- oder Animationsregeln. Prompt Engine, Review und Output folgen
-  später.
+  Richtungs- oder Animationsregeln. Prompt Engine und Review-/Output-Workspace
+  verarbeiten diese Daten seit Prompts 23 und 24 ohne Spielrasterregeln.
 
 ---
 
@@ -1233,7 +1235,21 @@ Keine direkten Namen bestehender Spiele, Marken, Figuren oder Künstler in gener
   Richtungsset und Animation. Tileset-Atlaswerte werden über
   `createTilesetTechnicalSpecification()` bezogen und nicht neu berechnet.
 - Prompt 23 enthält absichtlich keine React-Ausgabe, Clipboard-, TXT-, JSON-
-  oder Speicheraktionen; diese Integration ist die Grenze von Prompt 24.
+  oder Speicheraktionen. Prompt 24 bindet diese Engine nun über
+  `features/review-output` an eine fail-closed React-Arbeitsfläche: Nur ein
+  konfliktfrei aufgelöster Draft erzeugt Pakete; Profilkonflikte zeigen
+  strukturierte Hinweise ohne Teilprompt.
+- Deutsch/Englisch und jede wirksame Stilvariante sind paketweise auswählbar.
+  Hauptprompt, Negativprompt, technische Spezifikation und kombinierte Ausgabe
+  liegen in vier ARIA-Tabs mit Pfeil-, Home- und End-Tastatursteuerung.
+- `OutputWorkspaceAdapter` kapselt Clipboard und Blob-Downloads. Copy und TXT
+  verwenden exakt den aktiven Tab; JSON serialisiert den geprüften Profilstand
+  mit seinen Base-/Category-Abhängigkeiten und dem Draft als validiertes
+  V2-ExportBundle.
+- `saveAssetProfile()` ist eine pure Create-/Update-Operation der bestehenden
+  Profilbibliothek. Neue Drafts erhalten eine neue Asset-ID, geladene Profile
+  behalten ID und Metadaten; der Provider prüft den vollständigen Graphen vor
+  dem Storage-Write und verknüpft den Draft anschließend mit dem Profil.
 
 ---
 
@@ -1281,6 +1297,21 @@ Richtungssets behalten Weltlicht und Kamera konstant.
 - TXT/JSON Export
 - Profil speichern
 - Warnungen vor technischen Konflikten
+
+Umgesetzt seit Prompt 24:
+
+- Die Routen `review` und `output` rendern dieselbe responsive, lokale
+  Produktionsarbeitsfläche mit routenspezifischer Überschrift und direktem
+  Wechsel zwischen Prüfung und Ausgabe.
+- Ein aktiver Session-Draft hat Vorrang; nach Reload wird ein gültiger
+  persistierter Draft schreibfrei gelesen. Fehlende, unvollständige,
+  beschädigte oder widersprüchliche Daten besitzen eigene Recovery-Zustände.
+- Review zeigt Projekt, Klassifikation, Base-/Category-Provenienz, technische
+  Werte, Quellen, Basis-Locks, Capability-Tags, Draft-Warnungen und
+  Resolver-Hinweise. Konflikte sperren Prompt-, Copy-, Save- und Exportaktionen.
+- Der Output-Bereich bietet Paketwahl für Sprache und Stil sowie vier
+  semantische Tabs. Aktionen melden Erfolg oder Fehler per Live Region und
+  sind über injizierte Ports vollständig testbar.
 
 ---
 

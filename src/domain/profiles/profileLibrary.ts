@@ -4,6 +4,7 @@ import type {
   ProfileLibrary,
   StableId
 } from "../../schemas";
+import { parseAssetProfile } from "../../schemas/profiles.schema";
 
 export type ProfileLibraryChange<Profile extends AssetProfile | BaseProfile> =
   | Readonly<{
@@ -25,6 +26,23 @@ export type BaseProfileLibraryChange = ProfileLibraryChange<BaseProfile>;
 export type BaseProfileDefinition = Readonly<
   Pick<BaseProfile, "name" | "iconId" | "values" | "locks">
 >;
+type AssetProfileSaveFields =
+  | "name"
+  | "baseProfileId"
+  | "categoryProfileId"
+  | "compatibilityKey"
+  | "capabilities"
+  | "overrides"
+  | "category"
+  | "subtype"
+  | "answers";
+type DistributiveAssetProfileSaveDefinition<Profile> =
+  Profile extends AssetProfile
+    ? Readonly<Pick<Profile, Extract<keyof Profile, AssetProfileSaveFields>>>
+    : never;
+export type AssetProfileSaveDefinition =
+  DistributiveAssetProfileSaveDefinition<AssetProfile> &
+    Readonly<{ sourceAssetProfileId?: StableId }>;
 
 const MAX_PROFILE_NAME_LENGTH = 120;
 const COPY_SUFFIX_PATTERN = / \(Kopie(?: \d+)?\)$/u;
@@ -51,6 +69,16 @@ function replaceAssetProfile(
     assetProfiles: library.assetProfiles.map((candidate) =>
       candidate.id === profile.id ? profile : candidate
     )
+  };
+}
+
+function appendAssetProfile(
+  library: ProfileLibrary,
+  profile: AssetProfile
+): ProfileLibrary {
+  return {
+    ...library,
+    assetProfiles: [...library.assetProfiles, profile]
   };
 }
 
@@ -241,6 +269,68 @@ export function duplicateAssetProfile(
       ...library,
       assetProfiles: [...library.assetProfiles, profile]
     },
+    profile
+  };
+}
+
+/**
+ * Creates a new Asset profile or updates the profile referenced as the
+ * definition's source. Source metadata remains stable while the production
+ * configuration is replaced by the reviewed, already resolved definition.
+ */
+export function saveAssetProfile(
+  library: ProfileLibrary,
+  newProfileId: StableId,
+  timestamp: string,
+  definition: AssetProfileSaveDefinition
+): AssetProfileLibraryChange {
+  const source = definition.sourceAssetProfileId
+    ? library.assetProfiles.find(
+        (profile) => profile.id === definition.sourceAssetProfileId
+      )
+    : undefined;
+
+  if (definition.sourceAssetProfileId !== undefined && source === undefined) {
+    return {
+      status: "notFound",
+      profileId: definition.sourceAssetProfileId
+    };
+  }
+  if (
+    source === undefined &&
+    library.assetProfiles.some((profile) => profile.id === newProfileId)
+  ) {
+    return { status: "idConflict", profileId: newProfileId };
+  }
+
+  const { sourceAssetProfileId: ignoredSourceId, ...productionValues } =
+    definition;
+  void ignoredSourceId;
+  const profile = parseAssetProfile({
+    schemaVersion: 2,
+    kind: "assetProfile",
+    id: source?.id ?? newProfileId,
+    ...productionValues,
+    iconId: source?.iconId ?? "wizard-draft",
+    badgeIconIds: source?.badgeIconIds ?? [],
+    tags: source?.tags ?? [],
+    favorite: source?.favorite ?? false,
+    ...(source?.migratedFromVersion === undefined
+      ? {}
+      : { migratedFromVersion: source.migratedFromVersion }),
+    ...(source?.legacyData === undefined
+      ? {}
+      : { legacyData: source.legacyData }),
+    createdAt: source?.createdAt ?? timestamp,
+    updatedAt: timestamp
+  });
+
+  return {
+    status: "changed",
+    library:
+      source === undefined
+        ? appendAssetProfile(library, profile)
+        : replaceAssetProfile(library, profile),
     profile
   };
 }

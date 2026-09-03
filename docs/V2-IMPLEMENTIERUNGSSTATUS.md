@@ -6,11 +6,12 @@
 
 ## Stand
 
-Der letzte vollständig implementierte Funktionsabschnitt ist **Prompt 23 —
-Prompt Engine 2.0**. Er ist im separaten Feature-Commit mit dem Betreff
-`⚙️ feat: build modular TypeScript prompt engine` abgeschlossen. Die Engine
-erzeugt ihre vier Ausgabearten frameworkfrei und deterministisch; Prompt 24
-mit Review-, Copy-, Speicher- und Exportoberfläche ist noch nicht begonnen.
+Der letzte vollständig implementierte Funktionsabschnitt ist **Prompt 24 —
+Review und Output Workspace**. Er ist im separaten Feature-Commit mit dem
+Betreff `📋 feat: add prompt review and output workspace` abgeschlossen. Die
+Arbeitsfläche löst aktive oder persistierte Drafts fail-closed auf, zeigt
+Zusammenfassung und Konflikte und stellt vier Prompt-Ausgaben samt Copy-, TXT-,
+JSON- und Profilspeicheraktionen bereit.
 
 Prompt 18 ist vollständig in Commit `6dabbbb` enthalten. Dessen Betreff
 (`♻️ refactor: Code vereinfachen und strukturieren`) beschreibt den Inhalt
@@ -34,7 +35,7 @@ V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
 | 03 | neun Asset-Kategorien, Untertypen und getrennte Capabilities für Richtung und Animation |
 | 04 | strikte Schema-V2-Verträge mit Zod und daraus abgeleitete TypeScript-Typen |
 
-## Abgeschlossene beauftragte Phasen 05–23
+## Abgeschlossene beauftragte Phasen 05–24
 
 | Prompt | Commit | Umgesetzter Stand |
 |---:|---|---|
@@ -56,7 +57,8 @@ V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
 | 20 | `2557c94` | Tileset-Editor mit Kanten, Ecken, Übergängen, Seam-Regeln, Varianten und berechnetem Atlaslayout |
 | 21 | `bb90757` | Item-/Equipment-Editor mit Material, Zustand, Funktion, Bedeutung, Größe und Lesbarkeitsregeln |
 | 22 | `9d4fe34` | freier Artwork-/Konzeptbild-Editor mit Motiv, Szene, Komposition, Format, Hintergrund, Fokus, Licht und Detailgrad |
-| 23 | `⚙️ Feature-Commit` | modulare pure TypeScript-Prompt-Engine mit zwölf Bausteinen, getrennten Stilpaketen und allen vier Ausgabearten |
+| 23 | `57ac335` | modulare pure TypeScript-Prompt-Engine mit zwölf Bausteinen, getrennten Stilpaketen und allen vier Ausgabearten |
+| 24 | `📋 dieser Commit` | produktionsreifer Review-/Output-Workspace mit Konfliktanzeige, vier Tabs, Copy, TXT-/JSON-Export und Profilspeicherung |
 
 Durchgehend umgesetzt sind außerdem:
 
@@ -78,17 +80,22 @@ Durchgehend umgesetzt sind außerdem:
 - freie Artworks bleiben ohne Spielraster, Weltkamera, Figurenmaßstab,
   Richtung und Animation; Tileset-Atlaswerte nutzen die vorhandene pure
   Berechnung.
+- Review liest aktive oder persistierte validierte Drafts und erzeugt bei
+  Konflikten niemals einen Teilprompt;
+- Clipboard und Downloads liegen hinter einem injizierbaren Browser-Port;
+- neue Assetprofile erhalten eine neue ID, geladene Profile behalten stabile
+  ID und Metadaten, und jeder vollständige Graph wird vor dem Write validiert.
 
 ## Letzter vollständiger Prüfstand
 
-Der Funktionsstand bis Prompt 23 wurde am 3. September 2026 mit folgenden
+Der Funktionsstand bis Prompt 24 wurde am 3. September 2026 mit folgenden
 Ergebnissen geprüft:
 
 - TypeScript-Typecheck erfolgreich;
 - Legacy-Strukturprüfung für 13 JavaScript-Dateien und 51 Formularfelder
   erfolgreich;
 - 10 von 10 Legacy-Tests erfolgreich;
-- 99 Vitest-Dateien mit 572 von 572 Tests erfolgreich;
+- 102 Vitest-Dateien mit 587 von 587 Tests erfolgreich;
 - Vite-Produktionsbuild erfolgreich;
 - `git diff --check` sauber.
 
@@ -103,21 +110,20 @@ dokumentiert und jeweils separat committet:
 
 | Prompt | Offene Aufgabe |
 |---:|---|
-| 24 | produktionsreife Review- und Output-Ansichten samt Copy, TXT, JSON und Profilspeicherung |
 | 25 | kontrollierter Profilkonflikt- und Konvertierungsworkflow |
 | 26 | abschließende Accessibility-, Keyboard-, Responsive- und visuelle Politur |
 | 27 | vollständige V2-Release-Abnahme; Legacy-UI nur bei belegter Parität entfernen |
 
-Die nächste einzeln auszuführende Phase ist **Prompt 24 — Review und Output
-Workspace**. Übergabe und Arbeitsgrenze stehen in `PLANS.md`; der verbindliche
+Die nächste einzeln auszuführende Phase ist **Prompt 25 — Profilkonflikte und
+Konvertierung**. Übergabe und Arbeitsgrenze stehen in `PLANS.md`; der verbindliche
 Phasenscope bleibt `docs/CODEX-V2-PROMPTS.md`.
 
 ## Git- und Remote-Hinweis
 
 `origin/main` steht weiterhin auf `6dabbbb`; die Branches sind nicht
 divergiert. Der lokale Branch enthält zusätzlich die getrennten Prompt-19-,
-Prompt-20-, Statusdokumentations-, Prompt-21-, Prompt-22- und Prompt-23-
-Commits. Der Remote-Stand
+Prompt-20-, Statusdokumentations-, Prompt-21-, Prompt-22-, Prompt-23- und
+Prompt-24-Commits. Der Remote-Stand
 enthält damit den funktionalen Prompt-18-Inhalt unter dem unzutreffenden
-Refactor-Betreff, während die späteren Phasen einschließlich Prompt 23 bisher
+Refactor-Betreff, während die späteren Phasen einschließlich Prompt 24 bisher
 nur lokal vorliegen. Es wurde nicht gepusht.
