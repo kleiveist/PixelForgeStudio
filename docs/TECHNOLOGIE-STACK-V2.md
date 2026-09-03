@@ -294,9 +294,36 @@ Zusammenfassung und Dashboard zeigen nur relevante Naturfakten.
 
 Wind-, Magie- und benutzerdefinierte Animationen bleiben ein eigener
 `animated`-Capability-Schritt. Nature-Untertypen sind nicht `directional` und
-erhalten keine 4/8-Richtungsfrage. Prompts 00 bis 17 sind abgeschlossen;
-Prompt 18 ergänzt als nächste Phase den Static-Object-Editor. Prompt 17 nimmt
-weder Prompt Engine noch Review-/Output-Erzeugung oder weitere
+erhalten keine 4/8-Richtungsfrage.
+
+Seit Prompt 18 folgt für `staticObject` direkt nach dem Basisprofil der eigene
+Schritt `staticObjectDetails`. `StaticWorldObjectEditor` erfasst Funktion,
+Beschreibung, Form, Proportion, Symmetrie, Haupt- und Nebenmaterial,
+Materialdetails, Zustand, Konstruktion, Inhalt, Standfläche, Schatten und 1 bis
+12 Varianten in React Hook Form. Objektklasse und wirksame Tilegröße werden
+read-only aus Untertyp beziehungsweise technischer Base→Category→Asset-
+Vererbung dargestellt; `tileSize` wird nicht in `StaticObjectAnswers`
+dupliziert.
+
+Der öffentliche Katalog unter `src/domain/static-objects/` stellt readonly
+IDs, das vollständige `STATIC_OBJECT_CLASS_BY_SUBTYPE`-Mapping und
+`getDefaultStaticObjectClass()` bereit. `StaticObjectAnswersSchema` erweitert
+den Schema-V2-Vertrag strikt und additiv; vorhandene Werte bleiben ohne eager
+Defaults lesbar und eine gespeicherte Objektklasse muss zum Untertyp passen.
+
+Static-Object-Werte werden Base→Category→Asset aufgelöst und nur als nicht
+redundante lokale Abweichungen gespeichert. Explicit Clear löst Kategorie-/
+Assetprovenienz und materialisiert die übrigen Fach- und Technikwerte relativ
+zur Base. Basiswechsel erhalten Fachwerte, Klassifikationswechsel bereinigen
+sie. Rohzustand, Dirty State, 300-ms-Autosave und exaktes Resume gelten auch
+hier; Mount, Profil-Hydration und Resume schreiben nicht. Zusammenfassung und
+Dashboard zeigen nur kompakte, tatsächlich konfigurierte Objektfakten.
+
+Öffnen, Leuchten, Zerbrechen und benutzerdefinierte Animation bleiben ein
+eigener `animated`-Capability-Schritt. Static-Object-Untertypen sind nicht
+`directional` und erhalten keine 4/8-Richtungsfrage. Prompts 00 bis 18 sind
+abgeschlossen; Prompt 19 ergänzt als nächste Phase den Building-Editor.
+Prompt 18 nimmt weder Prompt Engine noch Review-/Output-Erzeugung oder weitere
 Spezialeditoren vorweg.
 
 ## Speicherung
@@ -381,6 +408,15 @@ Pflichtbereiche:
 - schreibfreie Nature-Hydration/Resume, Autosave und
   Summary-/Dashboard-Projektion
 - Wind-/Magieanimation für animierbare Nature-Untertypen ohne Richtungsset
+- Static-Object-Kataloge, vollständiges Untertyp-/Objektklassen-Mapping und
+  additive Schema-V2-Lesbarkeit ohne Defaults
+- vollständige Static-Object-Footprints von 1–64 Tiles, 1–12 Varianten sowie
+  Funktions-, Form-, Material-, Zustands-, Interaktions- und Schattenwerte
+- Base→Category→Asset-Vererbung, minimale Static-Object-Projektion und
+  Explicit-Clear-Detach
+- schreibfreie Static-Object-Hydration/Resume, Autosave und
+  Summary-/Dashboard-Projektion
+- animierte Truhe oder Tür ohne Richtungsset
 - 8 Richtungen nur bei richtungsabhängig beweglichen Assets
 - Speichern / Laden / Import / Export
 - Theme-Umschaltung

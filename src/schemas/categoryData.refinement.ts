@@ -10,6 +10,7 @@ import {
   natureSubtypeHasRoots,
   natureSubtypeHasTrunk
 } from "../domain/nature";
+import { getDefaultStaticObjectClass } from "../domain/static-objects";
 import { getDefaultTextureMaterialType } from "../domain/textures";
 
 export type CategoryDataCarrier = AssetSelection;
@@ -38,6 +39,16 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
       addIssue(
         "objectClass",
         `Object class "${String(categoryData.objectClass)}" does not match moving-object subtype "${value.subtype}"; expected "${expectedClass}".`
+      );
+    }
+  }
+
+  if (value.category === "staticObject" && categoryData.objectClass !== undefined) {
+    const expectedClass = getDefaultStaticObjectClass(value.subtype);
+    if (categoryData.objectClass !== expectedClass) {
+      addIssue(
+        "objectClass",
+        `Object class "${String(categoryData.objectClass)}" does not match static-object subtype "${value.subtype}"; expected "${expectedClass}".`
       );
     }
   }

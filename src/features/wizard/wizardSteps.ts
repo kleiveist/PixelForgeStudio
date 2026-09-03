@@ -24,10 +24,15 @@ import {
   type NatureSubtype
 } from "../../domain/nature";
 import {
+  getDefaultStaticObjectClass,
+  type StaticObjectSubtype
+} from "../../domain/static-objects";
+import {
   BaseProfileValuesSchema,
   CharacterAnswersSchema,
   MovingObjectAnswersSchema,
   NatureAnswersSchema,
+  StaticObjectAnswersSchema,
   TextureAnswersSchema,
   type BaseProfileValues
 } from "../../schemas";
@@ -96,6 +101,7 @@ const MovingObjectAnimationFramesSchema = z
 
 const textureAnswerShape = TextureAnswersSchema.unwrap().shape;
 const natureAnswerShape = NatureAnswersSchema.unwrap().shape;
+const staticObjectAnswerShape = StaticObjectAnswersSchema.unwrap().shape;
 
 export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
@@ -193,6 +199,24 @@ export const WizardCoreFormSchema = z.strictObject({
   natureGrounding: natureAnswerShape.grounding,
   natureVariantCount: natureAnswerShape.variantCount,
   natureExtraDetails: natureAnswerShape.extraDetails,
+  staticObjectClass: staticObjectAnswerShape.objectClass,
+  staticObjectPurpose: staticObjectAnswerShape.purpose,
+  staticObjectBasicShape: staticObjectAnswerShape.basicShape,
+  staticObjectProportion: staticObjectAnswerShape.proportion,
+  staticObjectSymmetry: staticObjectAnswerShape.symmetry,
+  staticObjectDescription: staticObjectAnswerShape.subjectDescription,
+  staticObjectPrimaryMaterial: staticObjectAnswerShape.primaryMaterial,
+  staticObjectSecondaryMaterial: staticObjectAnswerShape.secondaryMaterial,
+  staticObjectMaterialDetails: staticObjectAnswerShape.materialDetails,
+  staticObjectCondition: staticObjectAnswerShape.condition,
+  staticObjectDetailElements: staticObjectAnswerShape.detailElements,
+  staticObjectContents: staticObjectAnswerShape.contents,
+  staticObjectInteraction: staticObjectAnswerShape.interaction,
+  staticObjectFootprintWidthTiles: z.number().int().min(1).max(64).optional(),
+  staticObjectFootprintDepthTiles: z.number().int().min(1).max(64).optional(),
+  staticObjectShadowMode: staticObjectAnswerShape.shadowMode,
+  staticObjectVariantCount: staticObjectAnswerShape.variantCount,
+  staticObjectExtraDetails: staticObjectAnswerShape.extraDetails,
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
     .enum(CHARACTER_ANIMATION_ACTION_IDS)
@@ -213,6 +237,7 @@ export type WizardCoreStepId =
   | "movingObjectDetails"
   | "textureDetails"
   | "natureDetails"
+  | "staticObjectDetails"
   | "directions"
   | "animation"
   | "tileability";
@@ -356,6 +381,27 @@ export const WIZARD_NATURE_DETAIL_FIELD_PATHS = Object.freeze([
   "natureGrounding",
   "natureVariantCount",
   "natureExtraDetails"
+] as const satisfies readonly WizardCoreFieldPath[]);
+
+export const WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS = Object.freeze([
+  "staticObjectClass",
+  "staticObjectPurpose",
+  "staticObjectBasicShape",
+  "staticObjectProportion",
+  "staticObjectSymmetry",
+  "staticObjectDescription",
+  "staticObjectPrimaryMaterial",
+  "staticObjectSecondaryMaterial",
+  "staticObjectMaterialDetails",
+  "staticObjectCondition",
+  "staticObjectDetailElements",
+  "staticObjectContents",
+  "staticObjectInteraction",
+  "staticObjectFootprintWidthTiles",
+  "staticObjectFootprintDepthTiles",
+  "staticObjectShadowMode",
+  "staticObjectVariantCount",
+  "staticObjectExtraDetails"
 ] as const satisfies readonly WizardCoreFieldPath[]);
 
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
@@ -562,6 +608,15 @@ function validateCapabilityFields(
       );
     }
   }
+  for (const field of WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS) {
+    if (values[field] !== undefined && category !== "staticObject") {
+      addFieldIssue(
+        context,
+        field,
+        "Daten für statische Weltobjekte gehören nicht zur gewählten Asset-Kategorie."
+      );
+    }
+  }
   if (
     values.movingObjectAnimationFrames !== undefined &&
     (category !== "movingObject" || !capabilities.animated)
@@ -697,6 +752,36 @@ function validateCapabilityFields(
           );
         }
       }
+    }
+  }
+  if (category === "staticObject") {
+    const staticObjectSubtype = selection.subtype as StaticObjectSubtype;
+    const width = values.staticObjectFootprintWidthTiles;
+    const depth = values.staticObjectFootprintDepthTiles;
+    if (width !== undefined && depth === undefined) {
+      addFieldIssue(
+        context,
+        "staticObjectFootprintDepthTiles",
+        "Ergänze zur Breite auch die Tiefe der Standfläche."
+      );
+    }
+    if (depth !== undefined && width === undefined) {
+      addFieldIssue(
+        context,
+        "staticObjectFootprintWidthTiles",
+        "Ergänze zur Tiefe auch die Breite der Standfläche."
+      );
+    }
+    if (
+      values.staticObjectClass !== undefined &&
+      values.staticObjectClass !==
+        getDefaultStaticObjectClass(staticObjectSubtype)
+    ) {
+      addFieldIssue(
+        context,
+        "subtype",
+        "Die abgeleitete Objektklasse passt nicht zum gewählten Untertyp. Bitte bestätige oder korrigiere den Untertyp."
+      );
     }
   }
   if (values.animationType !== undefined) {
@@ -835,6 +920,17 @@ export const WizardNatureDetailsStepSchema =
       );
     }
   });
+export const WizardStaticObjectDetailsStepSchema =
+  WizardCoreFormSchema.superRefine((values, context) => {
+    refineSelectedValues(values, context, undefined, true);
+    if (values.category !== undefined && values.category !== "staticObject") {
+      addFieldIssue(
+        context,
+        "category",
+        "Der Objekt-Editor ist nur für statische Weltobjekte verfügbar."
+      );
+    }
+  });
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) =>
     refineSelectedValues(values, context, "directional", true)
@@ -926,6 +1022,15 @@ export const WIZARD_CORE_STEPS = Object.freeze([
       "Beschreibe Art, Klima, Silhouette, Stamm, Krone, Wurzeln, Bewuchs und Standfläche des Natur-Assets.",
     fieldPaths: WIZARD_NATURE_DETAIL_FIELD_PATHS,
     schema: WizardNatureDetailsStepSchema
+  }),
+  Object.freeze({
+    id: "staticObjectDetails",
+    route: "wizard/editor",
+    title: "Statisches Weltobjekt",
+    description:
+      "Beschreibe Funktion, Form, Material, Zustand, Standfläche und Interaktion des statischen Weltobjekts.",
+    fieldPaths: WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
+    schema: WizardStaticObjectDetailsStepSchema
   }),
   Object.freeze({
     id: "directions",

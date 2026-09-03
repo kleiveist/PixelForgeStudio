@@ -691,6 +691,63 @@ describe("wizard draft lifecycle", () => {
     });
   });
 
+  it("resumes static-object details while keeping animation separate and directionless", () => {
+    const library = createProfileLibraryFixture();
+    const base = library.baseProfiles[0];
+    if (!base) throw new Error("Expected a Base-profile fixture.");
+    const staticDraft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_static_object_details",
+      projectName: "Kartentruhe",
+      route: "wizard/editor",
+      currentStep: "staticObjectDetails",
+      baseProfileId: base.id,
+      category: "staticObject",
+      subtype: "chest",
+      answers: {
+        objectClass: "container",
+        purpose: "interactive",
+        footprint: { widthTiles: 2, depthTiles: 1 },
+        animationType: "openClose"
+      },
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+
+    expect(resolveWizardCoreStep(staticDraft)).toEqual({
+      stepId: "staticObjectDetails",
+      usedFallback: false
+    });
+    expect(
+      validateWizardResume({
+        requestedDraftId: staticDraft.draftId,
+        draft: staticDraft,
+        profileLibrary: library
+      })
+    ).toEqual({ status: "ready", draft: staticDraft, notices: [] });
+
+    const wrongCategory = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_texture_static_step",
+      projectName: "Stein",
+      route: "wizard/editor",
+      currentStep: "staticObjectDetails",
+      baseProfileId: base.id,
+      category: "texture",
+      subtype: "stone",
+      answers: {},
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+    expect(resolveWizardCoreStep(wrongCategory)).toEqual({
+      stepId: "baseProfile",
+      usedFallback: true,
+      unknownStep: "staticObjectDetails"
+    });
+  });
+
   it("rejects malformed resume payloads before lifecycle handling", () => {
     const result = validateWizardResume({
       requestedDraftId: draftId,

@@ -32,6 +32,7 @@ import {
   type MovingObjectAnswers,
   type NatureAnswers,
   type ProfileLibrary,
+  type StaticObjectAnswers,
   type TextureAnswers,
   type WizardDraft
 } from "../../schemas";
@@ -161,6 +162,27 @@ const NATURE_CONTROLLED_ANSWER_KEYS = new Set<string>([
   "extraDetails"
 ]);
 
+const STATIC_OBJECT_CONTROLLED_ANSWER_KEYS = new Set<string>([
+  "objectClass",
+  "purpose",
+  "basicShape",
+  "proportion",
+  "symmetry",
+  "subjectDescription",
+  "primaryMaterial",
+  "secondaryMaterial",
+  "materialDetails",
+  "condition",
+  "detailElements",
+  "contents",
+  "interaction",
+  "animationType",
+  "shadowMode",
+  "footprint",
+  "variantCount",
+  "extraDetails"
+]);
+
 const MOVING_OBJECT_SIMPLE_FIELD_MAPPINGS = Object.freeze([
   ["movingObjectClass", "objectClass"],
   ["movingObjectPurpose", "purpose"],
@@ -225,6 +247,28 @@ const NATURE_FIELD_MAPPINGS = Object.freeze([
 ] as const satisfies readonly (readonly [
   keyof WizardCoreFormValues,
   keyof NatureAnswers
+])[]);
+
+const STATIC_OBJECT_FIELD_MAPPINGS = Object.freeze([
+  ["staticObjectClass", "objectClass"],
+  ["staticObjectPurpose", "purpose"],
+  ["staticObjectBasicShape", "basicShape"],
+  ["staticObjectProportion", "proportion"],
+  ["staticObjectSymmetry", "symmetry"],
+  ["staticObjectDescription", "subjectDescription"],
+  ["staticObjectPrimaryMaterial", "primaryMaterial"],
+  ["staticObjectSecondaryMaterial", "secondaryMaterial"],
+  ["staticObjectMaterialDetails", "materialDetails"],
+  ["staticObjectCondition", "condition"],
+  ["staticObjectDetailElements", "detailElements"],
+  ["staticObjectContents", "contents"],
+  ["staticObjectInteraction", "interaction"],
+  ["staticObjectShadowMode", "shadowMode"],
+  ["staticObjectVariantCount", "variantCount"],
+  ["staticObjectExtraDetails", "extraDetails"]
+] as const satisfies readonly (readonly [
+  keyof WizardCoreFormValues,
+  keyof StaticObjectAnswers
 ])[]);
 
 const PROFILE_VALUE_KEYS = Object.freeze([
@@ -358,6 +402,8 @@ export function wizardStepIsApplicable(
       return selection?.category === "texture";
     case "natureDetails":
       return selection?.category === "nature";
+    case "staticObjectDetails":
+      return selection?.category === "staticObject";
     case "directions":
       return capabilities.directional;
     case "animation":
@@ -673,6 +719,46 @@ function clearsInheritedNatureDefault(
   );
 }
 
+function staticObjectFormValue(
+  values: WizardCoreFormValues,
+  formField: keyof WizardCoreFormValues
+): unknown {
+  return values[formField];
+}
+
+function staticObjectAnswerValue(
+  answers: StaticObjectAnswers,
+  answerField: keyof StaticObjectAnswers
+): unknown {
+  return answers[answerField];
+}
+
+function clearsInheritedStaticObjectDefault(
+  values: WizardCoreFormValues,
+  defaults: StaticObjectAnswers
+): boolean {
+  for (const [formField, answerField] of STATIC_OBJECT_FIELD_MAPPINGS) {
+    if (
+      staticObjectAnswerValue(defaults, answerField) !== undefined &&
+      staticObjectFormValue(values, formField) === undefined
+    ) {
+      return true;
+    }
+  }
+
+  if (
+    defaults.footprint !== undefined &&
+    values.staticObjectFootprintWidthTiles === undefined &&
+    values.staticObjectFootprintDepthTiles === undefined
+  ) {
+    return true;
+  }
+
+  return (
+    defaults.animationType !== undefined && values.animationType === undefined
+  );
+}
+
 export function createWizardCoreFormValues(
   draft: WizardDraft,
   categoryHint: AssetCategory | null = null,
@@ -685,6 +771,7 @@ export function createWizardCoreFormValues(
   let resolvedMovingObjectAnswers: MovingObjectAnswers | undefined;
   let resolvedTextureAnswers: TextureAnswers | undefined;
   let resolvedNatureAnswers: NatureAnswers | undefined;
+  let resolvedStaticObjectAnswers: StaticObjectAnswers | undefined;
 
   if (!("category" in draft)) {
     if (categoryHint !== null) values.category = categoryHint;
@@ -719,6 +806,11 @@ export function createWizardCoreFormValues(
         resolvedTextureAnswers = resolution.profile.categoryData.answers;
       } else if (resolution.profile.categoryData.category === "nature") {
         resolvedNatureAnswers = resolution.profile.categoryData.answers;
+      } else if (
+        resolution.profile.categoryData.category === "staticObject"
+      ) {
+        resolvedStaticObjectAnswers =
+          resolution.profile.categoryData.answers;
       }
     }
   }
@@ -761,9 +853,21 @@ export function createWizardCoreFormValues(
       }
       break;
     }
-    case "staticObject":
-      addDefinedValue(values, "animationType", draft.answers.animationType);
+    case "staticObject": {
+      const answers = resolvedStaticObjectAnswers ?? draft.answers;
+      for (const [formField, answerField] of STATIC_OBJECT_FIELD_MAPPINGS) {
+        const value = staticObjectAnswerValue(answers, answerField);
+        if (value !== undefined) {
+          (values as Record<string, unknown>)[formField] = value;
+        }
+      }
+      if (answers.footprint !== undefined) {
+        values.staticObjectFootprintWidthTiles = answers.footprint.widthTiles;
+        values.staticObjectFootprintDepthTiles = answers.footprint.depthTiles;
+      }
+      addDefinedValue(values, "animationType", answers.animationType);
       break;
+    }
     case "texture":
       for (const [formField, answerField] of TEXTURE_FIELD_MAPPINGS) {
         const value = textureAnswerValue(
@@ -943,7 +1047,8 @@ function controlledAnswers(
   inheritedCharacterDefaults: CharacterAnswers | undefined,
   inheritedMovingObjectDefaults: MovingObjectAnswers | undefined,
   inheritedTextureDefaults: TextureAnswers | undefined,
-  inheritedNatureDefaults: NatureAnswers | undefined
+  inheritedNatureDefaults: NatureAnswers | undefined,
+  inheritedStaticObjectDefaults: StaticObjectAnswers | undefined
 ): Record<string, unknown> {
   const sameSelection = selectionsMatch(draft, selection);
   if (!sameSelection) return {};
@@ -961,6 +1066,8 @@ function controlledAnswers(
           !TEXTURE_CONTROLLED_ANSWER_KEYS.has(key)) &&
         (selection.category !== "nature" ||
           !NATURE_CONTROLLED_ANSWER_KEYS.has(key)) &&
+        (selection.category !== "staticObject" ||
+          !STATIC_OBJECT_CONTROLLED_ANSWER_KEYS.has(key)) &&
         value !== undefined
     )
   );
@@ -1095,7 +1202,56 @@ function controlledAnswers(
       }
       break;
     }
-    case "staticObject":
+    case "staticObject": {
+      for (const [formField, answerField] of STATIC_OBJECT_FIELD_MAPPINGS) {
+        const value = staticObjectFormValue(values, formField);
+        if (
+          value !== undefined &&
+          !optionalJsonValuesEqual(
+            value,
+            inheritedStaticObjectDefaults === undefined
+              ? undefined
+              : staticObjectAnswerValue(
+                  inheritedStaticObjectDefaults,
+                  answerField
+                )
+          )
+        ) {
+          answers[answerField] = value;
+        }
+      }
+
+      if (
+        capabilities.footprint &&
+        values.staticObjectFootprintWidthTiles !== undefined &&
+        values.staticObjectFootprintDepthTiles !== undefined
+      ) {
+        const footprint = {
+          widthTiles: values.staticObjectFootprintWidthTiles,
+          depthTiles: values.staticObjectFootprintDepthTiles
+        };
+        if (
+          !optionalJsonValuesEqual(
+            footprint,
+            inheritedStaticObjectDefaults?.footprint
+          )
+        ) {
+          answers.footprint = footprint;
+        }
+      }
+
+      if (
+        capabilities.animated &&
+        values.animationType !== undefined &&
+        !optionalJsonValuesEqual(
+          values.animationType,
+          inheritedStaticObjectDefaults?.animationType
+        )
+      ) {
+        answers.animationType = values.animationType;
+      }
+      break;
+    }
     case "tileset":
       if (capabilities.animated && values.animationType !== undefined) {
         answers.animationType = values.animationType;
@@ -1209,6 +1365,7 @@ function selectedDraftRoute(
     stepId === "movingObjectDetails" ||
     stepId === "textureDetails" ||
     stepId === "natureDetails" ||
+    stepId === "staticObjectDetails" ||
     stepId === "directions" ||
     stepId === "animation" ||
     stepId === "tileability"
@@ -1369,11 +1526,19 @@ export function updateWizardDraftFromCoreForm(
       input.values,
       linkedCategoryProfile.defaults
     );
+  const detachStaticObjectCategoryProfile =
+    selection.category === "staticObject" &&
+    linkedCategoryProfile?.category === "staticObject" &&
+    clearsInheritedStaticObjectDefault(
+      input.values,
+      linkedCategoryProfile.defaults
+    );
   const detachCategoryProfile =
     detachCharacterCategoryProfile ||
     detachMovingObjectCategoryProfile ||
     detachTextureCategoryProfile ||
-    detachNatureCategoryProfile;
+    detachNatureCategoryProfile ||
+    detachStaticObjectCategoryProfile;
   const retainedProfileLinks =
     profileLinksCanBeRetained && !detachCategoryProfile;
 
@@ -1425,6 +1590,11 @@ export function updateWizardDraftFromCoreForm(
     retainedCategoryProfile?.category === "nature"
       ? retainedCategoryProfile.defaults
       : undefined;
+  const inheritedStaticObjectDefaults =
+    selection.category === "staticObject" &&
+    retainedCategoryProfile?.category === "staticObject"
+      ? retainedCategoryProfile.defaults
+      : undefined;
   const common = {
     schemaVersion: 2,
     kind: "wizardDraft",
@@ -1452,7 +1622,8 @@ export function updateWizardDraftFromCoreForm(
       inheritedCharacterDefaults,
       inheritedMovingObjectDefaults,
       inheritedTextureDefaults,
-      inheritedNatureDefaults
+      inheritedNatureDefaults,
+      inheritedStaticObjectDefaults
     )
   } as const;
 

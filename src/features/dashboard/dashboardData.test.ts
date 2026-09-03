@@ -5,6 +5,7 @@ import {
   ProfileLibrarySchema,
   parseAssetProfile,
   parseBaseProfile,
+  parseCategoryProfile,
   parseWizardDraft,
   type AssetProfile,
   type BaseProfile,
@@ -557,6 +558,93 @@ describe("dashboard data", () => {
     expect(facts.asset_floating).toContain("Bewegung: Schweben");
     expect(facts.asset_floating).toContain("Animation: Pulsieren");
     expect(facts.asset_floating).not.toContain("Richtungsfähig");
+  });
+
+  it("shows resolved static-object facts without long prose or directions", () => {
+    const baseProfile = createBaseProfile();
+    const selection = { category: "staticObject", subtype: "chest" } as const;
+    const categoryProfile = parseCategoryProfile({
+      schemaVersion: 2,
+      kind: "categoryProfile",
+      id: "category_dashboard_chest",
+      name: "Dungeon-Truhen",
+      baseProfileId: baseProfile.id,
+      category: selection.category,
+      subtype: selection.subtype,
+      iconId: "static-chest",
+      capabilities: resolveCapabilities(selection.category, selection.subtype),
+      overrides: {},
+      defaults: {
+        objectClass: "container",
+        purpose: "interactive",
+        basicShape: "boxy",
+        proportion: "compact",
+        symmetry: "bilateral",
+        subjectDescription: "Sehr ausführliche Motivbeschreibung",
+        primaryMaterial: "wood",
+        secondaryMaterial: "metal",
+        materialDetails: "Sehr ausführliche Materialbeschreibung",
+        condition: "weathered",
+        detailElements: "Sehr ausführliche Detailbeschreibung",
+        contents: "Sehr ausführliche Inhaltsbeschreibung",
+        interaction: "open",
+        animationType: "openClose",
+        shadowMode: "contact",
+        footprint: { widthTiles: 2, depthTiles: 1 },
+        variantCount: 3,
+        extraDetails: "Sehr ausführliche Zusatzbeschreibung"
+      },
+      tags: [],
+      createdAt: defaultTimestamp,
+      updatedAt: defaultTimestamp
+    });
+    const chest = parseAssetProfile({
+      ...commonAssetFields(baseProfile, {
+        id: "asset_dashboard_chest",
+        name: "Kartentruhe",
+        updatedAt: "2026-09-05T09:00:00.000Z"
+      }),
+      categoryProfileId: categoryProfile.id,
+      compatibilityKey: createCompatibilityKey(baseProfile.values, selection),
+      category: selection.category,
+      subtype: selection.subtype,
+      iconId: "static-chest",
+      capabilities: resolveCapabilities(selection.category, selection.subtype),
+      answers: { condition: "used" }
+    });
+    const library = ProfileLibrarySchema.parse({
+      baseProfiles: [baseProfile],
+      categoryProfiles: [categoryProfile],
+      assetProfiles: [chest]
+    });
+
+    const result = createDashboardData(
+      validProfiles(library),
+      emptyDraftResult,
+      null
+    );
+    const facts = result.recentProfiles[0]?.facts ?? [];
+
+    expect(facts).toEqual(
+      expect.arrayContaining([
+        "Klasse: Behälter",
+        "Funktion: Interaktiv",
+        "Grundform: Kastenförmig",
+        "Proportion: Kompakt",
+        "Symmetrie: Bilateral",
+        "Hauptmaterial: Holz",
+        "Zweitmaterial: Metall",
+        "Zustand: Gebraucht",
+        "Standfläche: 2 × 1 Tiles",
+        "Interaktion: Öffnen",
+        "Schatten: Kontaktschatten",
+        "Varianten: 3",
+        "Animation: Öffnen / Schließen"
+      ])
+    );
+    expect(facts.join(" ")).not.toMatch(
+      /Motivbeschreibung|Materialbeschreibung|Detailbeschreibung|Inhaltsbeschreibung|Zusatzbeschreibung|Richtung/
+    );
   });
 
   it("reports canonical moving-object production facts and directions only for directional subtypes", () => {

@@ -4,6 +4,7 @@ import {
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_NATURE_DETAIL_FIELD_PATHS,
+  WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   WizardAnimationStepSchema,
   WizardBaseProfileStepSchema,
@@ -13,6 +14,7 @@ import {
   WizardMovingObjectDetailsStepSchema,
   WizardNatureDetailsStepSchema,
   WizardProjectStepSchema,
+  WizardStaticObjectDetailsStepSchema,
   WizardTextureDetailsStepSchema,
   WizardTileabilityStepSchema,
   getWizardCoreFallbackStepId,
@@ -49,6 +51,7 @@ describe("wizard core steps", () => {
       "movingObjectDetails",
       "textureDetails",
       "natureDetails",
+      "staticObjectDetails",
       "directions",
       "animation",
       "tileability"
@@ -86,6 +89,13 @@ describe("wizard core steps", () => {
       route: "wizard/editor",
       title: "Pflanze und Natur"
     });
+    expect(getWizardCoreStep("staticObjectDetails").fieldPaths).toBe(
+      WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS
+    );
+    expect(getWizardCoreStep("staticObjectDetails")).toMatchObject({
+      route: "wizard/editor",
+      title: "Statisches Weltobjekt"
+    });
     expect(getWizardCoreStep("directions").fieldPaths).toEqual(["directionCount"]);
     expect(getWizardCoreStep("animation").fieldPaths).toEqual([
       "animationAction",
@@ -101,7 +111,38 @@ describe("wizard core steps", () => {
     expect(getWizardCoreStepIndex("movingObjectDetails")).toBe(4);
     expect(getWizardCoreStepIndex("textureDetails")).toBe(5);
     expect(getWizardCoreStepIndex("natureDetails")).toBe(6);
-    expect(getWizardCoreStepIndex("directions")).toBe(7);
+    expect(getWizardCoreStepIndex("staticObjectDetails")).toBe(7);
+    expect(getWizardCoreStepIndex("directions")).toBe(8);
+  });
+
+  it("owns the complete static-object boundary without animation or directions", () => {
+    expect(WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS).toEqual([
+      "staticObjectClass",
+      "staticObjectPurpose",
+      "staticObjectBasicShape",
+      "staticObjectProportion",
+      "staticObjectSymmetry",
+      "staticObjectDescription",
+      "staticObjectPrimaryMaterial",
+      "staticObjectSecondaryMaterial",
+      "staticObjectMaterialDetails",
+      "staticObjectCondition",
+      "staticObjectDetailElements",
+      "staticObjectContents",
+      "staticObjectInteraction",
+      "staticObjectFootprintWidthTiles",
+      "staticObjectFootprintDepthTiles",
+      "staticObjectShadowMode",
+      "staticObjectVariantCount",
+      "staticObjectExtraDetails"
+    ]);
+    expect(WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS).not.toContain(
+      "animationType"
+    );
+    expect(WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS).not.toContain(
+      "directionCount"
+    );
+    expect(WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS).not.toContain("tileSize");
   });
 
   it("owns the complete Nature detail boundary without animation or directions", () => {
@@ -375,6 +416,64 @@ describe("wizard core steps", () => {
         natureFootprintDepthTiles: undefined
       }).success
     ).toBe(false);
+  });
+
+  it("validates static-object class derivation and paired footprint at the step boundary", () => {
+    const chest = {
+      projectName: "Alte Truhe",
+      category: "staticObject" as const,
+      subtype: "chest" as const,
+      ...technicalValues,
+      staticObjectClass: "container" as const,
+      staticObjectPurpose: "interactive" as const,
+      staticObjectBasicShape: "boxy" as const,
+      staticObjectFootprintWidthTiles: 2,
+      staticObjectFootprintDepthTiles: 1,
+      staticObjectInteraction: "open" as const
+    };
+
+    expect(WizardStaticObjectDetailsStepSchema.safeParse(chest).success).toBe(
+      true
+    );
+    const mismatchedClass = WizardStaticObjectDetailsStepSchema.safeParse({
+      ...chest,
+      staticObjectClass: "furniture"
+    });
+    expect(mismatchedClass.success).toBe(false);
+    if (mismatchedClass.success) {
+      throw new Error("A mismatched derived object class must not parse.");
+    }
+    expect(mismatchedClass.error.issues).toContainEqual(
+      expect.objectContaining({ path: ["subtype"] })
+    );
+    expect(
+      WizardStaticObjectDetailsStepSchema.safeParse({
+        ...chest,
+        staticObjectFootprintDepthTiles: undefined
+      }).success
+    ).toBe(false);
+    expect(
+      WizardStaticObjectDetailsStepSchema.safeParse({
+        ...chest,
+        category: "nature",
+        subtype: "tree",
+        staticObjectClass: undefined,
+        staticObjectFootprintWidthTiles: undefined,
+        staticObjectFootprintDepthTiles: undefined
+      }).success
+    ).toBe(false);
+    expect(
+      WizardDirectionStepSchema.safeParse({
+        ...chest,
+        directionCount: 8
+      }).success
+    ).toBe(false);
+    expect(
+      WizardAnimationStepSchema.safeParse({
+        ...chest,
+        animationType: "openClose"
+      }).success
+    ).toBe(true);
   });
 
   it("scopes the Character-details boundary to a classified character with a Base profile", () => {

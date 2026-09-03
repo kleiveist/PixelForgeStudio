@@ -19,6 +19,8 @@
     pure subtype-to-material mapping
   - `nature/`: Nature/Tree catalogs, exhaustive subtype-to-plant-type mapping,
     and pure trunk, crown, and root relevance guards
+  - `static-objects/`: Static Object production catalogs and exhaustive pure
+    subtype-to-object-class mapping
   - `profiles/`: validated profile-chain resolution, base-lock enforcement,
     structured diagnostics, normalized overrides, compatibility keys,
     canonical BaseProfile defaults, immutable BaseProfile creation/duplication,
@@ -36,15 +38,17 @@
 - `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
   Kategorie-Dashboard, `profiles/` die kategorisierte Assetprofilbibliothek
   und `wizard/` die deklarative RHF-/Zod-Wizard-Grundlage;
-  `character-editor/`, `moving-object-editor/`, `texture-editor/` und
-  `nature-editor/` enthalten die ersten spezialisierten Asset-Editoren;
+  `character-editor/`, `moving-object-editor/`, `static-object-editor/`,
+  `texture-editor/` und `nature-editor/` enthalten die ersten spezialisierten
+  Asset-Editoren;
   Review-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
   - `categoryData.schema.ts`: strict category-specific answer contracts,
-    including additive Character/NPC, Moving Object, Texture/Material, and
-    Nature/Tree catalogs with strict category-specific values
+    including additive Character/NPC, Moving Object, Static Object,
+    Texture/Material, and Nature/Tree catalogs with strict category-specific
+    values
   - `profiles.schema.ts`: base, category, and asset profile contracts
   - `appSettings.schema.ts`, `wizardDraft.schema.ts`,
     `exportBundle.schema.ts`: remaining persisted/imported V2 contracts
@@ -116,6 +120,13 @@ animation through `NATURE_PLANT_TYPE_IDS`, `NATURE_CLIMATE_IDS`,
 `natureSubtypeHasRoots()` provide the shared pure anatomy gates for schemas
 and React. Reading an older profile never materializes the derived plant type.
 
+`domain/static-objects/index.ts` is the public, framework-free Static Object
+catalog API. It owns stable object-class, purpose, shape, proportion, symmetry,
+material, condition, interaction, animation, and shadow IDs plus the exhaustive
+`STATIC_OBJECT_CLASS_BY_SUBTYPE` mapping and
+`getDefaultStaticObjectClass()`. Schema and React consume the same contract;
+reading an older profile never materializes its derived class.
+
 `schemas/index.ts` is the public validation boundary. Persisted and imported
 values enter its parse functions as `unknown`; exported TypeScript types are
 inferred from the corresponding Zod schemas rather than maintained separately.
@@ -144,6 +155,13 @@ and 1-to-12 variant fields extend the contract. A present `plantType` must
 match the selected subtype, and irrelevant trunk, crown, or root fields are
 rejected. Technical `tileSize`, Character, clothing, and direction data are
 not Nature answers.
+`StaticObjectAnswersSchema` is also strict and additive. Existing
+`subjectDescription`, `extraDetails`, `purpose`, `interaction`,
+`animationType`, and `footprint` values remain readable without defaults.
+Optional class, form, proportion, symmetry, material, condition, construction,
+contents, shadow, and 1-to-12 variant fields extend the contract. A present
+class must match the selected subtype. Technical `tileSize`, Character scale,
+and direction data are not Static Object answers.
 
 `domain/profiles/index.ts` is the public framework-free profile API.
 `resolveProfile()` accepts already validated profile objects and returns a
@@ -168,6 +186,12 @@ Clearing an inherited optional Nature value detaches Category/Asset
 provenance and materializes the remaining effective answers and technical
 values relative to the Base, so the cleared parent value cannot reappear on
 Resume.
+
+Static Object answers use the same deterministic merge and minimal local
+projection. Clearing an inherited optional Static Object value detaches
+Category/Asset provenance and materializes the remaining effective answers and
+technical values relative to the Base, so the cleared parent value cannot
+reappear on Resume.
 
 The same public profile API exposes immutable BaseProfile and AssetProfile
 operations. A Base family can be created from the canonical defaults or copied
@@ -285,6 +309,9 @@ Nature facts expose the resolved plant type, species, environment, relevant
 anatomy, overlays, footprint, grounding, variants, and configured
 capability-valid animation. They never emit direction facts for a Nature
 profile.
+Static Object facts expose the resolved object class, purpose, form, materials,
+condition, footprint, variants, interaction, shadow, and configured
+capability-valid animation. They never emit Character-scale or direction facts.
 Unknown badge IDs are ignored safely. The React view
 reads this model through the narrow `DashboardStorage` port
 (`readProfileLibrary` + `readDraft`) and never accesses `localStorage`.
@@ -334,15 +361,15 @@ several RHF values programmatically calls it once to enter the same projection,
 Dirty-state and autosave path as a native control change. Product routing and
 Base-profile semantics remain outside the generic engine.
 
-`features/wizard/wizardCategoryRouting.ts` is the Prompt-17 boundary between
+`features/wizard/wizardCategoryRouting.ts` is the Prompt-18 boundary between
 core form values and the strict Draft union. It validates category/subtype
 pairs against the canonical taxonomy, resolves visibility only through
 `resolveCapabilities()`, preserves hidden answers for an unchanged selection,
 and creates clean answers when classification changes. The stable core flow is
 `project → category/subtype → baseProfile → characterDetails,
-movingObjectDetails, textureDetails, or natureDetails when applicable →
-directions | animation | tileability`, with specialist and capability steps
-conditionally present.
+movingObjectDetails, staticObjectDetails, textureDetails, or natureDetails when
+applicable → directions | animation | tileability`, with specialist and
+capability steps conditionally present.
 A category-only choice remains a raw
 session value until a matching subtype makes it persistable; a classified
 pre-Base Draft remains on `wizard/profile`. The Draft mapper returns `null` for
@@ -355,7 +382,8 @@ Moving Object map as unique `animationSequences`; both old singleton forms
 hydrate without an eager write. A confirmed Base switch removes prior
 technical overrides and stale Category/Asset provenance while retaining the
 current category answers; a category or subtype switch purges them. Explicitly
-clearing an inherited optional Character, Moving Object, Texture, or Nature
+clearing an inherited optional Character, Moving Object, Static Object,
+Texture, or Nature
 default detaches Category/Asset provenance and materializes every other
 effective answer and technical override against the Base, so the parent value
 cannot reappear on Resume. Texture `false` for `seamless` remains a deliberate value,
@@ -363,8 +391,9 @@ whereas the unset UI choice maps to `undefined`. Step schemas independently
 reject incomplete Base values and category-incompatible specialist or
 capability values, including partial Moving Object footprints, invalid
 subtype/object-class combinations, mismatched Texture material types,
-incomplete Nature footprints, mismatched Nature plant types, and irrelevant
-Nature anatomy.
+incomplete Nature footprints, mismatched Nature plant types, irrelevant Nature
+anatomy, incomplete Static Object footprints, and mismatched Static Object
+classes.
 The Wizard reports a derived Nature plant-type mismatch on the editable
 subtype control and offers an explicit repair that re-enters the normal
 validation and autosave path without discarding the remaining Nature details.
@@ -403,6 +432,10 @@ capability-valid animation state without displaying any direction field.
 Long free-form Nature descriptions stay in the Draft for later Review/Output
 and are deliberately omitted from the compact sticky summary and Dashboard
 card descriptions.
+Static Object summaries add the derived class, purpose, form, materials,
+condition, complete footprint, variants, interaction, shadow, and separate
+capability-valid animation state. Long free-form object descriptions stay in
+the Draft for later Review/Output and are not duplicated into compact cards.
 World-grid geometry remains omitted for resolved free-composition artwork.
 
 `features/wizard/BaseProfileStep.tsx` is the Prompt-13 UI boundary. It presents
@@ -472,7 +505,20 @@ and flow never expose 4/8 direction controls. Base changes preserve Nature
 answers, classification changes purge them, and deliberate edits use the
 shared autosave path while mount, hydration, and Resume remain write-free.
 
-Prompts 00 through 17 are complete. Prompt 18, the Static Object editor, is the
-next phase. Prompt 17 does not implement Prompt Engine modules,
+`features/static-object-editor/index.ts` is the public React boundary for
+Prompt 18. `StaticWorldObjectEditor` is mounted only as the dedicated
+`staticObjectDetails` step after Base selection. It renders the subtype-derived
+object class and effective inherited `tileSize` read-only, then owns only
+RHF-controlled purpose, description, shape, proportion, symmetry, materials,
+condition, construction, contents, complete 1-to-64-tile footprint, shadow,
+and 1-to-12 variant fields. Opening, glowing, breaking, or custom animation
+remains a separate `animated`-capability step. No Static Object subtype is
+directional, so neither editor nor flow exposes 4/8 direction controls. Base
+changes preserve Static Object answers, classification changes purge them,
+and deliberate edits use the shared autosave path while mount, hydration, and
+Resume remain write-free.
+
+Prompts 00 through 18 are complete. Prompt 19, the Building editor, is the
+next phase. Prompt 18 does not implement Prompt Engine modules,
 review/output generation, or any remaining specialist editor. It also does
 not add in-place Base-family mutation or descendant reparenting.

@@ -97,13 +97,14 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 17
+## 4.3 Umgesetzter Einstieg bis Prompt 18
 
 Der aktuell implementierte Core-Flow lautet:
 
 ```text
 Projekt → Hauptkategorie/Untertyp → Basisprofil
-→ Character-, Moving-Object-, Texture- oder Nature-Details, falls relevant
+→ Character-, Moving-Object-, Static-Object-, Texture- oder Nature-Details,
+falls relevant
 → Capability-Schritte
 ```
 
@@ -113,10 +114,10 @@ erfolgreich neu angelegte Basisfamilie öffnet die nachfolgenden Richtungs-,
 Animations- oder Kachelbarkeitsfragen. Deren Sichtbarkeit stammt ausschließlich
 aus `resolveCapabilities()`. Für die Hauptkategorie `character` liegt zwischen
 Basisprofil und Capability-Schritten ein eigener Character-/NPC-Fachschritt.
-`movingObject`, `texture` und `nature` nutzen an derselben Stelle ihre eigenen
-`movingObjectDetails`-, `textureDetails`- beziehungsweise
-`natureDetails`-Schritte; alle anderen Kategorien überspringen diese vier
-Fachschritte.
+`movingObject`, `staticObject`, `texture` und `nature` nutzen an derselben
+Stelle ihre eigenen `movingObjectDetails`-, `staticObjectDetails`-,
+`textureDetails`- beziehungsweise `natureDetails`-Schritte; alle anderen
+Kategorien überspringen diese fünf Fachschritte.
 
 Der Basisprofil-Schritt zeigt für alle relevanten Produktionswerte den
 wirksamen Wert, seine Quelle (Basisprofil, Kategorieprofil oder lokaler Entwurf)
@@ -179,10 +180,23 @@ schreiben nicht. Wind-/Magieanimation bleibt ein separater
 erhalten keine 4/8-Richtungs- oder Figurenfragen. Summary und Dashboard zeigen
 nur relevante Naturfakten.
 
-Prompts 00 bis 17 sind abgeschlossen. Prompt 18 ergänzt als nächste Phase den
-Static-Object-Editor.
+Der Static-Object-Schritt erfasst die aus dem Untertyp abgeleitete
+Objektklasse, Funktion, Beschreibung, Grundform, Proportion, Symmetrie, Haupt-
+und Nebenmaterial, Materialdetails, Zustand, Konstruktion, Inhalt,
+vollständige Standfläche, Schatten und 1 bis 12 Varianten im gemeinsamen
+RHF-/Draft-/Autosave-/Resume-Pfad. Objektklasse und wirksame Tilegröße sind
+read-only; `tileSize` bleibt in der technischen Base→Category→Asset-Kette.
+Basiswechsel erhalten Fachantworten, Klassifikationswechsel bereinigen sie und
+Explicit Clear löst geerbte Provenienz. Öffnen, Leuchten, Zerbrechen und
+benutzerdefinierte Animation bleiben im separaten `animated`-Schritt. Kein
+Static-Object-Untertyp ist `directional`, daher erscheint nie eine
+4/8-Richtungsfrage. Summary und Dashboard zeigen nur kompakte tatsächliche
+Objektfakten.
+
+Prompts 00 bis 18 sind abgeschlossen. Prompt 19 ergänzt als nächste Phase den
+Building-Editor.
 Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
-Tabelle oben werden durch Prompt 17 noch nicht als fertig erklärt.
+Tabelle oben werden durch Prompt 18 noch nicht als fertig erklärt.
 
 ---
 
@@ -575,6 +589,38 @@ keine schreibende Migration beim bloßen Laden statt.
 | Animation | optional; keine Richtungsansichten nötig |
 | Schatten | kein oder kleiner Kontaktschatten |
 | Output | Einzelasset, Varianten, modulares Set |
+
+### Implementierungsstand seit Prompt 18
+
+- `staticObjectDetails` folgt direkt auf die Basisprofilwahl und erscheint
+  ausschließlich für `staticObject`. Die Objektklasse wird konsistent aus dem
+  Untertyp abgeleitet; Möbel, Behälter, Fässer, Kisten, Truhen, Türen,
+  Brunnen, Schilder, Säulen, Altäre, Dekorationen, Arbeitsgeräte und
+  interaktive Objekte sind vollständig abgedeckt.
+- `StaticObjectAnswersSchema` bildet Funktion, Beschreibung, Grundform,
+  Proportion, Symmetrie, Haupt- und Nebenmaterial, Materialdetails, Zustand,
+  Konstruktion, Inhalt, Interaktion, Schatten, vollständigen Footprint und
+  Varianten strikt und additiv ab. Frühere Schema-V2-Werte bleiben ohne eager
+  Defaults lesbar; eine vorhandene Objektklasse muss zum Untertyp passen.
+- `tileSize` bleibt außerhalb von `StaticObjectAnswers` ein sperrbarer
+  technischer Base→Category→Asset-Wert. `StaticWorldObjectEditor` zeigt ihn
+  ebenso wie die Objektklasse read-only.
+- Footprint-Breite und -Tiefe müssen gemeinsam gesetzt sein und liegen je bei
+  1–64 Tiles. Varianten sind ganzzahlig von 1–12.
+- Static-Object-Fachantworten werden Base→Category→Asset aufgelöst und nur als
+  nicht redundante lokale Abweichungen gespeichert. Basiswechsel erhalten sie,
+  Klassifikationswechsel entfernen sie; Explicit Clear löst Elternprovenienz
+  und materialisiert die übrigen wirksamen Werte relativ zur Base.
+- Transienter Rohzustand, Dirty State, 300-ms-Autosave, unmittelbare
+  Schritt-Persistenz und exaktes Resume gelten für alle Static-Object-Felder.
+  Initialisierung, Profil-Hydration und Resume schreiben nicht.
+- Animation wird ausschließlich im separaten `animated`-Capability-Schritt
+  erfasst. Nur entsprechend markierte Untertypen erhalten Öffnen, Leuchten,
+  Zerbrechen oder eine individuelle Animation; kein Static-Object-Untertyp
+  erhält eine 4/8-Richtungsfrage.
+- Zusammenfassung und Dashboard zeigen nur kompakte tatsächlich konfigurierte
+  Objektfakten. Prompt Engine, Review-/Output-Erzeugung und Ausgabeauswahl
+  folgen in späteren Phasen.
 
 ---
 
@@ -1129,6 +1175,16 @@ anatomisch irrelevante Felder werden abgewiesen. `tileSize` bleibt
 ausschließlich im technischen Profilwert-/Override-Modell, Richtungs- und
 Figurenfelder bleiben vollständig außerhalb von `NatureAnswers`.
 
+Für statische Weltobjekte erweitert Prompt 18 den strikten Schema-V2-Vertrag
+additiv um `objectClass`, `basicShape`, `proportion`, `symmetry`,
+`primaryMaterial`, `secondaryMaterial`, `materialDetails`, `condition`,
+`detailElements`, `contents`, `shadowMode` und `variantCount`. Die bisherigen
+Felder `subjectDescription`, `extraDetails`, `purpose`, `interaction`,
+`animationType` und `footprint` bleiben ohne materialisierte Defaults lesbar.
+Eine gespeicherte Objektklasse muss zur vollständigen Untertypabbildung passen;
+`tileSize`, Figurenmaßstab und Richtungsdaten bleiben vollständig außerhalb
+von `StaticObjectAnswers`.
+
 ## 12.4 Wizard-Draft
 
 ```json
@@ -1184,6 +1240,12 @@ Autosave und exaktem schreibfreien Resume. Der Pflanzentyp wird aus dem
 Untertyp abgeleitet, die technische `tileSize` aus der Profilkette aufgelöst.
 Eine optionale Wind-/Magieanimation bleibt im folgenden Capability-Schritt und
 erzeugt kein Richtungsset.
+Für statische Weltobjekte folgt `staticObjectDetails`; alle Fachfelder, die
+beiden gemeinsam erforderlichen Footprint-Achsen und 1–12 Varianten gehören zu
+Rohzustand, Autosave und exaktem schreibfreien Resume. Die Objektklasse wird
+aus dem Untertyp und die technische `tileSize` aus der Profilkette aufgelöst.
+Eine optionale Animation bleibt im folgenden Capability-Schritt und erzeugt
+kein Richtungsset.
 Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
 und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
 Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale
@@ -1202,7 +1264,7 @@ werden beim nächsten gültigen Draft-Snapshot erneut auf minimale Overrides
 normalisiert.
 
 Das ausdrückliche Leeren eines vom Kategorieprofil geerbten Character-,
-Moving-Object-, Texture- oder Nature-Feldes löst Kategorie- und
+Moving-Object-, Static-Object-, Texture- oder Nature-Feldes löst Kategorie- und
 Assetprovenienz. Alle anderen wirksamen Fachantworten und technischen Werte
 werden relativ zur Base materialisiert, damit der entfernte Default nach
 Autosave und Resume nicht erneut erscheint.

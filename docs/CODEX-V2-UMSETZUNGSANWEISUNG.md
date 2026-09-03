@@ -352,14 +352,16 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 17
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 18
 
 - `project`, `category`/`subtype`, `baseProfile`, `characterDetails`,
-  `movingObjectDetails`, `textureDetails`, `natureDetails` und die
+  `movingObjectDetails`, `staticObjectDetails`, `textureDetails`,
+  `natureDetails` und die
   Capability-Schritte sind stabil und deklarativ konfiguriert; jeder besitzt
   Zod-Schema und RHF-Feldpfade. Die Reihenfolge ist
   `project → category/subtype → baseProfile → characterDetails,
-  movingObjectDetails, textureDetails oder natureDetails, falls relevant
+  movingObjectDetails, staticObjectDetails, textureDetails oder natureDetails,
+  falls relevant
   → Capability-Schritte`.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
@@ -520,8 +522,31 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zusammenfassung und Dashboard zeigen Pflanzentyp, Art, Umgebung, relevante
   Anatomie, Bewuchs, Standfläche, Bodenanschluss, Varianten und
   capability-gültige Animation ohne Richtungsfakten.
-- Prompts 00 bis 17 sind abgeschlossen. Prompt 18 ergänzt als nächste Phase
-  den Static-Object-Editor. Prompt 17 enthält weder Prompt Engine
+- Der Static-Object-Editor ist ein eigener `staticObjectDetails`-Fachschritt
+  direkt nach der Basisprofilwahl und erscheint nur für `staticObject`. Er
+  erfasst die aus dem Untertyp abgeleitete Objektklasse, Funktion,
+  Beschreibung, Grundform, Proportion, Symmetrie, Haupt- und Nebenmaterial,
+  Materialdetails, Zustand, Konstruktion, Inhalt, Standfläche, Schatten und 1
+  bis 12 Varianten.
+- Objektklasse und wirksame Tilegröße erscheinen read-only. `tileSize` bleibt
+  ein sperrbarer technischer Wert der Base→Category→Asset-Kette und wird nicht
+  in `StaticObjectAnswers` dupliziert.
+- Static-Object-Felder bleiben vollständig in RHF und nutzen Draft↔Form-
+  Projektion, transienten Rohzustand, Dirty-Erkennung, 300-ms-Autosave und
+  exaktes Resume. Mount, Profil-Hydration und Resume schreiben nicht;
+  Basiswechsel erhalten die Fachwerte, Klassifikationswechsel bereinigen sie.
+- Profilauflösung und Draft-Mapping führen Static-Object-Fachwerte
+  Base→Category→Asset zusammen und speichern nur nicht redundante lokale
+  Abweichungen. Explicit Clear löst Kategorie-/Assetprovenienz und
+  materialisiert die übrigen Fach- und Technikwerte relativ zur Base.
+- Öffnen, Leuchten, Zerbrechen oder eine benutzerdefinierte Animation bleibt
+  ein separater `animated`-Capability-Schritt. Static-Object-Untertypen sind
+  nicht `directional`; weder Editor noch Flow zeigen 4/8 Richtungen.
+- Zusammenfassung und Dashboard zeigen nur kompakte, tatsächlich
+  konfigurierte Static-Object-Fakten einschließlich capability-gültiger
+  Animation.
+- Prompts 00 bis 18 sind abgeschlossen. Prompt 19 ergänzt als nächste Phase
+  den Building-Editor. Prompt 18 enthält weder Prompt Engine
   beziehungsweise Review-/Output-Erzeugung noch In-place-Mutation oder
   Reparenting einer bestehenden Basisfamilie.
 
@@ -818,11 +843,44 @@ Umgesetzt seit Prompt 15:
 ## 13.3 Static Object
 
 - Funktion
-- Material
-- Größe / Footprint
+- Grundform, Proportion und Symmetrie
+- Haupt- und Nebenmaterial
+- Material-, Konstruktions- und Inhaltsdetails
+- Größe / vollständiger Footprint
 - Zustand
 - Varianten
+- Interaktion und Schatten
 - optional Animation ohne Directional-Zwang
+
+Umgesetzt seit Prompt 18:
+
+- `src/domain/static-objects/` veröffentlicht stabile readonly Kataloge für
+  Objektklasse, Funktion, Grundform, Proportion, Symmetrie, Material, Zustand,
+  Interaktion, Animation und Schatten sowie die pure Abbildung vom
+  Static-Object-Untertyp zur Objektklasse. Reine Hydration setzt keine
+  Detaildefaults.
+- `StaticObjectAnswersSchema` erweitert den bestehenden Schema-V2-Vertrag
+  strikt und additiv. Footprint-Achsen sind auf 1–64 Tiles und Varianten auf
+  1–12 begrenzt; eine vorhandene `objectClass` muss zum Untertyp passen.
+  `tileSize`, Figurenmaßstab und Richtungsdaten sind keine
+  Static-Object-Fachantworten.
+- `src/features/static-object-editor/` rendert `StaticWorldObjectEditor`
+  ausschließlich im eigenen `staticObjectDetails`-Schritt nach der
+  Basisprofilwahl. Objektklasse und wirksame technische Tilegröße sind
+  read-only, während alle Fachfragen React Hook Form gehören.
+- Static-Object-Antworten werden Base→Category→Asset aufgelöst und nur minimal
+  lokal projiziert. Basiswechsel erhalten sie, Klassifikationswechsel
+  entfernen sie; Explicit Clear löst Elternprovenienz und materialisiert die
+  übrigen wirksamen Fach- und Technikwerte relativ zur Base.
+- Rohzustand, Dirty State, Autosave, schreibfreie Hydration und exaktes Resume
+  gelten für alle Static-Object-Felder. Zusammenfassung und Dashboard zeigen
+  ausschließlich kompakte tatsächlich gesetzte Objektfakten.
+- Animation bleibt vom Fachschritt und von Richtung getrennt. Nur zentral als
+  `animated` markierte Untertypen erhalten Öffnen-, Leuchten-, Zerbrechen- oder
+  benutzerdefinierte Animation; kein Static-Object-Untertyp erhält eine
+  Richtungsfrage.
+- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
+  Prompts.
 
 ## 13.4 Texture / Material
 
@@ -1076,6 +1134,11 @@ Mit Vitest:
 - Nature-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
 - vollständiger Nature-Footprint von 1–64 Tiles, 1–12 Varianten und
   Wind-/Magieanimation ohne Richtungsset
+- Static-Object-Kataloge, Untertyp-/Objektklassen-Konsistenz und additive
+  Schema-V2-Lesbarkeit ohne Defaults
+- Static-Object-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
+- vollständiger Static-Object-Footprint von 1–64 Tiles, 1–12 Varianten und
+  optionale Animation ohne Richtungsset
 - Migrationslogik
 - Promptmodule
 - Canvas-/Frame-Metriken
@@ -1103,6 +1166,11 @@ Mit React Testing Library + user-event:
 - Nature-Autosave, schreibfreie Hydration/Resume, zentrale read-only Tilegröße
   sowie Summary-/Dashboard-Fakten ohne Figuren-, Kleidungs- oder
   Richtungsfragen
+- Static-Object-Detailstep mit Funktion, Form, Material, Zustand, Interaktion,
+  Schatten, vollständiger Standfläche und Varianten
+- Static-Object-Autosave, schreibfreie Hydration/Resume, zentrale read-only
+  Tilegröße sowie Summary-/Dashboard-Fakten und animierte Truhe ohne
+  Richtungsfrage
 - Theme-Wechsel
 - Profil laden/speichern
 - Lock-Konfliktworkflow

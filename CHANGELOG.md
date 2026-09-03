@@ -84,6 +84,11 @@
 - Art, Klima, Saison, Alter, Silhouette, untertypabhängige Anatomie, Moos, Pilze, Schnee, Ranken, vollständige 1–64-Tile-Standfläche, Bodenanschluss und 1–12 Varianten im fokussierten Natur-Editor umgesetzt
 - Wind-/Magieanimation getrennt über `animated` modelliert und Naturassets konsequent ohne 4/8-Richtungsfrage gehalten
 - Nature-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte untertypgültige Naturfakten in Live-Zusammenfassung und Dashboard ergänzt; defensive Pflanzentypkonflikte führen zum fokussierbaren Untertyp und durch die normale Autosave-Reparatur
+- frameworkfreien Static-Object-Katalog mit vollständigem Untertyp-/Objektklassen-Mapping sowie typisierten Funktions-, Form-, Material-, Zustands-, Interaktions-, Animations- und Schattenwerten ergänzt
+- strikt additives `StaticObjectAnswersSchema` um Produktionsdetails, vollständige 1–64-Tile-Standflächen und 1–12 Varianten erweitert; bestehende Schema-V2-Daten bleiben ohne eager Defaults lesbar und widersprüchliche Untertyp-/Klassenkombinationen werden abgewiesen
+- eigenen `staticObjectDetails`-Schritt mit `StaticWorldObjectEditor` direkt nach der Basisprofilwahl integriert; Objektklasse und zentrale Tilegröße werden read-only abgeleitet, ohne technische Werte in Fachantworten zu duplizieren
+- Static-Object-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte Fakten in Live-Zusammenfassung und Dashboard ergänzt
+- Öffnen, Leuchten, Zerbrechen und individuelle Animation getrennt über `animated` modelliert und alle statischen Weltobjekte konsequent ohne 4/8-Richtungsfrage gehalten
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

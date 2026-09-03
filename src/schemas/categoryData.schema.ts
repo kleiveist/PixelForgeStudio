@@ -44,6 +44,18 @@ import {
   NATURE_VINE_GROWTH_IDS
 } from "../domain/nature";
 import {
+  STATIC_OBJECT_ANIMATION_TYPE_IDS,
+  STATIC_OBJECT_BASIC_SHAPE_IDS,
+  STATIC_OBJECT_CLASS_IDS,
+  STATIC_OBJECT_CONDITION_IDS,
+  STATIC_OBJECT_INTERACTION_IDS,
+  STATIC_OBJECT_MATERIAL_IDS,
+  STATIC_OBJECT_PROPORTION_IDS,
+  STATIC_OBJECT_PURPOSE_IDS,
+  STATIC_OBJECT_SHADOW_MODE_IDS,
+  STATIC_OBJECT_SYMMETRY_IDS
+} from "../domain/static-objects";
+import {
   TEXTURE_CONDITION_IDS,
   TEXTURE_ICING_IDS,
   TEXTURE_LIGHTING_IDS,
@@ -66,6 +78,7 @@ const CharacterDescriptorSchema = z.string().trim().min(1).max(200);
 const CharacterDetailSchema = z.string().trim().min(1).max(500);
 const NatureDescriptorSchema = z.string().trim().min(1).max(200);
 const NatureDetailSchema = z.string().trim().min(1).max(500);
+const StaticObjectDetailSchema = z.string().trim().min(1).max(500);
 
 export const CharacterAnimationActionSchema = z
   .strictObject({
@@ -198,10 +211,22 @@ export const MovingObjectAnswersSchema = z
 export const StaticObjectAnswersSchema = z
   .strictObject({
     ...sharedAnswersShape,
-    purpose: z.enum(["decorative", "interactive", "walkable", "blocking"]).optional(),
-    interaction: z.enum(["none", "open", "tilt", "glow", "break"]).optional(),
-    animationType: z.enum(["openClose", "glow", "break", "custom"]).optional(),
-    footprint: FootprintSchema.optional()
+    objectClass: z.enum(STATIC_OBJECT_CLASS_IDS).optional(),
+    purpose: z.enum(STATIC_OBJECT_PURPOSE_IDS).optional(),
+    basicShape: z.enum(STATIC_OBJECT_BASIC_SHAPE_IDS).optional(),
+    proportion: z.enum(STATIC_OBJECT_PROPORTION_IDS).optional(),
+    symmetry: z.enum(STATIC_OBJECT_SYMMETRY_IDS).optional(),
+    primaryMaterial: z.enum(STATIC_OBJECT_MATERIAL_IDS).optional(),
+    secondaryMaterial: z.enum(STATIC_OBJECT_MATERIAL_IDS).optional(),
+    materialDetails: StaticObjectDetailSchema.optional(),
+    condition: z.enum(STATIC_OBJECT_CONDITION_IDS).optional(),
+    detailElements: StaticObjectDetailSchema.optional(),
+    contents: StaticObjectDetailSchema.optional(),
+    interaction: z.enum(STATIC_OBJECT_INTERACTION_IDS).optional(),
+    animationType: z.enum(STATIC_OBJECT_ANIMATION_TYPE_IDS).optional(),
+    shadowMode: z.enum(STATIC_OBJECT_SHADOW_MODE_IDS).optional(),
+    footprint: FootprintSchema.optional(),
+    variantCount: z.number().int().min(1).max(12).optional()
   })
   .readonly();
 

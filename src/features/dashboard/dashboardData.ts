@@ -37,6 +37,18 @@ import {
   type NatureTrunkThickness,
   type NatureVineGrowth
 } from "../../domain/nature";
+import {
+  getDefaultStaticObjectClass,
+  type StaticObjectBasicShape,
+  type StaticObjectClass,
+  type StaticObjectCondition,
+  type StaticObjectInteraction,
+  type StaticObjectMaterial,
+  type StaticObjectProportion,
+  type StaticObjectPurpose,
+  type StaticObjectShadowMode,
+  type StaticObjectSymmetry
+} from "../../domain/static-objects";
 import { resolveProfile, type ResolvedProfile } from "../../domain/profiles";
 import type {
   AssetProfile,
@@ -385,6 +397,106 @@ const natureGroundingLabels: Readonly<Record<NatureGrounding, string>> = {
   freestanding: "Freigestellt"
 };
 
+const staticObjectClassLabels: Readonly<Record<StaticObjectClass, string>> = {
+  furniture: "Möbel",
+  container: "Behälter",
+  door: "Tür",
+  well: "Brunnen",
+  sign: "Schild",
+  pillar: "Säule",
+  altar: "Altar",
+  decoration: "Dekoration",
+  workTool: "Arbeitsgerät",
+  interactiveObject: "Interaktives Objekt"
+};
+
+const staticObjectPurposeLabels: Readonly<
+  Record<StaticObjectPurpose, string>
+> = {
+  decorative: "Dekorativ",
+  interactive: "Interaktiv",
+  walkable: "Begehbar",
+  blocking: "Blockierend"
+};
+
+const staticObjectShapeLabels: Readonly<Record<StaticObjectBasicShape, string>> = {
+  boxy: "Kastenförmig",
+  cylindrical: "Zylindrisch",
+  round: "Rund",
+  planar: "Flächig",
+  arched: "Bogenförmig",
+  stepped: "Gestuft",
+  organic: "Organisch",
+  irregular: "Unregelmäßig",
+  custom: "Individuell"
+};
+
+const staticObjectProportionLabels: Readonly<
+  Record<StaticObjectProportion, string>
+> = {
+  compact: "Kompakt",
+  balanced: "Ausgewogen",
+  tall: "Hoch",
+  wide: "Breit",
+  low: "Niedrig",
+  slender: "Schlank",
+  massive: "Massiv"
+};
+
+const staticObjectSymmetryLabels: Readonly<
+  Record<StaticObjectSymmetry, string>
+> = {
+  bilateral: "Bilateral",
+  radial: "Radial",
+  asymmetric: "Asymmetrisch",
+  none: "Keine"
+};
+
+const staticObjectMaterialLabels: Readonly<
+  Record<StaticObjectMaterial, string>
+> = {
+  wood: "Holz",
+  stone: "Stein",
+  metal: "Metall",
+  ceramic: "Keramik",
+  glass: "Glas",
+  fabric: "Stoff",
+  leather: "Leder",
+  rope: "Seil",
+  bone: "Knochen",
+  organic: "Organisches Material",
+  magic: "Magische Substanz",
+  mixed: "Mischmaterial",
+  custom: "Eigenes Material"
+};
+
+const staticObjectConditionLabels: Readonly<
+  Record<StaticObjectCondition, string>
+> = {
+  clean: "Sauber",
+  used: "Gebraucht",
+  weathered: "Verwittert",
+  damaged: "Beschädigt",
+  overgrown: "Überwachsen"
+};
+
+const staticObjectInteractionLabels: Readonly<
+  Record<StaticObjectInteraction, string>
+> = {
+  none: "Keine",
+  open: "Öffnen",
+  tilt: "Kippen",
+  glow: "Leuchten",
+  break: "Zerbrechen"
+};
+
+const staticObjectShadowLabels: Readonly<
+  Record<StaticObjectShadowMode, string>
+> = {
+  none: "Kein Schatten",
+  contact: "Kontaktschatten"
+};
+
 const animationLabels = {
   idle: "Idle",
   walk: "Walk",
@@ -526,7 +638,62 @@ function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
           : [`Zustand: ${movingObjectConditionLabels[condition]}`])
       ];
     }
-    case "staticObject":
+    case "staticObject": {
+      const {
+        animationType,
+        basicShape,
+        condition,
+        footprint,
+        interaction,
+        objectClass,
+        primaryMaterial,
+        proportion,
+        purpose,
+        secondaryMaterial,
+        shadowMode,
+        symmetry,
+        variantCount
+      } = profile.categoryData.answers;
+      const resolvedClass =
+        objectClass ?? getDefaultStaticObjectClass(profile.categoryData.subtype);
+      return [
+        `Klasse: ${staticObjectClassLabels[resolvedClass]}`,
+        ...(purpose === undefined
+          ? []
+          : [`Funktion: ${staticObjectPurposeLabels[purpose]}`]),
+        ...(basicShape === undefined
+          ? []
+          : [`Grundform: ${staticObjectShapeLabels[basicShape]}`]),
+        ...(proportion === undefined
+          ? []
+          : [`Proportion: ${staticObjectProportionLabels[proportion]}`]),
+        ...(symmetry === undefined
+          ? []
+          : [`Symmetrie: ${staticObjectSymmetryLabels[symmetry]}`]),
+        ...(primaryMaterial === undefined
+          ? []
+          : [`Hauptmaterial: ${staticObjectMaterialLabels[primaryMaterial]}`]),
+        ...(secondaryMaterial === undefined
+          ? []
+          : [`Zweitmaterial: ${staticObjectMaterialLabels[secondaryMaterial]}`]),
+        ...(condition === undefined
+          ? []
+          : [`Zustand: ${staticObjectConditionLabels[condition]}`]),
+        ...(footprint === undefined
+          ? []
+          : [`Standfläche: ${footprint.widthTiles} × ${footprint.depthTiles} Tiles`]),
+        ...(interaction === undefined
+          ? []
+          : [`Interaktion: ${staticObjectInteractionLabels[interaction]}`]),
+        ...(shadowMode === undefined
+          ? []
+          : [`Schatten: ${staticObjectShadowLabels[shadowMode]}`]),
+        ...(variantCount === undefined ? [] : [`Varianten: ${variantCount}`]),
+        ...(!profile.capabilities.animated || animationType === undefined
+          ? []
+          : [animationFact(animationType)])
+      ];
+    }
     case "tileset": {
       const { animationType } = profile.categoryData.answers;
       return animationType === undefined

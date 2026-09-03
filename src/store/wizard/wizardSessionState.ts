@@ -162,6 +162,28 @@ export interface WizardRawCoreFormValues {
   readonly natureGrounding?: NatureAnswers["grounding"];
   readonly natureVariantCount?: NatureAnswers["variantCount"];
   readonly natureExtraDetails?: NatureAnswers["extraDetails"];
+  readonly staticObjectClass?: StaticObjectAnswers["objectClass"] | undefined;
+  readonly staticObjectPurpose?: StaticObjectAnswers["purpose"] | undefined;
+  readonly staticObjectBasicShape?: StaticObjectAnswers["basicShape"] | undefined;
+  readonly staticObjectProportion?: StaticObjectAnswers["proportion"] | undefined;
+  readonly staticObjectSymmetry?: StaticObjectAnswers["symmetry"] | undefined;
+  readonly staticObjectDescription?: StaticObjectAnswers["subjectDescription"] | undefined;
+  readonly staticObjectPrimaryMaterial?: StaticObjectAnswers["primaryMaterial"] | undefined;
+  readonly staticObjectSecondaryMaterial?: StaticObjectAnswers["secondaryMaterial"] | undefined;
+  readonly staticObjectMaterialDetails?: StaticObjectAnswers["materialDetails"] | undefined;
+  readonly staticObjectCondition?: StaticObjectAnswers["condition"] | undefined;
+  readonly staticObjectDetailElements?: StaticObjectAnswers["detailElements"] | undefined;
+  readonly staticObjectContents?: StaticObjectAnswers["contents"] | undefined;
+  readonly staticObjectInteraction?: StaticObjectAnswers["interaction"] | undefined;
+  readonly staticObjectFootprintWidthTiles?: NonNullable<
+    StaticObjectAnswers["footprint"]
+  >["widthTiles"] | undefined;
+  readonly staticObjectFootprintDepthTiles?: NonNullable<
+    StaticObjectAnswers["footprint"]
+  >["depthTiles"] | undefined;
+  readonly staticObjectShadowMode?: StaticObjectAnswers["shadowMode"] | undefined;
+  readonly staticObjectVariantCount?: StaticObjectAnswers["variantCount"] | undefined;
+  readonly staticObjectExtraDetails?: StaticObjectAnswers["extraDetails"] | undefined;
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:

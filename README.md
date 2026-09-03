@@ -65,6 +65,7 @@ V1 inventarisieren ✓
 → Moving-Object-Editor mit Produktions- und Sequenzmodell ✓
 → Texture-/Material-Editor mit Kachel- und Oberflächenmodell ✓
 → Nature-/Tree-Editor mit Anatomie-, Bewuchs- und Footprintmodell ✓
+→ Static-Object-Editor mit Material-, Interaktions- und Footprintmodell ✓
 → weitere spezialisierte Editormodelle
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -132,10 +133,10 @@ die zur Capability passenden Fragen und Editoren.
 
 ## Spezialisierte Editoren
 
-Character-/NPC-, Moving-Object-, Texture-/Material- und Nature-/Tree-Editor
+Character-/NPC-, Moving-Object-, Texture-/Material-, Nature-/Tree- und
+Static-Object-Editor
 sind als getrennte React-Features umgesetzt. Weitere geplante Features sind:
 
-- Static Object
 - Building
 - Tileset
 - Item/Equipment
@@ -188,14 +189,23 @@ Wurzel und Baumstumpf ihre jeweils sinnvollen Anatomiegruppen. Wind- oder
 Magieanimation liegt getrennt im `animated`-Capability-Schritt. Naturassets
 sind nicht `directional` und erhalten daher niemals eine 4/8-Richtungsfrage.
 
+Der eigene `staticObjectDetails`-Schritt erfasst eine aus dem Untertyp
+abgeleitete Objektklasse, Funktion, Beschreibung, Grundform, Proportion,
+Symmetrie, Haupt- und Nebenmaterial, Material- und Konstruktionsdetails,
+Inhalt, Zustand, vollständige Standfläche, Schatten und 1 bis 12 Varianten.
+Objektklasse und zentrale Tilegröße werden read-only dargestellt. Öffnen,
+Leuchten, Zerbrechen oder eine individuelle Animation liegen weiterhin im
+getrennten `animated`-Schritt. Kein Static-Object-Untertyp ist `directional`,
+daher erscheint niemals eine 4/8-Richtungsfrage.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 17 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 18 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 18 — Static Object Editor
+→ Prompt 19 — Building Editor
 ```
 
 Danach immer genau:
@@ -344,6 +354,13 @@ einen Pflanzentyp ab. `natureSubtypeHasTrunk()`,
 `natureSubtypeHasCrown()` und `natureSubtypeHasRoots()` sind die gemeinsame
 pure Gating-Grenze für Schema und UI.
 
+Der öffentliche Static-Object-Katalog unter `src/domain/static-objects/`
+bündelt readonly Objektklassen-, Funktions-, Form-, Proportions-, Symmetrie-,
+Material-, Zustands-, Interaktions-, Animations- und Schattenwerte.
+`STATIC_OBJECT_CLASS_BY_SUBTYPE` und `getDefaultStaticObjectClass()` bilden
+jeden statischen Untertyp deterministisch auf seine Objektklasse ab, ohne beim
+Laden fehlende Antwortwerte zu materialisieren.
+
 Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
 Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
 werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
@@ -368,6 +385,12 @@ zwölf Varianten. Vorhandene Schema-V2-Naturdaten bleiben ohne eager Defaults
 lesbar; ein vorhandener Pflanzentyp muss zum Untertyp passen und anatomisch
 irrelevante Felder werden abgewiesen. `tileSize`, Figuren-, Kleidungs- und
 Richtungsfelder gehören nicht zu `NatureAnswers`.
+Das strikt additive `StaticObjectAnswersSchema` ergänzt Objektklasse,
+Grundform, Proportion, Symmetrie, Haupt- und Nebenmaterial, Materialdetails,
+Zustand, Konstruktion, Inhalt, Schatten und bis zu zwölf Varianten. Vorhandene
+Schema-V2-Felder bleiben ohne eager Defaults lesbar; eine gespeicherte
+Objektklasse muss zum Untertyp passen. Tilegröße, Figurenmaßstab und
+Richtungsdaten bleiben außerhalb der Static-Object-Fachantworten.
 
 Die öffentliche Profilauflösung unter `src/domain/profiles/` führt validierte
 Base-, Kategorie- und Assetprofile zusammen. Sie setzt Locks durch, meldet
@@ -410,6 +433,10 @@ Nature-Profile zeigen den aufgelösten Pflanzentyp, Art, Klima, Saison, Alter,
 Silhouette, vorhandene Anatomie, Bewuchs, Standfläche, Bodenanschluss,
 Varianten und eine tatsächlich konfigurierte, capability-gültige Animation.
 Richtungsfakten werden für Naturassets nie erzeugt.
+Static-Object-Profile zeigen die aufgelöste Objektklasse, Funktion, Form,
+Material, Zustand, Standfläche, Varianten, Interaktion, Schatten und eine
+tatsächlich konfigurierte capability-gültige Animation. Richtungs- oder
+Figurenfakten werden dabei nicht erzeugt.
 
 Die Profilbibliothek unter `src/features/profiles/` durchsucht und filtert
 Assetprofile, gruppiert sie wahlweise nach Kategorie oder ihrem neu
@@ -469,6 +496,13 @@ materialisiert die übrigen wirksamen Antworten und technischen Werte relativ
 zur Base. Die wirksame Tilegröße bleibt ausschließlich Teil der technischen
 Profilkette.
 
+Der Static-Object-Zweig nutzt denselben Vertrag für `staticObjectDetails`:
+wirksame Fachantworten werden Base→Category→Asset aufgelöst und minimal lokal
+projiziert. Explicit Clear löst die Kategorie-/Assetprovenienz und
+materialisiert die übrigen wirksamen Antworten und technischen Werte relativ
+zur Base. Klassifikationswechsel bereinigen Static-Object-Daten, Basiswechsel
+erhalten sie.
+
 Der spezialisierte Character-/NPC-Editor unter
 `src/features/character-editor/` ist als eigener Wizard-Schritt direkt nach
 dem Basisprofil eingebunden. Er rendert nur Character-Fachfelder und blendet
@@ -507,6 +541,14 @@ sind auf 1 bis 12 begrenzt. Bewuchs und Wetterauflage bleiben Fachantworten,
 während Wind-/Magieanimation separat capability-gesteuert und jede
 Richtungswahl ausgeschlossen ist. Rohzustand, Autosave und schreibfreies
 Resume entsprechen dem gemeinsamen Wizard-Vertrag.
+
+Der spezialisierte Static-Object-Editor unter
+`src/features/static-object-editor/` ist im eigenen `staticObjectDetails`-
+Schritt direkt nach der Basisprofilwahl eingebunden. `StaticWorldObjectEditor`
+zeigt Objektklasse und zentrale Tilegröße read-only, erfasst ausschließlich
+Static-Object-Fachwerte in React Hook Form und nutzt den gemeinsamen
+Rohzustands-, Autosave- und schreibfreien Resume-Pfad. Animation wird separat
+capability-gesteuert; Richtung bleibt vollständig ausgeschlossen.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

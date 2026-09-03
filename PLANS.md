@@ -4,10 +4,38 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** keine — Prompt 17 abgeschlossen
-- **Nächste Aufgabe:** Prompt 18 — Static Object Editor
+- **Aktuelle Aufgabe:** Prompt 18 — Static Object Editor
+- **Nächste Aufgabe:** Prompt 19 — Building Editor
 - **Zuletzt abgeschlossen:** Prompt 17 — Nature/Tree Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 18
+
+1. Eine frameworkfreie Static-Object-Domain mit stabilen Katalogen und einem
+   vollständigen Untertyp→Objektklassen-Mapping für Funktion, Form,
+   Proportion, Symmetrie, Material, Zustand, Interaktion und Schatten anlegen.
+   Das bestehende strikte `StaticObjectAnswersSchema` wird additiv erweitert;
+   vorhandene Schema-V2-Daten bleiben ohne eager Defaults lesbar.
+2. Einen eigenständigen responsiven `static-object-editor` direkt nach der
+   Basisprofilwahl integrieren. Der Editor erfasst Objektkern, Materialien,
+   vollständigen Tile-Footprint, Varianten, Zustand, Details, Interaktion und
+   Kontaktschatten, während technische Werte ausschließlich aus der
+   Base→Category→Asset-Kette stammen.
+3. Öffnen, Leuchten, Zerbrechen und benutzerdefinierte Animation im bestehenden
+   capability-gesteuerten Animationsschritt halten. Statische Untertypen sind
+   nicht `directional` und erhalten deshalb niemals eine 4/8-Richtungsfrage.
+4. Sämtliche Static-Object-Werte durch Form-Rohsnapshot, minimale
+   Base→Category→Asset-Projektion, Autosave, Profilstart und schreibfreies
+   Resume führen. Basiswechsel erhalten Fachantworten,
+   Klassifikationswechsel bereinigen sie und Explicit Clear verhindert das
+   Wiederkehren geerbter Werte.
+5. Summary und Dashboard um tatsächlich konfigurierte Objektklassen-,
+   Funktions-, Form-, Material-, Zustands-, Footprint-, Varianten-,
+   Interaktions-, Schatten- und Animationsfakten ergänzen.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und
+   RTL-Tests einschließlich einer animierten Truhe ohne Richtungsset ergänzen.
+   Danach Dokumentation, Vollverifikation, Abschlussaudit und den separaten
+   Prompt-18-Commit ausführen; Prompt 19 bleibt unangetastet.
 
 ## Ausführungsplan Prompt 17
 

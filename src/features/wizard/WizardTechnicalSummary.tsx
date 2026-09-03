@@ -53,6 +53,19 @@ import {
   type NatureTrunkThickness,
   type NatureVineGrowth
 } from "../../domain/nature";
+import {
+  getDefaultStaticObjectClass,
+  type StaticObjectBasicShape,
+  type StaticObjectClass,
+  type StaticObjectCondition,
+  type StaticObjectInteraction,
+  type StaticObjectMaterial,
+  type StaticObjectProportion,
+  type StaticObjectPurpose,
+  type StaticObjectShadowMode,
+  type StaticObjectSubtype,
+  type StaticObjectSymmetry
+} from "../../domain/static-objects";
 import type { ResolvedProfile } from "../../domain/profiles";
 import type {
   BaseProfile,
@@ -406,6 +419,108 @@ const NATURE_GROUNDING_LABELS: Readonly<Record<NatureGrounding, string>> = {
   freestanding: "Freigestellt"
 };
 
+const STATIC_OBJECT_CLASS_LABELS: Readonly<Record<StaticObjectClass, string>> = {
+  furniture: "Möbel",
+  container: "Behälter",
+  door: "Tür",
+  well: "Brunnen",
+  sign: "Schild",
+  pillar: "Säule",
+  altar: "Altar",
+  decoration: "Dekoration",
+  workTool: "Arbeitsgerät",
+  interactiveObject: "Interaktives Objekt"
+};
+
+const STATIC_OBJECT_PURPOSE_LABELS: Readonly<
+  Record<StaticObjectPurpose, string>
+> = {
+  decorative: "Dekorativ",
+  interactive: "Interaktiv",
+  walkable: "Begehbar",
+  blocking: "Blockierend"
+};
+
+const STATIC_OBJECT_BASIC_SHAPE_LABELS: Readonly<
+  Record<StaticObjectBasicShape, string>
+> = {
+  boxy: "Kastenförmig",
+  cylindrical: "Zylindrisch",
+  round: "Rund",
+  planar: "Flächig",
+  arched: "Bogenförmig",
+  stepped: "Gestuft",
+  organic: "Organisch",
+  irregular: "Unregelmäßig",
+  custom: "Individuell"
+};
+
+const STATIC_OBJECT_PROPORTION_LABELS: Readonly<
+  Record<StaticObjectProportion, string>
+> = {
+  compact: "Kompakt",
+  balanced: "Ausgewogen",
+  tall: "Hoch",
+  wide: "Breit",
+  low: "Niedrig",
+  slender: "Schlank",
+  massive: "Massiv"
+};
+
+const STATIC_OBJECT_SYMMETRY_LABELS: Readonly<
+  Record<StaticObjectSymmetry, string>
+> = {
+  bilateral: "Bilateral",
+  radial: "Radial",
+  asymmetric: "Asymmetrisch",
+  none: "Keine"
+};
+
+const STATIC_OBJECT_MATERIAL_LABELS: Readonly<
+  Record<StaticObjectMaterial, string>
+> = {
+  wood: "Holz",
+  stone: "Stein",
+  metal: "Metall",
+  ceramic: "Keramik",
+  glass: "Glas",
+  fabric: "Stoff",
+  leather: "Leder",
+  rope: "Seil",
+  bone: "Knochen",
+  organic: "Organisches Material",
+  magic: "Magische Substanz",
+  mixed: "Mischmaterial",
+  custom: "Eigenes Material"
+};
+
+const STATIC_OBJECT_CONDITION_LABELS: Readonly<
+  Record<StaticObjectCondition, string>
+> = {
+  clean: "Sauber",
+  used: "Gebraucht",
+  weathered: "Verwittert",
+  damaged: "Beschädigt",
+  overgrown: "Überwachsen"
+};
+
+const STATIC_OBJECT_INTERACTION_LABELS: Readonly<
+  Record<StaticObjectInteraction, string>
+> = {
+  none: "Keine",
+  open: "Öffnen",
+  tilt: "Kippen",
+  glow: "Leuchten",
+  break: "Zerbrechen"
+};
+
+const STATIC_OBJECT_SHADOW_LABELS: Readonly<
+  Record<StaticObjectShadowMode, string>
+> = {
+  none: "Kein Schatten",
+  contact: "Kontaktschatten"
+};
+
 function natureAnimationSummary(
   animationType: WizardCoreFormValues["animationType"]
 ): string {
@@ -414,6 +529,23 @@ function natureAnimationSummary(
       return "Windbewegung";
     case "magic":
       return "Magischer Loop";
+    case "custom":
+      return "Individuell";
+    default:
+      return "Noch nicht ausgewählt";
+  }
+}
+
+function staticObjectAnimationSummary(
+  animationType: WizardCoreFormValues["animationType"]
+): string {
+  switch (animationType) {
+    case "openClose":
+      return "Öffnen / Schließen";
+    case "glow":
+      return "Leuchten";
+    case "break":
+      return "Zerbrechen";
     case "custom":
       return "Individuell";
     default:
@@ -723,6 +855,126 @@ export function WizardTechnicalSummary({
                     formValues.movingObjectCondition
                   ]
                 }
+              />
+            ) : null}
+          </>
+        ) : null}
+        {selection?.category === "staticObject" ? (
+          <>
+            <SummaryFact
+              label="Objektklasse"
+              value={
+                STATIC_OBJECT_CLASS_LABELS[
+                  formValues.staticObjectClass ??
+                    getDefaultStaticObjectClass(
+                      selection.subtype as StaticObjectSubtype
+                    )
+                ]
+              }
+            />
+            {formValues.staticObjectPurpose !== undefined ? (
+              <SummaryFact
+                label="Funktion"
+                value={STATIC_OBJECT_PURPOSE_LABELS[formValues.staticObjectPurpose]}
+              />
+            ) : null}
+            {formValues.staticObjectBasicShape !== undefined ? (
+              <SummaryFact
+                label="Grundform"
+                value={
+                  STATIC_OBJECT_BASIC_SHAPE_LABELS[
+                    formValues.staticObjectBasicShape
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.staticObjectProportion !== undefined ? (
+              <SummaryFact
+                label="Proportion"
+                value={
+                  STATIC_OBJECT_PROPORTION_LABELS[
+                    formValues.staticObjectProportion
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.staticObjectSymmetry !== undefined ? (
+              <SummaryFact
+                label="Symmetrie"
+                value={
+                  STATIC_OBJECT_SYMMETRY_LABELS[
+                    formValues.staticObjectSymmetry
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.staticObjectPrimaryMaterial !== undefined ? (
+              <SummaryFact
+                label="Hauptmaterial"
+                value={
+                  STATIC_OBJECT_MATERIAL_LABELS[
+                    formValues.staticObjectPrimaryMaterial
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.staticObjectSecondaryMaterial !== undefined ? (
+              <SummaryFact
+                label="Zweitmaterial"
+                value={
+                  STATIC_OBJECT_MATERIAL_LABELS[
+                    formValues.staticObjectSecondaryMaterial
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.staticObjectCondition !== undefined ? (
+              <SummaryFact
+                label="Zustand"
+                value={
+                  STATIC_OBJECT_CONDITION_LABELS[
+                    formValues.staticObjectCondition
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.staticObjectFootprintWidthTiles !== undefined &&
+            formValues.staticObjectFootprintDepthTiles !== undefined ? (
+              <SummaryFact
+                label="Standfläche"
+                value={`${formValues.staticObjectFootprintWidthTiles} × ${formValues.staticObjectFootprintDepthTiles} Tiles`}
+              />
+            ) : null}
+            {formValues.staticObjectInteraction !== undefined ? (
+              <SummaryFact
+                label="Interaktion"
+                value={
+                  STATIC_OBJECT_INTERACTION_LABELS[
+                    formValues.staticObjectInteraction
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.staticObjectShadowMode !== undefined ? (
+              <SummaryFact
+                label="Schatten"
+                value={
+                  STATIC_OBJECT_SHADOW_LABELS[
+                    formValues.staticObjectShadowMode
+                  ]
+                }
+              />
+            ) : null}
+            {formValues.staticObjectVariantCount !== undefined ? (
+              <SummaryFact
+                label="Varianten"
+                value={String(formValues.staticObjectVariantCount)}
+              />
+            ) : null}
+            {selection.capabilities.animated ? (
+              <SummaryFact
+                label="Animation"
+                value={staticObjectAnimationSummary(formValues.animationType)}
               />
             ) : null}
           </>

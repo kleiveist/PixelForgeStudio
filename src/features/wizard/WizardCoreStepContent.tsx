@@ -18,6 +18,10 @@ import {
   getDefaultNaturePlantType,
   type NatureSubtype
 } from "../../domain/nature";
+import {
+  getDefaultStaticObjectClass,
+  type StaticObjectSubtype
+} from "../../domain/static-objects";
 import type { ProfileLibrary } from "../../schemas";
 import {
   CharacterAnimationEditor,
@@ -30,6 +34,7 @@ import {
 } from "../moving-object-editor";
 import { TextureMaterialEditor } from "../texture-editor";
 import { NatureTreeEditor } from "../nature-editor";
+import { StaticWorldObjectEditor } from "../static-object-editor";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import {
   DASHBOARD_CATEGORIES,
@@ -52,6 +57,7 @@ import {
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_NATURE_DETAIL_FIELD_PATHS,
+  WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
   WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   getWizardCoreStep,
   type WizardCoreFieldPath,
@@ -111,6 +117,7 @@ const CLASSIFICATION_FIELDS = [
   ...WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   ...WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   ...WIZARD_NATURE_DETAIL_FIELD_PATHS,
+  ...WIZARD_STATIC_OBJECT_DETAIL_FIELD_PATHS,
   "characterAnimationFrames",
   "movingObjectAnimationFrames",
   "directionCount",
@@ -198,6 +205,10 @@ function CategoryStep({
     control: form.control,
     name: "naturePlantType"
   });
+  const staticObjectClass = useWatch({
+    control: form.control,
+    name: "staticObjectClass"
+  });
   const [pendingCategory, setPendingCategory] = useState<AssetCategory | null>(
     null
   );
@@ -218,6 +229,18 @@ function CategoryStep({
     expectedNaturePlantType !== null &&
     naturePlantType !== undefined &&
     naturePlantType !== expectedNaturePlantType;
+  const knownStaticObjectSubtypes: readonly string[] =
+    ASSET_SUBTYPES.staticObject;
+  const expectedStaticObjectClass =
+    category === "staticObject" &&
+    subtype !== undefined &&
+    knownStaticObjectSubtypes.includes(subtype)
+      ? getDefaultStaticObjectClass(subtype as StaticObjectSubtype)
+      : null;
+  const staticObjectClassMismatch =
+    expectedStaticObjectClass !== null &&
+    staticObjectClass !== undefined &&
+    staticObjectClass !== expectedStaticObjectClass;
 
   useEffect(() => {
     if (categoryError) {
@@ -275,6 +298,18 @@ function CategoryStep({
         form.setValue(
           "naturePlantType",
           getDefaultNaturePlantType(nextSubtype as NatureSubtype),
+          { shouldDirty: true, shouldTouch: true, shouldValidate: true }
+        );
+      }
+      const staticObjectSubtypes: readonly string[] =
+        ASSET_SUBTYPES.staticObject;
+      if (
+        category === "staticObject" &&
+        staticObjectSubtypes.includes(nextSubtype)
+      ) {
+        form.setValue(
+          "staticObjectClass",
+          getDefaultStaticObjectClass(nextSubtype as StaticObjectSubtype),
           { shouldDirty: true, shouldTouch: true, shouldValidate: true }
         );
       }
@@ -431,6 +466,26 @@ function CategoryStep({
                 }}
               >
                 Pflanzentyp aus Untertyp wiederherstellen
+              </button>
+            </div>
+          ) : null}
+          {staticObjectClassMismatch ? (
+            <div className={styles.inlineActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  form.setValue(
+                    "staticObjectClass",
+                    expectedStaticObjectClass,
+                    { shouldDirty: true, shouldTouch: true }
+                  );
+                  void form.trigger("subtype");
+                  notifyProgrammaticChange();
+                  subtypeRef.current?.focus();
+                }}
+              >
+                Objektklasse aus Untertyp wiederherstellen
               </button>
             </div>
           ) : null}
@@ -711,6 +766,36 @@ function NatureDetailsStep({ form }: CoreStepProps) {
   );
 }
 
+function StaticObjectDetailsStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
+  const knownStaticObjectSubtypes: readonly string[] =
+    ASSET_SUBTYPES.staticObject;
+
+  if (
+    category !== "staticObject" ||
+    subtype === undefined ||
+    !knownStaticObjectSubtypes.includes(subtype)
+  ) {
+    return (
+      <section className={styles.changeWarning} role="alert">
+        <strong>Statisches Objektprofil nicht verfügbar</strong>
+        <p>
+          Kehre zur Bildart zurück und wähle einen gültigen Untertyp für ein
+          statisches Weltobjekt.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <StaticWorldObjectEditor
+      form={form}
+      subtype={subtype as StaticObjectSubtype}
+    />
+  );
+}
+
 function AnimationSelect({
   form,
   options
@@ -865,6 +950,7 @@ const STEP_COMPONENTS = {
   movingObjectDetails: MovingObjectDetailsStep,
   textureDetails: TextureDetailsStep,
   natureDetails: NatureDetailsStep,
+  staticObjectDetails: StaticObjectDetailsStep,
   directions: DirectionsStep,
   animation: AnimationStep,
   tileability: TileabilityStep
@@ -919,6 +1005,15 @@ export const WIZARD_CORE_FLOW = Object.freeze({
         values: WizardCoreFormValues,
         context: WizardCoreFlowContext
       ) => wizardStepIsApplicable("natureDetails", values, context.library)
+    }),
+    Object.freeze({
+      ...getWizardCoreStep("staticObjectDetails"),
+      Component: STEP_COMPONENTS.staticObjectDetails,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) =>
+        wizardStepIsApplicable("staticObjectDetails", values, context.library)
     }),
     Object.freeze({
       ...getWizardCoreStep("directions"),
