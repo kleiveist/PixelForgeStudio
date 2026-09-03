@@ -634,6 +634,63 @@ describe("wizard draft lifecycle", () => {
     });
   });
 
+  it("resumes Nature details for a based tree while keeping wind separate and directionless", () => {
+    const library = createProfileLibraryFixture();
+    const base = library.baseProfiles[0];
+    if (!base) throw new Error("Expected a Base-profile fixture.");
+    const natureDraft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_nature_details",
+      projectName: "Windbaum",
+      route: "wizard/editor",
+      currentStep: "natureDetails",
+      baseProfileId: base.id,
+      category: "nature",
+      subtype: "tree",
+      answers: {
+        plantType: "tree",
+        species: "Eiche",
+        footprint: { widthTiles: 3, depthTiles: 2 },
+        animationType: "wind"
+      },
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+
+    expect(resolveWizardCoreStep(natureDraft)).toEqual({
+      stepId: "natureDetails",
+      usedFallback: false
+    });
+    expect(
+      validateWizardResume({
+        requestedDraftId: natureDraft.draftId,
+        draft: natureDraft,
+        profileLibrary: library
+      })
+    ).toEqual({ status: "ready", draft: natureDraft, notices: [] });
+
+    const wrongCategory = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_texture_nature_step",
+      projectName: "Stein",
+      route: "wizard/editor",
+      currentStep: "natureDetails",
+      baseProfileId: base.id,
+      category: "texture",
+      subtype: "stone",
+      answers: {},
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+    expect(resolveWizardCoreStep(wrongCategory)).toEqual({
+      stepId: "baseProfile",
+      usedFallback: true,
+      unknownStep: "natureDetails"
+    });
+  });
+
   it("rejects malformed resume payloads before lifecycle handling", () => {
     const result = validateWizardResume({
       requestedDraftId: draftId,

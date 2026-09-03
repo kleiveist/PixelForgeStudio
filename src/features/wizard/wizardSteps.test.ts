@@ -3,6 +3,7 @@ import {
   WIZARD_CORE_STEPS,
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
+  WIZARD_NATURE_DETAIL_FIELD_PATHS,
   WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   WizardAnimationStepSchema,
   WizardBaseProfileStepSchema,
@@ -10,6 +11,7 @@ import {
   WizardCharacterDetailsStepSchema,
   WizardDirectionStepSchema,
   WizardMovingObjectDetailsStepSchema,
+  WizardNatureDetailsStepSchema,
   WizardProjectStepSchema,
   WizardTextureDetailsStepSchema,
   WizardTileabilityStepSchema,
@@ -46,6 +48,7 @@ describe("wizard core steps", () => {
       "characterDetails",
       "movingObjectDetails",
       "textureDetails",
+      "natureDetails",
       "directions",
       "animation",
       "tileability"
@@ -76,6 +79,13 @@ describe("wizard core steps", () => {
       route: "wizard/editor",
       title: "Textur und Material"
     });
+    expect(getWizardCoreStep("natureDetails").fieldPaths).toBe(
+      WIZARD_NATURE_DETAIL_FIELD_PATHS
+    );
+    expect(getWizardCoreStep("natureDetails")).toMatchObject({
+      route: "wizard/editor",
+      title: "Pflanze und Natur"
+    });
     expect(getWizardCoreStep("directions").fieldPaths).toEqual(["directionCount"]);
     expect(getWizardCoreStep("animation").fieldPaths).toEqual([
       "animationAction",
@@ -90,7 +100,40 @@ describe("wizard core steps", () => {
     expect(getWizardCoreStepIndex("characterDetails")).toBe(3);
     expect(getWizardCoreStepIndex("movingObjectDetails")).toBe(4);
     expect(getWizardCoreStepIndex("textureDetails")).toBe(5);
-    expect(getWizardCoreStepIndex("directions")).toBe(6);
+    expect(getWizardCoreStepIndex("natureDetails")).toBe(6);
+    expect(getWizardCoreStepIndex("directions")).toBe(7);
+  });
+
+  it("owns the complete Nature detail boundary without animation or directions", () => {
+    expect(WIZARD_NATURE_DETAIL_FIELD_PATHS).toEqual([
+      "naturePlantType",
+      "natureSpecies",
+      "natureDescription",
+      "natureClimate",
+      "natureSeason",
+      "natureAge",
+      "natureSilhouette",
+      "natureTrunkThickness",
+      "natureTrunkShape",
+      "natureTrunkDetails",
+      "natureCrownShape",
+      "natureCrownDensity",
+      "natureFoliageDetails",
+      "natureRootVisibility",
+      "natureRootDetails",
+      "natureMossCoverage",
+      "natureMushroomGrowth",
+      "natureSnowCover",
+      "natureVineGrowth",
+      "natureFootprintWidthTiles",
+      "natureFootprintDepthTiles",
+      "natureGrounding",
+      "natureVariantCount",
+      "natureExtraDetails"
+    ]);
+    expect(WIZARD_NATURE_DETAIL_FIELD_PATHS).not.toContain("animationType");
+    expect(WIZARD_NATURE_DETAIL_FIELD_PATHS).not.toContain("directionCount");
+    expect(WIZARD_NATURE_DETAIL_FIELD_PATHS).not.toContain("tileSize");
   });
 
   it("owns the complete Texture answer boundary without duplicating technical tile size", () => {
@@ -274,6 +317,62 @@ describe("wizard core steps", () => {
         subtype: "npc",
         ...technicalValues,
         characterHeight: undefined
+      }).success
+    ).toBe(false);
+  });
+
+  it("validates Nature subtype derivation, paired footprint, and anatomy at the step boundary", () => {
+    const tree = {
+      projectName: "Windbaum",
+      category: "nature" as const,
+      subtype: "tree" as const,
+      ...technicalValues,
+      naturePlantType: "tree" as const,
+      natureTrunkThickness: "massive" as const,
+      natureCrownShape: "spreading" as const,
+      natureRootVisibility: "visible" as const,
+      natureFootprintWidthTiles: 3,
+      natureFootprintDepthTiles: 2
+    };
+    expect(WizardNatureDetailsStepSchema.safeParse(tree).success).toBe(true);
+    const mismatchedPlantType = WizardNatureDetailsStepSchema.safeParse({
+      ...tree,
+      naturePlantType: "mushroom"
+    });
+    expect(mismatchedPlantType.success).toBe(false);
+    if (mismatchedPlantType.success) {
+      throw new Error("A mismatched derived plant type must not parse.");
+    }
+    expect(mismatchedPlantType.error.issues).toContainEqual(
+      expect.objectContaining({ path: ["subtype"] })
+    );
+    expect(
+      WizardNatureDetailsStepSchema.safeParse({
+        ...tree,
+        natureFootprintDepthTiles: undefined
+      }).success
+    ).toBe(false);
+    expect(
+      WizardNatureDetailsStepSchema.safeParse({
+        ...tree,
+        subtype: "mushroom",
+        naturePlantType: "mushroom",
+        natureTrunkThickness: "thin",
+        natureCrownShape: undefined,
+        natureRootVisibility: undefined
+      }).success
+    ).toBe(false);
+    expect(
+      WizardNatureDetailsStepSchema.safeParse({
+        ...tree,
+        category: "texture",
+        subtype: "wood",
+        naturePlantType: undefined,
+        natureTrunkThickness: undefined,
+        natureCrownShape: undefined,
+        natureRootVisibility: undefined,
+        natureFootprintWidthTiles: undefined,
+        natureFootprintDepthTiles: undefined
       }).success
     ).toBe(false);
   });

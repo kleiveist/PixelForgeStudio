@@ -97,13 +97,13 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 16
+## 4.3 Umgesetzter Einstieg bis Prompt 17
 
 Der aktuell implementierte Core-Flow lautet:
 
 ```text
 Projekt → Hauptkategorie/Untertyp → Basisprofil
-→ Character-, Moving-Object- oder Texture-Details, falls relevant
+→ Character-, Moving-Object-, Texture- oder Nature-Details, falls relevant
 → Capability-Schritte
 ```
 
@@ -113,9 +113,10 @@ erfolgreich neu angelegte Basisfamilie öffnet die nachfolgenden Richtungs-,
 Animations- oder Kachelbarkeitsfragen. Deren Sichtbarkeit stammt ausschließlich
 aus `resolveCapabilities()`. Für die Hauptkategorie `character` liegt zwischen
 Basisprofil und Capability-Schritten ein eigener Character-/NPC-Fachschritt.
-`movingObject` und `texture` nutzen an derselben Stelle ihre eigenen
-`movingObjectDetails`- beziehungsweise `textureDetails`-Schritte; alle anderen
-Kategorien überspringen diese drei Fachschritte.
+`movingObject`, `texture` und `nature` nutzen an derselben Stelle ihre eigenen
+`movingObjectDetails`-, `textureDetails`- beziehungsweise
+`natureDetails`-Schritte; alle anderen Kategorien überspringen diese vier
+Fachschritte.
 
 Der Basisprofil-Schritt zeigt für alle relevanten Produktionswerte den
 wirksamen Wert, seine Quelle (Basisprofil, Kategorieprofil oder lokaler Entwurf)
@@ -163,9 +164,25 @@ wird nicht zusätzlich angezeigt, weil `textureDetails` die dreiwertige
 Nahtlosigkeit bereits erfasst. Summary und Dashboard zeigen nur
 tatsächlich konfigurierte Material-, Kachel- und Oberflächenfakten.
 
-Prompt 17 ergänzt als nächste Phase den Nature-/Tree-Editor.
+Der Nature-Schritt erfasst den aus dem Untertyp abgeleiteten Pflanzentyp, Art,
+Beschreibung, Klima, Saison, Alter, Silhouette, untertypabhängige Stamm-,
+Kronen- und Wurzelfelder, Moos, Pilze, Schnee, Ranken, Standfläche,
+Bodenanschluss und 1 bis 12 Varianten im gemeinsamen
+RHF-/Draft-/Autosave-/Resume-Pfad. Pflanzentyp und wirksame Tilegröße sind
+read-only; `tileSize` bleibt in der technischen Base→Category→Asset-Kette und
+wird nicht in `NatureAnswers` dupliziert. Basiswechsel erhalten die Antworten,
+Klassifikationswechsel bereinigen sie. Explicit Clear löst geerbte
+Kategorie-/Assetprovenienz und materialisiert die übrigen wirksamen Fach- und
+Technikwerte relativ zur Base. Initialisierung, Profil-Hydration und Resume
+schreiben nicht. Wind-/Magieanimation bleibt ein separater
+`animated`-Capability-Schritt; Nature-Untertypen sind nicht `directional` und
+erhalten keine 4/8-Richtungs- oder Figurenfragen. Summary und Dashboard zeigen
+nur relevante Naturfakten.
+
+Prompts 00 bis 17 sind abgeschlossen. Prompt 18 ergänzt als nächste Phase den
+Static-Object-Editor.
 Die späteren Material-, Setting-, Review-, Prompt- und Output-Flächen der
-Tabelle oben werden durch Prompt 16 noch nicht als fertig erklärt.
+Tabelle oben werden durch Prompt 17 noch nicht als fertig erklärt.
 
 ---
 
@@ -684,6 +701,51 @@ keine schreibende Migration beim bloßen Laden statt.
 | Animation | keine oder Wind-/Magie-Loop; kein Richtungsset |
 | Output | Einzelasset, Variantenpaket, Naturset |
 
+### Implementierungsstand seit Prompt 17
+
+- `src/domain/nature/` veröffentlicht readonly Kataloge und Typen für
+  Pflanzentyp, Klima, Saison, Alter, Silhouette, Stamm, Krone, Wurzeln, Moos,
+  Pilze, Schnee, Ranken, Bodenanschluss und Animation.
+  `NATURE_PLANT_TYPE_BY_SUBTYPE` und `getDefaultNaturePlantType()` bilden jeden
+  Natur-Untertyp deterministisch auf Baum, Busch, Gras, Pilz, Wurzel,
+  Baumstumpf oder Ranke ab.
+- Die puren Guards `natureSubtypeHasTrunk()`, `natureSubtypeHasCrown()` und
+  `natureSubtypeHasRoots()` steuern Schema und UI gemeinsam. Baumfamilien
+  erhalten Stamm, Krone und Wurzeln; Büsche Krone und Wurzeln; Wurzel und
+  Baumstumpf nur ihre passenden Gruppen. Anatomisch unpassende Felder werden
+  nicht nur ausgeblendet, sondern an der Zod-Grenze abgewiesen.
+- `NatureAnswersSchema` umfasst optional `plantType`, `species`,
+  `subjectDescription`, `climate`, `season`, `age`, `silhouette`,
+  `trunkThickness`, `trunkShape`, `trunkDetails`, `crownShape`,
+  `crownDensity`, `foliageDetails`, `rootVisibility`, `rootDetails`,
+  `mossCoverage`, `mushroomGrowth`, `snowCover`, `vineGrowth`, `footprint`,
+  `grounding`, `variantCount`, `animationType` und `extraDetails`. Frühere
+  Schema-V2-Naturwerte bleiben ohne eager Defaults lesbar; ein vorhandener
+  Pflanzentyp muss zum Untertyp passen.
+- `NatureTreeEditor` erscheint ausschließlich als eigener `natureDetails`-
+  Schritt nach der Basisprofilwahl. Pflanzentyp und wirksame technische
+  `tileSize` sind read-only. `tileSize` bleibt sperrbar/vererbbar und wird weder
+  in `NatureAnswers` noch in einem parallelen Naturdatenmodell dupliziert.
+- Footprint-Breite und -Tiefe müssen gemeinsam gesetzt sein und liegen je bei
+  1–64 Tiles. Moos, Pilze, Schnee und Ranken sind eigenständige Fachwerte;
+  Varianten sind auf 1–12 begrenzt.
+- Nature-Fachantworten werden Base→Category→Asset aufgelöst und nur als
+  nicht redundante lokale Abweichungen gespeichert. Ein Basiswechsel erhält
+  sie, ein Klassifikationswechsel entfernt sie. Explicit Clear löst
+  Kategorie-/Assetprovenienz und materialisiert die übrigen wirksamen Fach-
+  und Technikwerte relativ zur Base.
+- Transienter Rohzustand, Dirty State, 300-ms-Autosave, unmittelbare
+  Schritt-Persistenz und exaktes Resume gelten auch für Nature-Felder. Mount,
+  Profil-Hydration und Resume schreiben nicht.
+- Wind-, Magie- oder benutzerdefinierte Animation wird ausschließlich im
+  separaten `animated`-Capability-Schritt erfasst. Nature besitzt keine
+  richtungsfähigen Untertypen; Richtungs-, Figuren- und Kleidungsfragen bleiben
+  aus diesem Flow ausgeschlossen.
+- Zusammenfassung und Dashboard zeigen aufgelösten Pflanzentyp, Art, Umgebung,
+  relevante Anatomie, Bewuchs, Schnee, Standfläche, Bodenanschluss, Varianten
+  und capability-gültige Animation. Prompt Engine, Review-/Output-Erzeugung
+  und Ausgabeauswahl folgen erst in späteren Phasen.
+
 ---
 
 ## 8.6 Gebäude / Architektur
@@ -1057,6 +1119,16 @@ Werte werden beim Laden nicht ergänzt. Ein gespeicherter Materialtyp muss zum
 Texture-Untertyp passen. `tileSize` bleibt ausschließlich im technischen
 Profilwert-/Override-Modell und wird nicht in Texture-Antworten dupliziert.
 
+Für Naturassets erweitert Prompt 17 den strikten Schema-V2-Vertrag additiv um
+`plantType`, `species`, `silhouette`, Stamm-, Kronen- und Wurzelfelder, Moos,
+Pilze, Schnee, Ranken, `grounding` und `variantCount`. Die bisherigen Felder
+`subjectDescription`, `climate`, `season`, `age`, `animationType`, `footprint`
+und `extraDetails` bleiben ohne materialisierte Defaults lesbar. Ein
+gespeicherter Pflanzentyp muss zur vollständigen Untertypabbildung passen;
+anatomisch irrelevante Felder werden abgewiesen. `tileSize` bleibt
+ausschließlich im technischen Profilwert-/Override-Modell, Richtungs- und
+Figurenfelder bleiben vollständig außerhalb von `NatureAnswers`.
+
 ## 12.4 Wizard-Draft
 
 ```json
@@ -1106,6 +1178,12 @@ Für Texturen folgt `textureDetails`; seine Fachfelder einschließlich der
 dreiwertigen `seamless`-Entscheidung gehören ebenfalls zu Rohzustand, Autosave
 und schreibfreiem Resume. Der zentrale technische `tileSize` wird aus der
 Profilkette aufgelöst und nicht als Fachantwort gespeichert.
+Für Naturassets folgt `natureDetails`; alle Fachfelder, die beiden gemeinsam
+erforderlichen Footprint-Achsen und 1–12 Varianten gehören zu Rohzustand,
+Autosave und exaktem schreibfreien Resume. Der Pflanzentyp wird aus dem
+Untertyp abgeleitet, die technische `tileSize` aus der Profilkette aufgelöst.
+Eine optionale Wind-/Magieanimation bleibt im folgenden Capability-Schritt und
+erzeugt kein Richtungsset.
 Aus einem Assetprofil erzeugte Drafts dürfen dessen ID als optionale Provenienz
 und seine Asset-Level-Overrides als validierten Snapshot mitführen. Der
 Override-Snapshot verhindert Informationsverlust beim Autosave; die optionale
@@ -1124,10 +1202,10 @@ werden beim nächsten gültigen Draft-Snapshot erneut auf minimale Overrides
 normalisiert.
 
 Das ausdrückliche Leeren eines vom Kategorieprofil geerbten Character-,
-Moving-Object- oder Texture-Feldes löst Kategorie- und Assetprovenienz. Alle anderen
-wirksamen Fachantworten und technischen Werte werden relativ zur Base
-materialisiert, damit der entfernte Default nach Autosave und Resume nicht
-erneut erscheint.
+Moving-Object-, Texture- oder Nature-Feldes löst Kategorie- und
+Assetprovenienz. Alle anderen wirksamen Fachantworten und technischen Werte
+werden relativ zur Base materialisiert, damit der entfernte Default nach
+Autosave und Resume nicht erneut erscheint.
 
 ---
 

@@ -14,6 +14,10 @@ import {
   getDefaultTextureMaterialType,
   type TextureSubtype
 } from "../../domain/textures";
+import {
+  getDefaultNaturePlantType,
+  type NatureSubtype
+} from "../../domain/nature";
 import type { ProfileLibrary } from "../../schemas";
 import {
   CharacterAnimationEditor,
@@ -25,6 +29,7 @@ import {
   MovingObjectDetailsEditor
 } from "../moving-object-editor";
 import { TextureMaterialEditor } from "../texture-editor";
+import { NatureTreeEditor } from "../nature-editor";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import {
   DASHBOARD_CATEGORIES,
@@ -46,6 +51,7 @@ import {
 import {
   WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
+  WIZARD_NATURE_DETAIL_FIELD_PATHS,
   WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
   getWizardCoreStep,
   type WizardCoreFieldPath,
@@ -104,6 +110,7 @@ const CLASSIFICATION_FIELDS = [
   ...WIZARD_CHARACTER_DETAIL_FIELD_PATHS,
   ...WIZARD_MOVING_OBJECT_DETAIL_FIELD_PATHS,
   ...WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
+  ...WIZARD_NATURE_DETAIL_FIELD_PATHS,
   "characterAnimationFrames",
   "movingObjectAnimationFrames",
   "directionCount",
@@ -170,7 +177,11 @@ function ProjectStep({ form }: CoreStepProps) {
   );
 }
 
-function CategoryStep({ draft, form }: CoreStepProps) {
+function CategoryStep({
+  draft,
+  form,
+  notifyProgrammaticChange
+}: CoreStepProps) {
   const firstCategoryRef = useRef<HTMLInputElement>(null);
   const subtypeRef = useRef<HTMLSelectElement>(null);
   const categoryController = useController({
@@ -183,6 +194,10 @@ function CategoryStep({ draft, form }: CoreStepProps) {
   });
   const category = categoryController.field.value;
   const subtype = subtypeController.field.value;
+  const naturePlantType = useWatch({
+    control: form.control,
+    name: "naturePlantType"
+  });
   const [pendingCategory, setPendingCategory] = useState<AssetCategory | null>(
     null
   );
@@ -192,6 +207,17 @@ function CategoryStep({ draft, form }: CoreStepProps) {
   const categoryError = fieldError(form, "category");
   const subtypeError = fieldError(form, "subtype");
   const capabilities = resolveWizardCapabilities({ category, subtype });
+  const knownNatureSubtypes: readonly string[] = ASSET_SUBTYPES.nature;
+  const expectedNaturePlantType =
+    category === "nature" &&
+    subtype !== undefined &&
+    knownNatureSubtypes.includes(subtype)
+      ? getDefaultNaturePlantType(subtype as NatureSubtype)
+      : null;
+  const naturePlantTypeMismatch =
+    expectedNaturePlantType !== null &&
+    naturePlantType !== undefined &&
+    naturePlantType !== expectedNaturePlantType;
 
   useEffect(() => {
     if (categoryError) {
@@ -241,6 +267,14 @@ function CategoryStep({ draft, form }: CoreStepProps) {
         form.setValue(
           "textureMaterialType",
           getDefaultTextureMaterialType(nextSubtype as TextureSubtype),
+          { shouldDirty: true, shouldTouch: true, shouldValidate: true }
+        );
+      }
+      const natureSubtypes: readonly string[] = ASSET_SUBTYPES.nature;
+      if (category === "nature" && natureSubtypes.includes(nextSubtype)) {
+        form.setValue(
+          "naturePlantType",
+          getDefaultNaturePlantType(nextSubtype as NatureSubtype),
           { shouldDirty: true, shouldTouch: true, shouldValidate: true }
         );
       }
@@ -380,6 +414,25 @@ function CategoryStep({ draft, form }: CoreStepProps) {
             <p id="wizard-subtype-error" className={styles.fieldError}>
               {subtypeError}
             </p>
+          ) : null}
+          {naturePlantTypeMismatch ? (
+            <div className={styles.inlineActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  form.setValue("naturePlantType", expectedNaturePlantType, {
+                    shouldDirty: true,
+                    shouldTouch: true
+                  });
+                  void form.trigger("subtype");
+                  notifyProgrammaticChange();
+                  subtypeRef.current?.focus();
+                }}
+              >
+                Pflanzentyp aus Untertyp wiederherstellen
+              </button>
+            </div>
           ) : null}
         </div>
       ) : null}
@@ -629,6 +682,35 @@ function TextureDetailsStep({ form }: CoreStepProps) {
   );
 }
 
+function NatureDetailsStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const subtype = useWatch({ control: form.control, name: "subtype" });
+  const knownNatureSubtypes: readonly string[] = ASSET_SUBTYPES.nature;
+
+  if (
+    category !== "nature" ||
+    subtype === undefined ||
+    !knownNatureSubtypes.includes(subtype)
+  ) {
+    return (
+      <section className={styles.changeWarning} role="alert">
+        <strong>Naturprofil nicht verfügbar</strong>
+        <p>
+          Kehre zur Bildart zurück und wähle einen gültigen Pflanzen- oder
+          Natur-Untertyp.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <NatureTreeEditor
+      form={form}
+      subtype={subtype as NatureSubtype}
+    />
+  );
+}
+
 function AnimationSelect({
   form,
   options
@@ -782,6 +864,7 @@ const STEP_COMPONENTS = {
   characterDetails: CharacterDetailsStep,
   movingObjectDetails: MovingObjectDetailsStep,
   textureDetails: TextureDetailsStep,
+  natureDetails: NatureDetailsStep,
   directions: DirectionsStep,
   animation: AnimationStep,
   tileability: TileabilityStep
@@ -828,6 +911,14 @@ export const WIZARD_CORE_FLOW = Object.freeze({
         values: WizardCoreFormValues,
         context: WizardCoreFlowContext
       ) => wizardStepIsApplicable("textureDetails", values, context.library)
+    }),
+    Object.freeze({
+      ...getWizardCoreStep("natureDetails"),
+      Component: STEP_COMPONENTS.natureDetails,
+      isApplicable: (
+        values: WizardCoreFormValues,
+        context: WizardCoreFlowContext
+      ) => wizardStepIsApplicable("natureDetails", values, context.library)
     }),
     Object.freeze({
       ...getWizardCoreStep("directions"),

@@ -194,7 +194,29 @@ function createNatureProfile(
     iconId: "nature-tree",
     capabilities: resolveCapabilities(selection.category, selection.subtype),
     answers: {
+      plantType: "tree",
+      species: "Hüteeiche",
+      subjectDescription: "Breiter Waldbaum mit klarer Silhouette",
       climate: "temperate",
+      season: "autumn",
+      age: "ancient",
+      silhouette: "broad",
+      trunkThickness: "massive",
+      trunkShape: "gnarled",
+      trunkDetails: "Tiefe Rindenfurchen",
+      crownShape: "spreading",
+      crownDensity: "dense",
+      foliageDetails: "Lesbare Blattgruppen",
+      rootVisibility: "visible",
+      rootDetails: "Drei starke Hauptwurzeln",
+      mossCoverage: "moderate",
+      mushroomGrowth: "clustered",
+      snowCover: "none",
+      vineGrowth: "light",
+      footprint: { widthTiles: 3, depthTiles: 2 },
+      grounding: "soilPatch",
+      variantCount: 3,
+      extraDetails: "Stabiler Stammfuß",
       ...(animationType ? { animationType } : {})
     }
   });
@@ -500,6 +522,38 @@ describe("dashboard data", () => {
     expect(facts.asset_tree_still).not.toContain("Animation: Wind");
     expect(facts.asset_tree_still).not.toContain("Animierbar");
     expect(facts.asset_tree_wind).toContain("Animation: Wind");
+    expect(facts.asset_tree_wind).toEqual(
+      expect.arrayContaining([
+        "Pflanzentyp: Baum",
+        "Art: Hüteeiche",
+        "Klima: Gemäßigt",
+        "Saison: Herbst",
+        "Alter: Uralt",
+        "Silhouette: Breit",
+        "Stammstärke: Massiv",
+        "Stammform: Knorrig",
+        "Kronenform: Ausladend",
+        "Kronendichte: Dicht",
+        "Wurzeln: Sichtbar",
+        "Moos: Mittel",
+        "Pilze: In Gruppen",
+        "Schnee: Kein Schnee",
+        "Ranken: Leicht",
+        "Standfläche: 3 × 2 Tiles",
+        "Bodenanschluss: Erdfläche",
+        "Varianten: 3"
+      ])
+    );
+    expect(facts.asset_tree_wind).not.toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(
+          /^(Motiv|Stammdetails|Laubdetails|Wurzeldetails|Zusatzdetails):/
+        )
+      ])
+    );
+    expect(facts.asset_tree_wind).not.toEqual(
+      expect.arrayContaining([expect.stringContaining("Richt")])
+    );
     expect(facts.asset_floating).toContain("Bewegung: Schweben");
     expect(facts.asset_floating).toContain("Animation: Pulsieren");
     expect(facts.asset_floating).not.toContain("Richtungsfähig");

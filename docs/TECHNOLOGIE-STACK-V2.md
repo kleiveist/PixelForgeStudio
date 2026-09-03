@@ -267,8 +267,36 @@ Materialhinweise, aber keine Figuren-, Kleidungs-, Bewegungs- oder
 Richtungsfragen. Live-Zusammenfassung und Dashboard zeigen ausschließlich
 tatsächlich konfigurierte Texture- und zentrale Tile-Fakten.
 
-Prompt 17 ergänzt als nächste Phase den Nature-/Tree-Editor. Prompt 16 nimmt
-weder die Prompt Engine noch Review-/Output-Erzeugung oder weitere
+Seit Prompt 17 folgt für `nature` direkt nach dem Basisprofil der eigene
+Schritt `natureDetails`. `NatureTreeEditor` erfasst Art, Beschreibung, Klima,
+Saison, Alter, Silhouette, untertypabhängige Stamm-, Kronen- und Wurzeldaten,
+Moos, Pilze, Schnee, Ranken, Standfläche, Bodenanschluss und 1 bis 12 Varianten
+in React Hook Form. Pflanzentyp und wirksame Tilegröße werden read-only aus
+Untertyp beziehungsweise technischer Base→Category→Asset-Vererbung gezeigt;
+`tileSize` wird nicht in `NatureAnswers` dupliziert.
+
+Der öffentliche Katalog unter `src/domain/nature/` stellt readonly IDs, das
+vollständige `NATURE_PLANT_TYPE_BY_SUBTYPE`-Mapping,
+`getDefaultNaturePlantType()` sowie die puren Guards
+`natureSubtypeHasTrunk()`, `natureSubtypeHasCrown()` und
+`natureSubtypeHasRoots()` bereit. `NatureAnswersSchema` erweitert den
+Schema-V2-Vertrag strikt und additiv: vorhandene Naturdaten bleiben ohne eager
+Defaults lesbar, ein gespeicherter Pflanzentyp muss zum Untertyp passen und
+anatomisch irrelevante Felder werden abgewiesen.
+
+Nature-Werte werden Base→Category→Asset aufgelöst und nur als nicht redundante
+lokale Abweichungen gespeichert. Explicit Clear löst Kategorie-/Assetprovenienz
+und materialisiert die übrigen wirksamen Fach- und Technikwerte relativ zur
+Base. Basiswechsel erhalten die Fachwerte, Klassifikationswechsel bereinigen
+sie. Rohzustand, Dirty State, 300-ms-Autosave und exaktes Resume gelten auch
+für Naturfelder; Mount, Profil-Hydration und Resume schreiben nicht.
+Zusammenfassung und Dashboard zeigen nur relevante Naturfakten.
+
+Wind-, Magie- und benutzerdefinierte Animationen bleiben ein eigener
+`animated`-Capability-Schritt. Nature-Untertypen sind nicht `directional` und
+erhalten keine 4/8-Richtungsfrage. Prompts 00 bis 17 sind abgeschlossen;
+Prompt 18 ergänzt als nächste Phase den Static-Object-Editor. Prompt 17 nimmt
+weder Prompt Engine noch Review-/Output-Erzeugung oder weitere
 Spezialeditoren vorweg.
 
 ## Speicherung
@@ -344,6 +372,15 @@ Pflichtbereiche:
 - Holzprofil mit Material-, Oberflächen- und Kacheldaten, aber ohne Figuren-
   oder Richtungsfragen
 - schreibfreie Texture-Hydration/Resume sowie Summary-/Dashboard-Projektion
+- Nature-Kataloge, vollständiges Untertyp-/Pflanzentyp-Mapping, pure
+  Anatomie-Guards und additive Schema-V2-Lesbarkeit ohne Defaults
+- subtype-gesteuerte Stamm-, Kronen- und Wurzelfelder sowie vollständige
+  Footprints von 1–64 Tiles und 1–12 Varianten
+- Base→Category→Asset-Vererbung, minimale Nature-Projektion und
+  Explicit-Clear-Detach
+- schreibfreie Nature-Hydration/Resume, Autosave und
+  Summary-/Dashboard-Projektion
+- Wind-/Magieanimation für animierbare Nature-Untertypen ohne Richtungsset
 - 8 Richtungen nur bei richtungsabhängig beweglichen Assets
 - Speichern / Laden / Import / Export
 - Theme-Umschaltung

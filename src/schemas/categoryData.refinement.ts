@@ -4,6 +4,12 @@ import {
   type AssetSelection
 } from "../domain/assets";
 import { getDefaultMovingObjectClass } from "../domain/moving-objects";
+import {
+  getDefaultNaturePlantType,
+  natureSubtypeHasCrown,
+  natureSubtypeHasRoots,
+  natureSubtypeHasTrunk
+} from "../domain/nature";
 import { getDefaultTextureMaterialType } from "../domain/textures";
 
 export type CategoryDataCarrier = AssetSelection;
@@ -44,6 +50,50 @@ export function validateCategoryDataCapabilities<DataKey extends CategoryDataKey
         `Material type "${String(categoryData.materialType)}" does not match texture subtype "${value.subtype}"; expected "${expectedMaterialType}".`
       );
     }
+  }
+
+  if (value.category === "nature") {
+    if (categoryData.plantType !== undefined) {
+      const expectedPlantType = getDefaultNaturePlantType(value.subtype);
+      if (categoryData.plantType !== expectedPlantType) {
+        addIssue(
+          "plantType",
+          `Plant type "${String(categoryData.plantType)}" does not match nature subtype "${value.subtype}"; expected "${expectedPlantType}".`
+        );
+      }
+    }
+
+    const rejectIrrelevantFields = (
+      fields: readonly string[],
+      relevant: boolean,
+      anatomy: string
+    ): void => {
+      if (relevant) return;
+      for (const field of fields) {
+        if (categoryData[field] !== undefined) {
+          addIssue(
+            field,
+            `${anatomy} data is not valid for nature subtype "${value.subtype}".`
+          );
+        }
+      }
+    };
+
+    rejectIrrelevantFields(
+      ["trunkThickness", "trunkShape", "trunkDetails"],
+      natureSubtypeHasTrunk(value.subtype),
+      "Trunk"
+    );
+    rejectIrrelevantFields(
+      ["crownShape", "crownDensity", "foliageDetails"],
+      natureSubtypeHasCrown(value.subtype),
+      "Crown"
+    );
+    rejectIrrelevantFields(
+      ["rootVisibility", "rootDetails"],
+      natureSubtypeHasRoots(value.subtype),
+      "Root"
+    );
   }
 
   if (categoryData.movementType !== undefined && !capabilities.movable) {

@@ -19,6 +19,24 @@ import {
   type TextureSurface,
   type TextureUsage
 } from "../../domain/textures";
+import {
+  getDefaultNaturePlantType,
+  type NatureAge,
+  type NatureClimate,
+  type NatureCrownDensity,
+  type NatureCrownShape,
+  type NatureGrounding,
+  type NatureMossCoverage,
+  type NatureMushroomGrowth,
+  type NaturePlantType,
+  type NatureRootVisibility,
+  type NatureSeason,
+  type NatureSilhouette,
+  type NatureSnowCover,
+  type NatureTrunkShape,
+  type NatureTrunkThickness,
+  type NatureVineGrowth
+} from "../../domain/nature";
 import { resolveProfile, type ResolvedProfile } from "../../domain/profiles";
 import type {
   AssetProfile,
@@ -234,6 +252,139 @@ const textureOrientationLabels: Readonly<Record<TextureOrientation, string>> = {
   grainAligned: "Entlang der Maserung"
 };
 
+const naturePlantTypeLabels: Readonly<Record<NaturePlantType, string>> = {
+  tree: "Baum",
+  bush: "Busch",
+  grass: "Grasbüschel",
+  mushroom: "Pilz",
+  root: "Wurzel",
+  treeStump: "Baumstumpf",
+  vine: "Ranke"
+};
+
+const natureClimateLabels: Readonly<Record<NatureClimate, string>> = {
+  temperate: "Gemäßigt",
+  mountain: "Gebirge",
+  snow: "Schneegebiet",
+  swamp: "Sumpf",
+  dry: "Trocken",
+  dark: "Düsterwald",
+  magical: "Magischer Wald"
+};
+
+const natureSeasonLabels: Readonly<Record<NatureSeason, string>> = {
+  spring: "Frühling",
+  summer: "Sommer",
+  autumn: "Herbst",
+  winter: "Winter",
+  timeless: "Zeitlos"
+};
+
+const natureAgeLabels: Readonly<Record<NatureAge, string>> = {
+  young: "Jung",
+  mature: "Ausgewachsen",
+  ancient: "Uralt",
+  dead: "Abgestorben"
+};
+
+const natureSilhouetteLabels: Readonly<Record<NatureSilhouette, string>> = {
+  broad: "Breit",
+  narrow: "Schmal",
+  asymmetric: "Asymmetrisch",
+  gnarled: "Knorrig",
+  upright: "Aufrecht",
+  spreading: "Ausladend",
+  compact: "Kompakt"
+};
+
+const natureTrunkThicknessLabels: Readonly<
+  Record<NatureTrunkThickness, string>
+> = {
+  thin: "Dünn",
+  medium: "Mittel",
+  thick: "Dick",
+  massive: "Massiv"
+};
+
+const natureTrunkShapeLabels: Readonly<Record<NatureTrunkShape, string>> = {
+  straight: "Gerade",
+  tapered: "Konisch",
+  twisted: "Verdreht",
+  gnarled: "Knorrig",
+  split: "Gespalten",
+  hollow: "Hohl"
+};
+
+const natureCrownShapeLabels: Readonly<Record<NatureCrownShape, string>> = {
+  round: "Rund",
+  tall: "Hoch",
+  tiered: "Gestuft",
+  spreading: "Ausladend",
+  conical: "Kegelförmig",
+  irregular: "Unregelmäßig",
+  damaged: "Beschädigt",
+  bare: "Kahl"
+};
+
+const natureCrownDensityLabels: Readonly<
+  Record<NatureCrownDensity, string>
+> = {
+  sparse: "Spärlich",
+  loose: "Locker",
+  medium: "Mittel",
+  dense: "Dicht",
+  bare: "Kahl"
+};
+
+const natureRootVisibilityLabels: Readonly<
+  Record<NatureRootVisibility, string>
+> = {
+  hidden: "Verdeckt",
+  visible: "Sichtbar",
+  spreading: "Ausladend",
+  rockWrapping: "Felsen umschlingend",
+  exposed: "Freigelegt"
+};
+
+const natureMossLabels: Readonly<Record<NatureMossCoverage, string>> = {
+  none: "Kein Moos",
+  light: "Leicht",
+  moderate: "Mittel",
+  heavy: "Stark"
+};
+
+const natureMushroomLabels: Readonly<Record<NatureMushroomGrowth, string>> = {
+  none: "Keine Pilze",
+  few: "Vereinzelt",
+  clustered: "In Gruppen",
+  abundant: "Reichlich"
+};
+
+const natureSnowLabels: Readonly<Record<NatureSnowCover, string>> = {
+  none: "Kein Schnee",
+  dusting: "Leicht bestäubt",
+  partial: "Teilweise bedeckt",
+  covered: "Bedeckt",
+  heavy: "Stark bedeckt"
+};
+
+const natureVineLabels: Readonly<Record<NatureVineGrowth, string>> = {
+  none: "Keine Ranken",
+  light: "Leicht",
+  draped: "Herabhängend",
+  entangled: "Dicht verschlungen"
+};
+
+const natureGroundingLabels: Readonly<Record<NatureGrounding, string>> = {
+  natural: "Natürlich eingebettet",
+  soilPatch: "Erdfläche",
+  grassPatch: "Grasfläche",
+  rocky: "Felsig",
+  snowy: "Verschneit",
+  swampy: "Sumpfig",
+  freestanding: "Freigestellt"
+};
+
 const animationLabels = {
   idle: "Idle",
   walk: "Walk",
@@ -376,12 +527,89 @@ function profileActivityFacts(profile: ResolvedProfile): readonly string[] {
       ];
     }
     case "staticObject":
-    case "nature":
     case "tileset": {
       const { animationType } = profile.categoryData.answers;
       return animationType === undefined
         ? []
         : [animationFact(animationType)];
+    }
+    case "nature": {
+      const {
+        age,
+        animationType,
+        climate,
+        crownDensity,
+        crownShape,
+        footprint,
+        grounding,
+        mossCoverage,
+        mushroomGrowth,
+        plantType,
+        rootVisibility,
+        season,
+        silhouette,
+        snowCover,
+        species,
+        trunkShape,
+        trunkThickness,
+        variantCount,
+        vineGrowth
+      } = profile.categoryData.answers;
+      const resolvedPlantType =
+        plantType ?? getDefaultNaturePlantType(profile.categoryData.subtype);
+      return [
+        `Pflanzentyp: ${naturePlantTypeLabels[resolvedPlantType]}`,
+        ...(species === undefined ? [] : [`Art: ${species}`]),
+        ...(climate === undefined
+          ? []
+          : [`Klima: ${natureClimateLabels[climate]}`]),
+        ...(season === undefined
+          ? []
+          : [`Saison: ${natureSeasonLabels[season]}`]),
+        ...(age === undefined ? [] : [`Alter: ${natureAgeLabels[age]}`]),
+        ...(silhouette === undefined
+          ? []
+          : [`Silhouette: ${natureSilhouetteLabels[silhouette]}`]),
+        ...(trunkThickness === undefined
+          ? []
+          : [`Stammstärke: ${natureTrunkThicknessLabels[trunkThickness]}`]),
+        ...(trunkShape === undefined
+          ? []
+          : [`Stammform: ${natureTrunkShapeLabels[trunkShape]}`]),
+        ...(crownShape === undefined
+          ? []
+          : [`Kronenform: ${natureCrownShapeLabels[crownShape]}`]),
+        ...(crownDensity === undefined
+          ? []
+          : [`Kronendichte: ${natureCrownDensityLabels[crownDensity]}`]),
+        ...(rootVisibility === undefined
+          ? []
+          : [`Wurzeln: ${natureRootVisibilityLabels[rootVisibility]}`]),
+        ...(mossCoverage === undefined
+          ? []
+          : [`Moos: ${natureMossLabels[mossCoverage]}`]),
+        ...(mushroomGrowth === undefined
+          ? []
+          : [`Pilze: ${natureMushroomLabels[mushroomGrowth]}`]),
+        ...(snowCover === undefined
+          ? []
+          : [`Schnee: ${natureSnowLabels[snowCover]}`]),
+        ...(vineGrowth === undefined
+          ? []
+          : [`Ranken: ${natureVineLabels[vineGrowth]}`]),
+        ...(footprint === undefined
+          ? []
+          : [`Standfläche: ${footprint.widthTiles} × ${footprint.depthTiles} Tiles`]),
+        ...(grounding === undefined
+          ? []
+          : [`Bodenanschluss: ${natureGroundingLabels[grounding]}`]),
+        ...(variantCount === undefined
+          ? []
+          : [`Varianten: ${variantCount}`]),
+        ...(!profile.capabilities.animated || animationType === undefined
+          ? []
+          : [animationFact(animationType)])
+      ];
     }
     case "texture": {
       const {

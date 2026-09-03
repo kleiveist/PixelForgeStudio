@@ -64,6 +64,7 @@ V1 inventarisieren ✓
 → Character-/NPC-Editor mit Aktions- und Frame-Modell ✓
 → Moving-Object-Editor mit Produktions- und Sequenzmodell ✓
 → Texture-/Material-Editor mit Kachel- und Oberflächenmodell ✓
+→ Nature-/Tree-Editor mit Anatomie-, Bewuchs- und Footprintmodell ✓
 → weitere spezialisierte Editormodelle
 → Prompt Engine 2.0
 → Release-Abnahme
@@ -131,10 +132,9 @@ die zur Capability passenden Fragen und Editoren.
 
 ## Spezialisierte Editoren
 
-Character-/NPC-, Moving-Object- und Texture-/Material-Editor sind als
-getrennte React-Features umgesetzt. Weitere geplante Features sind:
+Character-/NPC-, Moving-Object-, Texture-/Material- und Nature-/Tree-Editor
+sind als getrennte React-Features umgesetzt. Weitere geplante Features sind:
 
-- Nature/Tree
 - Static Object
 - Building
 - Tileset
@@ -177,14 +177,25 @@ Kleidungs-, Bewegungs- oder Richtungsfragen. Weil dieser Fachschritt die
 dreiwertige Nahtlosigkeitsentscheidung selbst besitzt, überspringen Texturen
 den generischen `tileability`-Schritt.
 
+Der eigene `natureDetails`-Schritt erfasst den aus dem Untertyp abgeleiteten
+Pflanzentyp, Art, Beschreibung, Klima, Saison, Alter, Silhouette,
+untertypabhängige Stamm-, Kronen- und Wurzeldetails, Bewuchs und Schnee sowie
+Standfläche, Bodenanschluss und 1 bis 12 Varianten. Der Pflanzentyp und die
+zentrale wirksame `tileSize` werden read-only dargestellt; `tileSize` bleibt
+ein sperrbarer technischer Wert und wird nicht in `NatureAnswers` dupliziert.
+Baumfamilien erhalten Stamm, Krone und Wurzeln, Büsche nur Krone und Wurzeln,
+Wurzel und Baumstumpf ihre jeweils sinnvollen Anatomiegruppen. Wind- oder
+Magieanimation liegt getrennt im `animated`-Capability-Schritt. Naturassets
+sind nicht `directional` und erhalten daher niemals eine 4/8-Richtungsfrage.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 16 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 17 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 17 — Nature/Tree Editor
+→ Prompt 18 — Static Object Editor
 ```
 
 Danach immer genau:
@@ -206,8 +217,8 @@ aktive Wizard Engine trennt die generische RHF-Navigation und Persistenz von
 einer deklarativen, produktspezifischen Flow-Definition. Sie bietet
 Zod-Validierung, sichtbaren Fortschritt, Dirty-/Autosave-Status, exaktes Resume
 und eine technische Zusammenfassung. Der stabile Einstieg lautet
-`Projekt → Hauptkategorie/Untertyp → Basisprofil → Character-, Moving-Object-
-oder Texture-Details, falls relevant → Capability-Schritte`.
+`Projekt → Hauptkategorie/Untertyp → Basisprofil → Character-, Moving-Object-,
+Texture- oder Nature-Details, falls relevant → Capability-Schritte`.
 Der Basisprofil-Schritt zeigt wirksame Werte mit Quelle und Sperrstatus,
 normalisiert entsperrte Abweichungen zu minimalen Draft-Overrides und bietet
 bei Locks einen bewussten Wechsel, ein Duplikat oder eine neue Familie an.
@@ -237,6 +248,21 @@ Hydration und Resume bleiben schreibfrei, gültige Nutzeränderungen nutzen den
 normalen Autosave. Zusammenfassung und Dashboard zeigen Material, Einsatz,
 Nahtlosigkeit, Tilegröße, Struktur, Zustand, Oberfläche, Feuchtigkeit,
 Vereisung und Licht, soweit tatsächlich gesetzt und relevant.
+Nature-Antworten folgen ebenfalls der wirksamen Base→Category→Asset-Auflösung
+und werden nur als nicht redundante lokale Abweichungen gespeichert.
+Basiswechsel erhalten sie, Klassifikationswechsel entfernen sie. Explicit
+Clear löst geerbte Kategorie-/Assetprovenienz und materialisiert die übrigen
+wirksamen Fach- und Technikwerte relativ zur Base. Der transiente Rohzustand,
+300-ms-Autosave und exaktes Resume umfassen alle Naturfelder; Mount,
+Profil-Hydration und Resume bleiben schreibfrei. Live-Zusammenfassung und
+Dashboard zeigen Pflanzentyp, Art, Umgebung, relevante Anatomie, Bewuchs,
+Standfläche, Varianten und capability-gültige Animation, aber keine
+Richtungsdaten. Lange Beschreibungs- und Detailtexte bleiben vollständig im
+Entwurf gespeichert und werden nicht als Karten-Badges oder lange
+Screenreader-Beschreibungen dupliziert. Ein defensiver Konflikt zwischen
+Untertyp und abgeleitetem Pflanzentyp führt zur fokussierbaren
+Untertyp-Auswahl und kann dort ohne Verlust der übrigen Naturdetails repariert
+werden.
 Prompt-Erzeugung und Output-Flächen folgen erst in ihren späteren Phasen.
 
 ## Legacy-V1 lokal prüfen
@@ -310,6 +336,14 @@ Feuchtigkeits-, Vereisungs-, Licht- und Orientierungswerte. Die pure
 Untertypabbildung liefert den Materialtyp für UI und Schema-Prüfung, ohne ihn
 bei Hydration als Default in bestehende Daten zu schreiben.
 
+Der öffentliche Nature-Katalog unter `src/domain/nature/` bündelt readonly
+Pflanzen-, Klima-, Saison-, Alters-, Silhouetten-, Anatomie-, Bewuchs-, Schnee-,
+Bodenanschluss- und Animationswerte. `NATURE_PLANT_TYPE_BY_SUBTYPE` und
+`getDefaultNaturePlantType()` bilden jeden Natur-Untertyp deterministisch auf
+einen Pflanzentyp ab. `natureSubtypeHasTrunk()`,
+`natureSubtypeHasCrown()` und `natureSubtypeHasRoots()` sind die gemeinsame
+pure Gating-Grenze für Schema und UI.
+
 Alle persistierten V2-Kernverträge liegen unter `src/schemas/`. Base-,
 Kategorie- und Assetprofile, Einstellungen, Wizard-Entwürfe und Exportpakete
 werden dort aus `unknown` mit Zod geparst; ihre TypeScript-Typen werden direkt
@@ -328,6 +362,12 @@ Das strikt additive `TextureAnswersSchema` hält die bisherigen Felder
 Oberfläche, Feuchtigkeit, Vereisung und Licht. Fehlende Werte bleiben fehlend;
 ein vorhandener Materialtyp muss zum Texture-Untertyp passen. `tileSize` und
 alle Figuren-/Richtungsdaten bleiben außerhalb dieses Fachschemas.
+Das strikt additive `NatureAnswersSchema` ergänzt Pflanzentyp, Art,
+Silhouette, Stamm, Krone, Wurzeln, Bewuchs, Schnee, Bodenanschluss und bis zu
+zwölf Varianten. Vorhandene Schema-V2-Naturdaten bleiben ohne eager Defaults
+lesbar; ein vorhandener Pflanzentyp muss zum Untertyp passen und anatomisch
+irrelevante Felder werden abgewiesen. `tileSize`, Figuren-, Kleidungs- und
+Richtungsfelder gehören nicht zu `NatureAnswers`.
 
 Die öffentliche Profilauflösung unter `src/domain/profiles/` führt validierte
 Base-, Kategorie- und Assetprofile zusammen. Sie setzt Locks durch, meldet
@@ -366,6 +406,10 @@ Zustand; auch hier bleibt die alte Ein-Sequenz-Repräsentation lesbar.
 Texture-Profile zeigen die tatsächlich aufgelösten Material- und
 Oberflächenfakten einschließlich der zentralen wirksamen Tilegröße; sie leiten
 weder Richtungs- noch Figurenfakten aus bloßen Capabilities ab.
+Nature-Profile zeigen den aufgelösten Pflanzentyp, Art, Klima, Saison, Alter,
+Silhouette, vorhandene Anatomie, Bewuchs, Standfläche, Bodenanschluss,
+Varianten und eine tatsächlich konfigurierte, capability-gültige Animation.
+Richtungsfakten werden für Naturassets nie erzeugt.
 
 Die Profilbibliothek unter `src/features/profiles/` durchsucht und filtert
 Assetprofile, gruppiert sie wahlweise nach Kategorie oder ihrem neu
@@ -418,6 +462,13 @@ Der Texture-Zweig verwendet denselben Vererbungs- und Detach-Vertrag für den
 `undefined`. Die zentrale Tilegröße wird nur über technische Overrides
 aufgelöst, während Texture-Fachantworten minimal projiziert werden.
 
+Der Nature-Zweig nutzt denselben Vertrag für `natureDetails`: wirksame
+Fachantworten werden Base→Category→Asset aufgelöst und minimal lokal
+projiziert. Explicit Clear löst die Kategorie-/Assetprovenienz und
+materialisiert die übrigen wirksamen Antworten und technischen Werte relativ
+zur Base. Die wirksame Tilegröße bleibt ausschließlich Teil der technischen
+Profilkette.
+
 Der spezialisierte Character-/NPC-Editor unter
 `src/features/character-editor/` ist als eigener Wizard-Schritt direkt nach
 dem Basisprofil eingebunden. Er rendert nur Character-Fachfelder und blendet
@@ -446,6 +497,16 @@ read-only, erfasst ausschließlich Texture-Fachwerte in React Hook Form und
 nutzt den gemeinsamen Rohzustands-, Autosave- und schreibfreien Resume-Pfad.
 Nahtlosigkeit ist bewusst dreiwertig; der Holz-Untertyp zeigt zusätzliche
 Materialhinweise, ohne Sonderdaten oder Richtungslogik einzuführen.
+
+Der spezialisierte Nature-/Tree-Editor unter `src/features/nature-editor/` ist
+im eigenen `natureDetails`-Schritt direkt nach der Basisprofilwahl eingebunden.
+`NatureTreeEditor` zeigt Pflanzentyp und zentrale Tilegröße read-only und
+rendert Stamm, Krone und Wurzeln ausschließlich nach den puren Domain-Guards.
+Footprint-Achsen müssen gemeinsam zwischen 1 und 64 Tiles liegen; Varianten
+sind auf 1 bis 12 begrenzt. Bewuchs und Wetterauflage bleiben Fachantworten,
+während Wind-/Magieanimation separat capability-gesteuert und jede
+Richtungswahl ausgeschlossen ist. Rohzustand, Autosave und schreibfreies
+Resume entsprechen dem gemeinsamen Wizard-Vertrag.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

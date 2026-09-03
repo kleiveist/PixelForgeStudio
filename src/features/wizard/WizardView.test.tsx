@@ -1229,9 +1229,10 @@ describe("guided Wizard integration", () => {
     expect(storage.mutations).toEqual([]);
   });
 
-  it("allows wind animation for a tree without exposing directions", async () => {
+  it("autosaves and resumes a detailed wind tree without ever exposing directions", async () => {
     const user = userEvent.setup();
-    const { adapter } = renderStudio();
+    const rendered = renderStudio();
+    const { adapter, storage } = rendered;
 
     await user.type(projectNameInput(), "Windbaum");
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
@@ -1248,8 +1249,73 @@ describe("guided Wizard integration", () => {
 
     await enterBaseProfileStep(user);
     await selectBaseProfile(user);
+    expect(within(progress).getByText("Pflanze und Natur")).toBeVisible();
     expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
     expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Pflanze und Natur" })
+    ).toBeVisible();
+    expect(screen.getByText("Baum", { selector: "output" })).toBeVisible();
+    await user.type(screen.getByRole("textbox", { name: "Art / Spezies" }), "Hüteeiche");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Klimazone" }),
+      "temperate"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Jahreszeit" }),
+      "autumn"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Gesamtsilhouette" }),
+      "broad"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Stammdicke" }),
+      "massive"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Kronenform" }),
+      "spreading"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Wurzelsichtbarkeit" }),
+      "visible"
+    );
+    await user.clear(
+      screen.getByRole("spinbutton", { name: "Standfläche · Breite in Tiles" })
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Standfläche · Breite in Tiles" }),
+      "3"
+    );
+    await user.clear(
+      screen.getByRole("spinbutton", { name: "Standfläche · Tiefe in Tiles" })
+    );
+    await user.type(
+      screen.getByRole("spinbutton", { name: "Standfläche · Tiefe in Tiles" }),
+      "2"
+    );
+
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        category: "nature",
+        subtype: "tree",
+        currentStep: "natureDetails",
+        answers: {
+          plantType: "tree",
+          species: "Hüteeiche",
+          climate: "temperate",
+          season: "autumn",
+          silhouette: "broad",
+          trunkThickness: "massive",
+          crownShape: "spreading",
+          rootVisibility: "visible",
+          footprint: { widthTiles: 3, depthTiles: 2 }
+        }
+      })
+    );
 
     await user.click(screen.getByRole("button", { name: /Weiter/ }));
     expect(
@@ -1270,6 +1336,85 @@ describe("guided Wizard integration", () => {
       });
       expect(draft).not.toHaveProperty("answers.directionCount");
     });
+
+    const summary = screen.getByRole("complementary", {
+      name: "Technische Zusammenfassung"
+    });
+    expect(within(summary).getByText("Art").nextElementSibling).toHaveTextContent(
+      "Hüteeiche"
+    );
+    expect(
+      within(summary).getByText("Standfläche").nextElementSibling
+    ).toHaveTextContent("3 × 2 Tiles");
+    expect(
+      within(summary).getByText("Stammstärke").nextElementSibling
+    ).toHaveTextContent("Massiv");
+    expect(
+      within(summary).getByText("Kronenform").nextElementSibling
+    ).toHaveTextContent("Ausladend");
+    expect(
+      within(summary).getByText("Wurzeln").nextElementSibling
+    ).toHaveTextContent("Sichtbar");
+    expect(
+      within(summary).getByText("Animation", { selector: "dt" })
+        .nextElementSibling
+    ).toHaveTextContent("Windbewegung");
+    expect(within(summary).queryByText("Richtungsset")).not.toBeInTheDocument();
+
+    rendered.unmount();
+    storage.mutations.splice(0);
+    renderStudio({ storage });
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Bewegung und Animation" })
+    ).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Animationsart" })).toHaveValue(
+      "wind"
+    );
+    expect(screen.queryByText("Richtungen")).not.toBeInTheDocument();
+    expect(storage.mutations).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: /Zurück/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Pflanze und Natur" })
+    ).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Art / Spezies" })).toHaveValue(
+      "Hüteeiche"
+    );
+    expect(screen.getByRole("combobox", { name: "Klimazone" })).toHaveValue(
+      "temperate"
+    );
+    expect(
+      screen.getByRole("spinbutton", { name: "Standfläche · Breite in Tiles" })
+    ).toHaveValue(3);
+  });
+
+  it("keeps a mushroom in Nature details without animation or directions", async () => {
+    const user = userEvent.setup();
+    renderStudio();
+
+    await user.type(projectNameInput(), "Waldpilz");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Natur \/ Pflanze/, "mushroom");
+    await enterBaseProfileStep(user);
+    await selectBaseProfile(user);
+
+    const progress = screen.getByRole("navigation", {
+      name: "Wizard-Fortschritt"
+    });
+    expect(within(progress).getByText("Pflanze und Natur")).toBeVisible();
+    expect(
+      within(progress).queryByText("Bewegung und Animation")
+    ).not.toBeInTheDocument();
+    expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(screen.getByText("Pilz", { selector: "output" })).toBeVisible();
+    expect(screen.queryByText("Stamm und Rinde")).not.toBeInTheDocument();
+    expect(screen.queryByText("Krone und Blattmasse")).not.toBeInTheDocument();
+    expect(screen.queryByText("Wurzeln und Fußpunkt")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Animationsart" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Richtungen")).not.toBeInTheDocument();
   });
 
   it("goes back without a validation barrier and restores resumed form values", async () => {

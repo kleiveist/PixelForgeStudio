@@ -134,6 +134,34 @@ export interface WizardRawCoreFormValues {
   readonly textureLighting?: TextureAnswers["lighting"];
   readonly textureOrientation?: TextureAnswers["orientation"];
   readonly textureExtraDetails?: TextureAnswers["extraDetails"];
+  readonly naturePlantType?: NatureAnswers["plantType"];
+  readonly natureSpecies?: NatureAnswers["species"];
+  readonly natureDescription?: NatureAnswers["subjectDescription"];
+  readonly natureClimate?: NatureAnswers["climate"];
+  readonly natureSeason?: NatureAnswers["season"];
+  readonly natureAge?: NatureAnswers["age"];
+  readonly natureSilhouette?: NatureAnswers["silhouette"];
+  readonly natureTrunkThickness?: NatureAnswers["trunkThickness"];
+  readonly natureTrunkShape?: NatureAnswers["trunkShape"];
+  readonly natureTrunkDetails?: NatureAnswers["trunkDetails"];
+  readonly natureCrownShape?: NatureAnswers["crownShape"];
+  readonly natureCrownDensity?: NatureAnswers["crownDensity"];
+  readonly natureFoliageDetails?: NatureAnswers["foliageDetails"];
+  readonly natureRootVisibility?: NatureAnswers["rootVisibility"];
+  readonly natureRootDetails?: NatureAnswers["rootDetails"];
+  readonly natureMossCoverage?: NatureAnswers["mossCoverage"];
+  readonly natureMushroomGrowth?: NatureAnswers["mushroomGrowth"];
+  readonly natureSnowCover?: NatureAnswers["snowCover"];
+  readonly natureVineGrowth?: NatureAnswers["vineGrowth"];
+  readonly natureFootprintWidthTiles?: NonNullable<
+    NatureAnswers["footprint"]
+  >["widthTiles"] | undefined;
+  readonly natureFootprintDepthTiles?: NonNullable<
+    NatureAnswers["footprint"]
+  >["depthTiles"] | undefined;
+  readonly natureGrounding?: NatureAnswers["grounding"];
+  readonly natureVariantCount?: NatureAnswers["variantCount"];
+  readonly natureExtraDetails?: NatureAnswers["extraDetails"];
   readonly directionCount?: DirectionCount | undefined;
   readonly animationAction?: CharacterAnswers["animationAction"];
   readonly animationType?:

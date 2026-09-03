@@ -17,9 +17,17 @@ import {
   type TextureSubtype
 } from "../../domain/textures";
 import {
+  getDefaultNaturePlantType,
+  natureSubtypeHasCrown,
+  natureSubtypeHasRoots,
+  natureSubtypeHasTrunk,
+  type NatureSubtype
+} from "../../domain/nature";
+import {
   BaseProfileValuesSchema,
   CharacterAnswersSchema,
   MovingObjectAnswersSchema,
+  NatureAnswersSchema,
   TextureAnswersSchema,
   type BaseProfileValues
 } from "../../schemas";
@@ -87,6 +95,7 @@ const MovingObjectAnimationFramesSchema = z
   .optional();
 
 const textureAnswerShape = TextureAnswersSchema.unwrap().shape;
+const natureAnswerShape = NatureAnswersSchema.unwrap().shape;
 
 export const WizardCoreFormSchema = z.strictObject({
   projectName: ProjectNameSchema,
@@ -160,6 +169,30 @@ export const WizardCoreFormSchema = z.strictObject({
   textureLighting: textureAnswerShape.lighting,
   textureOrientation: textureAnswerShape.orientation,
   textureExtraDetails: textureAnswerShape.extraDetails,
+  naturePlantType: natureAnswerShape.plantType,
+  natureSpecies: natureAnswerShape.species,
+  natureDescription: natureAnswerShape.subjectDescription,
+  natureClimate: natureAnswerShape.climate,
+  natureSeason: natureAnswerShape.season,
+  natureAge: natureAnswerShape.age,
+  natureSilhouette: natureAnswerShape.silhouette,
+  natureTrunkThickness: natureAnswerShape.trunkThickness,
+  natureTrunkShape: natureAnswerShape.trunkShape,
+  natureTrunkDetails: natureAnswerShape.trunkDetails,
+  natureCrownShape: natureAnswerShape.crownShape,
+  natureCrownDensity: natureAnswerShape.crownDensity,
+  natureFoliageDetails: natureAnswerShape.foliageDetails,
+  natureRootVisibility: natureAnswerShape.rootVisibility,
+  natureRootDetails: natureAnswerShape.rootDetails,
+  natureMossCoverage: natureAnswerShape.mossCoverage,
+  natureMushroomGrowth: natureAnswerShape.mushroomGrowth,
+  natureSnowCover: natureAnswerShape.snowCover,
+  natureVineGrowth: natureAnswerShape.vineGrowth,
+  natureFootprintWidthTiles: z.number().int().min(1).max(64).optional(),
+  natureFootprintDepthTiles: z.number().int().min(1).max(64).optional(),
+  natureGrounding: natureAnswerShape.grounding,
+  natureVariantCount: natureAnswerShape.variantCount,
+  natureExtraDetails: natureAnswerShape.extraDetails,
   directionCount: z.union([z.literal(4), z.literal(8)]).optional(),
   animationAction: z
     .enum(CHARACTER_ANIMATION_ACTION_IDS)
@@ -179,6 +212,7 @@ export type WizardCoreStepId =
   | "characterDetails"
   | "movingObjectDetails"
   | "textureDetails"
+  | "natureDetails"
   | "directions"
   | "animation"
   | "tileability";
@@ -295,6 +329,33 @@ export const WIZARD_TEXTURE_DETAIL_FIELD_PATHS = Object.freeze([
   "textureLighting",
   "textureOrientation",
   "textureExtraDetails"
+] as const satisfies readonly WizardCoreFieldPath[]);
+
+export const WIZARD_NATURE_DETAIL_FIELD_PATHS = Object.freeze([
+  "naturePlantType",
+  "natureSpecies",
+  "natureDescription",
+  "natureClimate",
+  "natureSeason",
+  "natureAge",
+  "natureSilhouette",
+  "natureTrunkThickness",
+  "natureTrunkShape",
+  "natureTrunkDetails",
+  "natureCrownShape",
+  "natureCrownDensity",
+  "natureFoliageDetails",
+  "natureRootVisibility",
+  "natureRootDetails",
+  "natureMossCoverage",
+  "natureMushroomGrowth",
+  "natureSnowCover",
+  "natureVineGrowth",
+  "natureFootprintWidthTiles",
+  "natureFootprintDepthTiles",
+  "natureGrounding",
+  "natureVariantCount",
+  "natureExtraDetails"
 ] as const satisfies readonly WizardCoreFieldPath[]);
 
 const ANIMATION_TYPES_BY_CATEGORY: Readonly<
@@ -492,6 +553,15 @@ function validateCapabilityFields(
       );
     }
   }
+  for (const field of WIZARD_NATURE_DETAIL_FIELD_PATHS) {
+    if (values[field] !== undefined && category !== "nature") {
+      addFieldIssue(
+        context,
+        field,
+        "Natur- und Pflanzendaten gehören nicht zur gewählten Asset-Kategorie."
+      );
+    }
+  }
   if (
     values.movingObjectAnimationFrames !== undefined &&
     (category !== "movingObject" || !capabilities.animated)
@@ -554,6 +624,80 @@ function validateCapabilityFields(
       "textureMaterialType",
       "Der Materialtyp passt nicht zum gewählten Textur-Untertyp."
     );
+  }
+  if (category === "nature") {
+    const natureSubtype = selection.subtype as NatureSubtype;
+    const width = values.natureFootprintWidthTiles;
+    const depth = values.natureFootprintDepthTiles;
+    if (width !== undefined && depth === undefined) {
+      addFieldIssue(
+        context,
+        "natureFootprintDepthTiles",
+        "Ergänze zur Breite auch die Tiefe der Standfläche."
+      );
+    }
+    if (depth !== undefined && width === undefined) {
+      addFieldIssue(
+        context,
+        "natureFootprintWidthTiles",
+        "Ergänze zur Tiefe auch die Breite der Standfläche."
+      );
+    }
+    if (
+      values.naturePlantType !== undefined &&
+      values.naturePlantType !==
+        getDefaultNaturePlantType(natureSubtype)
+    ) {
+      addFieldIssue(
+        context,
+        "subtype",
+        "Der abgeleitete Pflanzentyp passt nicht zum gewählten Natur-Untertyp. Bitte bestätige oder korrigiere den Untertyp."
+      );
+    }
+    if (!natureSubtypeHasTrunk(natureSubtype)) {
+      for (const field of [
+        "natureTrunkThickness",
+        "natureTrunkShape",
+        "natureTrunkDetails"
+      ] as const) {
+        if (values[field] !== undefined) {
+          addFieldIssue(
+            context,
+            field,
+            "Stammdaten sind für diesen Natur-Untertyp nicht verfügbar."
+          );
+        }
+      }
+    }
+    if (!natureSubtypeHasCrown(natureSubtype)) {
+      for (const field of [
+        "natureCrownShape",
+        "natureCrownDensity",
+        "natureFoliageDetails"
+      ] as const) {
+        if (values[field] !== undefined) {
+          addFieldIssue(
+            context,
+            field,
+            "Kronendaten sind für diesen Natur-Untertyp nicht verfügbar."
+          );
+        }
+      }
+    }
+    if (!natureSubtypeHasRoots(natureSubtype)) {
+      for (const field of [
+        "natureRootVisibility",
+        "natureRootDetails"
+      ] as const) {
+        if (values[field] !== undefined) {
+          addFieldIssue(
+            context,
+            field,
+            "Wurzeldaten sind für diesen Natur-Untertyp nicht verfügbar."
+          );
+        }
+      }
+    }
   }
   if (values.animationType !== undefined) {
     const allowedAnimationTypes = ANIMATION_TYPES_BY_CATEGORY[category];
@@ -680,6 +824,17 @@ export const WizardTextureDetailsStepSchema =
       );
     }
   });
+export const WizardNatureDetailsStepSchema =
+  WizardCoreFormSchema.superRefine((values, context) => {
+    refineSelectedValues(values, context, undefined, true);
+    if (values.category !== undefined && values.category !== "nature") {
+      addFieldIssue(
+        context,
+        "category",
+        "Der Natur-Editor ist nur für Pflanzen und Natur-Assets verfügbar."
+      );
+    }
+  });
 export const WizardDirectionStepSchema = WizardCoreFormSchema.superRefine(
   (values, context) =>
     refineSelectedValues(values, context, "directional", true)
@@ -762,6 +917,15 @@ export const WIZARD_CORE_STEPS = Object.freeze([
       "Beschreibe Material, Einsatz, Kachelbarkeit, Oberfläche, Zustand und Beleuchtung der Textur.",
     fieldPaths: WIZARD_TEXTURE_DETAIL_FIELD_PATHS,
     schema: WizardTextureDetailsStepSchema
+  }),
+  Object.freeze({
+    id: "natureDetails",
+    route: "wizard/editor",
+    title: "Pflanze und Natur",
+    description:
+      "Beschreibe Art, Klima, Silhouette, Stamm, Krone, Wurzeln, Bewuchs und Standfläche des Natur-Assets.",
+    fieldPaths: WIZARD_NATURE_DETAIL_FIELD_PATHS,
+    schema: WizardNatureDetailsStepSchema
   }),
   Object.freeze({
     id: "directions",

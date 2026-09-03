@@ -17,6 +17,8 @@
   - `textures/`: Texture/Material catalogs for material type, usage, structure,
     condition, surface, moisture, icing, lighting, and orientation plus the
     pure subtype-to-material mapping
+  - `nature/`: Nature/Tree catalogs, exhaustive subtype-to-plant-type mapping,
+    and pure trunk, crown, and root relevance guards
   - `profiles/`: validated profile-chain resolution, base-lock enforcement,
     structured diagnostics, normalized overrides, compatibility keys,
     canonical BaseProfile defaults, immutable BaseProfile creation/duplication,
@@ -34,15 +36,15 @@
 - `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
   Kategorie-Dashboard, `profiles/` die kategorisierte Assetprofilbibliothek
   und `wizard/` die deklarative RHF-/Zod-Wizard-Grundlage;
-  `character-editor/`, `moving-object-editor/` und `texture-editor/` enthalten
-  die ersten spezialisierten Asset-Editoren;
+  `character-editor/`, `moving-object-editor/`, `texture-editor/` und
+  `nature-editor/` enthalten die ersten spezialisierten Asset-Editoren;
   Review-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
   - `categoryData.schema.ts`: strict category-specific answer contracts,
-    including additive Character/NPC, Moving Object, and Texture/Material
-    catalogs with strict category-specific values
+    including additive Character/NPC, Moving Object, Texture/Material, and
+    Nature/Tree catalogs with strict category-specific values
   - `profiles.schema.ts`: base, category, and asset profile contracts
   - `appSettings.schema.ts`, `wizardDraft.schema.ts`,
     `exportBundle.schema.ts`: remaining persisted/imported V2 contracts
@@ -97,6 +99,23 @@ surface, moisture, icing, and lighting IDs plus the exhaustive pure
 subtype-to-material mapping. That mapping is available to UI and validation,
 but profile hydration does not materialize missing values or write defaults.
 
+`domain/nature/index.ts` is the public, framework-free Nature/Tree catalog API.
+It exports stable readonly IDs for plant type, climate, season, age,
+silhouette, trunk, crown, roots, moss, mushrooms, snow, vines, grounding, and
+animation through `NATURE_PLANT_TYPE_IDS`, `NATURE_CLIMATE_IDS`,
+`NATURE_SEASON_IDS`, `NATURE_AGE_IDS`, `NATURE_SILHOUETTE_IDS`,
+`NATURE_TRUNK_THICKNESS_IDS`, `NATURE_TRUNK_SHAPE_IDS`,
+`NATURE_CROWN_SHAPE_IDS`, `NATURE_CROWN_DENSITY_IDS`,
+`NATURE_ROOT_VISIBILITY_IDS`, `NATURE_MOSS_COVERAGE_IDS`,
+`NATURE_MUSHROOM_GROWTH_IDS`, `NATURE_SNOW_COVER_IDS`,
+`NATURE_VINE_GROWTH_IDS`, `NATURE_GROUNDING_IDS`, and
+`NATURE_ANIMATION_TYPE_IDS`, plus their corresponding `Nature*` types.
+`NATURE_PLANT_TYPE_BY_SUBTYPE` and
+`getDefaultNaturePlantType()` exhaustively map every Nature subtype, while
+`natureSubtypeHasTrunk()`, `natureSubtypeHasCrown()`, and
+`natureSubtypeHasRoots()` provide the shared pure anatomy gates for schemas
+and React. Reading an older profile never materializes the derived plant type.
+
 `schemas/index.ts` is the public validation boundary. Persisted and imported
 values enter its parse functions as `unknown`; exported TypeScript types are
 inferred from the corresponding Zod schemas rather than maintained separately.
@@ -117,6 +136,14 @@ fields stay readable, while optional `materialType`, `surface`, `moisture`,
 the selected Texture subtype. Missing values stay absent, and technical
 `tileSize`, Character, clothing, motion, and direction fields are deliberately
 not part of Texture answers.
+`NatureAnswersSchema` is likewise strict and additive. The earlier
+`subjectDescription`, `climate`, `season`, `age`, `animationType`, `footprint`,
+and `extraDetails` fields remain readable without defaults. Optional plant,
+species, silhouette, subtype-relevant anatomy, foliage, overlay, grounding,
+and 1-to-12 variant fields extend the contract. A present `plantType` must
+match the selected subtype, and irrelevant trunk, crown, or root fields are
+rejected. Technical `tileSize`, Character, clothing, and direction data are
+not Nature answers.
 
 `domain/profiles/index.ts` is the public framework-free profile API.
 `resolveProfile()` accepts already validated profile objects and returns a
@@ -135,6 +162,12 @@ Texture answers use the ordinary deterministic Base→Category→Asset merge: a
 defined Asset answer replaces the corresponding Category default without
 inventing absent values. The Wizard compares the effective inherited Texture
 snapshot before writing and stores only non-redundant local differences.
+
+Nature answers use the same deterministic merge and minimal local projection.
+Clearing an inherited optional Nature value detaches Category/Asset
+provenance and materializes the remaining effective answers and technical
+values relative to the Base, so the cleared parent value cannot reappear on
+Resume.
 
 The same public profile API exposes immutable BaseProfile and AssetProfile
 operations. A Base family can be created from the canonical defaults or copied
@@ -248,6 +281,10 @@ Texture facts expose the resolved material type, usage, three-state seamless
 decision, effective central tile size, structure, condition, surface,
 orientation, moisture, icing, and lighting only when applicable or explicitly
 configured. They never infer Character or direction facts for a texture.
+Nature facts expose the resolved plant type, species, environment, relevant
+anatomy, overlays, footprint, grounding, variants, and configured
+capability-valid animation. They never emit direction facts for a Nature
+profile.
 Unknown badge IDs are ignored safely. The React view
 reads this model through the narrow `DashboardStorage` port
 (`readProfileLibrary` + `readDraft`) and never accesses `localStorage`.
@@ -297,15 +334,15 @@ several RHF values programmatically calls it once to enter the same projection,
 Dirty-state and autosave path as a native control change. Product routing and
 Base-profile semantics remain outside the generic engine.
 
-`features/wizard/wizardCategoryRouting.ts` is the Prompt-16 boundary between
+`features/wizard/wizardCategoryRouting.ts` is the Prompt-17 boundary between
 core form values and the strict Draft union. It validates category/subtype
 pairs against the canonical taxonomy, resolves visibility only through
 `resolveCapabilities()`, preserves hidden answers for an unchanged selection,
 and creates clean answers when classification changes. The stable core flow is
 `project → category/subtype → baseProfile → characterDetails,
-movingObjectDetails, or textureDetails when applicable → directions |
-animation | tileability`, with specialist and capability steps conditionally
-present.
+movingObjectDetails, textureDetails, or natureDetails when applicable →
+directions | animation | tileability`, with specialist and capability steps
+conditionally present.
 A category-only choice remains a raw
 session value until a matching subtype makes it persistable; a classified
 pre-Base Draft remains on `wizard/profile`. The Draft mapper returns `null` for
@@ -318,14 +355,19 @@ Moving Object map as unique `animationSequences`; both old singleton forms
 hydrate without an eager write. A confirmed Base switch removes prior
 technical overrides and stale Category/Asset provenance while retaining the
 current category answers; a category or subtype switch purges them. Explicitly
-clearing an inherited optional Character, Moving Object, or Texture default
-detaches Category/Asset provenance and materializes every other effective
-answer and technical override against the Base, so the parent value cannot
-reappear on Resume. Texture `false` for `seamless` remains a deliberate value,
+clearing an inherited optional Character, Moving Object, Texture, or Nature
+default detaches Category/Asset provenance and materializes every other
+effective answer and technical override against the Base, so the parent value
+cannot reappear on Resume. Texture `false` for `seamless` remains a deliberate value,
 whereas the unset UI choice maps to `undefined`. Step schemas independently
 reject incomplete Base values and category-incompatible specialist or
 capability values, including partial Moving Object footprints, invalid
-subtype/object-class combinations, and mismatched Texture material types.
+subtype/object-class combinations, mismatched Texture material types,
+incomplete Nature footprints, mismatched Nature plant types, and irrelevant
+Nature anatomy.
+The Wizard reports a derived Nature plant-type mismatch on the editable
+subtype control and offers an explicit repair that re-enters the normal
+validation and autosave path without discarding the remaining Nature details.
 The generic `tileability` step is skipped for Texture because
 `textureDetails` already owns the explicit three-state seamless decision.
 
@@ -355,6 +397,12 @@ capability-valid directions, sequences with frames, material, and condition.
 Texture summaries add material, usage, seamless state, effective tile size,
 structure, condition, surface, orientation, moisture, icing, and lighting,
 without displaying direction or Character fields.
+Nature summaries add the derived plant type, species, environment, relevant
+anatomy, overlays, complete footprint, grounding, variants, and the separate
+capability-valid animation state without displaying any direction field.
+Long free-form Nature descriptions stay in the Draft for later Review/Output
+and are deliberately omitted from the compact sticky summary and Dashboard
+card descriptions.
 World-grid geometry remains omitted for resolved free-composition artwork.
 
 `features/wizard/BaseProfileStep.tsx` is the Prompt-13 UI boundary. It presents
@@ -412,7 +460,19 @@ them, and hydration/Resume remain write-free while deliberate valid edits use
 the shared autosave path. Texture does not render the generic `tileability`
 step or any Character, motion, animation, or direction controls.
 
-Prompt 17 is the next phase and may add the Nature/Tree editor. Prompt 16 does
-not implement Prompt Engine modules, review/output generation, or any of the
-remaining specialist editors. It also does not add in-place Base-family
-mutation or descendant reparenting.
+`features/nature-editor/index.ts` is the public React boundary for Prompt 17.
+`NatureTreeEditor` is mounted only as the dedicated `natureDetails` step after
+Base selection. It renders the subtype-derived plant type and effective
+inherited `tileSize` read-only, owns the RHF-controlled species, environment,
+silhouette, overlay, complete 1-to-64-tile footprint, grounding, and 1-to-12
+variant fields, and gates trunk, crown, and root groups through the public
+Nature guards. Wind, magic, or custom animation remains a separate
+`animated`-capability step. Nature has no directional subtype, so the editor
+and flow never expose 4/8 direction controls. Base changes preserve Nature
+answers, classification changes purge them, and deliberate edits use the
+shared autosave path while mount, hydration, and Resume remain write-free.
+
+Prompts 00 through 17 are complete. Prompt 18, the Static Object editor, is the
+next phase. Prompt 17 does not implement Prompt Engine modules,
+review/output generation, or any remaining specialist editor. It also does
+not add in-place Base-family mutation or descendant reparenting.

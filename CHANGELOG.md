@@ -78,6 +78,12 @@
 - Nahtlosigkeit als dreiwertige Entscheidung „nicht festgelegt / ja / nein“ modelliert, den redundanten generischen Tileability-Schritt für Texturen ausgeblendet und Texture-Fachwerte in Rohzustand, Base→Category→Asset-Auflösung, minimale Draft-Projektion, Autosave sowie schreibfreies Resume integriert
 - Holztexturen mit spezifischen Produktionshinweisen und alle Texturen ohne Figuren-, Kleidungs-, Bewegungs- oder Richtungsfragen umgesetzt
 - explizites Leeren geerbter Texture-Defaults dauerhaft abgebildet und tatsächliche Material-, Kachel- und Oberflächenfakten in Live-Zusammenfassung sowie Dashboard-Projektion ergänzt
+- frameworkfreien Nature-Katalog mit readonly Pflanzen-, Klima-, Saison-, Alters-, Silhouetten-, Anatomie-, Bewuchs-, Schnee-, Bodenanschluss- und Animationswerten sowie vollständigem Untertyp-/Pflanzentyp-Mapping ergänzt
+- pure Stamm-, Kronen- und Wurzel-Guards eingeführt und im strikt additiven `NatureAnswersSchema` widersprüchliche Untertyp-/Pflanzentyp- sowie anatomisch irrelevante Felder abgewiesen; bestehende Schema-V2-Naturdaten bleiben ohne eager Defaults lesbar
+- eigenen `natureDetails`-Schritt mit `NatureTreeEditor` direkt nach der Basisprofilwahl integriert; Pflanzentyp und zentrale Tilegröße werden read-only abgeleitet, ohne `tileSize` in Naturantworten zu duplizieren
+- Art, Klima, Saison, Alter, Silhouette, untertypabhängige Anatomie, Moos, Pilze, Schnee, Ranken, vollständige 1–64-Tile-Standfläche, Bodenanschluss und 1–12 Varianten im fokussierten Natur-Editor umgesetzt
+- Wind-/Magieanimation getrennt über `animated` modelliert und Naturassets konsequent ohne 4/8-Richtungsfrage gehalten
+- Nature-Fachwerte in Base→Category→Asset-Auflösung, minimale Draft-Projektion, Explicit-Clear-Detach, transienten Rohzustand, Autosave und schreibfreies Resume integriert sowie kompakte untertypgültige Naturfakten in Live-Zusammenfassung und Dashboard ergänzt; defensive Pflanzentypkonflikte führen zum fokussierbaren Untertyp und durch die normale Autosave-Reparatur
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

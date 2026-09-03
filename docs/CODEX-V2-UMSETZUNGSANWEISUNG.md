@@ -352,14 +352,15 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 16
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 17
 
 - `project`, `category`/`subtype`, `baseProfile`, `characterDetails`,
-  `movingObjectDetails`, `textureDetails` und die Capability-Schritte
-  sind stabil und deklarativ konfiguriert; jeder besitzt Zod-Schema und
-  RHF-Feldpfade. Die Reihenfolge ist
+  `movingObjectDetails`, `textureDetails`, `natureDetails` und die
+  Capability-Schritte sind stabil und deklarativ konfiguriert; jeder besitzt
+  Zod-Schema und RHF-Feldpfade. Die Reihenfolge ist
   `project → category/subtype → baseProfile → characterDetails,
-  movingObjectDetails oder textureDetails, falls relevant → Capability-Schritte`.
+  movingObjectDetails, textureDetails oder natureDetails, falls relevant
+  → Capability-Schritte`.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
   Draft-Mapping, Zusammenfassung und optionale `isApplicable`-Prädikate bereit
@@ -491,9 +492,38 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   Texture-Flows enthalten keine Figuren-, Kleidungs-, Bewegungs- oder
   Richtungsfragen und überspringen den generischen `tileability`-Schritt, weil
   `textureDetails` die dreiwertige Nahtlosigkeit bereits besitzt.
-- Prompt 17 ergänzt als nächste Phase den Nature-/Tree-Editor. Prompt 16
-  enthält weder Prompt Engine beziehungsweise Review-/Output-Erzeugung noch
-  In-place-Mutation oder Reparenting einer bestehenden Basisfamilie.
+- Der Nature-/Tree-Editor ist ein eigener `natureDetails`-Fachschritt direkt
+  nach der Basisprofilwahl und erscheint nur für `nature`. Er erfasst Art,
+  Beschreibung, Klima, Saison, Alter, Silhouette, Bewuchs und Wetterauflage,
+  eine vollständige Standfläche, Bodenanschluss und 1 bis 12 Varianten.
+- Pflanzentyp und wirksame Tilegröße erscheinen read-only. Der Pflanzentyp
+  wird vollständig aus dem Natur-Untertyp abgeleitet; `tileSize` bleibt ein
+  sperrbarer technischer Wert der Base→Category→Asset-Kette und wird nicht in
+  `NatureAnswers` dupliziert.
+- Stamm-, Kronen- und Wurzelgruppen werden über die puren Domain-Guards
+  `natureSubtypeHasTrunk()`, `natureSubtypeHasCrown()` und
+  `natureSubtypeHasRoots()` eingeblendet. Schema und Wizard weisen dieselben
+  anatomisch irrelevanten Kombinationen zurück.
+- Nature-Felder bleiben vollständig in RHF und nutzen Draft↔Form-Projektion,
+  transienten Rohzustand, Dirty-Erkennung, 300-ms-Autosave und exaktes Resume.
+  Mount, Profil-Hydration und Resume schreiben nicht; Basiswechsel erhalten
+  die Fachwerte, Klassifikationswechsel bereinigen sie.
+- Profilauflösung und Draft-Mapping führen Nature-Fachwerte
+  Base→Category→Asset zusammen und speichern nur nicht redundante lokale
+  Abweichungen. Explicit Clear löst Kategorie-/Assetprovenienz und
+  materialisiert die übrigen wirksamen Fach- und Technikwerte relativ zur
+  Base, damit entfernte Defaults beim Resume nicht wiederkehren.
+- Wind-, Magie- oder benutzerdefinierte Animation bleibt ein separater
+  `animated`-Capability-Schritt. Nature-Untertypen sind nicht `directional`;
+  weder Editor noch Flow zeigen eine 4/8-Richtungsfrage oder Figuren- und
+  Kleidungsfelder.
+- Zusammenfassung und Dashboard zeigen Pflanzentyp, Art, Umgebung, relevante
+  Anatomie, Bewuchs, Standfläche, Bodenanschluss, Varianten und
+  capability-gültige Animation ohne Richtungsfakten.
+- Prompts 00 bis 17 sind abgeschlossen. Prompt 18 ergänzt als nächste Phase
+  den Static-Object-Editor. Prompt 17 enthält weder Prompt Engine
+  beziehungsweise Review-/Output-Erzeugung noch In-place-Mutation oder
+  Reparenting einer bestehenden Basisfamilie.
 
 ---
 
@@ -851,6 +881,44 @@ Umgesetzt seit Prompt 16:
 - optionale Windanimation
 - keine Richtungen für normalen Baum
 
+Umgesetzt seit Prompt 17:
+
+- `src/domain/nature/` veröffentlicht readonly Kataloge für Pflanzentyp,
+  Klima, Saison, Alter, Silhouette, Stamm, Krone, Wurzeln, Moos, Pilze,
+  Schnee, Ranken, Bodenanschluss und Animation. Das vollständige
+  `NATURE_PLANT_TYPE_BY_SUBTYPE`-Mapping und
+  `getDefaultNaturePlantType()` ordnen jeden Natur-Untertyp deterministisch zu.
+- `natureSubtypeHasTrunk()`, `natureSubtypeHasCrown()` und
+  `natureSubtypeHasRoots()` definieren frameworkfrei, welche Anatomiegruppen
+  ein Untertyp besitzen darf. Baumfamilien erhalten Stamm, Krone und Wurzeln,
+  Büsche Krone und Wurzeln, Wurzel und Baumstumpf ihre jeweils relevanten
+  Gruppen; Gras, Pilz und Ranke erhalten keine unpassende Baumanatomie.
+- `NatureAnswersSchema` ist strikt und additiv. Bestehende Schema-V2-Werte für
+  Beschreibung, Klima, Saison, Alter, Animation, Footprint und Zusatzdetails
+  bleiben ohne eager Defaults lesbar. Ein vorhandener `plantType` muss zum
+  Untertyp passen; unpassende Stamm-, Kronen- oder Wurzelfelder werden
+  abgewiesen. `tileSize`, Richtungs-, Figuren- und Kleidungsdaten sind keine
+  Nature-Fachantworten.
+- `src/features/nature-editor/` rendert `NatureTreeEditor` ausschließlich im
+  eigenen `natureDetails`-Schritt. Der abgeleitete Pflanzentyp und die wirksame
+  technische Tilegröße sind read-only. Art, Beschreibung, Klima, Saison,
+  Alter, Silhouette, relevante Anatomie, Moos, Pilze, Schnee, Ranken,
+  Bodenanschluss und Zusatzdetails gehören React Hook Form.
+- Der optionale Footprint erfordert Breite und Tiefe gemeinsam; jede Achse ist
+  auf 1 bis 64 Tiles begrenzt. Varianten sind ganzzahlig von 1 bis 12.
+- Nature-Antworten werden Base→Category→Asset aufgelöst und minimal lokal
+  projiziert. Basiswechsel erhalten sie, Klassifikationswechsel entfernen sie;
+  Explicit Clear löst Elternprovenienz und materialisiert die übrigen
+  wirksamen Fach- und Technikwerte relativ zur Base.
+- Rohzustand, Dirty State, Autosave, schreibfreie Hydration und exaktes Resume
+  gelten für alle Nature-Felder. Zusammenfassung und Dashboard zeigen nur
+  tatsächlich relevante Naturfakten.
+- Wind-/Magieanimation ist von Richtung getrennt und erscheint nur bei
+  `animated`. Nature besitzt keine richtungsfähigen Untertypen und zeigt daher
+  niemals 4/8 Richtungen.
+- Ausgabeart, Promptmodule und Output Workspace bleiben Gegenstand späterer
+  Prompts.
+
 ## 13.6 Building
 
 - Typ / Nutzung
@@ -1003,6 +1071,11 @@ Mit Vitest:
 - Texture-Vererbung, minimaler Draft-Roundtrip, dreiwertiges `seamless` und
   Explicit-Clear-Detach
 - technische Tilegröße ohne Duplikation in `TextureAnswers`
+- Nature-Kataloge, Untertyp-/Pflanzentyp-Konsistenz, Anatomie-Guards und
+  additive Schema-V2-Lesbarkeit ohne Defaults
+- Nature-Vererbung, minimaler Draft-Roundtrip und Explicit-Clear-Detach
+- vollständiger Nature-Footprint von 1–64 Tiles, 1–12 Varianten und
+  Wind-/Magieanimation ohne Richtungsset
 - Migrationslogik
 - Promptmodule
 - Canvas-/Frame-Metriken
@@ -1025,6 +1098,11 @@ Mit React Testing Library + user-event:
 - Texture-Detailstep mit Holzfall, Oberfläche, Feuchtigkeit, Vereisung und Licht
 - Texture-Autosave, schreibfreie Hydration/Resume, technischer Tilegröße sowie
   Summary-/Dashboard-Fakten ohne Figuren- oder Richtungsfragen
+- Nature-Detailstep mit subtype-gesteuertem Stamm, Krone und Wurzeln sowie
+  Bewuchs, Schnee, Standfläche und Varianten
+- Nature-Autosave, schreibfreie Hydration/Resume, zentrale read-only Tilegröße
+  sowie Summary-/Dashboard-Fakten ohne Figuren-, Kleidungs- oder
+  Richtungsfragen
 - Theme-Wechsel
 - Profil laden/speichern
 - Lock-Konfliktworkflow

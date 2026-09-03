@@ -26,6 +26,24 @@ import {
   MOVING_OBJECT_SHADOW_MODE_IDS
 } from "../domain/moving-objects";
 import {
+  NATURE_AGE_IDS,
+  NATURE_ANIMATION_TYPE_IDS,
+  NATURE_CLIMATE_IDS,
+  NATURE_CROWN_DENSITY_IDS,
+  NATURE_CROWN_SHAPE_IDS,
+  NATURE_GROUNDING_IDS,
+  NATURE_MOSS_COVERAGE_IDS,
+  NATURE_MUSHROOM_GROWTH_IDS,
+  NATURE_PLANT_TYPE_IDS,
+  NATURE_ROOT_VISIBILITY_IDS,
+  NATURE_SEASON_IDS,
+  NATURE_SILHOUETTE_IDS,
+  NATURE_SNOW_COVER_IDS,
+  NATURE_TRUNK_SHAPE_IDS,
+  NATURE_TRUNK_THICKNESS_IDS,
+  NATURE_VINE_GROWTH_IDS
+} from "../domain/nature";
+import {
   TEXTURE_CONDITION_IDS,
   TEXTURE_ICING_IDS,
   TEXTURE_LIGHTING_IDS,
@@ -46,6 +64,8 @@ const sharedAnswersShape = {
 
 const CharacterDescriptorSchema = z.string().trim().min(1).max(200);
 const CharacterDetailSchema = z.string().trim().min(1).max(500);
+const NatureDescriptorSchema = z.string().trim().min(1).max(200);
+const NatureDetailSchema = z.string().trim().min(1).max(500);
 
 export const CharacterAnimationActionSchema = z
   .strictObject({
@@ -204,13 +224,28 @@ export const TextureAnswersSchema = z
 export const NatureAnswersSchema = z
   .strictObject({
     ...sharedAnswersShape,
-    climate: z
-      .enum(["temperate", "mountain", "snow", "swamp", "dry", "dark", "magical"])
-      .optional(),
-    season: z.enum(["spring", "summer", "autumn", "winter", "timeless"]).optional(),
-    age: z.enum(["young", "mature", "ancient", "dead"]).optional(),
-    animationType: z.enum(["wind", "magic", "custom"]).optional(),
-    footprint: FootprintSchema.optional()
+    plantType: z.enum(NATURE_PLANT_TYPE_IDS).optional(),
+    species: NatureDescriptorSchema.optional(),
+    climate: z.enum(NATURE_CLIMATE_IDS).optional(),
+    season: z.enum(NATURE_SEASON_IDS).optional(),
+    age: z.enum(NATURE_AGE_IDS).optional(),
+    silhouette: z.enum(NATURE_SILHOUETTE_IDS).optional(),
+    trunkThickness: z.enum(NATURE_TRUNK_THICKNESS_IDS).optional(),
+    trunkShape: z.enum(NATURE_TRUNK_SHAPE_IDS).optional(),
+    trunkDetails: NatureDetailSchema.optional(),
+    crownShape: z.enum(NATURE_CROWN_SHAPE_IDS).optional(),
+    crownDensity: z.enum(NATURE_CROWN_DENSITY_IDS).optional(),
+    foliageDetails: NatureDetailSchema.optional(),
+    rootVisibility: z.enum(NATURE_ROOT_VISIBILITY_IDS).optional(),
+    rootDetails: NatureDetailSchema.optional(),
+    mossCoverage: z.enum(NATURE_MOSS_COVERAGE_IDS).optional(),
+    mushroomGrowth: z.enum(NATURE_MUSHROOM_GROWTH_IDS).optional(),
+    snowCover: z.enum(NATURE_SNOW_COVER_IDS).optional(),
+    vineGrowth: z.enum(NATURE_VINE_GROWTH_IDS).optional(),
+    footprint: FootprintSchema.optional(),
+    grounding: z.enum(NATURE_GROUNDING_IDS).optional(),
+    variantCount: z.number().int().min(1).max(12).optional(),
+    animationType: z.enum(NATURE_ANIMATION_TYPE_IDS).optional()
   })
   .readonly();
 

@@ -4,10 +4,38 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** keine — Prompt 16 abgeschlossen
-- **Nächste Aufgabe:** Prompt 17 — Nature/Tree Editor
-- **Zuletzt abgeschlossen:** Prompt 16 — Texture/Material Editor
+- **Aktuelle Aufgabe:** keine — Prompt 17 abgeschlossen
+- **Nächste Aufgabe:** Prompt 18 — Static Object Editor
+- **Zuletzt abgeschlossen:** Prompt 17 — Nature/Tree Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 17
+
+1. Eine frameworkfreie Nature-Domain mit stabilen Katalogen und purem
+   Untertyp→Pflanzentyp-Mapping für Pflanzentyp, Klima, Saison, Alter,
+   Silhouette, Stamm, Krone, Wurzeln, Bewuchs, Wetterauflage und Standfläche
+   anlegen. Das bestehende strikte `NatureAnswersSchema` wird additiv
+   erweitert; alte Schema-V2-Felder bleiben ohne schreibende Defaults lesbar.
+2. Einen eigenständigen responsiven `nature-editor` direkt nach der
+   Basisprofilwahl integrieren. Der Editor zeigt nur zum Untertyp passende
+   Baum-/Pflanzenfragen, die wirksame technische Tilegröße read-only und einen
+   vollständigen Tile-Footprint, ohne technische Werte zu duplizieren.
+3. Optionale Wind-/Magieanimation im bestehenden capability-gesteuerten
+   Animationsschritt halten. `animated` und `directional` bleiben strikt
+   getrennt: Ein Baum darf einen Wind-Loop besitzen, aber nie einen
+   Richtungsschritt erhalten.
+4. Sämtliche Nature-Werte durch Form-Rohsnapshot, minimale
+   Base→Category→Asset-Projektion, Autosave, Profilstart und schreibfreies
+   Resume führen. Basiswechsel erhalten Fachantworten,
+   Klassifikationswechsel bereinigen sie und Explicit Clear verhindert das
+   Wiederkehren geerbter Werte.
+5. Summary und Dashboard um tatsächlich konfigurierte Pflanzen-, Klima-,
+   Saison-, Silhouetten-, Stamm-, Kronen-, Wurzel-, Bewuchs-, Schnee-,
+   Footprint-, Varianten- und Animationsfakten ergänzen.
+6. Domain-, Schema-, Resolver-, Routing-, Lifecycle-, Session-, Dashboard- und
+   RTL-Tests einschließlich eines vollständigen Windbaum-Flows ergänzen.
+   Danach Dokumentation, Vollverifikation, Abschlussaudit und den separaten
+   Prompt-17-Commit ausführen; Prompt 18 bleibt unangetastet.
 
 ## Ausführungsplan Prompt 16
 
@@ -779,6 +807,55 @@
 - Static-Object-Editor, Prompt Engine, Review und Output bleiben späteren,
   getrennt zu committenden Phasen vorbehalten.
 
+## Ergebnis Prompt 17
+
+1. Eine öffentliche frameworkfreie Nature-Domain definiert stabile readonly
+   Kataloge, ein vollständiges Untertyp→Pflanzentyp-Mapping und gemeinsame
+   Guards für Stamm, Krone und Wurzeln. Das strikte additive Schema hält alte
+   V2-Naturdaten ohne schreibende Defaults lesbar und weist widersprüchliche
+   Pflanzentypen sowie anatomisch irrelevante Felder zurück.
+2. Der responsive Schritt `Pflanze und Natur` folgt direkt auf die
+   Basisprofilwahl. Er erfasst Art, Klima, Saison, Alter, Silhouette,
+   untertypabhängige Anatomie, Moos, Pilze, Schnee, Ranken, vollständigen
+   Footprint, Bodenanschluss, Varianten und Zusatzdetails. Pflanzentyp und
+   zentrale Tilegröße bleiben read-only und werden nicht fachlich dupliziert.
+3. Animation und Richtung bleiben getrennte Capabilities: animierbare
+   Natur-Untertypen können einen Wind-, Magie- oder individuellen Loop
+   besitzen, während kein Natur-Untertyp einen 4/8-Richtungsschritt erhält.
+4. Sämtliche Nature-Felder laufen durch Base→Category→Asset-Auflösung,
+   minimale Draft-Projektion, RHF-Rohsnapshot, Autosave und schreibfreies
+   Resume. Basiswechsel erhalten wirksame Fachwerte,
+   Klassifikationswechsel bereinigen sie und Explicit Clear löst geerbte
+   Provenienz ohne Wiederkehr entfernter Defaults.
+5. Live-Zusammenfassung und Dashboard zeigen kompakte, untertypgültige
+   Pflanzen-, Umwelt-, Anatomie-, Bewuchs-, Footprint-, Varianten- und
+   Animationsfakten. Lange Fachtexte bleiben vollständig gespeichert, werden
+   aber nicht in Karten oder Screenreader-Beschreibungen vervielfacht; ein
+   defensiver Pflanzentypkonflikt führt zum fokussierbaren Untertyp und besitzt
+   eine explizite Reparaturaktion.
+6. Domain-, Schema-, Routing-, Lifecycle-, Session-, Dashboard- und RTL-Tests
+   decken insbesondere Windbaum ohne Richtungsset, Pilz-Gating, Vererbung,
+   Detach, Basis-/Untertypwechsel, kompakte Summary, Autosave, Resume und alte
+   V2-Naturdaten ab.
+
+## Übergabe an Prompt 18
+
+- Ergänze ausschließlich den Static-Object-Editor aus
+  `docs/CODEX-V2-PROMPTS.md`: Funktion, Material, Footprint, Zustand,
+  Varianten, Interaktion und optionale Animation für Möbel, Brunnen, Kisten,
+  Fässer, Säulen und sonstige statische Weltobjekte.
+- Statische Weltobjekte erhalten keine Richtungswahl ohne `directional`-
+  Capability. Eine vorhandene Animation wie Öffnen, Leuchten oder Zerbrechen
+  bleibt ein davon unabhängiger Capability-Schritt.
+- Erweitere den bestehenden strikten `StaticObjectAnswers`-Vertrag additiv
+  und halte alte Schema-V2-Daten ohne eager Defaults lesbar. Technische Werte
+  bleiben ausschließlich in der Base→Category→Asset-Profilkette.
+- Führe alle neuen Werte wieder durch minimale Vererbung, Explicit Clear,
+  Basis-/Klassifikationswechsel, Rohsnapshot, Autosave, schreibfreies Resume,
+  kompakte Summary und Dashboard.
+- Gebäudeeditor, Tilesets, Items, Artwork, Prompt Engine, Review und Output
+  bleiben späteren, separat zu committenden Phasen vorbehalten.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -822,7 +899,7 @@
 | 13 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | abgeschlossen |
 | 14 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | abgeschlossen |
 | 15 | Textur-/Materialeditor | Material, Seamless, Oberfläche | abgeschlossen |
-| 16 | Natur-/Baumeditor | Klima, Saison, Krone, Stamm etc. | offen |
+| 16 | Natur-/Baumeditor | Klima, Saison, Krone, Stamm etc. | abgeschlossen |
 | 17 | Statische Objekte | Objektparameter ohne unnötige Bewegung | offen |
 | 18 | Gebäudeeditor | Architektur und Mappingparameter | offen |
 | 19 | Tileset-Editor | Tile-/Transition-/Seam-Regeln | offen |
