@@ -607,12 +607,14 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   schreibfreies Resume. `freeComposition` blendet Tile-, Sprite-, Weltkamera-,
   Figuren-, Richtungs- und Animationsregeln aus; Summary und Dashboard zeigen
   nur kompakte tatsächliche Artwork-Fakten.
-- Prompts 00 bis 24 sind abgeschlossen. Die frameworkfreie Prompt Engine 2.0
+- Prompts 00 bis 25 sind abgeschlossen. Die frameworkfreie Prompt Engine 2.0
   verarbeitet aufgelöste Profile vollständig; der Review-/Output-Workspace
   bindet sie an aktiven oder lokal gesicherten Draft, Profilbibliothek,
   Konfliktanzeige, Clipboard, TXT-/JSON-Export und Assetprofil-Speicherung an.
-  In-place-Mutation oder Reparenting einer bestehenden Basisfamilie bleiben
-  außerhalb dieses Stands.
+  Lock-Konflikte können nach sichtbarer Folgenvorschau abgebrochen, in eine
+  duplizierte oder neue Basisfamilie überführt oder mit einer kompatiblen
+  vorhandenen Familie aufgelöst werden. In-place-Mutation und Reparenting
+  einer bestehenden Basisfamilie bleiben ausgeschlossen.
 
 ---
 
@@ -1312,6 +1314,27 @@ Umgesetzt seit Prompt 24:
 - Der Output-Bereich bietet Paketwahl für Sprache und Stil sowie vier
   semantische Tabs. Aktionen melden Erfolg oder Fehler per Live Region und
   sind über injizierte Ports vollständig testbar.
+
+Erweitert seit Prompt 25:
+
+- Bei einem auflösbaren `lockedOverride` rekonstruiert eine pure
+  Feature-Funktion den beabsichtigten wirksamen Profilstand aus Teilprofil und
+  strukturiertem Konflikt. Referenz-, Klassifikations- und andere Konflikte
+  bleiben unverändert fail-closed.
+- Vorhandene Basisprofile werden ohne Write gegen alle capability-relevanten
+  technischen Werte geprüft. Exakte Treffer werden bevorzugt; Ziel-Locks, die
+  dem gewünschten Stand widersprechen, schließen eine Familie aus.
+- Review bietet genau Abbruch, Basisduplikation, Neuanlage oder Auswahl einer
+  kompatiblen Familie. Vor der Bestätigung zeigt er Wertänderungen, den Wechsel
+  der opaken technischen Gruppe, nötige lokale Overrides und gelöste
+  Provenienz.
+- Ein konvertierter Draft übernimmt wirksame Kategorieantworten als eigenen
+  Snapshot und löst alte Category-/Asset-Links. Originalprofil, Geschwister,
+  Kinder und deren `baseProfileId` bleiben unangetastet.
+- Neue oder duplizierte Familien werden zuerst über den bestehenden Provider
+  samt vollständiger Graphvalidierung gespeichert; erst danach folgt der
+  Draft-Write. Ein Draft-Fehler aktiviert keinen Teilstand und weist auf eine
+  bereits angelegte, weiterhin erhaltene Familie hin.
 
 ---
 

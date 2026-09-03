@@ -4,10 +4,80 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Aktuelle Aufgabe:** Prompt 24 — Review und Output Workspace (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 25 — Profilkonflikte und Konvertierung (noch nicht begonnen)
-- **Zuletzt abgeschlossen:** Prompt 24 — Review und Output Workspace
+- **Aktuelle Aufgabe:** Prompt 25 — Profilkonflikte und Konvertierung (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 26 — Accessibility, Responsive Design und visuelle Politur (noch nicht begonnen)
+- **Zuletzt abgeschlossen:** Prompt 25 — Profilkonflikte und Konvertierung
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
+
+## Ausführungsplan Prompt 25
+
+1. Aus dem validierten Wizard-Draft, dem partiell aufgelösten Profil und den
+   strukturierten Lock-Konflikten einen puren Konvertierungsplan bilden. Er
+   berechnet gewünschte wirksame Werte, relevante Feldänderungen und den
+   neuen Compatibility Key, ohne einen Teilprompt zu erzeugen.
+2. Für jedes vorhandene Basisprofil vorab prüfen, ob die gewünschte
+   Konfiguration ohne Lock-Verletzung auflösbar ist. Der resultierende Draft
+   materialisiert geerbte Fachantworten, normalisiert technische Overrides und
+   löst alte Category-/Asset-Provenienz bewusst, ohne persistierte Profile
+   umzuhängen.
+3. Den Review-Konflikt um genau vier kontrollierte Wege erweitern: abbrechen,
+   aktuelles BaseProfile als eigenständige Familie duplizieren, eine neue
+   kanonische Familie anlegen oder ein kompatibles vorhandenes Profil wählen.
+   Vor jeder Bestätigung werden technische Änderungen, Gruppenwechsel,
+   Overrides und gelöste Verknüpfungen sichtbar.
+4. Neue/duplizierte Basen weiterhin ausschließlich über den bestehenden
+   Provider und dessen Zod-validierten Gesamtgraph-Write anlegen. Erst danach
+   wird der konvertierte Draft über den Storage-Adapter gespeichert und als
+   aktive Sitzung übernommen; Teilfehler bleiben sichtbar und fail-closed.
+5. Pure Domain-/Feature-Tests und React-Testing-Library-Flows für
+   Compatibility-Key-Wechsel, Lock-Konflikt, Abbruch, vorhandene kompatible
+   Familie und Basisduplikation ergänzen.
+6. Öffentliche Grenzen und Implementierungsstatus dokumentieren, danach
+   `npm run verify`, `git diff --check`, Abschlussaudit und den separaten
+   Prompt-25-Commit ausführen; Prompt 26 bleibt unangetastet.
+
+## Ergebnis Prompt 25
+
+1. `profileConversionData.ts` rekonstruiert aus einem validierten Draft, dem
+   partiell aufgelösten Profil und ausschließlich strukturierten
+   `lockedOverride`-Konflikten den gewünschten technischen Stand. Aktuelle und
+   gewünschte Compatibility-Gruppe werden deterministisch verglichen, ohne
+   das interne Key-Format in der UI offenzulegen.
+2. Vorhandene Basisprofile werden pure gegen den gewünschten Stand geprüft.
+   Lock-Widersprüche schließen Kandidaten aus; exakte technische Treffer
+   stehen zuerst, während mögliche lokale Abweichungen vor der Bestätigung
+   gezählt werden.
+3. Der fail-closed Review-Zustand bietet genau die vier vorgesehenen Wege:
+   abbrechen, die aktuelle Basisfamilie duplizieren, eine neue kanonische
+   Familie anlegen oder ein kompatibles vorhandenes Basisprofil wählen. Jede
+   schreibende Aktion folgt erst nach einer sichtbaren Änderungs-, Gruppen- und
+   Provenienzvorschau.
+4. Ein konvertierter Draft materialisiert wirksame Kategorieantworten und löst
+   seine alte Category-/Asset-Provenienz. Bestehende Basen, Kategorieprofile,
+   Assetprofile und ihre Referenzen bleiben unverändert; nur der neue Draft
+   wird auf die bestätigte Ziel-Familie gesetzt.
+5. Neue und duplizierte Basen laufen über den vorhandenen
+   `ProfileLibraryProvider` samt Zod-Gesamtgraphprüfung. Der Draft wird danach
+   separat über den Storage-Adapter persistiert; ein Fehlschlag aktiviert
+   keinen teilkonvertierten Sitzungsstand und benennt eine bereits angelegte
+   Familie ausdrücklich.
+6. Pure Tests decken 80→96 px, 32→48 px, Compatibility-Wechsel,
+   widersprechende Ziel-Locks und unveränderte Nachkommen ab. RTL-Flows prüfen
+   Abbruch, alle vier Optionen, Duplikation, Neuanlage und die Wahl einer
+   vorhandenen exakten Familie. Der vollständige Prüfstand umfasst 103
+   Vitest-Dateien mit 595 erfolgreichen Tests sowie 10 Legacy-Tests.
+
+## Übergabe an Prompt 26
+
+- Führe die querschnittliche Accessibility- und Responsive-Prüfung über alle
+  sechs Ansichten aus; Prompt 25 hat nur die für seinen neuen Dialog nötigen
+  Labels, Live-Fehler, Fokusrahmen und Breakpoints ergänzt.
+- Prüfe insbesondere Fokusführung nach Moduswechseln, Keyboard-Bedienung der
+  Profilkarten und Dialoge, Kontrast sowie horizontales Overflow der neuen
+  Konvertierungsvorschau zusammen mit Wizard, Profilbibliothek und Output.
+- Dokumentiere die manuelle Desktop-/Tablet-/Schmalviewport-Prüfung und
+  `prefers-reduced-motion`; beginne noch keine Release-Abnahme oder
+  Legacy-Entfernung aus Prompt 27.
 
 ## Ausführungsplan Prompt 24
 

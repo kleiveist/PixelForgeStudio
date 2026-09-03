@@ -446,7 +446,23 @@ verwendet weiterhin `ExportBundleSchema` samt benötigten Base-/Category-
 Abhängigkeiten und Draft. Das pure `saveAssetProfile()` erzeugt neue
 Assetprofile oder aktualisiert geladene Quellen unter ihrer stabilen ID;
 Provider und Storage-Adapter validieren den vollständigen Graphen vor jedem
-Write. Prompts 00 bis 24 sind abgeschlossen, Prompt 25 bleibt die nächste
+Write.
+
+Prompt 25 erweitert den fail-closed Konfliktzustand um eine kontrollierte
+Konvertierung, ohne die Schichtengrenzen zu verändern. Die pure
+`profileConversionData.ts` berechnet aus Resolver-Teilprofil und strukturierten
+Lock-Konflikten den gewünschten wirksamen Stand, prüft vorhandene Basen und
+vergleicht den neu berechneten Compatibility Key. React Hook Form und Zod
+validieren ausschließlich den Namen einer neuen oder duplizierten Familie;
+Profilanlage und -duplikation bleiben Provider-Operationen, der bestätigte
+Draft bleibt ein separater Storage-Write.
+
+Die Oberfläche bietet Abbruch, Duplikation, Neuanlage und Wahl einer
+kompatiblen Familie erst nach einer Folgenvorschau. Der konvertierte Draft
+materialisiert geerbte Kategorieantworten und löst alte Category-/Asset-
+Provenienz, ohne bestehende Profile oder deren Kinder umzuhängen. Andere
+Referenz- und Klassifikationskonflikte bleiben angehalten und erzeugen keine
+Ausgabe. Prompts 00 bis 25 sind abgeschlossen; Prompt 26 bleibt die nächste
 separate Phase.
 
 ## Speicherung

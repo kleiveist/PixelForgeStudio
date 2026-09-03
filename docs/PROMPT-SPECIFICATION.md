@@ -155,4 +155,11 @@ Stilvariante als tastaturbedienbare Tabs dar. Die aktive Fassung ist über
 einen injizierbaren Browser-Port kopierbar und als TXT exportierbar; der
 geprüfte Profilstand wird über das bestehende V2-ExportBundle als JSON mit
 seinen Abhängigkeiten ausgegeben. Konflikte erzeugen bewusst keine
-Produktionsausgabe.
+Produktionsausgabe. Seit Prompt 25 können ausschließlich strukturierte
+Lock-Konflikte kontrolliert konvertiert werden: Vor der Bestätigung zeigt die
+Oberfläche Wertänderung und Wechsel der technischen Compatibility-Gruppe,
+ohne das interne Key-Format offenzulegen. Abbruch, Duplikation der Basis,
+Neuanlage oder Wahl einer kompatiblen vorhandenen Basis ändern niemals die
+gesperrte Ausgangsfamilie oder deren bestehende Kinder. Erst ein erneut
+vollständig aufgelöster und persistierter Draft gelangt zurück in die Prompt-
+Erzeugung.

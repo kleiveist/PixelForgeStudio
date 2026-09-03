@@ -71,7 +71,9 @@ V1 inventarisieren ✓
 → Item-/Equipment-Editor mit Material-, Funktions- und Lesbarkeitsmodell ✓
 → Artwork-Editor mit freier Komposition und Lichtdramaturgie ✓
 → modulare Prompt Engine 2.0 mit vier Ausgaben ✓
-→ Review und Output Workspace (nächste Phase)
+→ Review und Output Workspace ✓
+→ kontrollierte Profilkonflikte und Konvertierung ✓
+→ Accessibility, Responsive Design und visuelle Politur (nächste Phase)
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
 ```
@@ -256,14 +258,23 @@ Asset lässt sich als validiertes Profil upserten und zusammen mit Base-/
 Category-Abhängigkeiten und Draft im bestehenden V2-Bundleformat als JSON
 exportieren.
 
+Gesperrte technische Änderungen bleiben dabei fail-closed, können seit Prompt
+25 aber kontrolliert aufgelöst werden. Der Review zeigt vor jedem Write die
+Wert- und Compatibility-Gruppenänderung, lokale Abweichungen und gelöste
+Provenienz. Danach kann der Nutzer abbrechen, die bestehende Basisfamilie als
+eigenständige Kopie duplizieren, eine neue kanonische Familie anlegen oder ein
+kompatibles vorhandenes Basisprofil wählen. Originale Basen und ihre
+Category-/Asset-Kinder werden niemals still geändert oder umgehängt; das
+interne Compatibility-Key-Format bleibt in der Oberfläche verborgen.
+
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 24 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 25 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 25 — Profilkonflikte und Konvertierung
+→ Prompt 26 — Accessibility, Responsive Design und visuelle Politur
 ```
 
 Danach immer genau:

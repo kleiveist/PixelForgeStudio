@@ -236,11 +236,14 @@ Antworten, Klassifikationswechsel bereinigen sie und Explicit Clear löst
 geerbte Provenienz. Summary und Dashboard zeigen nur kompakte tatsächliche
 Artwork-Fakten.
 
-Prompts 00 bis 24 sind abgeschlossen. Die Prompt Engine 2.0 erzeugt Material-,
+Prompts 00 bis 25 sind abgeschlossen. Die Prompt Engine 2.0 erzeugt Material-,
 Setting-, Haupt-, Negativ-, Technik- und kombinierte Textblöcke als pure
 Domain-Ausgabe. Der Review-/Output-Workspace löst aktive oder gespeicherte
 Drafts fail-closed auf, zeigt Profilquellen, Locks und Warnungen und stellt
 Sprach-/Stilpakete samt Copy-, TXT-, JSON- und Profilspeicheraktionen bereit.
+Ein strukturierter Lock-Konflikt kann nach sichtbarer Wirkungsprüfung in eine
+eigenständige Basisfamilie oder ein kompatibles vorhandenes Basisprofil
+konvertiert werden; bestehende Eltern und Kinder werden nicht umgehängt.
 
 ---
 
@@ -1171,7 +1174,7 @@ Basisprofil
 | Tileset | nicht passende Kanten, sichtbare Wiederholung, falsches Raster |
 | Artwork | unerwünschte Schrift, Wasserzeichen, unklare Hauptkomposition |
 
-## 11.3 Implementierungsstand seit Prompt 24
+## 11.3 Implementierungsstand seit Prompt 25
 
 - `buildPromptPackages()` nimmt ein vollständig `ResolvedProfile` entgegen
   und erzeugt pro gewünschter Sprache und wirksamer Stilvariante ein
@@ -1203,6 +1206,18 @@ Basisprofil
   Quellen, Locks, Capabilities sowie echte Draft-/Resolver-Hinweise. Die vier
   Ausgabearten sind pro deutscher/englischer Sprache und wirksamer
   Stilvariante als tastaturbedienbare Tabs verfügbar.
+- Nur `lockedOverride`-Konflikte mit einem partiell aufgelösten Profil gelangen
+  in den Konvertierungsworkflow. Der gewünschte Wert ersetzt den gesperrten
+  Ausgangswert ausschließlich im geplanten Ziel; der Ausgangsgraph bleibt
+  unverändert und erzeugt weiterhin keinen Teilprompt.
+- Für Abbruch, Basisduplikation, neue Basisfamilie oder kompatible vorhandene
+  Familie werden vor dem Write geänderte Werte, technische Gruppenwirkung,
+  lokale Overrides und Provenienzfolgen gezeigt. Der Compatibility Key wird
+  neu berechnet, sein internes Format aber weder angezeigt noch zerlegt.
+- Die neue Draft-Projektion materialisiert die wirksamen Fachantworten und
+  entfernt `categoryProfileId` sowie `sourceAssetProfileId`. Dadurch bleibt
+  die Konfiguration portabel, während gespeicherte Category-/Assetprofile und
+  alle bestehenden `baseProfileId`-Referenzen unangetastet bleiben.
 - Copy und TXT verwenden den aktiven Ausgabeblock über einen injizierbaren
   Browser-Port. JSON verwendet das bestehende validierte ExportBundle mit
   erforderlichen Base-/Category-Abhängigkeiten und Draft.

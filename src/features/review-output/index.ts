@@ -3,6 +3,24 @@ export {
   type ReviewOutputWorkspaceProps
 } from "./ReviewOutputWorkspace";
 export {
+  ProfileConversionWorkflow,
+  type ProfileConversionWorkflowProps
+} from "./ProfileConversionWorkflow";
+export {
+  PROFILE_CONVERSION_FIELD_LABELS,
+  compatibleBaseProfilePlans,
+  createConversionBaseDefinition,
+  createConversionDefinitionPreview,
+  createProfileConversionPlan,
+  defaultConversionBaseName,
+  formatProfileConversionValue,
+  prepareProfileConversion,
+  type ProfileConversionChange,
+  type ProfileConversionPlan,
+  type ProfileConversionPreparation,
+  type ReadyProfileConversion
+} from "./profileConversionData";
+export {
   REVIEW_OUTPUT_IDS,
   REVIEW_OUTPUT_LABELS,
   createProfileJsonFile,

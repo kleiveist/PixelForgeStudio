@@ -22,13 +22,13 @@ import {
   createProfileJsonFile,
   createPromptTextFile,
   createReviewBundleId,
-  formatResolutionConflict,
   formatResolutionNotice,
   prepareReviewOutput,
   promptPackageText,
   type ReviewOutputId,
   type ReviewOutputPreparation
 } from "./reviewOutputData";
+import { ProfileConversionWorkflow } from "./ProfileConversionWorkflow";
 import styles from "./ReviewOutputWorkspace.module.css";
 
 export type ReviewOutputDraftStorage = Pick<
@@ -57,7 +57,10 @@ function WorkspaceState({
   preparation,
   onOpenWizard
 }: Readonly<{
-  preparation: Exclude<ReviewOutputPreparation, { status: "ready" }>;
+  preparation: Extract<
+    ReviewOutputPreparation,
+    { status: "missingDraft" | "incompleteDraft" }
+  >;
   onOpenWizard: () => void;
 }>) {
   if (preparation.status === "missingDraft") {
@@ -75,59 +78,21 @@ function WorkspaceState({
     );
   }
 
-  if (preparation.status === "incompleteDraft") {
-    return (
-      <Surface
-        as="section"
-        className={styles.statePanel}
-        tone="soft"
-        role="alert"
-      >
-        <strong>Entwurf noch nicht ausgabebereit</strong>
-        <ul>
-          {preparation.reasons.map((reason) => (
-            <li key={reason}>{reason}</li>
-          ))}
-        </ul>
-        <button type="button" onClick={onOpenWizard}>
-          Im Wizard vervollständigen
-        </button>
-      </Surface>
-    );
-  }
-
   return (
     <Surface
       as="section"
-      className={styles.conflictPanel}
+      className={styles.statePanel}
       tone="soft"
       role="alert"
-      aria-labelledby="review-conflict-title"
     >
-      <span className={styles.sectionIndex}>Konfliktprüfung</span>
-      <h2 id="review-conflict-title">Ausgabe sicher angehalten</h2>
-      <p>
-        Die Profilkette enthält widersprüchliche oder fehlende Werte. Es wird
-        bewusst kein Produktionsprompt aus einem Teilprofil erzeugt.
-      </p>
+      <strong>Entwurf noch nicht ausgabebereit</strong>
       <ul>
-        {preparation.conflicts.map((conflict, index) => (
-          <li key={`${conflict.code}-${index}`}>
-            {formatResolutionConflict(conflict)}
-          </li>
+        {preparation.reasons.map((reason) => (
+          <li key={reason}>{reason}</li>
         ))}
       </ul>
-      {preparation.notices.length > 0 ? (
-        <ul className={styles.noticeList}>
-          {preparation.notices.map((notice, index) => (
-            <li key={`${notice.code}-${index}`}>
-              {formatResolutionNotice(notice)}
-            </li>
-          ))}
-        </ul>
-      ) : null}
       <button type="button" onClick={onOpenWizard}>
-        Konfiguration im Wizard prüfen
+        Im Wizard vervollständigen
       </button>
     </Surface>
   );
@@ -398,7 +363,20 @@ export function ReviewOutputWorkspace({
         (storedDraftResult.status === "invalid" ||
           storedDraftResult.status === "unavailable") ? (
         <DraftStorageState status={storedDraftResult.status} />
-      ) : preparation && preparation.status !== "ready" ? (
+      ) : preparation?.status === "conflict" && library !== null ? (
+        <ProfileConversionWorkflow
+          preparation={preparation}
+          library={library}
+          storageAdapter={storageAdapter}
+          now={now}
+          onCancel={() => navigate("dashboard")}
+          onConverted={(convertedDraft, message) => {
+            activateDraft(convertedDraft, "saved");
+            setActionStatus({ kind: "success", message });
+          }}
+        />
+      ) : preparation?.status === "missingDraft" ||
+        preparation?.status === "incompleteDraft" ? (
         <WorkspaceState
           preparation={preparation}
           onOpenWizard={() => navigate("wizard")}

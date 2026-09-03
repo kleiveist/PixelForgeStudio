@@ -30,7 +30,6 @@
 .capabilities h3,
 .outputHeading h3,
 .statePanel p,
-.conflictPanel p,
 .warningPanel h2 {
   margin: 0;
 }
@@ -66,7 +65,6 @@
 
 .heroAction,
 .statePanel button,
-.conflictPanel button,
 .profileActions button,
 .outputActions button,
 .outputTabs button {
@@ -102,7 +100,6 @@
 }
 
 .statePanel button:hover,
-.conflictPanel button:hover,
 .profileActions button:hover,
 .outputActions button:hover,
 .outputTabs button:hover {
@@ -111,7 +108,6 @@
 
 .heroAction:focus-visible,
 .statePanel button:focus-visible,
-.conflictPanel button:focus-visible,
 .profileActions button:focus-visible,
 .outputActions button:focus-visible,
 .outputTabs button:focus-visible,
@@ -122,7 +118,6 @@
 }
 
 .statePanel,
-.conflictPanel,
 .warningPanel {
   min-width: 0;
   display: grid;
@@ -131,32 +126,21 @@
   padding: clamp(1.25rem, 3vw, 2rem);
 }
 
-.statePanel p,
-.conflictPanel p {
+.statePanel p {
   max-width: 72ch;
   color: var(--color-text-muted);
 }
 
 .statePanel ul,
-.conflictPanel ul,
 .warningPanel ul {
   margin: 0;
   padding-left: 1.25rem;
 }
 
-.conflictPanel,
 .actionError {
   color: var(--color-danger-text);
   background: var(--color-danger-wash);
   border-color: var(--color-danger-line);
-}
-
-.conflictPanel h2 {
-  margin: 0;
-}
-
-.noticeList {
-  color: var(--color-text-muted);
 }
 
 .warningPanel {

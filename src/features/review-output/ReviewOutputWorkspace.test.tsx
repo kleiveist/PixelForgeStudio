@@ -9,6 +9,7 @@ import {
   type WizardDraft
 } from "../../schemas";
 import {
+  V2_STORAGE_KEYS,
   createV2StorageAdapter,
   parseExportBundleJson,
   type OutputWorkspaceAdapter
@@ -107,6 +108,55 @@ function renderWorkspace(input: Readonly<{
   return { ...rendered, draft, library, memory, navigation, output, storageAdapter };
 }
 
+function renderCharacterHeightConflict() {
+  const fixture = createProfileLibraryFixture();
+  const draft = createReviewDraft(fixture);
+  const library = ProfileLibrarySchema.parse({
+    ...fixture,
+    baseProfiles: fixture.baseProfiles.map((profile) =>
+      profile.id === draft.baseProfileId
+        ? {
+            ...profile,
+            locks: { ...profile.locks, characterHeight: true }
+          }
+        : profile
+    )
+  });
+  const conflictDraft = parseWizardDraft({
+    ...draft,
+    overrides: { ...draft.overrides, characterHeight: 96 }
+  });
+  if (!("category" in conflictDraft)) {
+    throw new Error("Expected a selected conflict Draft.");
+  }
+  const selectedConflictDraft: SelectedWizardDraft = conflictDraft;
+  const memory = new MemoryStorage();
+  const storageAdapter = createV2StorageAdapter(memory);
+  expect(storageAdapter.writeProfileLibrary(library)).toEqual({ status: "ok" });
+  expect(storageAdapter.writeDraft(selectedConflictDraft)).toEqual({
+    status: "ok"
+  });
+  memory.mutations.splice(0);
+  const navigation = new MemoryNavigation({ status: "valid", view: "review" });
+  const rendered = render(
+    <App
+      navigationAdapter={navigation}
+      storageAdapter={storageAdapter}
+      outputAdapter={createOutputAdapter().adapter}
+      createBaseProfileId={() => "base_converted_96"}
+      now={() => "2026-09-03T23:45:00.000Z"}
+    />
+  );
+  return {
+    ...rendered,
+    conflictDraft: selectedConflictDraft,
+    library,
+    memory,
+    navigation,
+    storageAdapter
+  };
+}
+
 describe("ReviewOutputWorkspace", () => {
   it("restores the persisted Draft and exposes all four prompt outputs and packages", async () => {
     const user = userEvent.setup();
@@ -123,6 +173,7 @@ describe("ReviewOutputWorkspace", () => {
     ).toBeVisible();
     expect(screen.getByText("Dorfschmied mit Lederschürze")).toBeVisible();
     expect(screen.getByText("Charakter / Figur · NPC")).toBeVisible();
+    expect(screen.queryByText("Compatibility Key")).not.toBeInTheDocument();
 
     const tablist = screen.getByRole("tablist", {
       name: "Prompt-Ausgabeart"
@@ -225,7 +276,8 @@ describe("ReviewOutputWorkspace", () => {
     expect(parsed.bundle.categoryProfiles).toHaveLength(1);
   });
 
-  it("shows profile conflicts and never exposes production actions for a partial result", () => {
+  it("shows exactly four safe choices, emits no partial output, and cancels without a write", async () => {
+    const user = userEvent.setup();
     const fixture = createProfileLibraryFixture();
     const draft = createReviewDraft(fixture);
     const library = ProfileLibrarySchema.parse({
@@ -245,19 +297,23 @@ describe("ReviewOutputWorkspace", () => {
     expect(storageAdapter.writeProfileLibrary(library)).toEqual({ status: "ok" });
     expect(storageAdapter.writeDraft(conflictDraft)).toEqual({ status: "ok" });
 
+    const navigation = new MemoryNavigation({
+      status: "valid",
+      view: "review"
+    });
     render(
       <App
-        navigationAdapter={new MemoryNavigation({
-          status: "valid",
-          view: "review"
-        })}
+        navigationAdapter={navigation}
         storageAdapter={storageAdapter}
         outputAdapter={createOutputAdapter().adapter}
       />
     );
+    memory.mutations.splice(0);
 
     expect(
-      screen.getByRole("heading", { name: "Ausgabe sicher angehalten" })
+      screen.getByRole("heading", {
+        name: "Technische Änderung kontrolliert konvertieren"
+      })
     ).toBeVisible();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Tilegröße ist im Basisprofil gesperrt"
@@ -267,6 +323,263 @@ describe("ReviewOutputWorkspace", () => {
       screen.queryByRole("button", { name: "Profil speichern" })
     ).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Kopieren" })).not.toBeInTheDocument();
+    const choices = screen.getByRole("group", {
+      name: "Konvertierungsoptionen"
+    });
+    expect(
+      screen.getByRole("region", {
+        name: "Technische Änderung kontrolliert konvertieren"
+      })
+    ).not.toHaveTextContent("pf2-compat-v1");
+    expect(within(choices).getAllByRole("button")).toHaveLength(4);
+    for (const option of [
+      "Abbrechen",
+      "Basisprofil duplizieren",
+      "Neues Basisprofil",
+      "Kompatibles Profil wählen"
+    ]) {
+      expect(within(choices).getByRole("button", { name: option })).toBeVisible();
+    }
+
+    await user.click(within(choices).getByRole("button", { name: "Abbrechen" }));
+    expect(navigation.pushedViews).toEqual(["dashboard"]);
+    expect(memory.mutations).toEqual([]);
+  });
+
+  it("duplicates a locked 80 px family, previews 96 px, and persists an independent converted Draft", async () => {
+    const user = userEvent.setup();
+    const rendered = renderCharacterHeightConflict();
+    const originalLibrary = JSON.stringify(rendered.library);
+
+    await user.click(
+      screen.getByRole("button", { name: "Basisprofil duplizieren" })
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: /Weltfamilie 32 px \/ Figuren 80 px.*duplizieren/
+      })
+    ).toBeVisible();
+    expect(screen.getByText("Neue technische Gruppe")).toBeVisible();
+    expect(screen.getByText(/80 px → 96 px/)).toBeVisible();
+    expect(
+      screen.getByText(/alle bestehenden Kinder bleiben unverändert/)
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", {
+        name: "Duplikat anlegen und konvertieren"
+      })
+    ).toBeEnabled();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Duplikat anlegen und konvertieren"
+      })
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Produktionszusammenfassung" })
+    ).toBeVisible();
+    expect(screen.getByText("96 px")).toBeVisible();
+    expect(
+      screen.getByText(/Das Basisprofil wurde dupliziert und der Entwurf/)
+    ).toBeVisible();
+
+    const storedLibrary = rendered.storageAdapter.readProfileLibrary();
+    expect(storedLibrary.status).toBe("valid");
+    if (storedLibrary.status !== "valid") {
+      throw new Error("Expected a persisted converted library.");
+    }
+    expect(JSON.stringify(rendered.library)).toBe(originalLibrary);
+    expect(storedLibrary.value.baseProfiles).toHaveLength(
+      rendered.library.baseProfiles.length + 1
+    );
+    expect(
+      storedLibrary.value.baseProfiles.find(
+        (profile) => profile.id === "base_converted_96"
+      )
+    ).toMatchObject({
+      values: { characterHeight: 96 },
+      locks: { characterHeight: true }
+    });
+    expect(
+      storedLibrary.value.baseProfiles.find(
+        (profile) => profile.id === rendered.conflictDraft.baseProfileId
+      )?.values.characterHeight
+    ).toBe(80);
+    expect(
+      storedLibrary.value.categoryProfiles.find(
+        (profile) => profile.id === "category_npc_80"
+      )?.baseProfileId
+    ).toBe(rendered.conflictDraft.baseProfileId);
+    expect(
+      storedLibrary.value.assetProfiles.find(
+        (profile) => profile.id === "asset_smith_80"
+      )?.baseProfileId
+    ).toBe(rendered.conflictDraft.baseProfileId);
+
+    const storedDraft = rendered.storageAdapter.readDraft();
+    expect(storedDraft).toMatchObject({
+      status: "valid",
+      value: {
+        baseProfileId: "base_converted_96",
+        answers: { role: "blacksmith", directionCount: 8 }
+      }
+    });
+    if (storedDraft.status !== "valid") {
+      throw new Error("Expected a persisted converted Draft.");
+    }
+    expect(storedDraft.value).not.toHaveProperty("categoryProfileId");
+    expect(storedDraft.value).not.toHaveProperty("sourceAssetProfileId");
+    expect(storedDraft.value).not.toHaveProperty("overrides");
+    expect(rendered.memory.mutations.at(-1)).toEqual({
+      operation: "set",
+      key: V2_STORAGE_KEYS.draft
+    });
+  });
+
+  it("creates a new canonical family only after the named impact preview is confirmed", async () => {
+    const user = userEvent.setup();
+    const rendered = renderCharacterHeightConflict();
+
+    await user.click(
+      screen.getByRole("button", { name: "Neues Basisprofil" })
+    );
+    expect(
+      screen.getByRole("heading", { name: "Kanonisches Basisprofil anlegen" })
+    ).toBeVisible();
+    const name = screen.getByRole("textbox", {
+      name: "Name der Produktionsfamilie"
+    });
+    await user.clear(name);
+    expect(
+      screen.getByText(/Bitte gib einen Namen mit höchstens 120 Zeichen ein/)
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", {
+        name: "Basisprofil anlegen und konvertieren"
+      })
+    ).toBeDisabled();
+    await user.type(name, "Eigenständige NPC-Familie 96 px");
+    expect(screen.getByText(/80 px → 96 px/)).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Basisprofil anlegen und konvertieren"
+      })
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Produktionszusammenfassung" })
+    ).toBeVisible();
+    const storedLibrary = rendered.storageAdapter.readProfileLibrary();
+    expect(storedLibrary.status).toBe("valid");
+    if (storedLibrary.status !== "valid") {
+      throw new Error("Expected a persisted profile library.");
+    }
+    expect(
+      storedLibrary.value.baseProfiles.find(
+        (profile) => profile.id === "base_converted_96"
+      )
+    ).toMatchObject({
+      name: "Eigenständige NPC-Familie 96 px",
+      values: { characterHeight: 96 },
+      locks: {}
+    });
+    expect(
+      storedLibrary.value.baseProfiles.find(
+        (profile) => profile.id === rendered.conflictDraft.baseProfileId
+      )?.values.characterHeight
+    ).toBe(80);
+  });
+
+  it("keeps a created standalone family visible but does not activate a Draft when its second write fails", async () => {
+    const user = userEvent.setup();
+    const rendered = renderCharacterHeightConflict();
+    rendered.memory.failSetOnAttempt = {
+      key: V2_STORAGE_KEYS.draft,
+      attempt: 2
+    };
+
+    await user.click(
+      screen.getByRole("button", { name: "Basisprofil duplizieren" })
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: "Duplikat anlegen und konvertieren"
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        /wurde angelegt, aber der konvertierte Entwurf konnte nicht gespeichert werden/
+      )
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", {
+        name: "Technische Änderung kontrolliert konvertieren"
+      })
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Produktionszusammenfassung" })
+    ).not.toBeInTheDocument();
+
+    expect(rendered.storageAdapter.readProfileLibrary()).toMatchObject({
+      status: "valid",
+      value: {
+        baseProfiles: expect.arrayContaining([
+          expect.objectContaining({ id: "base_converted_96" })
+        ])
+      }
+    });
+    expect(rendered.storageAdapter.readDraft()).toMatchObject({
+      status: "valid",
+      value: {
+        baseProfileId: rendered.conflictDraft.baseProfileId,
+        overrides: { characterHeight: 96 }
+      }
+    });
+  });
+
+  it("switches to an existing exact 96 px family without mutating the profile library", async () => {
+    const user = userEvent.setup();
+    const rendered = renderCharacterHeightConflict();
+    const storedLibraryBefore = JSON.stringify(
+      rendered.storageAdapter.readProfileLibrary()
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Kompatibles Profil wählen" })
+    );
+    const target = screen.getByRole("radio", {
+      name: /Weltfamilie 32 px \/ Figuren 96 px.*Exakte technische Übereinstimmung/
+    });
+    await user.click(target);
+    expect(screen.getByText("Neue technische Gruppe")).toBeVisible();
+    expect(screen.getByText(/80 px → 96 px/)).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Mit gewähltem Profil konvertieren"
+      })
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Produktionszusammenfassung" })
+    ).toBeVisible();
+    expect(screen.getByText("Weltfamilie 32 px / Figuren 96 px")).toBeVisible();
+    expect(JSON.stringify(rendered.storageAdapter.readProfileLibrary())).toBe(
+      storedLibraryBefore
+    );
+    expect(rendered.storageAdapter.readDraft()).toMatchObject({
+      status: "valid",
+      value: { baseProfileId: "base_world_96" }
+    });
+    expect(
+      rendered.memory.mutations.filter(
+        (mutation) => mutation.key === V2_STORAGE_KEYS.draft
+      )
+    ).toHaveLength(1);
   });
 
   it("reports a rejected injected clipboard operation without changing output", async () => {

@@ -66,6 +66,7 @@ export type ReviewOutputPreparation =
       draft: WizardDraft;
       conflicts: readonly ProfileResolutionConflict[];
       notices: readonly ProfileResolutionNotice[];
+      partialProfile?: ResolvedProfile;
     }>
   | Readonly<{
       status: "ready";
@@ -236,8 +237,6 @@ function createReviewSummary(
       value: artworkBackgroundLabels[profile.categoryData.answers.background]
     });
   }
-  rows.push({ label: "Compatibility Key", value: profile.compatibilityKey });
-
   const capabilities = Object.entries(profile.capabilities).flatMap(
     ([capability, enabled]) =>
       enabled
@@ -385,7 +384,10 @@ export function prepareReviewOutput(
       status: "conflict",
       draft,
       conflicts: resolution.conflicts,
-      notices
+      notices,
+      ...(resolution.partialProfile === undefined
+        ? {}
+        : { partialProfile: resolution.partialProfile })
     });
   }
 

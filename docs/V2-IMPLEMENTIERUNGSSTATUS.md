@@ -6,12 +6,13 @@
 
 ## Stand
 
-Der letzte vollständig implementierte Funktionsabschnitt ist **Prompt 24 —
-Review und Output Workspace**. Er ist im separaten Feature-Commit mit dem
-Betreff `📋 feat: add prompt review and output workspace` abgeschlossen. Die
-Arbeitsfläche löst aktive oder persistierte Drafts fail-closed auf, zeigt
-Zusammenfassung und Konflikte und stellt vier Prompt-Ausgaben samt Copy-, TXT-,
-JSON- und Profilspeicheraktionen bereit.
+Der letzte vollständig implementierte Funktionsabschnitt ist **Prompt 25 —
+Profilkonflikte und Konvertierung**. Er ist für den separaten Feature-Commit
+mit dem Betreff `🔀 feat: add safe profile conversion workflow` vorbereitet.
+Der fail-closed Review rekonstruiert kontrollierbare Lock-Konflikte, zeigt die
+Folgen vor jedem Write und bietet Abbruch, Basisduplikation, Neuanlage oder die
+Wahl einer kompatiblen vorhandenen Familie, ohne bestehende Profile oder
+Nachkommen still zu ändern.
 
 Prompt 18 ist vollständig in Commit `6dabbbb` enthalten. Dessen Betreff
 (`♻️ refactor: Code vereinfachen und strukturieren`) beschreibt den Inhalt
@@ -35,7 +36,7 @@ V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
 | 03 | neun Asset-Kategorien, Untertypen und getrennte Capabilities für Richtung und Animation |
 | 04 | strikte Schema-V2-Verträge mit Zod und daraus abgeleitete TypeScript-Typen |
 
-## Abgeschlossene beauftragte Phasen 05–24
+## Abgeschlossene beauftragte Phasen 05–25
 
 | Prompt | Commit | Umgesetzter Stand |
 |---:|---|---|
@@ -58,7 +59,8 @@ V2-Architektur. Legacy V1 bleibt als getestete Migrationsquelle unter
 | 21 | `bb90757` | Item-/Equipment-Editor mit Material, Zustand, Funktion, Bedeutung, Größe und Lesbarkeitsregeln |
 | 22 | `9d4fe34` | freier Artwork-/Konzeptbild-Editor mit Motiv, Szene, Komposition, Format, Hintergrund, Fokus, Licht und Detailgrad |
 | 23 | `57ac335` | modulare pure TypeScript-Prompt-Engine mit zwölf Bausteinen, getrennten Stilpaketen und allen vier Ausgabearten |
-| 24 | `📋 dieser Commit` | produktionsreifer Review-/Output-Workspace mit Konfliktanzeige, vier Tabs, Copy, TXT-/JSON-Export und Profilspeicherung |
+| 24 | `82c1bb0` | produktionsreifer Review-/Output-Workspace mit Konfliktanzeige, vier Tabs, Copy, TXT-/JSON-Export und Profilspeicherung |
+| 25 | `🔀 dieser Commit` | kontrollierte Lock-Konvertierung mit Vier-Wege-UX, Folgenvorschau und unveränderten Ausgangsfamilien |
 
 Durchgehend umgesetzt sind außerdem:
 
@@ -85,17 +87,24 @@ Durchgehend umgesetzt sind außerdem:
 - Clipboard und Downloads liegen hinter einem injizierbaren Browser-Port;
 - neue Assetprofile erhalten eine neue ID, geladene Profile behalten stabile
   ID und Metadaten, und jeder vollständige Graph wird vor dem Write validiert.
+- technische Lock-Konflikte werden nur aus strukturierten Resolver-Daten und
+  einem partiellen Profil konvertiert; andere Konflikte bleiben fail-closed;
+- Compatibility-Gruppenwechsel werden deterministisch vorab gezeigt, während
+  das interne Key-Format in der UI opak bleibt;
+- Konvertierungen materialisieren wirksame Fachantworten in einem
+  eigenständigen Draft und mutieren oder re-parenten keine bestehende
+  Base→Category→Asset-Kette.
 
 ## Letzter vollständiger Prüfstand
 
-Der Funktionsstand bis Prompt 24 wurde am 3. September 2026 mit folgenden
+Der Funktionsstand bis Prompt 25 wurde am 3. September 2026 mit folgenden
 Ergebnissen geprüft:
 
 - TypeScript-Typecheck erfolgreich;
 - Legacy-Strukturprüfung für 13 JavaScript-Dateien und 51 Formularfelder
   erfolgreich;
 - 10 von 10 Legacy-Tests erfolgreich;
-- 102 Vitest-Dateien mit 587 von 587 Tests erfolgreich;
+- 103 Vitest-Dateien mit 595 von 595 Tests erfolgreich;
 - Vite-Produktionsbuild erfolgreich;
 - `git diff --check` sauber.
 
@@ -110,20 +119,19 @@ dokumentiert und jeweils separat committet:
 
 | Prompt | Offene Aufgabe |
 |---:|---|
-| 25 | kontrollierter Profilkonflikt- und Konvertierungsworkflow |
 | 26 | abschließende Accessibility-, Keyboard-, Responsive- und visuelle Politur |
 | 27 | vollständige V2-Release-Abnahme; Legacy-UI nur bei belegter Parität entfernen |
 
-Die nächste einzeln auszuführende Phase ist **Prompt 25 — Profilkonflikte und
-Konvertierung**. Übergabe und Arbeitsgrenze stehen in `PLANS.md`; der verbindliche
-Phasenscope bleibt `docs/CODEX-V2-PROMPTS.md`.
+Die nächste einzeln auszuführende Phase ist **Prompt 26 — Accessibility,
+Responsive Design und visuelle Politur**. Übergabe und Arbeitsgrenze stehen in
+`PLANS.md`; der verbindliche Phasenscope bleibt `docs/CODEX-V2-PROMPTS.md`.
 
 ## Git- und Remote-Hinweis
 
 `origin/main` steht weiterhin auf `6dabbbb`; die Branches sind nicht
 divergiert. Der lokale Branch enthält zusätzlich die getrennten Prompt-19-,
 Prompt-20-, Statusdokumentations-, Prompt-21-, Prompt-22-, Prompt-23- und
-Prompt-24-Commits. Der Remote-Stand
+Prompt-24- und Prompt-25-Commits. Der Remote-Stand
 enthält damit den funktionalen Prompt-18-Inhalt unter dem unzutreffenden
-Refactor-Betreff, während die späteren Phasen einschließlich Prompt 24 bisher
+Refactor-Betreff, während die späteren Phasen einschließlich Prompt 25 bisher
 nur lokal vorliegen. Es wurde nicht gepusht.

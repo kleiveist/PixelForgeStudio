@@ -49,8 +49,8 @@
   `character-editor/`, `moving-object-editor/`, `static-object-editor/`,
   `texture-editor/`, `nature-editor/`, `building-editor/` und
   `tileset-editor/`, `item-editor/` und `artwork-editor/` enthalten die neun
-  spezialisierten Asset-Editoren;
-  Review-/Output-Flächen bleiben bis zu ihren jeweiligen Phasen Platzhalter
+  spezialisierten Asset-Editoren; `review-output/` enthält Review, Prompt-
+  Ausgaben und den kontrollierten Profilkonvertierungsworkflow
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -714,8 +714,26 @@ source at its stable ID while preserving source metadata. The existing
 the atomic storage write; a successful new save links and persists the Draft
 to prevent duplicate profiles on later saves.
 
-Prompts 00 through 24 are complete. Prompt 25, profile conflicts and
-conversion, is the next phase. Prompt 24 displays conflicts but intentionally
-does not resolve, convert, re-parent, or mutate Base families in place; final
-cross-application accessibility polish and release cleanup also remain in
-their dedicated later prompts.
+`features/review-output/profileConversionData.ts` is the pure Prompt-25
+planning boundary. It accepts only a validated selected Draft, the resolver's
+partial profile, and structured conflicts. A conversion is available only
+when every conflict is a `lockedOverride`; it reconstructs desired effective
+values, recomputes the opaque Compatibility group, checks candidate Base locks,
+and returns a fully validated detached Draft. Effective category answers are
+materialized while old Category/Asset provenance is removed, so no existing
+profile or descendant reference is re-parented.
+
+`ProfileConversionWorkflow` keeps the conflicting Review fail-closed and
+offers the four explicit outcomes: cancel, duplicate the source Base, create a
+new canonical Base, or select a compatible existing Base. Every commit path
+shows value, group, override, and provenance impact first. Existing candidates
+are ranked by exact technical match. React Hook Form plus Zod owns family-name
+validation; the existing `ProfileLibraryProvider` remains the only Base-create
+and Base-duplicate mutation boundary. The converted Draft is written only
+after that graph mutation succeeds, and only then becomes the active Session
+Draft. A failed second write is reported without pretending to roll back an
+already persisted standalone family.
+
+Prompts 00 through 25 are complete. Prompt 26, cross-application accessibility,
+responsive design, and visual polish, is the next phase; Prompt 27 release
+cleanup and any Legacy removal remain untouched.
