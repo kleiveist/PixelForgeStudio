@@ -347,15 +347,24 @@ Umgesetzter Vertrag seit Prompt 10:
 - Zurück darf gültige Daten nicht verlieren.
 - Kategorie-Wechsel muss irrelevante Felder bereinigen oder bewusst in Rückkehrhistorie auslagern.
 
-## 7.3 Umgesetzter Core-Vertrag seit Prompt 11
+## 7.3 Umgesetzter Core-Vertrag seit Prompt 12
 
-- `project` und `category` sind stabile, deklarativ konfigurierte Core-Schritte
-  mit eigenem Zod-Schema und RHF-Feldpfaden.
+- `project`, `category`/`subtype` und die Capability-Schritte sind stabil und
+  deklarativ konfiguriert; jeder besitzt Zod-Schema und RHF-Feldpfade.
 - Die generische `GuidedWizardEngine` besitzt keine projektspezifischen
   Renderingzweige. `WIZARD_CORE_FLOW` stellt Komponenten, Schemas, Feldpfade,
-  Draft-Mapping und Zusammenfassung bereit und ist die Erweiterungsgrenze.
-- Der Kategorie-Core-Schritt ist nur die Erweiterungsstelle. Untertyp-,
-  Capability- und Spezialeditorfragen werden erst durch Prompt 12 ergänzt.
+  Draft-Mapping, Zusammenfassung und optionale `isApplicable`-Prädikate bereit
+  und ist die Erweiterungsgrenze.
+- Die Hauptkategorie wird vor dem Untertyp gewählt. Solange kein passender
+  Untertyp vorliegt, bleibt die Klassifikation transient. Danach werden
+  Richtungs-, Animations- und Tileability-Schritte ausschließlich über
+  `resolveCapabilities()` eingeblendet. Eine nicht persistierbare
+  Zwischenklassifikation liefert aus dem Draft-Mapping `null`, damit
+  Vor-/Zurück-Navigation keine alte Auswahl zurückschreibt.
+- Ein Klassifikationswechsel übernimmt keine alten Assetantworten oder
+  Profilprovenienz. Die Basisreferenz und fachlich relevante technische
+  Overrides bleiben erhalten; `characterHeight` wird ohne `scaledCharacter`
+  entfernt.
 - Neue und profilbasierte Starts sind zunächst flüchtig; Resume übernimmt nur
   die exakt angeforderte validierte Draft-ID.
 - Mount, Profil-Hydration und Resume schreiben nicht. Gültige Änderungen werden
@@ -371,6 +380,10 @@ Umgesetzter Vertrag seit Prompt 10:
   Asset-Provenienz und den technischen Asset-Override-Snapshot.
 - Resume und technische Zusammenfassung lösen diesen portablen Snapshot gegen
   aktuelle Elternprofile und Locks auf; die Quell-ID bleibt reine Provenienz.
+- Ein vollständig klassifizierter Draft darf vor der Basisprofilwahl ohne
+  Base-ID auf `wizard/profile` liegen. Prompt 13 ergänzt dort den
+  Basisprofil-Editor; vorhandene, aber fehlende Referenzen bleiben Recovery-
+  Fehler.
 
 ---
 

@@ -1,14 +1,31 @@
-import type { AssetCategory } from "../../domain/assets";
+import { useEffect, useRef, useState } from "react";
+import { useController, useWatch } from "react-hook-form";
+import {
+  ASSET_SUBTYPES,
+  type AssetCategory,
+  type AssetSubtype
+} from "../../domain/assets";
 import type { ProfileLibrary } from "../../schemas";
+import { CategoryIcon } from "../dashboard/CategoryIcon";
+import {
+  DASHBOARD_CATEGORIES,
+  formatSubtypeLabel,
+  getDashboardCategory
+} from "../dashboard/dashboardCatalog";
 import {
   type GuidedWizardFlowDefinition,
   type GuidedWizardStepComponentProps,
   type GuidedWizardSummaryComponentProps
 } from "./GuidedWizardEngine";
 import { WizardTechnicalSummary } from "./WizardTechnicalSummary";
-import { updateWizardDraft } from "./wizardLifecycle";
+import {
+  resolveWizardCapabilities,
+  updateWizardDraftFromCoreForm,
+  wizardStepIsApplicable
+} from "./wizardCategoryRouting";
 import {
   WIZARD_CORE_STEPS,
+  type WizardCoreFieldPath,
   type WizardCoreFormValues,
   type WizardCoreStepId
 } from "./wizardSteps";
@@ -24,9 +41,107 @@ type CoreStepProps = GuidedWizardStepComponentProps<
   WizardCoreFlowContext
 >;
 
+const CAPABILITY_LABELS = {
+  movable: "beweglich",
+  directional: "richtungsabhängig",
+  animated: "animierbar",
+  tileable: "kachelbar",
+  gridBound: "rastergebunden",
+  transparent: "transparent",
+  scaledCharacter: "Figurenmaßstab",
+  footprint: "Tile-Standfläche",
+  wearable: "tragbar",
+  modular: "modular",
+  freeComposition: "freie Komposition"
+} as const;
+
+const ANIMATION_ACTION_OPTIONS = [
+  ["idle", "Idle"],
+  ["walk", "Walk"],
+  ["run", "Run"],
+  ["interact", "Interaktion"],
+  ["talk", "Sprechen"],
+  ["attack", "Angriff"],
+  ["hurt", "Treffer"],
+  ["special", "Spezialaktion"]
+] as const;
+
+const MOVEMENT_TYPE_OPTIONS = [
+  ["roll", "rollen"],
+  ["slide", "gleiten"],
+  ["hover", "schweben"],
+  ["walk", "laufen"],
+  ["crawl", "kriechen"],
+  ["fly", "fliegen"],
+  ["rotate", "rotieren"]
+] as const;
+
+const ANIMATION_TYPE_OPTIONS = {
+  movingObject: [
+    ["idle", "Idle-Loop"],
+    ["move", "Bewegung"],
+    ["rotate", "Rotation"],
+    ["interact", "Interaktion"],
+    ["openClose", "Öffnen / Schließen"],
+    ["pulse", "Pulsieren"]
+  ],
+  staticObject: [
+    ["openClose", "Öffnen / Schließen"],
+    ["glow", "Leuchten"],
+    ["break", "Zerbrechen"],
+    ["custom", "Individuell"]
+  ],
+  nature: [
+    ["wind", "Windbewegung"],
+    ["magic", "Magischer Loop"],
+    ["custom", "Individuell"]
+  ],
+  tileset: [
+    ["water", "Wasser"],
+    ["lava", "Lava"],
+    ["magic", "Magie"],
+    ["custom", "Individuell"]
+  ]
+} as const;
+
+const CLASSIFICATION_FIELDS = [
+  "subtype",
+  "directionCount",
+  "animationAction",
+  "animationType",
+  "movementType",
+  "seamless",
+  "tileableAxes"
+] as const satisfies readonly WizardCoreFieldPath[];
+
+function optionalSelectValue(value: string): string | undefined {
+  return value === "" ? undefined : value;
+}
+
+function fieldError(
+  form: CoreStepProps["form"],
+  field: WizardCoreFieldPath
+): string | undefined {
+  const error = form.formState.errors[field];
+  return typeof error?.message === "string" ? error.message : undefined;
+}
+
+function clearClassificationFields(
+  form: CoreStepProps["form"],
+  includeSubtype: boolean
+): void {
+  for (const field of CLASSIFICATION_FIELDS) {
+    if (!includeSubtype && field === "subtype") continue;
+    form.setValue(field, undefined, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true
+    });
+  }
+}
+
 function ProjectStep({ form }: CoreStepProps) {
-  const errorMessage = form.formState.errors.projectName?.message;
-  const error = typeof errorMessage === "string" ? errorMessage : undefined;
+  const error = fieldError(form, "projectName");
   const describedBy = error
     ? "wizard-project-name-help wizard-project-name-error"
     : "wizard-project-name-help";
@@ -57,29 +172,457 @@ function ProjectStep({ form }: CoreStepProps) {
   );
 }
 
-function CategoryStep({ context, draft }: CoreStepProps) {
-  const category =
-    "category" in draft ? draft.category : context.categoryHint;
+function CategoryStep({ draft, form }: CoreStepProps) {
+  const firstCategoryRef = useRef<HTMLInputElement>(null);
+  const subtypeRef = useRef<HTMLSelectElement>(null);
+  const categoryController = useController({
+    control: form.control,
+    name: "category"
+  });
+  const subtypeController = useController({
+    control: form.control,
+    name: "subtype"
+  });
+  const category = categoryController.field.value;
+  const subtype = subtypeController.field.value;
+  const [pendingCategory, setPendingCategory] = useState<AssetCategory | null>(
+    null
+  );
+  const [pendingSubtype, setPendingSubtype] = useState<AssetSubtype | "" | null>(
+    null
+  );
+  const categoryError = fieldError(form, "category");
+  const subtypeError = fieldError(form, "subtype");
+  const capabilities = resolveWizardCapabilities({ category, subtype });
+
+  useEffect(() => {
+    if (categoryError) {
+      firstCategoryRef.current?.focus();
+      return;
+    }
+    if (subtypeError) subtypeRef.current?.focus();
+  }, [categoryError, subtypeError]);
+
+  const applyCategory = (nextCategory: AssetCategory): void => {
+    subtypeController.field.onChange(undefined);
+    clearClassificationFields(form, false);
+    categoryController.field.onChange(nextCategory);
+    setPendingCategory(null);
+    setPendingSubtype(null);
+  };
+
+  const requestCategory = (nextCategory: AssetCategory): void => {
+    if (nextCategory === category) return;
+    setPendingSubtype(null);
+    if ("category" in draft && draft.category !== nextCategory) {
+      setPendingCategory(nextCategory);
+      return;
+    }
+    applyCategory(nextCategory);
+  };
+
+  const applySubtype = (nextSubtype: AssetSubtype | ""): void => {
+    subtypeController.field.onChange(undefined);
+    clearClassificationFields(form, false);
+    if (nextSubtype !== "") subtypeController.field.onChange(nextSubtype);
+    setPendingSubtype(null);
+  };
+
+  const selectSubtype = (nextSubtype: AssetSubtype | ""): void => {
+    if (nextSubtype === (subtype ?? "")) return;
+    setPendingCategory(null);
+    const discardsExistingDetails =
+      "category" in draft &&
+      draft.category === category &&
+      (draft.sourceAssetProfileId !== undefined ||
+        draft.categoryProfileId !== undefined ||
+        Object.keys(draft.answers).length > 0 ||
+        draft.validation.errors.length > 0 ||
+        draft.validation.warnings.length > 0);
+    if (discardsExistingDetails) {
+      setPendingSubtype(nextSubtype);
+      return;
+    }
+    applySubtype(nextSubtype);
+  };
+
+  const subtypeOptions = category ? ASSET_SUBTYPES[category] : [];
 
   return (
-    <div className={styles.foundationCard} role="note">
-      <span className={styles.foundationMarker} aria-hidden="true">
-        ◫
-      </span>
-      <div>
+    <div className={styles.categoryStep}>
+      <fieldset
+        className={styles.categoryFieldset}
+        aria-describedby={categoryError ? "wizard-category-error" : undefined}
+      >
+        <legend>
+          Welche Art von Bild oder Asset möchtest du erstellen?{" "}
+          <span className={styles.required}>Pflichtfeld</span>
+        </legend>
+        <div className={styles.categoryChoiceGrid}>
+          {DASHBOARD_CATEGORIES.map((definition) => (
+            <label
+              key={definition.id}
+              className={styles.categoryChoice}
+              data-selected={category === definition.id ? "true" : "false"}
+            >
+              <input
+                type="radio"
+                name={categoryController.field.name}
+                value={definition.id}
+                checked={category === definition.id}
+                ref={(node) => {
+                  if (definition.id !== DASHBOARD_CATEGORIES[0]?.id) return;
+                  firstCategoryRef.current = node;
+                  categoryController.field.ref(node);
+                }}
+                onBlur={categoryController.field.onBlur}
+                onChange={() => requestCategory(definition.id)}
+              />
+              <CategoryIcon category={definition.id} aria-hidden="true" />
+              <span>
+                <strong>{definition.label}</strong>
+                <small>{definition.examples}</small>
+              </span>
+            </label>
+          ))}
+        </div>
+        {categoryError ? (
+          <p id="wizard-category-error" className={styles.fieldError}>
+            {categoryError}
+          </p>
+        ) : null}
+      </fieldset>
+
+      {pendingCategory ? (
+        <section className={styles.changeWarning} role="alert">
+          <div>
+            <strong>Kategorie wirklich wechseln?</strong>
+            <p>
+              Untertyp, Spezialantworten und die Verknüpfung zum bisherigen
+              Assetprofil werden verworfen. Allgemeine Basiswerte bleiben
+              erhalten.
+            </p>
+          </div>
+          <div className={styles.inlineActions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setPendingCategory(null)}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className={styles.dangerButton}
+              onClick={() => applyCategory(pendingCategory)}
+            >
+              Zu {getDashboardCategory(pendingCategory).label} wechseln
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {category ? (
+        <div className={styles.fieldGroup}>
+          <label htmlFor="wizard-asset-subtype">
+            Untertyp <span className={styles.required}>Pflichtfeld</span>
+          </label>
+          <select
+            id="wizard-asset-subtype"
+            name={subtypeController.field.name}
+            value={subtype ?? ""}
+            ref={(node) => {
+              subtypeRef.current = node;
+              subtypeController.field.ref(node);
+            }}
+            onBlur={subtypeController.field.onBlur}
+            aria-describedby={
+              subtypeError
+                ? "wizard-subtype-help wizard-subtype-error"
+                : "wizard-subtype-help"
+            }
+            aria-invalid={subtypeError ? "true" : "false"}
+            onChange={(event) =>
+              selectSubtype(event.currentTarget.value as AssetSubtype | "")
+            }
+          >
+            <option value="">Untertyp auswählen …</option>
+            {subtypeOptions.map((option) => (
+              <option key={option} value={option}>
+                {formatSubtypeLabel(option)}
+              </option>
+            ))}
+          </select>
+          <p id="wizard-subtype-help" className={styles.fieldHelp}>
+            Erst der Untertyp aktiviert die passenden Fragen und Produktionsregeln.
+          </p>
+          {subtypeError ? (
+            <p id="wizard-subtype-error" className={styles.fieldError}>
+              {subtypeError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {pendingSubtype !== null ? (
+        <section className={styles.changeWarning} role="alert">
+          <div>
+            <strong>Untertyp wirklich wechseln?</strong>
+            <p>
+              Spezialantworten und die Verknüpfung zum bisherigen Assetprofil
+              werden verworfen. Allgemeine Basiswerte bleiben erhalten.
+            </p>
+          </div>
+          <div className={styles.inlineActions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setPendingSubtype(null)}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className={styles.dangerButton}
+              onClick={() => applySubtype(pendingSubtype)}
+            >
+              {pendingSubtype === ""
+                ? "Untertyp leeren"
+                : `Zu ${formatSubtypeLabel(pendingSubtype)} wechseln`}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {capabilities ? (
+        <section
+          className={styles.capabilityPreview}
+          aria-labelledby="wizard-capability-preview-title"
+        >
+          <div>
+            <p className={styles.eyebrow}>Automatisch aufgelöst</p>
+            <h3 id="wizard-capability-preview-title">Aktive Asset-Logik</h3>
+          </div>
+          <ul>
+            {Object.entries(capabilities)
+              .filter(([, enabled]) => enabled)
+              .map(([capability]) => (
+                <li key={capability}>
+                  {CAPABILITY_LABELS[capability as keyof typeof CAPABILITY_LABELS]}
+                </li>
+              ))}
+          </ul>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function DirectionsStep({ form }: CoreStepProps) {
+  const directionController = useController({
+    control: form.control,
+    name: "directionCount"
+  });
+  const directionCount = directionController.field.value;
+
+  return (
+    <div className={styles.capabilityQuestions}>
+      <fieldset className={styles.optionFieldset}>
+        <legend>Wie viele Richtungsansichten werden benötigt?</legend>
+        <div className={styles.segmentedOptions}>
+          <label
+            data-selected={directionCount === undefined ? "true" : "false"}
+          >
+            <input
+              type="radio"
+              name={directionController.field.name}
+              value=""
+              aria-label="Keine Richtungen"
+              checked={directionCount === undefined}
+              ref={directionController.field.ref}
+              onBlur={directionController.field.onBlur}
+              onChange={() => directionController.field.onChange(undefined)}
+            />
+            <strong>Keine Richtungen</strong>
+            <span>Einzelansicht</span>
+          </label>
+          {([4, 8] as const).map((count) => (
+            <label
+              key={count}
+              data-selected={directionCount === count ? "true" : "false"}
+            >
+              <input
+                type="radio"
+                name={directionController.field.name}
+                value={count}
+                aria-label={`${count} Richtungen`}
+                checked={directionCount === count}
+                onBlur={directionController.field.onBlur}
+                onChange={() =>
+                  directionController.field.onChange(count)
+                }
+              />
+              <strong>{count} Richtungen</strong>
+              <span>{count === 8 ? "Produktionsstandard" : "kompaktes Set"}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <p className={styles.logicNote}>
+        Die Kamera bleibt fest. Nur das Motiv wird logisch neu ausgerichtet;
+        asymmetrische Details werden nicht blind gespiegelt.
+      </p>
+    </div>
+  );
+}
+
+function AnimationSelect({
+  form,
+  options
+}: Readonly<{
+  form: CoreStepProps["form"];
+  options: readonly (readonly [string, string])[];
+}>) {
+  return (
+    <div className={styles.fieldGroup}>
+      <label htmlFor="wizard-animation-type">Animationsart</label>
+      <select
+        id="wizard-animation-type"
+        {...form.register("animationType", { setValueAs: optionalSelectValue })}
+      >
+        <option value="">Noch keine Animation festlegen</option>
+        {options.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function AnimationStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+  const values = form.getValues();
+  const capabilities = resolveWizardCapabilities(values);
+
+  if (!category || !capabilities?.animated) return null;
+
+  return (
+    <div className={styles.capabilityQuestions}>
+      <div className={styles.logicNote} role="note">
         <strong>
-          {category
-            ? "Asset-Kategorie als Startkontext übernommen"
-            : "Asset-Kategorie ist als nächster Schritt vorbereitet"}
+          {capabilities.movable
+            ? "Dieses Asset kann sich bewegen."
+            : "Dieses Asset bleibt am Ort und kann trotzdem animiert sein."}
         </strong>
-        <p>
-          {"category" in draft
-            ? "Kategorie, Untertyp und Profilwerte bleiben vollständig im Entwurf erhalten. Der passende Spezialeditor wird in der nächsten getrennten Phase angebunden."
-            : category
-              ? "Die Dashboard-Auswahl bleibt für diese Sitzung sichtbar. Ihre verbindliche Untertyp- und Capability-Logik folgt in der nächsten Wizard-Phase."
-              : "Die Engine steht; die neun dynamischen Kategoriepfade und ihre Spezialfragen folgen bewusst getrennt in Prompt 12."}
-        </p>
+        <span>
+          {capabilities.directional
+            ? "Animation und Richtungsset werden getrennt gespeichert."
+            : "Dafür wird bewusst kein Richtungsset eingeblendet."}
+        </span>
       </div>
+
+      {category === "character" ? (
+        <div className={styles.fieldGroup}>
+          <label htmlFor="wizard-animation-action">Aktion</label>
+          <select
+            id="wizard-animation-action"
+            {...form.register("animationAction", {
+              setValueAs: optionalSelectValue
+            })}
+          >
+            <option value="">Noch keine Aktion festlegen</option>
+            {ANIMATION_ACTION_OPTIONS.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
+      {category === "movingObject" ? (
+        <>
+          <div className={styles.fieldGroup}>
+            <label htmlFor="wizard-movement-type">Bewegungsart</label>
+            <select
+              id="wizard-movement-type"
+              {...form.register("movementType", {
+                setValueAs: optionalSelectValue
+              })}
+            >
+              <option value="">Noch nicht festgelegt</option>
+              {MOVEMENT_TYPE_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <AnimationSelect
+            form={form}
+            options={ANIMATION_TYPE_OPTIONS.movingObject}
+          />
+        </>
+      ) : null}
+
+      {category === "staticObject" ? (
+        <AnimationSelect form={form} options={ANIMATION_TYPE_OPTIONS.staticObject} />
+      ) : null}
+      {category === "nature" ? (
+        <AnimationSelect form={form} options={ANIMATION_TYPE_OPTIONS.nature} />
+      ) : null}
+      {category === "tileset" ? (
+        <AnimationSelect form={form} options={ANIMATION_TYPE_OPTIONS.tileset} />
+      ) : null}
+      {category === "building" ? (
+        <p className={styles.logicNote}>
+          Dieser Untertyp unterstützt eine Animation. Die konkreten Tor- und
+          Architekturphasen werden im Gebäudeeditor festgelegt.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function TileabilityStep({ form }: CoreStepProps) {
+  const category = useWatch({ control: form.control, name: "category" });
+
+  return (
+    <div className={styles.capabilityQuestions}>
+      {category === "texture" ? (
+        <label className={styles.checkOption}>
+          <input type="checkbox" {...form.register("seamless")} />
+          <span>
+            <strong>Nahtlos kachelbar</strong>
+            <small>
+              Gegenüberliegende Kanten wiederholen sich ohne sichtbare Naht.
+            </small>
+          </span>
+        </label>
+      ) : null}
+      {category === "tileset" ? (
+        <div className={styles.fieldGroup}>
+          <label htmlFor="wizard-tileable-axes">Kachelbare Achsen</label>
+          <select
+            id="wizard-tileable-axes"
+            {...form.register("tileableAxes", {
+              setValueAs: optionalSelectValue
+            })}
+          >
+            <option value="">Noch nicht festgelegt</option>
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertikal</option>
+            <option value="both">Horizontal und vertikal</option>
+            <option value="none">Keine Wiederholung</option>
+          </select>
+        </div>
+      ) : null}
+      <p className={styles.logicNote}>
+        Richtungsfragen bleiben in diesem Schritt ausgeschlossen. Kachelbarkeit
+        beschreibt Oberflächenwiederholung, nicht Bewegung.
+      </p>
     </div>
   );
 }
@@ -98,26 +641,55 @@ function CoreSummary({
       draft={draft}
       library={context.library}
       projectName={values.projectName}
+      activeCategory={values.category ?? null}
+      activeSubtype={values.subtype ?? null}
+      selection={getSelectionSummary(values)}
     />
   );
 }
 
-/**
- * Product-specific Prompt-11 flow. The generic engine owns navigation and
- * persistence; Prompt 12 extends this external registry with category steps.
- */
+function getSelectionSummary(values: WizardCoreFormValues) {
+  const capabilities = resolveWizardCapabilities(values);
+  if (!values.category || !values.subtype || !capabilities) return null;
+  return {
+    category: values.category,
+    subtype: values.subtype,
+    capabilities
+  } as const;
+}
+
+const STEP_COMPONENTS = {
+  project: ProjectStep,
+  category: CategoryStep,
+  directions: DirectionsStep,
+  animation: AnimationStep,
+  tileability: TileabilityStep
+} as const;
+
 export const WIZARD_CORE_FLOW = Object.freeze({
   steps: Object.freeze([
-    Object.freeze({ ...WIZARD_CORE_STEPS[0], Component: ProjectStep }),
-    Object.freeze({ ...WIZARD_CORE_STEPS[1], Component: CategoryStep })
-  ]),
-  updateDraft: ({ draft, values, stepId, savedAt }) =>
-    updateWizardDraft({
-      draft,
-      projectName: values.projectName,
-      currentStep: stepId,
-      ...(savedAt === undefined ? {} : { savedAt })
+    Object.freeze({ ...WIZARD_CORE_STEPS[0], Component: STEP_COMPONENTS.project }),
+    Object.freeze({ ...WIZARD_CORE_STEPS[1], Component: STEP_COMPONENTS.category }),
+    Object.freeze({
+      ...WIZARD_CORE_STEPS[2],
+      Component: STEP_COMPONENTS.directions,
+      isApplicable: (values: WizardCoreFormValues) =>
+        wizardStepIsApplicable("directions", values)
     }),
+    Object.freeze({
+      ...WIZARD_CORE_STEPS[3],
+      Component: STEP_COMPONENTS.animation,
+      isApplicable: (values: WizardCoreFormValues) =>
+        wizardStepIsApplicable("animation", values)
+    }),
+    Object.freeze({
+      ...WIZARD_CORE_STEPS[4],
+      Component: STEP_COMPONENTS.tileability,
+      isApplicable: (values: WizardCoreFormValues) =>
+        wizardStepIsApplicable("tileability", values)
+    })
+  ]),
+  updateDraft: updateWizardDraftFromCoreForm,
   Summary: CoreSummary
 } satisfies GuidedWizardFlowDefinition<
   WizardCoreFormValues,

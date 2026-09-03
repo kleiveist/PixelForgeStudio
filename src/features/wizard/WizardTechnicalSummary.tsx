@@ -1,11 +1,18 @@
-import type { AssetCategory } from "../../domain/assets";
+import type {
+  AssetCapabilities,
+  AssetCategory,
+  AssetSubtype
+} from "../../domain/assets";
 import type { ResolvedProfile } from "../../domain/profiles";
 import type {
   BaseProfile,
   ProfileLibrary,
   WizardDraft
 } from "../../schemas";
-import { getDashboardCategory } from "../dashboard/dashboardCatalog";
+import {
+  formatSubtypeLabel,
+  getDashboardCategory
+} from "../dashboard/dashboardCatalog";
 import { resolveWizardDraftSnapshot } from "./wizardLifecycle";
 import styles from "./WizardView.module.css";
 
@@ -96,9 +103,16 @@ function findSummaryProfile(
 
 function summaryCategory(
   draft: WizardDraft,
-  categoryHint: AssetCategory | null
+  categoryHint: AssetCategory | null,
+  activeCategory: AssetCategory | null
 ): AssetCategory | null {
-  return "category" in draft ? draft.category : categoryHint;
+  return activeCategory ?? ("category" in draft ? draft.category : categoryHint);
+}
+
+export interface WizardSelectionSummary {
+  readonly category: AssetCategory;
+  readonly subtype: AssetSubtype;
+  readonly capabilities: AssetCapabilities;
 }
 
 function SummaryFact({
@@ -118,16 +132,27 @@ export interface WizardTechnicalSummaryProps {
   readonly draft: WizardDraft;
   readonly library: ProfileLibrary | null;
   readonly projectName: string;
+  readonly activeCategory: AssetCategory | null;
+  readonly activeSubtype: AssetSubtype | null;
+  readonly selection: WizardSelectionSummary | null;
 }
 
 export function WizardTechnicalSummary({
   categoryHint,
   draft,
   library,
-  projectName
+  projectName,
+  activeCategory,
+  activeSubtype,
+  selection
 }: WizardTechnicalSummaryProps) {
-  const category = summaryCategory(draft, categoryHint);
-  const profile = findSummaryProfile(draft, library);
+  const category = summaryCategory(draft, categoryHint, activeCategory);
+  const draftMatchesActiveSelection =
+    !("category" in draft) ||
+    (draft.category === activeCategory && draft.subtype === activeSubtype);
+  const profile = draftMatchesActiveSelection
+    ? findSummaryProfile(draft, library)
+    : { base: null, resolved: null, sourceName: null };
   const values =
     "category" in draft
       ? profile.resolved?.values ?? null
@@ -154,6 +179,27 @@ export function WizardTechnicalSummary({
             label="Asset-Kategorie"
             value={getDashboardCategory(category).label}
           />
+        ) : null}
+        {selection ? (
+          <>
+            <SummaryFact
+              label="Untertyp"
+              value={formatSubtypeLabel(selection.subtype)}
+            />
+            <SummaryFact
+              label="Asset-Logik"
+              value={[
+                selection.capabilities.movable ? "beweglich" : null,
+                selection.capabilities.directional ? "4/8 Richtungen" : null,
+                selection.capabilities.animated ? "Animation" : null,
+                selection.capabilities.tileable ? "kachelbar" : null,
+                selection.capabilities.scaledCharacter ? "Figurenmaßstab" : null,
+                selection.capabilities.freeComposition ? "freie Komposition" : null
+              ]
+                .filter((value): value is string => value !== null)
+                .join(" · ") || "statisches Einzelasset"}
+            />
+          </>
         ) : null}
         {profile.sourceName ? (
           <SummaryFact label="Assetprofil" value={profile.sourceName} />

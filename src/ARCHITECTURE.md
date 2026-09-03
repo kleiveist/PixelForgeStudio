@@ -210,9 +210,21 @@ revision so same-view restarts remount the form and refocus main content.
 `features/wizard/GuidedWizardEngine.tsx` owns only generic RHF navigation,
 progress, validation focus, Dirty state and persistence timing. The external
 `WIZARD_CORE_FLOW` binds step components, Zod schemas, RHF field paths, Draft
-mapping and summary presentation. Prompt 11 intentionally contains only
-`project` and the prepared `category` handoff; Prompt 12 composes its category,
-subtype and capability steps into that flow rather than branching the engine.
+mapping and summary presentation. Steps can declare a pure `isApplicable`
+predicate; one filtered list drives progress, navigation, error focus and
+resume fallback. Product routing remains outside the generic engine.
+
+`features/wizard/wizardCategoryRouting.ts` is the Prompt-12 boundary between
+core form values and the strict Draft union. It validates category/subtype
+pairs against the canonical taxonomy, resolves visibility only through
+`resolveCapabilities()`, preserves hidden answers for an unchanged selection,
+and creates clean answers when classification changes. The stable core flow is
+`project → category/subtype → directions | animation | tileability`, with the
+last three steps conditionally present. A category-only choice remains a raw
+session value until a matching subtype makes it persistable. The Draft mapper
+returns `null` for that explicit intermediate state, allowing navigation while
+preventing an old selected Draft from being written over the raw selection.
+Step schemas independently reject category-incompatible capability values.
 
 `features/wizard/wizardLifecycle.ts` creates blank drafts, resolves profile
 starts against the current provider graph, updates route/step metadata and
@@ -221,7 +233,9 @@ lock compatibility of the stored override snapshot. Unknown future/older step
 IDs fall back in memory with a visible notice and are not silently written.
 Selected drafts can carry optional AssetProfile provenance and an asset-
 override snapshot; resolution and summary use the portable snapshot rather
-than treating provenance as a hard or live configuration reference.
+than treating provenance as a hard or live configuration reference. A newly
+classified Draft on `wizard/profile` may intentionally have no Base reference
+until Prompt 13; existing but unresolved references still fail closed.
 
 `features/wizard/WizardView.tsx` replaces the Wizard placeholder. Initial,
 profile-based and resumed hydration perform no writes. Its thin `WizardEngine`
@@ -231,4 +245,6 @@ and a 300-ms valid-change autosave. Navigation writes its new step immediately;
 invalid or unavailable writes retain raw session data and the last successful
 baseline. Recovery never deletes or overwrites the stored slot. The adjacent
 technical summary displays the portable, capability-relevant snapshot and
-omits world-grid geometry for resolved free-composition artwork.
+omits world-grid geometry for resolved free-composition artwork. Prompt 13 may
+add Base-profile selection/editing to the external flow, but must not move
+profile inheritance or lock resolution into the generic wizard engine.

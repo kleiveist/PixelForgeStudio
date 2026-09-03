@@ -157,7 +157,11 @@ function resumeDraft(
 ): WizardInitializationState {
   const selectedDraft =
     typeof draft === "object" && draft !== null && "category" in draft;
-  if (selectedDraft && input.libraryResult.status !== "valid") {
+  const selectedDraftNeedsProfileLibrary =
+    selectedDraft &&
+    (("baseProfileId" in draft && draft.baseProfileId !== undefined) ||
+      ("categoryProfileId" in draft && draft.categoryProfileId !== undefined));
+  if (selectedDraftNeedsProfileLibrary && input.libraryResult.status !== "valid") {
     return recovery(
       "profileLibraryUnavailable",
       "Profilreferenzen können nicht geprüft werden",
@@ -517,7 +521,7 @@ export function WizardView({
               )
             }
             {...(rawCoreFormValues
-              ? { initialProjectName: rawCoreFormValues.projectName }
+              ? { initialFormValues: rawCoreFormValues }
               : {})}
             library={
               libraryResult.status === "valid" ? libraryResult.value : null

@@ -66,6 +66,18 @@ function primaryNavigation(): HTMLElement {
   return screen.getByRole("navigation", { name: "Hauptnavigation" });
 }
 
+async function selectAssetClassification(
+  user: ReturnType<typeof userEvent.setup>,
+  categoryName: RegExp,
+  subtype: string
+): Promise<void> {
+  await user.click(screen.getByRole("radio", { name: categoryName }));
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: /Untertyp/ }),
+    subtype
+  );
+}
+
 function draftWrites(storage: MemoryStorage) {
   return storage.mutations.filter(
     (mutation) => mutation.key === V2_STORAGE_KEYS.draft
@@ -271,12 +283,12 @@ describe("guided Wizard integration", () => {
 
     const heading = screen.getByRole("heading", {
       level: 2,
-      name: "Asset-Grundlage"
+      name: "Bildart"
     });
     await waitFor(() => expect(heading).toHaveFocus());
     expect(
       within(screen.getByRole("navigation", { name: "Wizard-Fortschritt" }))
-        .getByText("Asset-Grundlage")
+        .getByText("Bildart")
         .closest("li")
     ).toHaveAttribute("aria-current", "step");
     expect(draftWrites(storage)).toEqual([
@@ -291,6 +303,152 @@ describe("guided Wizard integration", () => {
     });
   });
 
+  it("routes an NPC through directions and movement questions", async () => {
+    const user = userEvent.setup();
+    const { adapter } = renderStudio();
+
+    await user.type(projectNameInput(), "Hafenwache");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.queryByRole("combobox", { name: /Untertyp/ })
+    ).not.toBeInTheDocument();
+
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+
+    const progress = screen.getByRole("navigation", {
+      name: "Wizard-Fortschritt"
+    });
+    expect(within(progress).getByText("Richtungen")).toBeVisible();
+    expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
+    expect(within(progress).queryByText("Kachelbarkeit")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(screen.getByRole("heading", { level: 2, name: "Richtungen" })).toHaveFocus();
+    await user.click(screen.getByRole("radio", { name: /8 Richtungen/ }));
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        category: "character",
+        subtype: "npc",
+        answers: { directionCount: 8 }
+      })
+    );
+    await user.click(screen.getByRole("radio", { name: "Keine Richtungen" }));
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).not.toHaveProperty(
+        "answers.directionCount"
+      )
+    );
+    await user.click(screen.getByRole("radio", { name: /8 Richtungen/ }));
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Bewegung und Animation" })
+    ).toBeVisible();
+    expect(screen.getByText("Dieses Asset kann sich bewegen.")).toBeVisible();
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Aktion" }),
+      "walk"
+    );
+
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        category: "character",
+        subtype: "npc",
+        answers: { directionCount: 8, animationAction: "walk" }
+      })
+    );
+  });
+
+  it("validates category before subtype and focuses the missing classification field", async () => {
+    const user = userEvent.setup();
+    const { storage } = renderStudio();
+
+    await user.type(projectNameInput(), "Klassifikation");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await user.click(screen.getByRole("button", { name: /Entwurf sichern|Schritt prüfen/ }));
+
+    const firstCategory = screen.getByRole("radio", {
+      name: /Charakter \/ Figur/
+    });
+    expect(screen.getByText("Bitte wähle zuerst eine Asset-Kategorie.")).toBeVisible();
+    expect(firstCategory).toHaveFocus();
+
+    await user.click(firstCategory);
+    await user.click(screen.getByRole("button", { name: /Entwurf sichern/ }));
+    expect(screen.getByText("Bitte wähle einen Untertyp.")).toBeVisible();
+    expect(screen.getByRole("combobox", { name: /Untertyp/ })).toHaveFocus();
+    expect(draftWrites(storage)).toHaveLength(1);
+  });
+
+  it("routes a wood texture to tileability without movement or direction", async () => {
+    const user = userEvent.setup();
+    const { adapter } = renderStudio();
+
+    await user.type(projectNameInput(), "Eichenplanken");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Textur \/ Material/, "wood");
+
+    const progress = screen.getByRole("navigation", {
+      name: "Wizard-Fortschritt"
+    });
+    expect(within(progress).getByText("Kachelbarkeit")).toBeVisible();
+    expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+    expect(
+      within(progress).queryByText("Bewegung und Animation")
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Kachelbarkeit" })
+    ).toBeVisible();
+    expect(screen.queryByRole("radio", { name: /8 Richtungen/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Animationsart" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: /Nahtlos kachelbar/ }));
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).toMatchObject({
+        category: "texture",
+        subtype: "wood",
+        answers: { seamless: true }
+      })
+    );
+  });
+
+  it("allows wind animation for a tree without exposing directions", async () => {
+    const user = userEvent.setup();
+    const { adapter } = renderStudio();
+
+    await user.type(projectNameInput(), "Windbaum");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Natur \/ Pflanze/, "tree");
+
+    const progress = screen.getByRole("navigation", {
+      name: "Wizard-Fortschritt"
+    });
+    expect(within(progress).getByText("Bewegung und Animation")).toBeVisible();
+    expect(within(progress).queryByText("Richtungen")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(
+      screen.getByText("Dieses Asset bleibt am Ort und kann trotzdem animiert sein.")
+    ).toBeVisible();
+    expect(screen.queryByRole("radio", { name: /8 Richtungen/ })).not.toBeInTheDocument();
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Animationsart" }),
+      "wind"
+    );
+
+    await waitFor(() => {
+      const draft = readValidDraft(adapter);
+      expect(draft).toMatchObject({
+        category: "nature",
+        subtype: "tree",
+        answers: { animationType: "wind" }
+      });
+      expect(draft).not.toHaveProperty("answers.directionCount");
+    });
+  });
+
   it("goes back without a validation barrier and restores resumed form values", async () => {
     const draft = categoryDraft();
     const storage = new MemoryStorage();
@@ -298,7 +456,7 @@ describe("guided Wizard integration", () => {
     const user = userEvent.setup();
     const { adapter } = renderStudio({ storage });
 
-    expect(screen.getByRole("heading", { level: 2, name: "Asset-Grundlage" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Bildart" })).toBeVisible();
     expect(storage.mutations).toEqual([]);
     await user.click(screen.getByRole("button", { name: /Zurück/ }));
 
@@ -429,12 +587,41 @@ describe("guided Wizard integration", () => {
 
     expect(screen.getByText("Fortgesetzter Entwurf")).toBeVisible();
     expect(screen.getByText("Lokal gespeichert")).toBeVisible();
-    expect(screen.getByRole("heading", { level: 2, name: "Asset-Grundlage" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 2, name: "Bildart" })).toBeVisible();
     expect(rendered.navigation.pushedViews).toEqual(["wizard"]);
     expect(storage.mutations).toEqual([]);
 
     await user.click(screen.getByRole("button", { name: /Zurück/ }));
     expect(projectNameInput()).toHaveValue("Winterwald");
+  });
+
+  it("resumes a selected pre-base Draft without requiring profile records", () => {
+    const draft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_pre_base_tree",
+      projectName: "Windbaum",
+      route: "wizard/profile",
+      currentStep: "animation",
+      category: "nature",
+      subtype: "tree",
+      answers: { animationType: "wind" },
+      validation: { errors: [], warnings: [] },
+      savedAt: INITIAL_TIMESTAMP
+    });
+    const storage = new MemoryStorage();
+    storeDraft(storage, draft);
+
+    renderStudio({ storage });
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Bewegung und Animation" })
+    ).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Animationsart" })).toHaveValue(
+      "wind"
+    );
+    expect(screen.queryByText(/sicher fortgesetzt/)).not.toBeInTheDocument();
+    expect(storage.mutations).toEqual([]);
   });
 
   it("rejects a different stored draft than the exact resume request without mutating it", async () => {
@@ -620,7 +807,10 @@ describe("guided Wizard integration", () => {
     );
 
     expect(screen.getByText("Profil · Dorfschmied mit Lederschürze")).toBeVisible();
-    expect(screen.getByText("Asset-Kategorie als Startkontext übernommen")).toBeVisible();
+    expect(
+      screen.getByRole("radio", { name: /Charakter \/ Figur/ })
+    ).toBeChecked();
+    expect(screen.getByRole("combobox", { name: /Untertyp/ })).toHaveValue("npc");
     const summary = screen.getByRole("complementary", {
       name: "Technische Zusammenfassung"
     });
@@ -631,7 +821,9 @@ describe("guided Wizard integration", () => {
     expect(document.body.innerHTML).not.toContain(source.compatibilityKey);
     expect(storage.mutations).toEqual([]);
 
-    await user.click(screen.getByRole("button", { name: "Entwurf sichern" }));
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+
+    expect(screen.getByRole("heading", { level: 2, name: "Richtungen" })).toBeVisible();
 
     expect(draftWrites(storage)).toEqual([
       { operation: "set", key: V2_STORAGE_KEYS.draft }
@@ -644,6 +836,131 @@ describe("guided Wizard integration", () => {
       subtype: source.subtype,
       answers: source.answers,
       overrides: source.overrides
+    });
+  });
+
+  it("confirms a main-category change and purges incompatible profile data", async () => {
+    const library = profileLibraryWithTechnicalOverrides();
+    const source = library.assetProfiles.find(
+      (profile) => profile.id === "asset_smith_80"
+    );
+    if (!source) throw new Error("Expected the overridden smith profile.");
+    const storage = populatedStorage(library);
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({
+      navigation: new MemoryNavigation({ status: "valid", view: "profiles" }),
+      storage
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Profil „Dorfschmied mit Lederschürze“ im Wizard laden"
+      })
+    );
+    await user.click(screen.getByRole("radio", { name: /Textur \/ Material/ }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Kategorie wirklich wechseln?"
+    );
+    expect(screen.getByRole("radio", { name: /Charakter \/ Figur/ })).toBeChecked();
+    expect(storage.mutations).toEqual([]);
+
+    await user.click(
+      screen.getByRole("button", { name: /Zu Textur \/ Material wechseln/ })
+    );
+    expect(screen.getByRole("radio", { name: /Textur \/ Material/ })).toBeChecked();
+    expect(screen.getByRole("combobox", { name: /Untertyp/ })).toHaveValue("");
+    expect(storage.mutations).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: /Zurück/ }));
+    expect(screen.getByRole("heading", { level: 2, name: "Projekt" })).toBeVisible();
+    expect(storage.mutations).toEqual([]);
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    expect(screen.getByRole("heading", { level: 2, name: "Bildart" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /Textur \/ Material/ })).toBeChecked();
+    expect(screen.getByRole("combobox", { name: /Untertyp/ })).toHaveValue("");
+    expect(storage.mutations).toEqual([]);
+
+    await user.click(
+      within(primaryNavigation()).getByRole("link", { name: "Dashboard" })
+    );
+    await user.click(
+      within(primaryNavigation()).getByRole("link", { name: "Wizard" })
+    );
+    expect(screen.getByRole("radio", { name: /Textur \/ Material/ })).toBeChecked();
+    expect(screen.getByRole("combobox", { name: /Untertyp/ })).toHaveValue("");
+    expect(storage.mutations).toEqual([]);
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /Untertyp/ }),
+      "wood"
+    );
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+
+    const changed = readValidDraft(adapter);
+    expect(changed).toMatchObject({
+      category: "texture",
+      subtype: "wood",
+      baseProfileId: source.baseProfileId,
+      overrides: source.overrides,
+      answers: {}
+    });
+    expect(changed).not.toHaveProperty("sourceAssetProfileId");
+    expect(changed).not.toHaveProperty("categoryProfileId");
+    expect(changed).not.toHaveProperty("answers.directionCount");
+    expect(changed).not.toHaveProperty("answers.animationAction");
+    expect(changed).not.toHaveProperty("answers.framesPerDirection");
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "Richtungen" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Kachelbarkeit" })
+    ).toBeVisible();
+  });
+
+  it("confirms a lossy subtype change before purging profile details", async () => {
+    const library = profileLibraryWithTechnicalOverrides();
+    const source = library.assetProfiles.find(
+      (profile) => profile.id === "asset_smith_80"
+    );
+    if (!source) throw new Error("Expected the overridden smith profile.");
+    const storage = populatedStorage(library);
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({
+      navigation: new MemoryNavigation({ status: "valid", view: "profiles" }),
+      storage
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Profil „Dorfschmied mit Lederschürze“ im Wizard laden"
+      })
+    );
+    const subtypeSelect = screen.getByRole("combobox", { name: /Untertyp/ });
+    await user.selectOptions(subtypeSelect, "hero");
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Untertyp wirklich wechseln?"
+    );
+    expect(subtypeSelect).toHaveValue("npc");
+    expect(storage.mutations).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "Abbrechen" }));
+    expect(subtypeSelect).toHaveValue("npc");
+    await user.selectOptions(subtypeSelect, "hero");
+    await user.click(screen.getByRole("button", { name: "Zu Held wechseln" }));
+
+    await waitFor(() => {
+      const changed = readValidDraft(adapter);
+      expect(changed).toMatchObject({
+        category: "character",
+        subtype: "hero",
+        baseProfileId: source.baseProfileId,
+        overrides: source.overrides,
+        answers: {}
+      });
+      expect(changed).not.toHaveProperty("sourceAssetProfileId");
+      expect(changed).not.toHaveProperty("categoryProfileId");
     });
   });
 

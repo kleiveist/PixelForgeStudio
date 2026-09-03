@@ -1,8 +1,11 @@
 export {
   WIZARD_CORE_STEPS,
+  WizardAnimationStepSchema,
   WizardCategoryStepSchema,
   WizardCoreFormSchema,
+  WizardDirectionStepSchema,
   WizardProjectStepSchema,
+  WizardTileabilityStepSchema,
   getWizardCoreFallbackStepId,
   getWizardCoreStep,
   getWizardCoreStepIndex,
@@ -12,6 +15,14 @@ export {
   type WizardCoreStep,
   type WizardCoreStepId
 } from "./wizardSteps";
+export {
+  createWizardCoreFormValues,
+  getWizardAssetSelection,
+  resolveWizardCapabilities,
+  updateWizardDraftFromCoreForm,
+  wizardStepIsApplicable,
+  type UpdateWizardDraftFromCoreFormInput
+} from "./wizardCategoryRouting";
 export {
   createBlankWizardDraft,
   createWizardDraftFromAssetProfile,

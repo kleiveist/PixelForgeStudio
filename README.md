@@ -59,7 +59,8 @@ V1 inventarisieren ✓
 → kategoriebasiertes Dashboard und lokales Icon-System ✓
 → kategorisierte Profilbibliothek und sicheres Assetprofil-CRUD ✓
 → geführte RHF/Zod-Wizard-Engine mit Autosave und Resume ✓
-→ Kategorie-Routing und spezialisiertes Editormodell
+→ Capability-gesteuertes Kategorie-Routing und dynamische Fragen ✓
+→ Basisprofil- und spezialisiertes Editormodell
 → Prompt Engine 2.0
 → Release-Abnahme
 → Legacy-UI erst danach entfernen
@@ -140,12 +141,12 @@ Damit erhält eine Holztextur keine NPC-Fragen und ein normaler Baum keine 8-Ric
 
 ## Aktueller Migrationsstand
 
-Prompt 00 bis Prompt 11 sind abgeschlossen. Die nächste einzeln auszuführende
+Prompt 00 bis Prompt 12 sind abgeschlossen. Die nächste einzeln auszuführende
 Phase ist:
 
 ```text
 docs/CODEX-V2-PROMPTS.md
-→ Prompt 12 — Kategorie-Routing und dynamische Fragen
+→ Prompt 13 — Basisprofil-Editor
 ```
 
 Danach immer genau:
@@ -166,8 +167,10 @@ Filter, Kategorie-/Compatibility-Gruppen und sichere Assetprofilaktionen. Die
 aktive Wizard Engine trennt die generische RHF-Navigation und Persistenz von
 einer deklarativen, produktspezifischen Flow-Definition. Sie bietet
 Zod-Validierung, sichtbaren Fortschritt, Dirty-/Autosave-Status, exaktes Resume
-und eine technische Zusammenfassung. Dynamische Kategoriepfade und
-Spezialeditoren folgen in ihren vorgesehenen Phasen.
+und eine technische Zusammenfassung. Der Flow fragt Hauptkategorie und
+Untertyp in dieser Reihenfolge ab und blendet Richtungs-, Animations- oder
+Tileability-Schritte ausschließlich nach den zentral aufgelösten Capabilities
+ein. Spezialisierte Detail-Editoren folgen in ihren vorgesehenen Phasen.
 
 ## Legacy-V1 lokal prüfen
 
@@ -277,8 +280,11 @@ Storage-Adapter gesichert, bewusste Schrittnavigation sofort. Initialer Start,
 Profil-Hydration, Resume und sichere Recovery-Zustände schreiben nichts.
 Gespeicherte Override-Snapshots werden beim Resume erneut gegen aktuelle Locks
 geprüft und bleiben unabhängig von einer optionalen Quellprofil-Provenienz.
-Die vom Dashboard kommende Kategorie ist bis Prompt 12 nur ein flüchtiger
-Startkontext und erfindet weder Untertyp noch Capability-Daten.
+Die vom Dashboard kommende Kategorie bleibt ein flüchtiger Startkontext, bis
+der Nutzer einen dazu passenden Untertyp auswählt. Danach bestimmt allein das
+zentrale Capability-System die sichtbaren Folgeschritte. Ein Wechsel der
+Klassifikation verwirft alte Kategorieantworten und Profilprovenienz, ohne
+globale Basiswerte zu verändern.
 
 Die Kategorie- und Materialgrafiken sind lokale, dekorative SVG-React-
 Komponenten unter `src/components/icons/`; sichtbare Textlabels bleiben die

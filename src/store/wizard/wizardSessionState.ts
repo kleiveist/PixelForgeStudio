@@ -1,6 +1,19 @@
-import type { AssetCategory } from "../../domain/assets";
+import type {
+  AssetCategory,
+  AssetSubtype,
+  DirectionCount
+} from "../../domain/assets";
 import { jsonValuesEqual } from "../../domain/json";
-import type { StableId, WizardDraft } from "../../schemas";
+import type {
+  CharacterAnswers,
+  MovingObjectAnswers,
+  NatureAnswers,
+  StableId,
+  StaticObjectAnswers,
+  TextureAnswers,
+  TilesetAnswers,
+  WizardDraft
+} from "../../schemas";
 
 export type WizardStartIntent =
   | Readonly<{ kind: "newAsset"; category: AssetCategory | null }>
@@ -18,6 +31,18 @@ export interface WizardSessionState {
 
 export interface WizardRawCoreFormValues {
   readonly projectName: string;
+  readonly category?: AssetCategory | undefined;
+  readonly subtype?: AssetSubtype | undefined;
+  readonly directionCount?: DirectionCount | undefined;
+  readonly animationAction?: CharacterAnswers["animationAction"];
+  readonly animationType?:
+    | MovingObjectAnswers["animationType"]
+    | StaticObjectAnswers["animationType"]
+    | NatureAnswers["animationType"]
+    | TilesetAnswers["animationType"];
+  readonly movementType?: MovingObjectAnswers["movementType"];
+  readonly seamless?: TextureAnswers["seamless"];
+  readonly tileableAxes?: TilesetAnswers["tileableAxes"];
 }
 
 export type WizardDraftActivationMode =
@@ -63,13 +88,8 @@ export function wizardDraftsStructurallyEqual(
 }
 
 export function selectWizardSessionDirty(state: WizardSessionState): boolean {
-  const rawValuesDifferFromActiveDraft =
-    state.rawCoreFormValues !== null &&
-    (state.activeDraft === null ||
-      state.rawCoreFormValues.projectName !== state.activeDraft.projectName);
-
   return (
-    rawValuesDifferFromActiveDraft ||
+    state.rawCoreFormValues !== null ||
     !wizardDraftsStructurallyEqual(state.activeDraft, state.baselineDraft)
   );
 }

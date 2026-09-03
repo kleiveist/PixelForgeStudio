@@ -46,6 +46,11 @@
 - profilbasierte Wizard-Starts mit Elternreferenzen, Kategorieantworten, optionaler Asset-Provenienz und verlustfreiem technischem Override-Snapshot ergänzt
 - portable Profil-Snapshots beim Resume erneut gegen aktuelle Locks geprüft und Quellprofil-Provenienz von der technischen Auflösung entkoppelt
 - responsive technische Wizard-Zusammenfassung eingeführt, die portable, capability-relevante Profilwerte darstellt
+- Hauptkategorie-vor-Untertyp-Routing mit neun zugänglichen Kategorieoptionen und vollständigem Taxonomieabgleich in den Wizard integriert
+- deklarativ bedingte Wizard-Schritte ergänzt, sodass Richtung, Animation und Kachelbarkeit ausschließlich nach zentral aufgelöster Asset-Capability erscheinen
+- Klassifikationswechsel bereinigen alte Kategorieantworten, Profilprovenienz, Validierung und irrelevante Figurenhöhen-Overrides ohne globale Basiswerte zu verlieren
+- unvollständige Klassifikationswechsel als nicht persistierbare Zwischenstände modelliert, sodass Vor-/Zurück-Navigation keinen alten Profil-Draft zurückschreibt
+- Capability- und kategoriespezifische Step-Schemas sowie NPC-, Holztextur-, Windbaum-, Pre-Base-Resume- und schreibfreie Hydrationsflows mit Routing- und RTL-Tests abgesichert
 - reproduzierbare Legacy-V1-Migrationsbaseline mit synthetischen Storage-Fixtures und Promptsignaturen ergänzt
 - verbindliche `AGENTS.md`-Projektanweisung für Codex ergänzt
 - schrittweisen Ausführungsplan in `PLANS.md` angelegt

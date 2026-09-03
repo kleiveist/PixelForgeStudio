@@ -134,16 +134,16 @@ function selectedDraftCapabilities(draft: SelectedWizardDraft) {
   }
 }
 
-function selectedDraftAsAssetProfile(draft: SelectedWizardDraft): AssetProfile {
+function selectedDraftAsAssetProfile(
+  draft: SelectedWizardDraft,
+  baseProfileId: StableId
+): AssetProfile {
   return parseAssetProfile({
     schemaVersion: 2,
     kind: "assetProfile",
     id: draft.draftId,
     name: draft.projectName,
-    // `wizard/profile` permits a temporarily missing Base reference. The
-    // Draft ID is a schema-valid synthetic reference so resolution can return
-    // a structured missing-reference conflict instead of throwing.
-    baseProfileId: draft.baseProfileId ?? draft.draftId,
+    baseProfileId,
     ...(draft.categoryProfileId === undefined
       ? {}
       : { categoryProfileId: draft.categoryProfileId }),
@@ -166,13 +166,15 @@ function selectedDraftAsAssetProfile(draft: SelectedWizardDraft): AssetProfile {
  * Resolves a selected Draft from its portable Base/Category references and
  * embedded answer/override snapshots. `sourceAssetProfileId` is provenance
  * only: a deleted or subsequently edited source Asset must not change the
- * resumed Draft configuration.
+ * resumed Draft configuration. A selected pre-Base Draft is valid wizard
+ * progress but is not resolvable yet, so this function returns `null`.
  */
 export function resolveWizardDraftSnapshot(
   draft: WizardDraft,
   profileLibrary: ProfileLibrary
 ): ProfileResolutionResult | null {
   if (!("category" in draft)) return null;
+  if (draft.baseProfileId === undefined) return null;
 
   const baseProfile = draft.baseProfileId
     ? profileLibrary.baseProfiles.find(
@@ -186,7 +188,7 @@ export function resolveWizardDraftSnapshot(
     : undefined;
 
   return resolveProfile({
-    assetProfile: selectedDraftAsAssetProfile(draft),
+    assetProfile: selectedDraftAsAssetProfile(draft, draft.baseProfileId),
     ...(baseProfile === undefined ? {} : { baseProfile }),
     ...(categoryProfile === undefined ? {} : { categoryProfile })
   });
@@ -222,7 +224,25 @@ export interface ResolvedWizardCoreStep {
 }
 
 export function resolveWizardCoreStep(draft: WizardDraft): ResolvedWizardCoreStep {
-  if (isWizardCoreStepId(draft.currentStep)) {
+  const currentStepIsApplicable = (stepId: WizardCoreStepId): boolean => {
+    if (stepId === "project" || stepId === "category") return true;
+    if (!("category" in draft)) return false;
+
+    const capabilities = selectedDraftCapabilities(draft);
+    switch (stepId) {
+      case "directions":
+        return capabilities.directional;
+      case "animation":
+        return capabilities.animated;
+      case "tileability":
+        return capabilities.tileable;
+    }
+  };
+
+  if (
+    isWizardCoreStepId(draft.currentStep) &&
+    currentStepIsApplicable(draft.currentStep)
+  ) {
     return Object.freeze({ stepId: draft.currentStep, usedFallback: false });
   }
 
@@ -304,7 +324,9 @@ function selectedDraftReferenceIssues(
     ? profileLibrary.baseProfiles.find((profile) => profile.id === draft.baseProfileId)
     : undefined;
 
-  if (baseProfile === undefined) {
+  const baseProfileIsDeferred =
+    draft.route === "wizard/profile" && draft.baseProfileId === undefined;
+  if (baseProfile === undefined && !baseProfileIsDeferred) {
     issues.push({
       code: "missingBaseProfile",
       ...(draft.baseProfileId === undefined ? {} : { baseProfileId: draft.baseProfileId })

@@ -170,8 +170,13 @@ Formularwerte. `GuidedWizardEngine` ist generisch; die externe Flow-Definition
 liefert Step-Komponenten, Zod-Schemas, relevante RHF-Feldpfade, Draft-Mapping
 und Zusammenfassung. Profil- und Resume-Hydration schreiben nicht. Gültige
 Benutzeränderungen werden verzögert, bewusste Schrittwechsel sofort über den
-schmalen Draft-Storage-Port persistiert. Kategorie-/Capability-Routing
-erweitert den Flow erst in Prompt 12.
+schmalen Draft-Storage-Port persistiert. Seit Prompt 12 können Schritte ein
+deklaratives `isApplicable`-Prädikat besitzen. Hauptkategorie und Untertyp
+werden zuerst gewählt; Richtung, Animation und Kachelbarkeit erscheinen nur
+nach zentral aufgelöster Capability. Kategorie-only bleibt transient, während
+ein vollständiger Pre-Base-Draft auf `wizard/profile` fortsetzbar ist. Eine
+explizite `null`-Draftprojektion hält unvollständige Klassifikationswechsel bei
+Vor-/Zurück-Navigation im Formular, ohne den alten Draft erneut zu speichern.
 
 ## Speicherung
 

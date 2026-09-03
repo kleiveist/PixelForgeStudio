@@ -4,8 +4,8 @@
 
 - **Legacy:** V1 als Vanilla HTML/CSS/JavaScript unter `legacy/v1/` eingefroren
 - **Ziel:** V2 als TypeScript + React + Vite; Grundgerüst aktiv
-- **Abgeschlossene Aufgabe:** Prompt 11 — Wizard Engine mit React Hook Form
-- **Nächste Aufgabe:** Prompt 12 — Kategorie-Routing und dynamische Fragen
+- **Abgeschlossene Aufgabe:** Prompt 12 — Kategorie-Routing und dynamische Fragen
+- **Nächste Aufgabe:** Prompt 13 — Basisprofil-Editor
 - **Arbeitsregel:** genau eine Phase umsetzen → testen → prüfen → committen
 
 ## Aktuelle Agentenübergabe
@@ -396,6 +396,90 @@
   Hydration bleibt schreibfrei; nur gültige Benutzeränderungen oder bewusste
   Navigation dürfen die persistierte Baseline verschieben.
 
+## Ausführungsplan Prompt 12
+
+1. Den Core-Formvertrag um Kategorie, Untertyp und die kleinen gemeinsamen
+   Capability-Felder erweitern. Kategorie-only bleibt ein transienter RHF-
+   Zustand; erst ein zur Kategorie passender Untertyp erzeugt einen gültigen
+   selektierten `WizardDraft`.
+2. Eine pure Routing- und Draft-Projektion ergänzen, die alle Untertypen aus
+   der zentralen Taxonomie bezieht, Capabilities ausschließlich über
+   `resolveCapabilities()` bestimmt und bei Klassifikationswechseln alte
+   Antworten, Profilprovenienz sowie irrelevante Overrides kontrolliert
+   entfernt.
+3. Den externen `WIZARD_CORE_FLOW` deklarativ auf Projekt, Hauptkategorie,
+   Untertyp und Asset-Verhalten erweitern. Die generische Engine erhält nur
+   die Fähigkeit, valide, aber noch nicht persistierbare Formularzwischenstände
+   ohne Fehlermeldung zu navigieren; projektspezifische Zweige bleiben außen.
+4. Kategorie- und Untertypwahl als zugängliche native Controls umsetzen. Im
+   Verhalten-Schritt erscheinen Bewegungs-, Richtungs-, Animations- und
+   Tileability-Fragen sowie Scale-/Kompositionshinweise nur bei der jeweils
+   aufgelösten Capability; ein bestätigter Kategorienwechsel verwirft die
+   betroffenen Detaildaten sichtbar.
+5. Den transienten Session-Snapshot und die technische Zusammenfassung auf die
+   neuen Felder ausweiten. Neue selektierte Drafts ohne Basisprofil bleiben auf
+   `wizard/profile` sicher fortsetzbar, damit Prompt 13 anschließend das
+   Basisprofil ergänzen kann.
+6. Pure Routing-/Lifecycle-/Reducer-Tests und RTL-Flows für NPC, Holztextur,
+   Windbaum, Bereinigung, Profil-/Resume-Hydration, Fokus und schreibfreie
+   Initialisierung ergänzen; anschließend Dokumentation, Vollverifikation,
+   Diff-Review und den separaten Prompt-12-Commit ausführen.
+
+## Ergebnis Prompt 12
+
+1. Der deklarative Core-Flow fragt nach dem Projektnamen zuerst die
+   Hauptkategorie und anschließend einen gültigen Untertyp ab. Kategorie-only
+   bleibt bewusst ein transienter RHF-Zustand; erst die vollständige Auswahl
+   erzeugt einen strikt validierten selektierten `WizardDraft`.
+2. `wizardCategoryRouting.ts` ist die pure Grenze zwischen Formular und
+   Domainmodell. Es validiert Kategorie/Untertyp gegen die zentrale Taxonomie,
+   löst Capabilities ausschließlich mit `resolveCapabilities()` auf und
+   projiziert nur die für Prompt 12 kontrollierten Antworten zurück in den
+   Draft.
+3. `GuidedWizardEngine` unterstützt deklarative `isApplicable`-Prädikate und
+   verwendet dieselbe gefilterte Schrittliste für Fortschritt, Vor/Zurück,
+   Fehlerfokus und Resume-Fallback. Die Engine enthält weiterhin keine
+   projektspezifische Kategorieverzweigung. Eine `null`-Projektion kennzeichnet
+   valide, aber noch nicht persistierbare Formularzwischenstände; Navigation
+   bleibt möglich, ohne den alten Draft erneut zu schreiben.
+4. Richtungen erscheinen nur bei `directional`, Animation nur bei `animated`
+   und Kachelbarkeit nur bei `tileable`. Directional Assets können bewusst
+   keine, vier oder acht Ansichten wählen. Damit erhält ein NPC Richtungs- und
+   Animationsfragen, eine Holztextur ausschließlich Kachelbarkeit und ein
+   Windbaum Animation ohne Richtungswahl.
+5. Ein bestätigter Kategorie- oder Untertypwechsel startet mit leeren
+   Kategorieantworten, entfernt Kategorieprofil- und Assetprovenienz, leert
+   alte Validierungsergebnisse und entfernt einen fachlich irrelevanten
+   Figurenhöhen-Override. Allgemeine Basisreferenz und relevante technische
+   Overrides bleiben erhalten.
+6. Der Session-Snapshot umfasst nun alle Core-Routingwerte. Ein gültiger
+   ausgewählter Draft darf vor der Basisprofilwahl auf `wizard/profile` ohne
+   erfundene Base-ID fortgesetzt werden; vorhandene, aber fehlende Referenzen
+   bleiben weiterhin ein Recovery-Fehler. Hydration und Resume bleiben
+   schreibfrei.
+7. Pure Routing-/Lifecycle-Tests und RTL-Nutzerflüsse decken dynamische
+   Schrittlisten, NPC, Holztextur, Windbaum, Datenbereinigung, Klassifikations-
+   bestätigung, transienten Back/Forward-Erhalt, Fokus und Pre-Base-Resume ab.
+
+## Übergabe an Prompt 13
+
+- Der neue Basisprofil-Schritt wird außen in `WIZARD_CORE_FLOW` ergänzt; die
+  generische Engine und `isApplicable`-Mechanik bleiben unverändert.
+- Die vollständige Assetauswahl ist nach Prompt 12 auf Route `wizard/profile`
+  sicher vorhanden. Prompt 13 muss dort ein bestehendes `BaseProfile` wählen
+  oder eine neue Produktionsfamilie anlegen und erst dann eine Base-ID setzen.
+- Globale Felder, Vererbung und Locks stammen ausschließlich aus den
+  vorhandenen Profil-Schemas und `resolveProfile()`. Der Editor darf gesperrte
+  Werte weder still überschreiben noch als Assetantwort duplizieren.
+- `characterHeight` wird nur bei `scaledCharacter` angeboten. Freie
+  Komposition blendet irrelevante Raster-/Kamerafelder aus; alle übrigen
+  technischen Pflichtwerte bleiben im Basisprofil verankert.
+- Lock-Konflikte müssen eine bewusste Alternative anbieten (Profil wechseln,
+  duplizieren oder neue Familie), nicht die persistierte Familie mutieren.
+- Neue Auswahl, Profil-Hydration und Resume bleiben bis zur Nutzeraktion
+  schreibfrei. Prompt 13 erweitert den bestehenden Rohwert-Snapshot nur um
+  wirklich transiente Basisprofilfelder.
+
 ## Erfasster Legacy-Ist-Stand
 
 - Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
@@ -434,7 +518,7 @@
 | 8 | Dashboard | Kategorie- und Profilkarten | abgeschlossen |
 | 9 | Profilbibliothek | Suche, Filter, Gruppierung, Favoriten | abgeschlossen |
 | 10 | Wizard Engine | Schritte, Navigation, Resume, RHF/Zod | abgeschlossen |
-| 11 | Kategorie-Routing | Capability-gesteuerte Fragen | offen |
+| 11 | Kategorie-Routing | Capability-gesteuerte Fragen | abgeschlossen |
 | 12 | Basisprofil-Editor | globale Parameter, Locks, Konflikte | offen |
 | 13 | Charakter-/NPC-Editor | vollständige Figurenfragen + Bewegung | offen |
 | 14 | Bewegliches-Objekt-Editor | Richtung/Animation nach Capability | offen |

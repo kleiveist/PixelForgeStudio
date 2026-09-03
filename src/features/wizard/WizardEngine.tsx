@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { AssetCategory } from "../../domain/assets";
 import type { ProfileLibrary, WizardDraft } from "../../schemas";
 import type { V2StorageAdapter } from "../../services";
@@ -7,6 +8,7 @@ import {
   type WizardCoreFlowContext
 } from "./WizardCoreStepContent";
 import { resolveWizardCoreStep } from "./wizardLifecycle";
+import { createWizardCoreFormValues } from "./wizardCategoryRouting";
 import type { WizardCoreFormValues } from "./wizardSteps";
 
 export type WizardDraftStorage = Pick<V2StorageAdapter, "writeDraft">;
@@ -17,7 +19,7 @@ export interface WizardEngineProps {
   readonly draft: WizardDraft;
   readonly draftPersisted: boolean;
   readonly initialDirty?: boolean;
-  readonly initialProjectName?: string;
+  readonly initialFormValues?: WizardCoreFormValues;
   readonly library: ProfileLibrary | null;
   readonly now: () => string;
   readonly onDraftEdited: (draft: WizardDraft) => void;
@@ -38,7 +40,7 @@ export function WizardEngine({
   draft,
   draftPersisted,
   initialDirty,
-  initialProjectName,
+  initialFormValues,
   library,
   now,
   onDraftEdited,
@@ -46,15 +48,21 @@ export function WizardEngine({
   onRawCoreFormValuesChanged,
   storageAdapter
 }: WizardEngineProps) {
-  const context: WizardCoreFlowContext = { categoryHint, library };
-  const initialValues: WizardCoreFormValues = {
-    projectName: initialProjectName ?? draft.projectName
-  };
+  const context = useMemo<WizardCoreFlowContext>(
+    () => ({ categoryHint, library }),
+    [categoryHint, library]
+  );
+  const baselineValues = createWizardCoreFormValues(
+    baselineDraft,
+    categoryHint
+  );
+  const initialValues =
+    initialFormValues ?? createWizardCoreFormValues(draft, categoryHint);
 
   return (
     <GuidedWizardEngine
       baselineDraft={baselineDraft}
-      baselineValues={{ projectName: baselineDraft.projectName }}
+      baselineValues={baselineValues}
       context={context}
       draft={draft}
       draftPersisted={draftPersisted}

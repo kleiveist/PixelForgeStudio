@@ -23,12 +23,14 @@ const INITIAL_DRAFT = parseWizardDraft({
 
 const BaseSyntheticSchema = z.strictObject({
   projectName: z.string().min(1),
-  craftNote: z.string()
+  craftNote: z.string(),
+  craftEnabled: z.boolean()
 });
 
 const CraftStepSchema = z.strictObject({
   projectName: z.string().min(1),
-  craftNote: z.string().trim().min(1, "Bitte ergänze die Handwerksnotiz.")
+  craftNote: z.string().trim().min(1, "Bitte ergänze die Handwerksnotiz."),
+  craftEnabled: z.boolean()
 });
 
 type SyntheticValues = z.infer<typeof BaseSyntheticSchema>;
@@ -96,6 +98,7 @@ const SYNTHETIC_FLOW = Object.freeze({
       description: "Deklarativ ergänzter dritter Schritt.",
       fieldPaths: Object.freeze(["craftNote"] as const),
       schema: CraftStepSchema,
+      isApplicable: (values: SyntheticValues) => values.craftEnabled,
       Component: CraftStep
     })
   ]),
@@ -130,7 +133,8 @@ describe("GuidedWizardEngine extension contract", () => {
         baselineDraft={INITIAL_DRAFT}
         baselineValues={{
           projectName: INITIAL_DRAFT.projectName,
-          craftNote: ""
+          craftNote: "",
+          craftEnabled: true
         }}
         context={{ fieldLabel: "Handwerksnotiz" }}
         draft={INITIAL_DRAFT}
@@ -139,7 +143,8 @@ describe("GuidedWizardEngine extension contract", () => {
         initialStepId="project"
         initialValues={{
           projectName: INITIAL_DRAFT.projectName,
-          craftNote: ""
+          craftNote: "",
+          craftEnabled: true
         }}
         now={() => "2026-09-04T10:05:00.000Z"}
         onDraftEdited={onDraftEdited}
@@ -174,5 +179,38 @@ describe("GuidedWizardEngine extension contract", () => {
       })
     );
     expect(onDraftSaved).toHaveBeenCalledTimes(3);
+  });
+
+  it("skips an inapplicable step and recovers an unavailable initial step", async () => {
+    const user = userEvent.setup();
+    const writeDraft = vi.fn(() => ({ status: "ok" as const }));
+    const values = {
+      projectName: INITIAL_DRAFT.projectName,
+      craftNote: "",
+      craftEnabled: false
+    };
+
+    render(
+      <GuidedWizardEngine
+        baselineDraft={INITIAL_DRAFT}
+        baselineValues={values}
+        context={{ fieldLabel: "Handwerksnotiz" }}
+        draft={INITIAL_DRAFT}
+        draftPersisted={true}
+        flow={SYNTHETIC_FLOW}
+        initialStepId="craft"
+        initialValues={values}
+        now={() => "2026-09-04T10:05:00.000Z"}
+        onDraftEdited={() => undefined}
+        onDraftSaved={() => undefined}
+        storageAdapter={{ writeDraft }}
+      />
+    );
+
+    expect(screen.getByRole("heading", { name: "Grundlage" })).toBeVisible();
+    expect(screen.queryByText("Handwerk")).not.toBeInTheDocument();
+    expect(screen.getByText("Schritt 2 von 2")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Schritt prüfen" }));
+    expect(writeDraft).not.toHaveBeenCalled();
   });
 });

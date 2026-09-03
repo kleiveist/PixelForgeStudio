@@ -416,6 +416,55 @@ describe("wizard draft lifecycle", () => {
     });
   });
 
+  it("falls back from a capability step that is not valid for the selected subtype", () => {
+    const draft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId,
+      projectName: "Eichenplanken",
+      route: "wizard/profile",
+      currentStep: "directions",
+      category: "texture",
+      subtype: "wood",
+      answers: {},
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+
+    expect(resolveWizardCoreStep(draft)).toEqual({
+      stepId: "category",
+      usedFallback: true,
+      unknownStep: "directions"
+    });
+  });
+
+  it("resumes a selected pre-base Draft on the profile route", () => {
+    const draft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId,
+      projectName: "Windbaum",
+      route: "wizard/profile",
+      currentStep: "animation",
+      category: "nature",
+      subtype: "tree",
+      answers: { animationType: "wind" },
+      validation: { errors: [], warnings: [] },
+      savedAt: PROFILE_FIXTURE_TIMESTAMP
+    });
+
+    const library = createProfileLibraryFixture();
+
+    expect(resolveWizardDraftSnapshot(draft, library)).toBeNull();
+    expect(
+      validateWizardResume({
+        requestedDraftId: draftId,
+        draft,
+        profileLibrary: library
+      })
+    ).toEqual({ status: "ready", draft, notices: [] });
+  });
+
   it("rejects malformed resume payloads before lifecycle handling", () => {
     const result = validateWizardResume({
       requestedDraftId: draftId,

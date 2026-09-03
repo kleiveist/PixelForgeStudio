@@ -67,6 +67,7 @@ export interface GuidedWizardStepDefinition<
   readonly description: string;
   readonly fieldPaths: readonly FieldPath<Values>[];
   readonly schema: z.ZodType<Values, Values>;
+  readonly isApplicable?: (values: Values, context: Context) => boolean;
   readonly Component: ComponentType<
     GuidedWizardStepComponentProps<Values, Context>
   >;
@@ -91,9 +92,10 @@ export interface GuidedWizardFlowDefinition<
     GuidedWizardStepDefinition<Values, StepId, Context>,
     ...GuidedWizardStepDefinition<Values, StepId, Context>[]
   ];
+  /** `null` keeps a valid form intermediate transient while navigation continues. */
   readonly updateDraft: (
     input: GuidedWizardDraftUpdate<Values, StepId>
-  ) => WizardDraft;
+  ) => WizardDraft | null;
   readonly Summary: ComponentType<
     GuidedWizardSummaryComponentProps<Values, Context>
   >;
@@ -156,15 +158,39 @@ function SaveStatusMessage({ status }: Readonly<{ status: SaveStatus }>) {
   );
 }
 
-function stepIndex<
+type AnyGuidedWizardStep<
+  Values extends FieldValues,
+  StepId extends string,
+  Context
+> = GuidedWizardStepDefinition<Values, StepId, Context>;
+
+function applicableSteps<
   Values extends FieldValues,
   StepId extends string,
   Context
 >(
   flow: GuidedWizardFlowDefinition<Values, StepId, Context>,
+  values: Values,
+  context: Context
+): readonly AnyGuidedWizardStep<Values, StepId, Context>[] {
+  const steps = flow.steps.filter(
+    (step) => step.isApplicable?.(values, context) ?? true
+  );
+  if (steps.length === 0) {
+    throw new Error("A guided wizard requires at least one applicable step.");
+  }
+  return steps;
+}
+
+function stepIndex<
+  Values extends FieldValues,
+  StepId extends string,
+  Context
+>(
+  steps: readonly AnyGuidedWizardStep<Values, StepId, Context>[],
   stepId: StepId
 ): number {
-  const index = flow.steps.findIndex((step) => step.id === stepId);
+  const index = steps.findIndex((step) => step.id === stepId);
   if (index < 0) {
     throw new Error(`Unknown guided wizard step "${stepId}".`);
   }
@@ -176,10 +202,37 @@ function stepAt<
   StepId extends string,
   Context
 >(
-  flow: GuidedWizardFlowDefinition<Values, StepId, Context>,
+  steps: readonly AnyGuidedWizardStep<Values, StepId, Context>[],
   index: number
 ): GuidedWizardStepDefinition<Values, StepId, Context> | undefined {
-  return flow.steps[index];
+  return steps[index];
+}
+
+function closestApplicableStep<
+  Values extends FieldValues,
+  StepId extends string,
+  Context
+>(
+  flow: GuidedWizardFlowDefinition<Values, StepId, Context>,
+  steps: readonly AnyGuidedWizardStep<Values, StepId, Context>[],
+  requestedStepId: StepId
+): AnyGuidedWizardStep<Values, StepId, Context> {
+  const exact = steps.find((step) => step.id === requestedStepId);
+  if (exact) return exact;
+
+  const requestedIndex = flow.steps.findIndex(
+    (step) => step.id === requestedStepId
+  );
+  for (let index = requestedIndex - 1; index >= 0; index -= 1) {
+    const candidate = flow.steps[index];
+    if (candidate && steps.includes(candidate)) return candidate;
+  }
+
+  const first = steps[0];
+  if (!first) {
+    throw new Error("A guided wizard requires at least one applicable step.");
+  }
+  return first;
 }
 
 function valueAtPath(value: unknown, path: string): unknown {
@@ -205,10 +258,10 @@ function firstInvalidField<
   StepId extends string,
   Context
 >(
-  flow: GuidedWizardFlowDefinition<Values, StepId, Context>,
+  steps: readonly AnyGuidedWizardStep<Values, StepId, Context>[],
   errors: FieldErrors<Values>
 ): Readonly<{ fieldPath: FieldPath<Values>; stepId: StepId }> | null {
-  for (const step of flow.steps) {
+  for (const step of steps) {
     for (const fieldPath of step.fieldPaths) {
       if (valueAtPath(errors, fieldPath) !== undefined) {
         return { fieldPath, stepId: step.id };
@@ -238,11 +291,12 @@ export function GuidedWizardEngine<
   onValuesChanged,
   storageAdapter
 }: GuidedWizardEngineProps<Values, StepId, Context>) {
-  const initialStepIndex = stepIndex(flow, initialStepId);
-  const initialStep = stepAt(flow, initialStepIndex);
-  if (!initialStep) {
-    throw new Error("A guided wizard requires at least one configured step.");
-  }
+  const initialApplicableSteps = applicableSteps(flow, initialValues, context);
+  const initialStep = closestApplicableStep(
+    flow,
+    initialApplicableSteps,
+    initialStepId
+  );
 
   const [currentStepId, setCurrentStepId] = useState(initialStep.id);
   const [draft, setDraft] = useState(initialDraft);
@@ -270,14 +324,7 @@ export function GuidedWizardEngine<
   const stepHeadingRef = useRef<HTMLHeadingElement>(null);
   const previousStepRef = useRef(currentStepId);
   const focusFieldAfterStepChangeRef = useRef<FieldPath<Values> | null>(null);
-  const activeStepIndex = stepIndex(flow, currentStepId);
-  const activeStep = stepAt(flow, activeStepIndex);
-  if (!activeStep) {
-    throw new Error(`Missing active guided wizard step "${currentStepId}".`);
-  }
-  const activeStepRef = useRef(activeStep);
-  currentStepRef.current = currentStepId;
-  activeStepRef.current = activeStep;
+  const activeStepRef = useRef(initialStep);
 
   const resolver = useCallback<Resolver<Values>>(
     (values, resolverContext, options) =>
@@ -303,6 +350,15 @@ export function GuidedWizardEngine<
     watch
   } = form;
   const watchedValues = useWatch({ control }) as Values;
+  const visibleSteps = applicableSteps(flow, watchedValues, context);
+  const activeStep = closestApplicableStep(
+    flow,
+    visibleSteps,
+    currentStepId
+  );
+  const activeStepIndex = stepIndex(visibleSteps, activeStep.id);
+  currentStepRef.current = activeStep.id;
+  activeStepRef.current = activeStep;
 
   const cancelAutosave = useCallback(() => {
     if (autosaveTimerRef.current === null) return;
@@ -334,7 +390,7 @@ export function GuidedWizardEngine<
       cancelAutosave();
       setSaveStatus({ kind: "saving" });
 
-      let candidate: WizardDraft;
+      let candidate: WizardDraft | null;
       try {
         candidate = flow.updateDraft({
           draft: draftRef.current,
@@ -345,6 +401,12 @@ export function GuidedWizardEngine<
       } catch {
         setIsDirty(true);
         setSaveStatus({ kind: "failed", message: candidateFailureMessage() });
+        return false;
+      }
+
+      if (candidate === null) {
+        setIsDirty(true);
+        setSaveStatus({ kind: "dirty" });
         return false;
       }
 
@@ -396,7 +458,7 @@ export function GuidedWizardEngine<
         return;
       }
 
-      let candidate: WizardDraft | null = null;
+      let candidate: WizardDraft | null;
       try {
         candidate = flow.updateDraft({
           draft: draftRef.current,
@@ -415,9 +477,16 @@ export function GuidedWizardEngine<
               ? { kind: "saved" }
               : { kind: "idle" }
         );
+        return;
       }
 
-      const dirty = candidate ? applyEditedDraft(candidate) : true;
+      if (candidate === null) {
+        setIsDirty(true);
+        setSaveStatus({ kind: "dirty" });
+        return;
+      }
+
+      const dirty = applyEditedDraft(candidate);
       if (!dirty) return;
 
       autosaveTimerRef.current = setTimeout(() => {
@@ -441,20 +510,23 @@ export function GuidedWizardEngine<
   ]);
 
   useEffect(() => {
-    if (previousStepRef.current === currentStepId) return;
-    previousStepRef.current = currentStepId;
+    if (currentStepId !== activeStep.id) {
+      setCurrentStepId(activeStep.id);
+    }
+    if (previousStepRef.current === activeStep.id) return;
+    previousStepRef.current = activeStep.id;
     stepHeadingRef.current?.focus();
     const fieldToFocus = focusFieldAfterStepChangeRef.current;
     if (fieldToFocus) {
       focusFieldAfterStepChangeRef.current = null;
       setFocus(fieldToFocus);
     }
-  }, [currentStepId, setFocus]);
+  }, [activeStep.id, currentStepId, setFocus]);
 
   const transitionTo = useCallback(
     (values: Values, targetStep: StepId) => {
       cancelAutosave();
-      let candidate: WizardDraft;
+      let candidate: WizardDraft | null;
       try {
         candidate = flow.updateDraft({
           draft: draftRef.current,
@@ -466,20 +538,27 @@ export function GuidedWizardEngine<
         setSaveStatus({ kind: "failed", message: candidateFailureMessage() });
         return;
       }
-      applyEditedDraft(candidate);
+
+      if (candidate !== null) {
+        applyEditedDraft(candidate);
+      } else {
+        setIsDirty(true);
+        setSaveStatus({ kind: "dirty" });
+      }
       currentStepRef.current = targetStep;
       setCurrentStepId(targetStep);
       setActiveStepConfirmed(false);
       setSubmitError(null);
-      persistValues(values, targetStep);
+      if (candidate !== null) persistValues(values, targetStep);
     },
     [applyEditedDraft, cancelAutosave, flow, persistValues]
   );
 
   const submitValid = useCallback(
     (values: Values) => {
-      const currentIndex = stepIndex(flow, currentStepRef.current);
-      const nextStep = stepAt(flow, currentIndex + 1);
+      const steps = applicableSteps(flow, values, context);
+      const currentIndex = stepIndex(steps, currentStepRef.current);
+      const nextStep = stepAt(steps, currentIndex + 1);
       if (nextStep) {
         transitionTo(values, nextStep.id);
         return;
@@ -498,7 +577,7 @@ export function GuidedWizardEngine<
       }
       setSubmitError(null);
     },
-    [flow, persistValues, transitionTo]
+    [context, flow, persistValues, transitionTo]
   );
 
   const submitInvalid = useCallback(
@@ -506,7 +585,10 @@ export function GuidedWizardEngine<
       cancelAutosave();
       setActiveStepConfirmed(false);
       setSubmitError("Bitte korrigiere das markierte Pflichtfeld.");
-      const invalidField = firstInvalidField(flow, fieldErrors);
+      const invalidField = firstInvalidField(
+        applicableSteps(flow, getValues(), context),
+        fieldErrors
+      );
       if (!invalidField) return;
       if (currentStepRef.current !== invalidField.stepId) {
         focusFieldAfterStepChangeRef.current = invalidField.fieldPath;
@@ -516,15 +598,16 @@ export function GuidedWizardEngine<
       }
       setFocus(invalidField.fieldPath);
     },
-    [cancelAutosave, flow, setFocus]
+    [cancelAutosave, context, flow, getValues, setFocus]
   );
 
   const goBack = useCallback(() => {
-    const currentIndex = stepIndex(flow, currentStepRef.current);
-    const previousStep = stepAt(flow, currentIndex - 1);
+    const values = getValues();
+    const steps = applicableSteps(flow, values, context);
+    const currentIndex = stepIndex(steps, currentStepRef.current);
+    const previousStep = stepAt(steps, currentIndex - 1);
     if (!previousStep) return;
 
-    const values = getValues();
     cancelAutosave();
 
     try {
@@ -533,14 +616,21 @@ export function GuidedWizardEngine<
         values,
         stepId: previousStep.id
       });
-      applyEditedDraft(candidate);
+      if (candidate !== null) {
+        applyEditedDraft(candidate);
+      } else {
+        setIsDirty(true);
+        setSaveStatus({ kind: "dirty" });
+      }
       currentStepRef.current = previousStep.id;
       setCurrentStepId(previousStep.id);
       setActiveStepConfirmed(false);
       setSubmitError(null);
 
-      const result = previousStep.schema.safeParse(values);
-      if (result.success) persistValues(result.data, previousStep.id);
+      if (candidate !== null) {
+        const result = previousStep.schema.safeParse(values);
+        if (result.success) persistValues(result.data, previousStep.id);
+      }
     } catch {
       setIsDirty(true);
       setSaveStatus({ kind: "dirty" });
@@ -548,11 +638,11 @@ export function GuidedWizardEngine<
       setCurrentStepId(previousStep.id);
       setActiveStepConfirmed(false);
     }
-  }, [applyEditedDraft, cancelAutosave, flow, getValues, persistValues]);
+  }, [applyEditedDraft, cancelAutosave, context, flow, getValues, persistValues]);
 
-  const currentIndex = stepIndex(flow, currentStepId);
+  const currentIndex = activeStepIndex;
   const progressValue = currentIndex + 1;
-  const isLastStep = currentIndex === flow.steps.length - 1;
+  const isLastStep = currentIndex === visibleSteps.length - 1;
   const ActiveStepComponent = activeStep.Component;
   const Summary = flow.Summary;
 
@@ -561,18 +651,18 @@ export function GuidedWizardEngine<
       <div className={styles.progressPanel}>
         <div className={styles.progressHeader}>
           <span>
-            Schritt {progressValue} von {flow.steps.length}
+            Schritt {progressValue} von {visibleSteps.length}
           </span>
-          <span>{Math.round((progressValue / flow.steps.length) * 100)} %</span>
+          <span>{Math.round((progressValue / visibleSteps.length) * 100)} %</span>
         </div>
         <progress
           aria-label="Wizard-Fortschritt"
-          max={flow.steps.length}
+          max={visibleSteps.length}
           value={progressValue}
         />
         <nav aria-label="Wizard-Fortschritt">
           <ol className={styles.stepList}>
-            {flow.steps.map((step, index) => (
+            {visibleSteps.map((step, index) => (
               <li
                 key={step.id}
                 className={
