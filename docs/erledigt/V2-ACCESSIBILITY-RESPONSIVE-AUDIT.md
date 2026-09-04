@@ -93,3 +93,44 @@ Fachdefaults noch Prompt-Engine, Persistenzmodell oder Legacy V1; Prompt 27
 hat die übergreifende Release-Checkliste anschließend bestanden und die
 ausführbare Legacy-UI entfernt. Die Abschlussmatrix steht in
 `V2-RELEASE-ACCEPTANCE.md`.
+
+## Erweiterung: Animation Workspace (Prompt 36)
+
+Stand: 4. September 2026. Diese Ergänzung dokumentiert die automatisierte
+DOM-/Interaktionsprüfung der neuen Workspace-Shell. Die ursprüngliche
+Chromium-Screenshotmatrix oben bleibt der visuelle Prompt-26-Prüfstand; für
+Prompt 36 werden keine neuen manuellen Geräte- oder Screenshotbefunde
+behauptet.
+
+| Breite | semantische Workspace-Projektion |
+|---|---|
+| ab 1120 px | Toolbar sowie Teileinventar, Viewport, Inspektor und Timeline gleichzeitig |
+| 720–1119 px | Viewport und Timeline bleiben sichtbar; Teile und Eigenschaften werden über beschriftete Toggle-Buttons gewechselt |
+| unter 720 px | roving Vier-Tab-Auswahl `Teile`, `Viewport`, `Eigenschaften`, `Timeline`; nur das aktive Paneel bleibt im DOM |
+
+Die Layoutprojektion reagiert auf `resize`, persistiert aber keinen Paneel-
+oder Auswahlzustand. Nach einem Wechsel erhält die Überschrift des neu
+gerenderten Paneels Fokus. Die kleine Tabreihe unterstützt Links/Rechts sowie
+Pos1/Ende; die Timeline besitzt eine eigene roving Radio-Auswahl für alle acht
+Walk-Frames mit denselben Navigationstasten.
+
+Der Viewport ist bewusst DOM-basiert und fokussierbar. Pfeiltasten verschieben
+die Darstellung in 8-Pixel-Schritten, Umschalt + Pfeil in 32-Pixel-Schritten,
+`+`/`-` wechseln ausschließlich zwischen 1×, 2×, 4×, 8×, 12× und 16×, und
+Pos1 zentriert. Für Raster, Rig, Anker, Begrenzungsrahmen und Fußlinie bestehen
+beschriftete Checkboxen sowie eine Textliste mit dem jeweiligen Ein-/Aus-
+Status. Damit hängt keine canvasnahe Shell-Funktion ausschließlich von
+Zeigerbedienung oder Farbe ab.
+
+Play/Pause, Export und PNG-Import sind bis zu ihrer Fachimplementierung echte
+deaktivierte Buttons und über `aria-describedby` mit sichtbaren Gründen
+verbunden. Projekt-/Part-/Frame-Inspektorzustände verwenden Definition Lists
+statt scheinbar editierbarer Fake-Felder. No-Project, Loading, Not-Found,
+Repositoryfehler, leeres Projekt und nicht aufgelöste Part-/Blob-Referenzen
+bleiben getrennte, textlich benannte Zustände.
+
+Die Prompt-36-RTL-Abdeckung prüft zusätzlich die vollständige
+Slotkatalogprojektion samt Required-/Optional-Status, nativen Richtungswechsel,
+Frameauswahl per Maus und Tastatur, Zoom/Pan/Overlay-Wechsel, sichtbaren
+Speicherstatus, Fokus nach responsiven Paneelwechseln sowie das Fehlen
+fälschlich aktivierter Import-, Playback- und Exportaktionen.

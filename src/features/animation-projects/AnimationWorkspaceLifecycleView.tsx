@@ -3,20 +3,12 @@ import { Surface } from "../../components/ui";
 import type { StableId } from "../../schemas";
 import { useAnimationProject } from "../../store/animation";
 import { useNavigation } from "../../store/navigation";
-import { DIRECTION_SOURCE_MODE_LABELS } from "./animationProjectsData";
+import { AnimationWorkspace } from "../animation-workspace";
 import styles from "./AnimationProjectsView.module.css";
 
 export interface AnimationWorkspaceLifecycleViewProps {
   readonly projectId?: StableId;
 }
-
-const saveStatusCopy = {
-  idle: "Noch nicht gespeichert",
-  dirty: "Ungespeicherte Änderungen",
-  saving: "Änderungen werden gespeichert …",
-  saved: "Alle Änderungen gespeichert",
-  failed: "Speichern fehlgeschlagen"
-} as const;
 
 export function AnimationWorkspaceLifecycleView({
   projectId
@@ -137,55 +129,14 @@ export function AnimationWorkspaceLifecycleView({
   }
 
   return (
-    <div className={styles.view}>
-      <header className={styles.hero}>
-        <div>
-          <span className={styles.eyebrow}>Animation Workspace · Projekt geöffnet</span>
-          <h1 id="animation-workspace-view-title">{activeProject.name}</h1>
-          <p>
-            Projektmetadaten und Speicherstatus sind aktiv. Rig-, Slot- und
-            Animationseditoren werden in den folgenden Prompt-Phasen ergänzt.
-          </p>
-        </div>
-        <button
-          className={styles.primaryButton}
-          type="button"
-          disabled={!canSaveProject}
-          onClick={() => void explicitSave()}
-        >
-          Jetzt speichern
-        </button>
-      </header>
-
-      <div className={styles.workspaceGrid}>
-        <Surface as="section" className={styles.workspacePanel} tone="raised" aria-labelledby="animation-project-status-title">
-          <span className={styles.sectionIndex}>01 · Projektstatus</span>
-          <h2 id="animation-project-status-title">{saveStatusCopy[saveStatus]}</h2>
-          <dl className={styles.projectFacts}>
-            <div><dt>Projekt-ID</dt><dd>{activeProject.projectId}</dd></div>
-            <div><dt>Rig</dt><dd>{activeProject.rigTemplateId}</dd></div>
-            <div><dt>Richtungen</dt><dd>{DIRECTION_SOURCE_MODE_LABELS[activeProject.directionSourceMode]}</dd></div>
-            <div><dt>Frame</dt><dd>{activeProject.frameProfile.frameSize.width} × {activeProject.frameProfile.frameSize.height} px</dd></div>
-            <div><dt>Figur</dt><dd>{activeProject.frameProfile.characterHeight} px · Fußanker {activeProject.frameProfile.footAnchor.x}/{activeProject.frameProfile.footAnchor.y}</dd></div>
-          </dl>
-          {saveError || commandError ? (
-            <p className={styles.dialogError} role="alert">{commandError ?? saveError}</p>
-          ) : null}
-          {rawProjectError ? (
-            <p className={styles.dialogError} role="alert">{rawProjectError.message}</p>
-          ) : null}
-        </Surface>
-
-        <Surface as="section" className={styles.workspacePanel} tone="soft" aria-labelledby="animation-editor-placeholder-title">
-          <span className={styles.sectionIndex}>02 · Editorgrenze</span>
-          <h2 id="animation-editor-placeholder-title">Editorflächen folgen kontrolliert.</h2>
-          <p>
-            Character Kits, Import, Rig-Bearbeitung, Canvas und Frame-Editor
-            bleiben hier bewusst Platzhalter. Prompt 35 verwaltet ausschließlich
-            den validierten Projektlebenszyklus.
-          </p>
-        </Surface>
-      </div>
-    </div>
+    <AnimationWorkspace
+      key={activeProject.projectId}
+      project={activeProject}
+      canSave={canSaveProject}
+      saveStatus={saveStatus}
+      saveError={commandError ?? saveError}
+      sourceError={rawProjectError?.message ?? null}
+      onSave={() => void explicitSave()}
+    />
   );
 }

@@ -63,6 +63,17 @@
 - Studio Home über einen schmalen Summary-Port mit den drei zuletzt
   bearbeiteten realen Animationsprojekten verbunden; vorhandene Daten lösen
   weiterhin keine automatische Projektöffnung aus
+- produktive responsive Animation-Workspace-Shell mit Projekt-/Clip-Toolbar,
+  domänenbasiertem 39-Slot-Inventar, DOM-basiertem 128-×-128-Viewport,
+  kontextuellem Projekt-/Part-/Frame-Inspektor und acht Walk-Frameplätzen
+  ergänzt
+- Richtung, Clip, Frame, Slot, ganzzahlige Zoomstufen, Pan, fünf Overlays und
+  responsive Paneelwahl als rein temporären Workspace-Reducer modelliert;
+  mittlere Seitenpaneele und kleine Vier-Tab-Ansicht übertragen den Fokus und
+  bleiben vollständig per Tastatur bedienbar
+- fehlende Projekt-, Repository- und Bildquellen getrennt erklärt sowie
+  Import, Playback und Export bis zu ihren echten Implementierungsphasen
+  sichtbar begründet deaktiviert
 
 ## 2.0.0 — 2026-09-03
 

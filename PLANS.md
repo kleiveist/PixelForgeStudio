@@ -2,13 +2,58 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 35 — Animationsprojekt-Lifecycle (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 36 — Animation-Workspace-Shell (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 36 — Animation-Workspace-Shell (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 37 — PNG-Part-Import und Normalisierung (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31 abgeschlossen; Phase B mit
-  Prompts 32–35 abgeschlossen, Prompts 36–51 offen unter
+  Prompts 32–35 und Phase C mit Prompt 36 abgeschlossen, Prompts 37–51 offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
+
+## Prompt 36 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `28ae7c6`
+- Baseline: Prompt 35 abgeschlossen mit 132 Testdateien und 825 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Abnahme: produktive, responsive Workspace-Shell für das geladene aktive
+  Animationsprojekt mit Toolbar, domänenbasiertem Teileinventar, DOM-basiertem
+  128-×-128-Viewport, kontextuellem Inspektor und Walk-Timeline
+- Bedienung: temporäre Auswahl für Richtung, Clip, Frame, Slot, Zoom, Overlays
+  und aktive Paneele; vollständige Tastatur- und DOM-Alternativen sowie
+  fokuserhaltende Mittel-/Kleinbreiten-Navigation
+- Zustände: getrennte Loading-, Fehler-, No-Project- und Missing-Blob-
+  Darstellungen; Speicherstatus bleibt Eigentum des Projekt-Providers
+- Grenze: kein PNG-Import, keine persistierten Beispieldaten, kein Canvas-
+  Renderer, kein Playback, keine Exportpipeline und kein Prompt 37
+
+## Prompt 36 — Ergebnis
+
+1. Die geladene Projekt-ID führt jetzt in eine vollständige produktive
+   Workspace-Shell mit Projekt-/Clip-Toolbar, domänenbasiertem
+   39-Slot-Inventar, zentralem DOM-Viewport, kontextuellem Inspektor und
+   acht Walk-Frameplätzen samt FPS-Anzeige.
+2. Ein purer lokaler Reducer besitzt ausschließlich Richtung, Clip, Frame,
+   Slot, Inspektorkontext, die sechs ganzzahligen Zoomstufen, fünf Overlays,
+   Pan und responsive Paneelauswahl. Projekt- und Save-Metadaten bleiben im
+   `AnimationProjectProvider`; kein Workspace-Unterbaustein liest das
+   Repository oder persistiert temporäre Auswahl.
+3. Desktop zeigt alle vier Arbeitsbereiche, mittlere Breiten schalten das
+   Seitenpaneel zwischen Teileinventar und Inspektor um, kleine Breiten bieten
+   die progressive Reihenfolge Teile → Viewport → Eigenschaften → Timeline.
+   Paneelwechsel übertragen Fokus; Tabs, Slots und Frames sind vollständig per
+   Tastatur auswählbar.
+4. Zoom, Panning und alle Overlay-Schalter besitzen Button-/Checkbox- und
+   Textalternativen. No-Project, Loading, Not-Found, Repositoryfehler, leere
+   Projekte und nicht aufgelöste Asset-/Blob-Referenzen sind getrennt sichtbar.
+   Import, Play/Pause und Export bleiben mit sichtbarer Begründung deaktiviert.
+5. 17 neue Reducer-, Katalog-, Workspace-, Responsive-, Fokus-, Tastatur-,
+   Lifecycle- und Fehlerfalltests ergänzen die Abdeckung. `npm run verify`
+   bestand mit 135 Testdateien und 842 Tests sowie erfolgreichem Typecheck und
+   Produktionsbuild; einzige Ausgabe bleibt die bekannte Vite-Warnung zum
+   über 500 kB großen Hauptchunk.
+6. `git diff --check` ist sauber. PyGitIndex 2.1.0 bestätigt alle 64
+   Markdown-Dateien als aktuell. Prompt 37 wurde nicht begonnen und bleibt die
+   nächste getrennte Aufgabe.
 
 ## Prompt 35 — Ausgangsstand und Abnahme
 

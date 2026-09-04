@@ -1,12 +1,13 @@
 # PixelForge Studio source architecture
 
-Prompt 35 completes the local Animation project lifecycle on top of the
-injectable repository from Prompt 34 and the public domain/schema contracts
-from Prompts 32–33. Studio Home projects only narrow Prompt and Animation
-summaries and owns neither domain. The Animation project list and lifecycle
-provider are productive; image import, Character Kits, rig editing, Canvas and
-rendering remain honest placeholders. Both modules share one route source,
-settings source, theme, skip target, title and focus boundary.
+Prompt 36 adds the productive Animation Workspace information architecture on
+top of the Prompt-35 project lifecycle. The loaded project and save state still
+come from the provider, while direction, clip, frame, slot, zoom, overlays,
+pan and responsive pane selection remain temporary local reducer state. The
+workspace deliberately renders no imported pixels yet; image import,
+Character Kits, rig editing, playback and export remain explicit future
+boundaries. Both modules share one route source, settings source, theme, skip
+target, title and focus boundary.
 
 - `app/`: Composition, globale `StudioShell`, getrennte Prompt-/Animations-
   Modulflächen, pure Home-Zusammenfassungsprojektion mit schmalem Controller,
@@ -69,7 +70,10 @@ settings source, theme, skip target, title and focus boundary.
   enthält getrennte Startziele, den sichtbaren Migrationsstatus und den
   vollständigen lokalen Workspace-JSON-Transfer; `animation-projects/`
   enthält die validierte Projektanlage, pure Listenprojektion, CRUD-Ansicht,
-  Dialoge und den kontrollierten Workspace-Lifecycle-State
+  Dialoge und den kontrollierten Workspace-Lifecycle-State;
+  `animation-workspace/` enthält die repository-freie Arbeitsoberfläche, ihre
+  pure temporäre State-Machine, responsive Paneelprojektion, Slotinventar,
+  DOM-Viewport, read-only Inspektor und Frameauswahl
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -378,6 +382,34 @@ confirmed delete call only the injected repository provider; views never use
 IndexedDB directly. Workspace routes retain the stable project ID. Missing IDs
 remain on an explained non-looping error surface, while no-ID, Character Kit,
 import, rig and editor surfaces stay explicit placeholders for later prompts.
+
+`features/animation-workspace/index.ts` is the public Prompt-36 presentation
+boundary. `AnimationWorkspaceLifecycleView` is the only adapter from
+`AnimationProjectProvider` into that boundary and passes a validated project,
+save status, errors and an explicit save command. Workspace children never
+read IndexedDB or the repository. `animationWorkspaceReducer()` owns only
+ephemeral direction, clip, frame, slot, inspector context, integer zoom,
+overlay, pan and pane selection; the lifecycle component keys it by project ID
+so switching projects cannot leak an editor selection.
+
+`WORKSPACE_SLOT_GROUPS` projects the canonical 39-slot domain catalog without
+duplicating slot truth. Existing project assignments contain only PartAsset
+IDs, so Prompt 36 does not infer their slot or claim that a Blob exists: it
+shows unresolved references as a distinct source state until the validated
+Prompt-37 import/read boundary supplies PartAsset and Blob data. The viewport
+is a DOM presentation of the fixed project frame with checker background,
+integer display zoom, keyboard/button panning and text equivalents for every
+overlay. It is never a rig-data source and display zoom never changes project
+or export coordinates. The inspector exposes Project, Part and Frame read-only
+states without fake editable fields; the Timeline exposes the validated clip's
+frame slots and roving keyboard selection without implementing playback.
+
+`useWorkspaceLayout()` maps browser width to desktop, medium and small DOM
+structures. Desktop renders inventory, viewport, inspector and timeline;
+medium keeps viewport/timeline and one explicitly switchable side pane; small
+renders a four-tab progressive view. Pane changes transfer focus to the newly
+rendered heading. The same state remains local across a resize and is never
+written through the project provider.
 
 The provider registers `beforeunload` only while a project is dirty. The
 navigation provider also asks the composition-injected guard before internal
@@ -989,5 +1021,8 @@ bundle-graph schemas. Prompt 34 adds the native IndexedDB/Memory repository
 boundary, atomic Part-/Blob-Writes, shared-reference duplication and explicit
 binary garbage collection. Prompt 35 adds the productive project CRUD UI,
 repository-backed provider, revision-safe autosave, guarded navigation, stable
-workspace loading and real recent-project Home summaries. Prompt 36 is the next
-unstarted task and owns the Animation Workspace shell.
+workspace loading and real recent-project Home summaries. Prompt 36 adds the
+responsive Animation Workspace shell, temporary selection reducer,
+domain-driven inventory, DOM viewport, contextual inspector and eight-frame
+Walk timeline. Prompt 37 is the next unstarted task and owns validated PNG Part
+import, decoding, trimming and atomic project assignment.
