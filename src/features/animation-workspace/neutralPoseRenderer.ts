@@ -16,6 +16,7 @@ import {
   type LayeredPart,
   type RenderablePart,
   type RgbaImage,
+  type DirectionRig,
   type RigTemplate,
   type Transform2D,
   type TransformDelta
@@ -115,6 +116,25 @@ export function prepareNeutralPoseParts(
       ])
     });
   }
+
+  return prepareDirectionRigParts(
+    project,
+    template,
+    directionRig,
+    partAssets,
+    decodedSources
+  );
+}
+
+/** Prepares renderer-ready parts against an already resolved authored pose. */
+export function prepareDirectionRigParts(
+  project: AnimationProject,
+  template: RigTemplate,
+  directionRig: DirectionRig,
+  partAssets: readonly AnimationPartAsset[],
+  decodedSources: readonly DecodedPartSource[]
+): NeutralPosePreparationResult {
+  const direction = directionRig.direction;
 
   const assetsById = new Map(partAssets.map((asset) => [asset.assetId, asset]));
   const sourcesByAssetId = new Map(

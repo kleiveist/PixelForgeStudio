@@ -305,6 +305,66 @@ describe("AnimationWorkspace", () => {
     }
   });
 
+  it("shows all South walk production blockers before playback is available", async () => {
+    setViewportWidth(1440);
+    const pendingHead = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        anchorStatus: "anchorsPending",
+        anchors: undefined
+      })
+    );
+    const project = parseAnimationProject(
+      createAnimationProjectInput({
+        directionSourceMode: "singleDirectionPrototype",
+        parts: [{ assetId: pendingHead.assetId }],
+        clips: [
+          {
+            clipId: "clip_walk_south_001",
+            templateId: "walk-humanoid-8-v1",
+            action: "walk",
+            frameCount: 8,
+            fps: 10,
+            loop: true
+          }
+        ],
+        overrides: []
+      })
+    );
+
+    render(
+      <AnimationWorkspace
+        project={project}
+        canSave={false}
+        saveStatus="saved"
+        saveError={null}
+        sourceError={null}
+        onSave={vi.fn()}
+        partAssets={[pendingHead]}
+        missingPartAssetIds={[]}
+        imageDecoder={{
+          decode: vi.fn(async () => ({
+            width: 1,
+            height: 1,
+            pixels: new Uint8ClampedArray(4)
+          }))
+        }}
+      />
+    );
+
+    const alert = (await screen.findByText("Automatischer South-Walk gesperrt")).closest(
+      '[role="alert"]'
+    ) as HTMLElement | null;
+    if (!alert) throw new Error("South walk production alert missing.");
+    expect(within(alert).getByText("Die Anker für Kopf Süd stehen noch aus.")).toBeVisible();
+    expect(within(alert).getByText("Pflichtpart torso für South fehlt.")).toBeVisible();
+    expect(within(alert).getByText("Pflichtpart pelvis für South fehlt.")).toBeVisible();
+    expect(
+      within(alert).getByRole("list", {
+        name: "Produktionsfehler des South-Walk-Clips"
+      }).children
+    ).toHaveLength(15);
+  });
+
   it("shows the complete loaded desktop workspace and honest unavailable actions", async () => {
     setViewportWidth(1440);
     const user = userEvent.setup();

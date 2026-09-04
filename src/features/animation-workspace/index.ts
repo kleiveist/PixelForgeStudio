@@ -6,12 +6,20 @@ export {
 export { RigOverlay, type RigOverlayProps } from "./RigOverlay";
 export {
   placementToRasterTransform,
+  prepareDirectionRigParts,
   prepareNeutralPoseParts,
   type DecodedPartSource,
   type NeutralPosePreparationIssue,
   type NeutralPosePreparationIssueCode,
   type NeutralPosePreparationResult
 } from "./neutralPoseRenderer";
+export {
+  SOUTH_WALK_GENERATION_DIAGNOSTIC_CODES,
+  generateSouthWalkFrames,
+  type SouthWalkGenerationDiagnostic,
+  type SouthWalkGenerationDiagnosticCode,
+  type SouthWalkGenerationResult
+} from "./southWalkRenderer";
 export {
   DIRECTION_LABELS,
   OVERLAY_LABELS,

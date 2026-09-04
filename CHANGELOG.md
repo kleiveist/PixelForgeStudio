@@ -127,6 +127,15 @@
   ergänzt; Renderer erhält ausschließlich die zuvor aufgelöste Reihenfolge
 - Clippingdiagnostik um Bounding-Box, betroffene Framekanten und vollständig
   außerhalb als sichtbaren Fehler erweitert
+- versionierte Laufvorlage `walk-humanoid-8-v1` mit acht benannten Phasen,
+  10-FPS-Default und ausdrücklichen Stride-, Bob-, Sway-, Gegenarm- und
+  Liftkanälen ergänzt
+- pure South-Poseauflösung mit kontrollierter Kopf-/Torsogegenbewegung,
+  Groundline-Kontaktkorrektur und geclampter Two-Bone-IK ohne nicht-endliche
+  Gelenkwerte eingeführt
+- vollständige ready South-Partsets zu acht flüchtigen reproduzierbaren
+  Renderframes zusammengesetzt und fehlende Parts, offene Anker, ungültige
+  Bones sowie Renderfehler gesammelt im Workspace ausgewiesen
 
 ## 2.0.0 — 2026-09-03
 

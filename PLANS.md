@@ -2,10 +2,10 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 41 — richtungsabhängige Ebenenreihenfolge und
-  Clippingdiagnostik (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 42 — versionierter 8-Frame-Walk-Clip und
-  South-Generator (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 42 — versionierter 8-Frame-Walk-Clip und
+  South-Generator (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 43 — Timeline, Playback und Onion Skin
+  (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
   Phase C mit Prompts 36–39 abgeschlossen; Prompts 40 und 41 sind umgesetzt,
@@ -20,6 +20,61 @@
   eine Auswahl gültiger Assetprofile umgestellt; Prompt 41 bleibt davon
   unberührt. `npm run verify` bestand mit 153 Testdateien und 957 Tests;
   `git diff --check` ist sauber
+
+## Prompt 42 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `58d5766`; Prompt 41 liefert die geprüfte South-
+  Neutralplatzierung, richtungsspezifische Draw-Order und den deterministischen
+  RGBA-Renderer.
+- Abnahme: readonly Cliptemplate `walk-humanoid-8-v1` mit acht ausdrücklichen
+  Phasen, 10 FPS, Loop und versionierten normierten Bewegungs-, Lift-, Bob-,
+  Sway- und gegenläufigen Armkanälen.
+- Domain: pure Frame-/Poseauflösung, South-Rig-Anwendung,
+  Posevalidierung und kontrollierte Two-Bone-IK mit Clampdiagnostik statt
+  NaN/Infinity.
+- Kontakt: Kontaktfuß bleibt in Kontakt-/Down-Phasen auf der Groundline,
+  Root-Anker und Fußkontakt bleiben getrennt, Root-Bob ist standardmäßig auf
+  ±1 px begrenzt.
+- Produktion: nur ein vollständiges South-Pflichtpartset mit ready-Ankern und
+  dekodierten Quellen erzeugt acht flüchtige `RenderedFrame`-Objekte; Fehler
+  werden gesammelt und es werden keine Renderframes persistiert.
+- Tests: Templatewerte, Phasen/Kanäle, Gegenphase, Arm-/Bein-Gegenlauf,
+  Kontakt, IK normal/geclamped/ungültig, fehlende Parts/Anker, acht
+  reproduzierbare Frames, Frame 0/4, Höhe und endliche Werte.
+- Grenze: keine anderen Richtungen, Wiedergabe, Zwischenbildinterpolation,
+  Projekt-PNGs oder Zufallswerte.
+
+## Prompt 42 — Ergebnis
+
+1. `walk-humanoid-8-v1` ist ein readonly Domainvertrag mit Version 1, acht
+   benannten Frames, 10 FPS Default und aktivem Loop. Frame 8 löst wieder
+   exakt Frame 0 auf; Zwischenbildinterpolation existiert nicht.
+2. Linker/rechter Stride, Root-Bob/-Sway, gegenläufige Armbewegung sowie Knee-
+   und Foot-Lift sind ausdrückliche normierte Acht-Werte-Kanäle. Beide Seiten
+   bleiben um vier Frames phasenverschoben, der Bob im Standard bei ±1 px.
+3. `resolveClipFrame()`, `resolveHumanoidWalkPose()`,
+   `applyPoseToDirectionRig()` und `validatePose()` bilden eine pure Pipeline.
+   Sie kopiert ausschließlich das South-Rig und verändert keine Built-in-
+   Vorlage.
+4. Kontakt- und Down-Frames halten die jeweilige Zehe auf der projizierten
+   Groundline, während der globale Root-Anker unverändert bleibt. Torso und
+   Kopf gleichen Bob/Sway kontrolliert aus.
+5. `solveTwoBoneIk()` verwendet feste Segmentlängen und seitenspezifische
+   Bend-Signs. Unerreichbare Ziele werden mit Diagnose geklemmt; ungültige
+   Eingaben und Bone-Längen erzeugen strukturierte Fehler statt NaN/Infinity.
+6. `generateSouthWalkFrames()` fordert kanonischen Clip, jedes der 15
+   South-Pflichtparts genau einmal, ready-Anker und dekodierte RGBA-Quellen.
+   Erst dann entstehen acht Draw-Order-sortierte `RenderedFrame`-Werte.
+7. Fehlende/doppelte Parts, offene/ungültige Anker, Bone-, Placement- und
+   Renderfehler werden gesammelt. Der Workspace zeigt die Sperre oder die
+   acht flüchtig erzeugten Frames; keinerlei Framebytes werden persistiert.
+8. Eine synthetisch erzeugte farbige Humanoid-Fixture prüft alle Frames ohne
+   private Nutzerassets. Gegenphase 0/4, Loop, Groundline, Höhe, endliche
+   Koordinaten und wiederholte Bytegleichheit sind abgedeckt. `npm run verify`
+   bestand mit 155 Testdateien und 969 Tests, Strict-Typecheck und
+   Produktionsbuild; `git diff --check` ist sauber. PyGitIndex meldet 70
+   aktuelle Markdownseiten.
+9. Prompt 43 wurde nicht vorgezogen und bleibt die nächste getrennte Aufgabe.
 
 ## Prompt 41 — Ausgangsstand und Abnahme
 

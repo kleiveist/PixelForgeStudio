@@ -827,6 +827,33 @@ function RigViewport({
         )}
       </div>
 
+      {state.direction === "south" && neutralPose.walkCycle ? (
+        <div
+          className={styles.walkProductionStatus}
+          role={neutralPose.walkCycle.status === "invalid" ? "alert" : "status"}
+        >
+          <strong>
+            {neutralPose.walkCycle.status === "ok"
+              ? "Automatischer South-Walk bereit"
+              : "Automatischer South-Walk gesperrt"}
+          </strong>
+          {neutralPose.walkCycle.status === "ok" ? (
+            <span>
+              {neutralPose.walkCycle.frames.length} deterministische Frames wurden
+              flüchtig aus Rig, Parts und Clipvorlage erzeugt.
+            </span>
+          ) : (
+            <ul aria-label="Produktionsfehler des South-Walk-Clips">
+              {neutralPose.walkCycle.issues.map((walkIssue, index) => (
+                <li key={`${walkIssue.code}-${walkIssue.assetId ?? walkIssue.slot ?? "clip"}-${index}`}>
+                  {walkIssue.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
+
       <div className={styles.panControls} role="group" aria-label="Viewport verschieben">
         <button type="button" onClick={() => dispatch({ type: "panned", deltaX: 0, deltaY: -8 })}>
           Nach oben

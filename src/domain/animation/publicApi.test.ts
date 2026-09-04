@@ -6,7 +6,10 @@ import {
   DIRECTION_IDS,
   HUMANOID_80_FRAME_PROFILE,
   HUMANOID_80_RIG_TEMPLATE,
+  HUMANOID_WALK_CLIP,
+  HUMANOID_WALK_CLIP_ID,
   PART_SLOT_IDS,
+  resolveHumanoidWalkPose,
   type AnimationActionId,
   type Direction,
   type FrameProfile,
@@ -68,6 +71,8 @@ describe("animation domain public boundary", () => {
       rigTemplate: expect.objectContaining({ id: "humanoid-80-v1" }),
       action: "walk"
     });
+    expect(HUMANOID_WALK_CLIP.templateId).toBe(HUMANOID_WALK_CLIP_ID);
+    expect(resolveHumanoidWalkPose(0).phase).toBe("contactLeft");
   });
 
   it("does not depend on frameworks, persistence, canvas, or browser globals", () => {

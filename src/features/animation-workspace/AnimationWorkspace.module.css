@@ -634,7 +634,8 @@
   transform: translateX(-50%);
 }
 
-.renderDiagnostics {
+.renderDiagnostics,
+.walkProductionStatus {
   display: grid;
   gap: var(--space-1);
   padding: var(--space-3);
@@ -645,15 +646,21 @@
   border-radius: var(--radius-md);
 }
 
-.renderDiagnostics strong {
+.renderDiagnostics strong,
+.walkProductionStatus strong {
   color: var(--color-text);
 }
 
-.renderDiagnostics ul {
+.renderDiagnostics ul,
+.walkProductionStatus ul {
   display: grid;
   gap: var(--space-1);
   padding-left: var(--space-4);
   margin: 0;
+}
+
+.walkProductionStatus[role="alert"] {
+  border-color: var(--color-danger-text);
 }
 
 .panControls {

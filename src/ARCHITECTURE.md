@@ -1,14 +1,13 @@
 # PixelForge Studio source architecture
 
-Prompts 40 and 41 open Phase D with a deterministic pure TypeScript software
-rasterizer and a versioned draw-order contract for all eight target
-directions. Inverse affine nearest-neighbor sampling, integer-rounded
-source-over composition, direction-specific near/far layering and structured
-clipping diagnostics are independent of React and Canvas. The Workspace
-decodes sources through a revision-bound RGBA cache, resolves occupied slots
-before rendering and sends the finished frame to Canvas only through an
-`ImageData`/`putImageData` display adapter. Walk generation, playback and
-export remain explicit later boundaries.
+Prompts 40 through 42 establish Phase D's deterministic pure TypeScript
+renderer, versioned draw-order contract and first reconstructable Walk clip.
+Inverse affine nearest-neighbor sampling, integer-rounded source-over,
+direction-specific near/far layering, eight explicit movement phases and
+clamped Two-Bone IK are independent of React and Canvas. A complete ready
+South partset produces eight transient frames while the project stores only
+template ID, FPS, loop and later overrides. Playback and export remain
+explicit later boundaries.
 Both modules share one route source, settings source, theme, skip target,
 title and focus boundary.
 
@@ -28,8 +27,9 @@ title and focus boundary.
     defaults, pure source-anchor validation, effective-coordinate and
     reproducible placement/delta composition, vector/angle/affine-matrix
     helpers, deterministic RGBA alpha-bound/crop operations, eight explicit
-    versioned slot draw-orders with project layer deltas and the pure inverse-
-    affine nearest-neighbor frame renderer without browser data
+    versioned slot draw-orders with project layer deltas, the
+    `walk-humanoid-8-v1` phase/pose/IK contract and the pure inverse-affine
+    nearest-neighbor frame renderer without browser data
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
   - `characters/`: Character/NPC option catalogs, subtype guards, canonical
@@ -82,7 +82,9 @@ title and focus boundary.
   `animation-workspace/` enthält die repository-freie Arbeitsoberfläche, ihre
   pure temporäre State-Machine, responsive Paneelprojektion, Slotinventar,
   DOM-Viewport, datengetriebenes Rig-SVG, richtungsgeordnet software-gerenderte
-  Neutralpose, Layer-/Clippingdiagnostik, Part-Layer-Delta und Frameauswahl;
+  Neutralpose, transienten South-Walk-Generator, gesammelte
+  Produktionsblocker, Layer-/Clippingdiagnostik, Part-Layer-Delta und
+  Frameauswahl;
   `animation-part-import/` enthält die unbekannte Datei-/Decoder-Grenze,
   Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion;
   `animation-anchor-editor/` besitzt Originalbild-Eingabe, Zoom/Pan, zugängliche
@@ -1165,8 +1167,9 @@ Prompt 40 adds the deterministic nearest-neighbor pixel renderer, decoded
 source cache and display-only Workspace canvas. Prompt 41 adds versioned
 draw-orders for all eight directions, explicit visual near sides, validated
 optional attachments, bounded project layer deltas and visible edge-aware
-clipping diagnostics. Prompt 42 is the next separate task and owns the
-versioned eight-frame Walk clip and South generator.
+clipping diagnostics. Prompt 42 adds the versioned eight-frame Walk clip,
+South pose solver and transient multi-frame renderer. Prompt 43 is the next
+separate task and owns timeline preview, playback and Onion Skin.
 
 The draw-order domain in `domain/animation/layerOrder.ts` lists every required
 and optional slot for each target direction. It keeps anatomical side,
@@ -1176,3 +1179,22 @@ assignments may store only a bounded integer delta from the versioned base
 order. The Workspace resolves that list before `renderFrame()`, exposes the
 current group and positions in the inspector, and displays transformed bounds
 plus affected edges for clipping. Fully outside parts are errors.
+
+`domain/animation/walkClip.ts` owns `walk-humanoid-8-v1`: eight named phases,
+10 FPS default, loop semantics and explicit normalized stride, root-bob,
+root-sway, counter-arm and lift channels. `resolveClipFrame()` and
+`resolveHumanoidWalkPose()` never interpolate. `applyPoseToDirectionRig()`
+copies only the authored South rig, preserves the global root anchor, applies
+bounded one-pixel bob plus torso/head counter-motion, and keeps contact toes
+on the projected groundline. Its pure Two-Bone IK clamps unreachable targets
+to valid segment distance and reports that correction without non-finite
+joint coordinates.
+
+`features/animation-workspace/southWalkRenderer.ts` is the composition
+boundary from validated project metadata, ready South PartAssets and decoded
+RGBA sources to eight transient `RenderedFrame` values. It collects missing
+parts, pending/invalid anchors, invalid limb geometry, preparation and renderer
+errors before exposing the clip as ready. Frames are never persisted; the
+project remains the source of template ID, FPS, loop and later overrides. The
+Workspace shows the aggregated readiness result but does not play it until
+Prompt 43.

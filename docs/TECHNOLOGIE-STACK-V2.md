@@ -607,6 +607,16 @@ vor dem Renderer auf und zeigt Layergruppe, Position sowie Bounding-Box und
 betroffene Framekante an. Vollständig außerhalb liegende Parts sind Fehler;
 Canvas und DOM bleiben reine Anzeigegrenzen.
 
+Prompt 42 ergänzt `domain/animation/walkClip.ts` mit der readonly Vorlage
+`walk-humanoid-8-v1`: acht benannte Phasen, 10 FPS Default, Loop und
+ausdrückliche normierte Stride-, Root-Bob-, Root-Sway-, Arm- und Liftkanäle.
+Die pure South-Auflösung kopiert das Rig, begrenzt den Standard-Bob auf ±1 px
+und hält Kontaktzehen per geclampter Two-Bone-IK auf der Groundline. Ein
+unvollständiges Partset, offene Anker, ungültige Bone-Längen oder Renderfehler
+bleiben gesammelte Produktionsblocker. Nur bei vollständiger Freigabe werden
+acht flüchtige `RenderedFrame`-Werte erzeugt; Projekt und IndexedDB speichern
+keine abgeleiteten Frame-PNGs.
+
 ## Styling
 
 - `src/styles/tokens.css`: globale semantische Design-Tokens

@@ -66,3 +66,9 @@ im ProjectProvider gespeichert.
 `imageSmoothingEnabled = false`; CSS skaliert nur ganzzahlig mit
 `image-rendering: pixelated`. Das Canvas ist weder Render- noch Exportquelle.
 PNG-Encoding und SpriteSheets bleiben Prompt 48 vorbehalten.
+
+`walk-humanoid-8-v1` nutzt exakt dieselbe Pipeline achtmal: Eine pure
+South-Pose wird auf eine Rigkopie angewandt, Parts werden platziert und über
+den Richtungs-Draw-Order sortiert, danach erzeugt `renderFrame()` das
+flüchtige RGBA-Ergebnis. Die Frames werden weder in Projektmetadaten noch im
+Blobstore abgelegt. Der Workspace hält sie nur für die folgende Vorschauphase.

@@ -18,6 +18,10 @@ import {
   prepareNeutralPoseParts,
   type NeutralPosePreparationIssue
 } from "./neutralPoseRenderer";
+import {
+  generateSouthWalkFrames,
+  type SouthWalkGenerationResult
+} from "./southWalkRenderer";
 
 export type WorkspacePartBlobLoadResult =
   | Readonly<{ status: "ok"; blob: Blob }>
@@ -27,6 +31,7 @@ export interface NeutralPoseFrameState {
   readonly status: "idle" | "loading" | "ready" | "unavailable" | "failed";
   readonly frame: RenderedFrame | null;
   readonly preparationIssues: readonly NeutralPosePreparationIssue[];
+  readonly walkCycle: SouthWalkGenerationResult | null;
   readonly message: string | null;
 }
 
@@ -34,6 +39,7 @@ const INITIAL_STATE: NeutralPoseFrameState = Object.freeze({
   status: "idle",
   frame: null,
   preparationIssues: Object.freeze([]),
+  walkCycle: null,
   message: null
 });
 
@@ -65,6 +71,7 @@ export function useNeutralPoseFrame(
           status: "unavailable",
           frame: null,
           preparationIssues: Object.freeze([]),
+          walkCycle: null,
           message: "Für das Projekt ist keine Built-in-Rigvorlage verfügbar."
         })
       );
@@ -76,6 +83,7 @@ export function useNeutralPoseFrame(
           status: "unavailable",
           frame: null,
           preparationIssues: Object.freeze([]),
+          walkCycle: null,
           message: "Der RGBA-Decoder ist in dieser Ansicht nicht verbunden."
         })
       );
@@ -88,6 +96,7 @@ export function useNeutralPoseFrame(
         status: "loading",
         frame: null,
         preparationIssues: Object.freeze([]),
+        walkCycle: null,
         message: null
       })
     );
@@ -131,11 +140,21 @@ export function useNeutralPoseFrame(
           decodedSources
         );
         const frame = renderFrame(project.frameProfile.frameSize, prepared.parts);
+        const walkCycle =
+          direction === "south"
+            ? generateSouthWalkFrames(
+                project,
+                template,
+                partAssets,
+                decodedSources
+              )
+            : null;
         setState(
           Object.freeze({
             status: "ready",
             frame,
             preparationIssues: prepared.issues,
+            walkCycle,
             message: null
           })
         );
@@ -147,6 +166,7 @@ export function useNeutralPoseFrame(
             status: "failed",
             frame: null,
             preparationIssues: Object.freeze([]),
+            walkCycle: null,
             message:
               error instanceof Error
                 ? error.message

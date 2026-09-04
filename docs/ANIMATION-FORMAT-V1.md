@@ -31,6 +31,10 @@ Frame-Overrides sowie optionale Promptprofil- und Previewreferenzen. V1
 erlaubt nur `walk`; jeder Walk-Clip besitzt exakt acht Frames. Ein Override
 adressiert genau `clipId + direction + frameIndex`, muss mindestens ein Delta
 enthalten und auf einen vorhandenen Clip sowie einen gültigen Frame zeigen.
+Die erste rekonstruierbare Produktionsvorlage ist
+`walk-humanoid-8-v1` (10 FPS als Default, Loop aktiv). Das Projekt speichert
+nur Template-ID, Tempo und Overrides; die daraus erzeugten acht RGBA-Frames
+sind flüchtige Ergebnisse und werden nicht zum Metadatenvertrag hinzugefügt.
 
 Ein unvollständiges Projekt bleibt ein gültiger Draft. Die separate Funktion
 `validateAnimationProjectProductionSources()` meldet fehlende Pflichtslots je

@@ -241,7 +241,11 @@ Der derzeit implementierte V3-Ausbaustand umfasst:
     revisionsgebundenem RGBA-Cache und display-only Canvas-Adapter sowie
 12. acht versionierte richtungsspezifische Draw-Orders mit getrennter
     Nah-/Fernseite, validierten Ausrüstungs-Attachments, kleinen
-    projektweiten Layer-Deltas und sichtbarer Kanten-/Bounding-Box-Diagnostik.
+    projektweiten Layer-Deltas und sichtbarer Kanten-/Bounding-Box-Diagnostik
+    sowie
+13. die rekonstruierbare South-Laufvorlage `walk-humanoid-8-v1` mit acht
+    Phasen, 10 FPS Default, normierten Gegenphasenkanälen, Groundline-
+    Kontaktkorrektur und acht flüchtig gerenderten Frames.
 
 Im Workspace liest das Rig-SVG Bones, Joints, Groundline und Pflichtslotlabels
 direkt aus den versionierten Produktionsdaten. Schachbrett, Raster,
@@ -251,9 +255,9 @@ die Anzeige; Projekt- und Exportkoordinaten bleiben unverändert. Nicht
 aufgelöste PartAsset-/Blob-Referenzen werden sichtbar als fehlende Quelle
 behandelt, ohne Dummybilder oder scheinpräzise Anker zu erzeugen.
 
-Die V3-Implementierung befindet sich nach Prompt 41 in Phase D und ist noch
-nicht releasevollständig. Walk-Generierung, Playback, Korrektur-History,
-Character Kits, Sprite-Sheet-/Godot-Export und die explizite
-Prompt→Animation-Übergabe gehören zu den noch offenen Prompts 42–51. Der
+Die V3-Implementierung befindet sich nach Prompt 42 in Phase D und ist noch
+nicht releasevollständig. Playback, Korrektur-History, Character Kits,
+Sprite-Sheet-/Godot-Export und die explizite Prompt→Animation-Übergabe gehören
+zu den noch offenen Prompts 43–51. Der
 verbindliche Ausführungsstand und die Reihenfolge stehen unter
 `aufgaben/pixelforge-studio-v3/START_HERE.md` und in `../PLANS.md`.

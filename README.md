@@ -60,7 +60,9 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   ausschließlich eine pixelgenaue Anzeige. Acht versionierte Richtungs-Layer
   ordnen Körperteile und Ausrüstung vor dem Rendern; der Inspector verwaltet
   kleine projektweite Layer-Deltas und der Viewport erklärt Clippingkanten.
-  Walk-Zyklus und Character Kits bleiben getrennte folgende Fachphasen.
+  Ein vollständiges South-Partset erzeugt über `walk-humanoid-8-v1` acht
+  reproduzierbare Walk-Frames; Playback und Character Kits bleiben getrennte
+  folgende Fachphasen.
 
 ## Einstiegspunkte
 
