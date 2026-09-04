@@ -9,6 +9,14 @@ export {
   type BrowserImageDecoderEnvironment
 } from "./browserImageDecoder";
 export {
+  RevisionBoundDecodedSourceCache,
+  type DecodedSourceRevision
+} from "./decodedSourceCache";
+export {
+  putRgbaImageData,
+  type RgbaCanvasDisplayResult
+} from "./rgbaCanvasDisplay";
+export {
   DuplicateAnimationProjectInputSchema,
   PersistAnimationPartImportInputSchema,
   PersistAnimationPartSetupInputSchema,

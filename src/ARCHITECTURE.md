@@ -1,13 +1,12 @@
 # PixelForge Studio source architecture
 
-Prompt 39 completes Phase C with source-anchor editing and reproducible Part
-placement on the immutable `humanoid-80-v1` production rig. Original-space
-anchors, one-/two-point slot rules, effective trimmed coordinates, uniform
-Bone placement and delta composition remain pure Domain logic. The viewport
-loads an original Blob only into local presentation state and projects a live
-preview through a narrow display adapter; it persists neither the Blob nor an
-absolute automatic transform in React state. Rendering, playback and export
-remain explicit future boundaries.
+Prompt 40 opens Phase D with a deterministic pure TypeScript software
+rasterizer. Inverse affine nearest-neighbor sampling, integer-rounded
+source-over composition, transparent surfaces and structured diagnostics are
+independent of React and Canvas. The Workspace decodes sources through a
+revision-bound RGBA cache and sends the resulting frame to Canvas only through
+an `ImageData`/`putImageData` display adapter. Directional production order,
+walk generation, playback and export remain explicit later boundaries.
 Both modules share one route source, settings source, theme, skip target,
 title and focus boundary.
 
@@ -26,8 +25,8 @@ title and focus boundary.
     validated joint/bone/slot hierarchy and compatibility key, versioned frame
     defaults, pure source-anchor validation, effective-coordinate and
     reproducible placement/delta composition, vector/angle/affine-matrix
-    helpers and deterministic RGBA alpha-bound/crop operations without browser
-    data
+    helpers, deterministic RGBA alpha-bound/crop operations and the pure
+    inverse-affine nearest-neighbor frame renderer without browser data
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
   - `characters/`: Character/NPC option catalogs, subtype guards, canonical
@@ -79,7 +78,8 @@ title and focus boundary.
   Dialoge und den kontrollierten Workspace-Lifecycle-State;
   `animation-workspace/` enthält die repository-freie Arbeitsoberfläche, ihre
   pure temporäre State-Machine, responsive Paneelprojektion, Slotinventar,
-  DOM-Viewport, datengetriebenes Rig-SVG, read-only Inspektor und Frameauswahl;
+  DOM-Viewport, datengetriebenes Rig-SVG, software-gerenderte Neutralpose,
+  read-only Inspektor und Frameauswahl;
   `animation-part-import/` enthält die unbekannte Datei-/Decoder-Grenze,
   Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion;
   `animation-anchor-editor/` besitzt Originalbild-Eingabe, Zoom/Pan, zugängliche
@@ -109,8 +109,9 @@ title and focus boundary.
   ports, JSON profile transfer, V1 storage migration orchestration, and the
   browser workspace bootstrap that runs migration before provider hydration;
   `animation/` owns the `ImageDecoder` port plus browser implementation, the
-  native IndexedDB and full Memory adapters, pure binary reference analysis
-  and browser factories; public exports live in `services/index.ts`
+  native IndexedDB and full Memory adapters, pure binary reference analysis,
+  the revision-bound decoded RGBA cache, the Canvas display-only adapter and
+  browser factories; public exports live in `services/index.ts`
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
   complete validated app-settings envelope, all three start decisions and
   effective theme state;
@@ -490,6 +491,26 @@ slot-dependent readiness and `writePartSetupToProject()` atomically commits the
 PartAsset plus assignment in Memory/IndexedDB without touching its original
 Blob. `ready` is therefore possible only after valid required anchors;
 incomplete saved work resumes as `invalidAnchors`.
+
+`domain/animation/renderer.ts` is the Prompt-40 raster authority. Pixel cells
+occupy half-open source intervals and are sampled at destination centres
+`(x + 0.5, y + 0.5)` through the validated inverse affine matrix. Source
+indices use `floor`; coordinates within `1e-9` of integer boundaries are
+canonicalized first. `compositeSourceOver()` uses only integer intermediates
+and nearest rounding with half steps up. `blitNearestAffine()` copies the
+target surface, visits only the transformed clipped bounds, skips transparent
+source pixels and reports `fullyOutside`, `partiallyClipped`, `emptySource`,
+`nonInvertibleMatrix` or `missingRgbaData`. `renderFrame()` consumes Parts in
+already resolved order and never imports Canvas or mutates its input arrays.
+
+`RevisionBoundDecodedSourceCache` stores copied decoded RGBA by Part ID,
+Blob ID and metadata revision; it evicts an older revision and never retains a
+Blob. `prepareNeutralPoseParts()` crops originals, resolves the existing
+anchor placement and converts its integer-centre matrix once into raster-cell
+coordinates. Assignment order is intentionally only the Prompt-40 interim
+order. `putRgbaImageData()` sets the complete Domain result through
+`ImageData`/`putImageData`, disables smoothing and performs no sampling or
+export work. The Workspace exposes both preparation and renderer diagnostics.
 
 The provider registers `beforeunload` only while a project is dirty. The
 navigation provider also asks the composition-injected guard before internal
@@ -1130,4 +1151,6 @@ five-pose `humanoid-80-v1` template, pure structured validation, deterministic
 Rig compatibility and its data-driven SVG overlay. Prompt 39 completes Phase C
 with original-space anchor editing, deterministic Part placement, separate
 project deltas, atomic resume persistence and live display-adapter previews.
-Prompt 40 is the next separate task and owns the deterministic pixel renderer.
+Prompt 40 adds the deterministic nearest-neighbor pixel renderer, decoded
+source cache and display-only Workspace canvas. Prompt 41 is the next separate
+task and owns directional production layer order and clipping diagnostics.

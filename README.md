@@ -21,7 +21,8 @@ Animation Studio** verwaltet lokale Projekte vollständig, importiert
 validierte PNG-Körperteile und zeigt das versionierte Humanoid-80-Rig in fünf
 eigenen Neutralposen. Originalbildanker, reproduzierbare Bone-Platzierung,
 Live-Vorschau und projektweite Feinjustierung sind produktiv; der finale
-Pixelrenderer folgt in der nächsten Phase. Profile, Entwürfe,
+nearest-neighbor Pixelrenderer setzt freigegebene Parts bereits
+browserunabhängig zur Neutralpose zusammen. Profile, Entwürfe,
 Einstellungen und Animationsprojekte bleiben im Browser; ein Backend ist nicht
 erforderlich.
 
@@ -54,8 +55,9 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   Originalanker per Pointer oder Zahlenfeld setzen, korrigieren, zurücksetzen
   und mit einer Live-Bone-Vorschau prüfen. Das Built-in-Rig
   `humanoid-80-v1` zeigt Bones, Joints, Groundline und Pflichtslotbindungen als
-  SVG; Character Kits und der finale Rasterrenderer bleiben klar als spätere
-  Fachphasen markiert.
+  SVG. Der Software-Rasterizer erzeugt den RGBA-Projektframe; das Canvas ist
+  ausschließlich eine pixelgenaue Anzeige. Richtungs-Layer, Walk-Zyklus und
+  Character Kits bleiben getrennte folgende Fachphasen.
 
 ## Einstiegspunkte
 

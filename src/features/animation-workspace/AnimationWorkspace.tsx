@@ -54,7 +54,9 @@ import {
   type WorkspaceSidePanel
 } from "./animationWorkspaceModel";
 import styles from "./AnimationWorkspace.module.css";
+import { RenderedFrameCanvas } from "./RenderedFrameCanvas";
 import { RigOverlay } from "./RigOverlay";
+import { useNeutralPoseFrame } from "./useNeutralPoseFrame";
 import { useWorkspaceLayout } from "./useWorkspaceLayout";
 
 export type WorkspaceSaveStatus =
@@ -534,7 +536,9 @@ interface RigViewportProps {
   readonly activeClip: AnimationClip | null;
   readonly unresolvedReferenceCount: number;
   readonly loadedPartCount: number;
+  readonly partAssets: readonly AnimationPartAsset[];
   readonly selectedPart: AnimationPartAsset | null;
+  readonly imageDecoder: ImageDecoder | null;
   readonly onLoadPartBlob: (blobId: StableId) => Promise<PartBlobLoadResult>;
   readonly onConfigurePart: (
     definition: AnchorEditorCommitDefinition
@@ -549,7 +553,9 @@ function RigViewport({
   activeClip,
   unresolvedReferenceCount,
   loadedPartCount,
+  partAssets,
   selectedPart,
+  imageDecoder,
   onLoadPartBlob,
   onConfigurePart,
   dispatch,
@@ -569,6 +575,17 @@ function RigViewport({
   const selectedAssignment = selectedPart
     ? project.parts.find(({ assetId }) => assetId === selectedPart.assetId)
     : undefined;
+  const neutralPose = useNeutralPoseFrame(
+    project,
+    state.direction,
+    partAssets,
+    imageDecoder,
+    onLoadPartBlob
+  );
+  const renderedPartCount = neutralPose.frame?.renderedPartIds.length ?? 0;
+  const renderDiagnosticCount =
+    (neutralPose.frame?.diagnostics.length ?? 0) +
+    neutralPose.preparationIssues.length;
 
   const handleViewportKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;
@@ -669,19 +686,30 @@ function RigViewport({
 
       <p className={styles.viewportSourceState} role="status">
         <strong>
-          {unresolvedReferenceCount > 0
-            ? "Keine renderbaren Bilddaten"
-            : loadedPartCount > 0
-              ? "Partquellen validiert geladen"
-              : "Viewport wartet auf Teile"}
+          {neutralPose.status === "loading"
+            ? "Partquellen werden gerendert"
+            : neutralPose.status === "failed"
+              ? "Renderquelle nicht verfügbar"
+              : unresolvedReferenceCount > 0 && loadedPartCount === 0
+                ? "Keine renderbaren Bilddaten"
+              : renderedPartCount > 0
+                ? "Neutralpose deterministisch gerendert"
+                : loadedPartCount > 0
+                  ? "Noch kein renderbereiter Part"
+                  : "Viewport wartet auf Teile"}
         </strong>{" "}
+        {neutralPose.status === "failed"
+          ? neutralPose.message
+          : renderedPartCount > 0
+            ? `${renderedPartCount} Part-${renderedPartCount === 1 ? "Quelle wurde" : "Quellen wurden"} per inverser affiner Nearest-Neighbor-Abtastung zusammengesetzt.`
+            : loadedPartCount > 0
+              ? "Nur Parts mit freigegebenen Ankern und passender authored Richtung werden gezeichnet."
+              : "Dem Projekt sind noch keine PartAssets zugewiesen; es wird kein Dummybild erzeugt."}{" "}
         {unresolvedReferenceCount > 0
-          ? `${unresolvedReferenceCount} Asset-Referenz${unresolvedReferenceCount === 1 ? "" : "en"} ist noch nicht bis zum Blob aufgelöst; der Projektframe bleibt absichtlich leer.`
-          : loadedPartCount > 0
-            ? `${loadedPartCount} Part-${loadedPartCount === 1 ? "Quelle ist" : "Quellen sind"} dem Projekt zugewiesen; die Renderpipeline folgt in ihrer eigenen Phase.`
-            : "Dem Projekt sind noch keine PartAssets zugewiesen; es wird kein Dummybild erzeugt."}{" "}
+          ? `${unresolvedReferenceCount} Asset-Referenz${unresolvedReferenceCount === 1 ? " bleibt" : "en bleiben"} ungelöst.`
+          : ""}{" "}
         {rigTemplate
-          ? ` Das SVG-Overlay liest die versionierte Neutralpose direkt aus ${rigTemplate.id}; der Ankereditor zeigt gültige ausgewählte Parts über seinen getrennten Anzeigeadapter.`
+          ? `Das SVG-Overlay liest die versionierte Neutralpose direkt aus ${rigTemplate.id}; Canvas zeigt ausschließlich fertige RGBA-Daten.`
           : " Für die Projektreferenz ist keine Built-in-Rigvorlage verfügbar."}
       </p>
 
@@ -705,6 +733,9 @@ function RigViewport({
           data-footline={state.overlays.footline}
           data-rig-direction={state.direction}
         >
+          {neutralPose.frame && renderedPartCount > 0 ? (
+            <RenderedFrameCanvas frame={neutralPose.frame} />
+          ) : null}
           {state.overlays.grid ? <span className={styles.gridOverlay} /> : null}
           {state.overlays.boundingBoxes ? <span className={styles.boundsOverlay} /> : null}
           {rigTemplate ? (
@@ -716,13 +747,39 @@ function RigViewport({
             />
           ) : null}
           <span className={styles.viewportPlaceholder}>
-            {unresolvedReferenceCount > 0
-              ? "Bilddaten fehlen"
-              : loadedPartCount > 0
-                ? "Renderer folgt"
-                : "Keine Teile belegt"}
+            {neutralPose.status === "loading"
+              ? "Renderer lädt"
+              : neutralPose.status === "failed"
+                ? "Renderfehler"
+                : renderedPartCount > 0
+                  ? `${renderedPartCount} Part${renderedPartCount === 1 ? "" : "s"}`
+                  : unresolvedReferenceCount > 0
+                    ? "Bilddaten fehlen"
+                    : loadedPartCount > 0
+                      ? "Anker fehlen"
+                      : "Keine Teile belegt"}
           </span>
         </div>
+      </div>
+
+      <div className={styles.renderDiagnostics} role="status" aria-live="polite">
+        <strong>Renderdiagnostik</strong>
+        {renderDiagnosticCount === 0 ? (
+          <span>Keine Rasterwarnungen für den aktuellen Frame.</span>
+        ) : (
+          <ul aria-label="Renderdiagnostik des aktuellen Frames">
+            {neutralPose.preparationIssues.map((issue, index) => (
+              <li key={`prepare-${issue.assetId ?? "frame"}-${issue.code}-${index}`}>
+                {issue.code}: {issue.message}
+              </li>
+            ))}
+            {neutralPose.frame?.diagnostics.map((issue, index) => (
+              <li key={`render-${issue.partId ?? "frame"}-${issue.code}-${index}`}>
+                {issue.code}: {issue.message}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className={styles.panControls} role="group" aria-label="Viewport verschieben">
@@ -1110,7 +1167,9 @@ export function AnimationWorkspace({
             activeClip={activeClip}
             unresolvedReferenceCount={unresolvedReferenceCount}
             loadedPartCount={partAssets.length}
+            partAssets={partAssets}
             selectedPart={selectedPart}
+            imageDecoder={imageDecoder}
             onLoadPartBlob={onLoadPartBlob}
             onConfigurePart={onConfigurePart}
             dispatch={dispatch}

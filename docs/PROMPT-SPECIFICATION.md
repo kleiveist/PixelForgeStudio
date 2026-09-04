@@ -230,7 +230,10 @@ Der derzeit implementierte V3-Ausbaustand umfasst:
 10. den Originalanker-Editor mit Ein-/Zweipunktvertrag, reproduzierbarer
     uniformer Bone-Platzierung, getrennten projektweiten Deltas, atomarem
     Resume und den Coverage-Zuständen `ready`, `anchorsPending`,
-    `invalidAnchors` und `missing`.
+    `invalidAnchors` und `missing` sowie
+11. den frameworkfreien nearest-neighbor Software-Rasterizer mit
+    ganzzahlig-deterministischem Source-over, strukturierten Diagnosen,
+    revisionsgebundenem RGBA-Cache und display-only Canvas-Adapter.
 
 Im Workspace liest das Rig-SVG Bones, Joints, Groundline und Pflichtslotlabels
 direkt aus den versionierten Produktionsdaten. Schachbrett, Raster,
@@ -240,9 +243,8 @@ die Anzeige; Projekt- und Exportkoordinaten bleiben unverändert. Nicht
 aufgelöste PartAsset-/Blob-Referenzen werden sichtbar als fehlende Quelle
 behandelt, ohne Dummybilder oder scheinpräzise Anker zu erzeugen.
 
-Die V3-Implementierung ist mit Abschluss der Phase C (Prompts 36–39) noch nicht
-releasevollständig. Deterministische Pixelkomposition, richtungsabhängige
-Layer, Walk-Generierung, Playback,
+Die V3-Implementierung befindet sich nach Prompt 40 in Phase D und ist noch
+nicht releasevollständig. Richtungsabhängige Layer, Walk-Generierung, Playback,
 Korrektur-History, Character Kits, Sprite-Sheet-/Godot-Export und die explizite
 Prompt→Animation-Übergabe gehören zu den noch offenen Prompts 40–51. Der
 verbindliche Ausführungsstand und die Reihenfolge stehen unter

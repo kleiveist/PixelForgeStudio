@@ -79,6 +79,23 @@ export {
   invertTransform
 } from "./matrices";
 export {
+  RASTER_COORDINATE_EPSILON,
+  RENDER_DIAGNOSTIC_CODES,
+  blitNearestAffine,
+  compositeSourceOver,
+  createRasterSurface,
+  renderFrame,
+  renderPart,
+  type RasterBlitResult,
+  type RasterBounds,
+  type RasterSurface,
+  type RenderDiagnostic,
+  type RenderDiagnosticCode,
+  type RenderablePart,
+  type RenderedFrame,
+  type RgbaPixel
+} from "./renderer";
+export {
   BONE_IDS,
   BONE_TOPOLOGY,
   BONE_TOPOLOGY_BY_ID,

@@ -5,6 +5,14 @@ export {
 } from "./AnimationWorkspace";
 export { RigOverlay, type RigOverlayProps } from "./RigOverlay";
 export {
+  placementToRasterTransform,
+  prepareNeutralPoseParts,
+  type DecodedPartSource,
+  type NeutralPosePreparationIssue,
+  type NeutralPosePreparationIssueCode,
+  type NeutralPosePreparationResult
+} from "./neutralPoseRenderer";
+export {
   DIRECTION_LABELS,
   OVERLAY_LABELS,
   PANEL_LABELS,

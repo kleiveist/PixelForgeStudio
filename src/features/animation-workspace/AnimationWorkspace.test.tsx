@@ -1,8 +1,11 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parseAnimationProject } from "../../schemas";
-import { createAnimationProjectInput } from "../../test/animationSchemaFixtures";
+import { parseAnimationPartAsset, parseAnimationProject } from "../../schemas";
+import {
+  createAnimationPartAssetInput,
+  createAnimationProjectInput
+} from "../../test/animationSchemaFixtures";
 import { AnimationWorkspace } from "./AnimationWorkspace";
 
 function setViewportWidth(width: number) {
@@ -43,6 +46,69 @@ afterEach(() => {
 });
 
 describe("AnimationWorkspace", () => {
+  it("shows a ready part through the software-rendered canvas adapter", async () => {
+    setViewportWidth(1440);
+    const project = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [{ assetId: "part_head_south_001" }],
+        overrides: []
+      })
+    );
+    const partAsset = parseAnimationPartAsset(createAnimationPartAssetInput());
+    const pixels = new Uint8ClampedArray(32 * 40 * 4);
+    pixels.set([255, 0, 0, 255], (30 * 32 + 16) * 4);
+    const decoder = { decode: vi.fn(async () => ({ width: 32, height: 40, pixels })) };
+    const loadBlob = vi.fn(async () => ({
+      status: "ok" as const,
+      blob: new Blob(["source"], { type: "image/png" })
+    }));
+    const imageData = { data: new Uint8ClampedArray(128 * 128 * 4) } as ImageData;
+    const context = {
+      imageSmoothingEnabled: true,
+      createImageData: vi.fn(() => imageData),
+      putImageData: vi.fn()
+    };
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue(context as unknown as CanvasRenderingContext2D);
+
+    try {
+      render(
+        <AnimationWorkspace
+          project={project}
+          canSave={false}
+          saveStatus="saved"
+          saveError={null}
+          sourceError={null}
+          onSave={vi.fn()}
+          partAssets={[partAsset]}
+          missingPartAssetIds={[]}
+          imageDecoder={decoder}
+          onLoadPartBlob={loadBlob}
+        />
+      );
+
+      const canvas = await screen.findByRole("img", {
+        name: "Gerenderter Projektframe mit 1 Part"
+      });
+      expect(canvas).toHaveAttribute("data-rendered-parts", "1");
+      expect(screen.getByText("Neutralpose deterministisch gerendert")).toBeVisible();
+      await waitFor(() => expect(context.putImageData).toHaveBeenCalledTimes(1));
+      expect(context.imageSmoothingEnabled).toBe(false);
+      expect(decoder.decode).toHaveBeenCalledTimes(1);
+      expect(loadBlob).toHaveBeenCalledWith("blob_head_south_001");
+      const renderedOffset = (44 * 128 + 64) * 4;
+      expect([...imageData.data.slice(renderedOffset, renderedOffset + 4)]).toEqual([
+        255,
+        0,
+        0,
+        255
+      ]);
+    } finally {
+      getContext.mockRestore();
+    }
+  });
+
   it("shows the complete loaded desktop workspace and honest unavailable actions", async () => {
     setViewportWidth(1440);
     const user = userEvent.setup();

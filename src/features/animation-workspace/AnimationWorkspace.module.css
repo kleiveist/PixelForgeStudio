@@ -541,9 +541,30 @@
 .gridOverlay,
 .boundsOverlay,
 .rigSvg,
-.viewportPlaceholder {
+.viewportPlaceholder,
+.renderCanvas,
+.canvasError {
   position: absolute;
   pointer-events: none;
+}
+
+.renderCanvas {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.canvasError {
+  inset: var(--space-2) var(--space-2) auto;
+  z-index: 4;
+  padding: var(--space-2);
+  color: var(--color-danger-text);
+  font-size: var(--font-size-xs);
+  background: var(--color-danger-wash);
+  border: 1px solid var(--color-danger-line);
+  border-radius: var(--radius-sm);
 }
 
 .gridOverlay {
@@ -611,6 +632,28 @@
   border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-sm);
   transform: translateX(-50%);
+}
+
+.renderDiagnostics {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  background: var(--color-panel-soft);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.renderDiagnostics strong {
+  color: var(--color-text);
+}
+
+.renderDiagnostics ul {
+  display: grid;
+  gap: var(--space-1);
+  padding-left: var(--space-4);
+  margin: 0;
 }
 
 .panControls {

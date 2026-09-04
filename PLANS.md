@@ -2,10 +2,10 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 39 — Ankereditor und automatische
-  Partplatzierung (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 40 — deterministischer Pixelrenderer (nicht
-  begonnen)
+- **Aktuelle Aufgabe:** Prompt 40 — deterministischer nearest-neighbor
+  Software-Rasterizer (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 41 — richtungsabhängige Ebenenreihenfolge und
+  Clippingdiagnostik (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
   Phase C mit Prompts 36–39 abgeschlossen; Prompts 40–51 bleiben offen unter
@@ -15,6 +15,60 @@
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 40 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `c91e772`; Phase C ist mit Prompt 39 abgeschlossen.
+- Abnahme: immutable RGBA-/Surface-/Part-/Frame-Verträge, transparente
+  Surface-Erzeugung, inverse affine Nearest-Neighbor-Abtastung und ganzzahlig
+  gerundetes Source-over als pure TypeScript-Domain.
+- Diagnostik: vollständig außerhalb, teilweise geclippt, leere Quelle,
+  fehlende RGBA-Daten und nicht invertierbare Matrix bleiben strukturiert und
+  werden im Workspace sichtbar.
+- Integration: revisionsgebundener Decoded-Source-Cache ohne Blob-State,
+  neutrale Partplatzierung aus Rig und Ankern sowie Canvas ausschließlich als
+  `ImageData`-/`putImageData`-Anzeigeadapter mit deaktivierter Glättung.
+- Tests: kleine exakte RGBA-Fixtures für Translation, Scale, Spiegelung,
+  Rotation, kombinierte Matrix, Alpha, Layer, Clipping, Fehler, Immutabilität,
+  Wiederholung, Cache-Revision und sichtbares Workspace-Ergebnis.
+- Grenze: kein richtungsabhängiger Produktions-Draw-Order aus Prompt 41, kein
+  Walk-Generator, Playback, SpriteSheet oder PNG-Encoding.
+
+## Prompt 40 — Ergebnis
+
+1. `RgbaImage`, `RasterSurface`, `RenderablePart`, `RenderedFrame` und die
+   strukturierte Renderdiagnostik bilden einen readonly, frameworkfreien
+   Rastervertrag. Transparente Frames werden validiert neu erzeugt; Quellen
+   und Eingabeoberflächen bleiben bytegenau unverändert.
+2. `blitNearestAffine()` iteriert nur die transformierte, gegen den Frame
+   geschnittene Bounding-Box. Zielpixelzentren werden invers in die Quelle
+   abgebildet und per verbindlichem Nearest Neighbor gelesen; transparente
+   Samples werden übersprungen.
+3. `compositeSourceOver()` verwendet Straight Alpha, ausschließlich
+   ganzzahlige Zwischenwerte und nearest/half-up als feste Rundungsregel.
+   Wiederholte identische Eingaben liefern identische RGBA-Arrays ohne
+   Zwischenfarben durch Interpolation.
+4. Fehler und Hinweise für vollständig außerhalb, teilweise geclippt, leere
+   Quelle, fehlende RGBA-Daten und nicht invertierbare Matrix bleiben je Part
+   strukturiert. `renderFrame()` übernimmt seine Eingabeliste ausdrücklich in
+   bereits aufgelöster Draw-Order; Prompt 41 bleibt Eigentümer ihrer
+   richtungsabhängigen Erzeugung.
+5. Der revisionsgebundene Cache hält nur kopierte dekodierte RGBA-Daten nach
+   Part-, Blob- und Revisionsschlüssel. Blobs bleiben auf den kurzfristigen
+   Repository-/Decoder-Aufruf begrenzt. Eine neue Revision verdrängt den alten
+   Cacheeintrag; fehlgeschlagene Decodes werden nicht festgehalten.
+6. Der Workspace rendert ready Parts der aktiven authored Neutralpose aus Rig,
+   Originalanker, Trim und Projektdelta. Canvas erhält den fertigen Frame nur
+   über `ImageData`/`putImageData`, setzt Glättung aus und bleibt weder
+   Rasteralgorithmus noch Exportquelle. Vorbereitungs- und Renderdiagnosen
+   sind als DOM-Status sichtbar.
+7. Exakte Fixtures decken Translation, 2×-Scale, Spiegelung, 90°-Rotation,
+   kombinierte Matrix, Transparenz, opakes/halbtransparentes Source-over,
+   Reihenfolge, Clipping, Matrix-/Quellfehler, Immutabilität, Wiederholung,
+   Cache-Revision und sichtbares Workspace-Rendering ab. `npm run verify`
+   bestand mit 152 Testdateien und 931 Tests, Typecheck und Produktionsbuild;
+   `git diff --check` ist sauber. PyGitIndex meldet 68 aktuelle Markdownseiten.
+8. Prompt 41 wurde nicht vorgezogen und bleibt die nächste getrennte Aufgabe.
 
 ## Wizard-Auswahlkatalog und Produktionsfamilien-Löschung — Ergebnis
 

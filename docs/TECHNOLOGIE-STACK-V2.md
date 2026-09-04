@@ -573,8 +573,7 @@ slotabhängige Originalanker, die einmalige Trim-Umrechnung und die
 reproduzierbare uniforme Bone-Matrix. Fast-Null-Quellvektoren liefern
 strukturierte Fehler; automatische Scale-Werte außerhalb 0,5–2,0 bleiben
 unverändert und erzeugen eine sichtbare Warnung. Der Anzeigeadapter im
-Ankereditor nutzt diese Matrix nur für eine Live-CSS-Vorschau und nimmt den
-deterministischen Rasterrenderer aus Prompt 40 nicht vorweg.
+Ankereditor nutzt diese Matrix nur für eine Live-CSS-Vorschau.
 
 Projektweite Partkorrekturen liegen separat als streng validiertes
 `transformDelta` auf der Projektzuweisung (Offset ±32 px, Rotation ±π/2,
@@ -582,6 +581,14 @@ uniformer Multiplikator 0,5–1,5). Der Provider hält Blobdaten weiterhin nicht
 im globalen State: Er liest das Original kurzfristig für die View und schreibt
 fertige beziehungsweise fortsetzbare Source-Anker zusammen mit dem Projekt in
 einer Memory-/IndexedDB-Transaktion, ohne das Blob neu zu speichern.
+
+Prompt 40 ergänzt `domain/animation/renderer.ts` als browserfreie Quelle der
+Pixelwahrheit. Zielpixelzentren werden invers-affin auf Quellzellen abgebildet
+und ausschließlich nearest-neighbor gelesen; Source-over verwendet
+ganzzahlige Zwischenwerte und eine dokumentierte Half-up-Rundung. Ein
+revisionsgebundener Servicecache hält nur kopierte RGBA-Daten, niemals Blobs.
+Canvas erhält den fertigen Frame per `ImageData`/`putImageData`, deaktiviert
+Glättung und bleibt reine Anzeige statt Render- oder Exportquelle.
 
 ## Styling
 

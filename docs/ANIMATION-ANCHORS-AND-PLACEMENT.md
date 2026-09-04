@@ -44,9 +44,10 @@ Quellvektor; der automatische Scale ist dort 1. Ein Quellvektor bis
 einschließlich `0.001 px` ist ungültig. Ein automatischer Scale unter `0.5`
 oder über `2.0` wird sichtbar gewarnt, aber niemals still begrenzt.
 
-Die Live-Vorschau nutzt diese pure Matrix über einen schmalen
-Anzeigeadapter. Sie ist noch kein finaler Pixelrenderer; dessen deterministische
-Raster- und Layerpipeline folgt in Prompt 40. Ein Richtungs- oder Rigwechsel
+Die Live-Vorschau nutzt diese pure Matrix über einen schmalen Anzeigeadapter.
+Der seit Prompt 40 getrennte Software-Rasterizer konvertiert ihre
+Ganzzahl-Pixelzentrumsmatrix einmalig in die Halbpixelkonvention und erzeugt
+den finalen RGBA-Frame ohne Canvas-Abtastung. Ein Richtungs- oder Rigwechsel
 liest neue Jointziele und berechnet die Matrix neu, ohne Source-Anker zu
 verändern.
 

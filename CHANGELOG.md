@@ -108,6 +108,12 @@
 - enge projektweite Part-Deltas getrennt von Rig und SourceAnchors sowie
   PartAsset/Projekt-Setup atomar in Memory und IndexedDB persistiert; Coverage
   auf `ready`, `anchorsPending`, `invalidAnchors` und `missing` geschärft
+- deterministischen frameworkfreien Software-Rasterizer mit inverser affiner
+  Nearest-Neighbor-Abtastung, ganzzahlig gerundetem Source-over, transparenten
+  Frames und strukturierter Matrix-/Quell-/Clippingdiagnostik ergänzt
+- revisionsgebundenen Decoded-RGBA-Cache ohne Blob-State sowie eine gerenderte
+  Neutralpose im Workspace eingeführt; Canvas zeigt fertige Bytes nur per
+  `ImageData`/`putImageData` mit deaktivierter Glättung an
 
 ## 2.0.0 — 2026-09-03
 
