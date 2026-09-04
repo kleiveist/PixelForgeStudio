@@ -3,14 +3,23 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
   type CSSProperties,
   type KeyboardEvent
 } from "react";
 import { Badge, Surface } from "../../components/ui";
 import {
+  MAX_PROJECT_LAYER_OFFSET,
+  MIN_PROJECT_LAYER_OFFSET,
   getBuiltInRigTemplate,
+  getDefaultLayerGroup,
+  getDirectionDrawOrder,
   isDirection,
-  type PartSlot
+  resolveDirectionDrawOrder,
+  type FrameEdge,
+  type LayerGroup,
+  type PartSlot,
+  type RenderDiagnostic
 } from "../../domain/animation";
 import {
   PartImportPanel,
@@ -66,6 +75,10 @@ export type WorkspaceSaveStatus =
   | "saved"
   | "failed";
 
+export type PartLayerOffsetCommitResult =
+  | Readonly<{ status: "ok" }>
+  | Readonly<{ status: "error"; message: string }>;
+
 export interface AnimationWorkspaceProps {
   readonly project: AnimationProject;
   readonly canSave: boolean;
@@ -85,6 +98,38 @@ export interface AnimationWorkspaceProps {
   readonly onConfigurePart?: (
     definition: AnchorEditorCommitDefinition
   ) => Promise<AnchorEditorCommitResult>;
+  readonly onSetPartLayerOffset?: (
+    assetId: StableId,
+    layerOffset: number
+  ) => Promise<PartLayerOffsetCommitResult>;
+}
+
+const LAYER_GROUP_LABELS: Readonly<Record<LayerGroup, string>> = Object.freeze({
+  rearAccessories: "hintere Accessoires",
+  farEquipment: "ferne Ausrüstung",
+  farLimbs: "ferne Gliedmaßen",
+  core: "Körperkern",
+  nearLimbs: "nahe Gliedmaßen",
+  head: "Kopf und Gesicht",
+  frontEquipment: "vordere Ausrüstung"
+});
+
+const FRAME_EDGE_LABELS: Readonly<Record<FrameEdge, string>> = Object.freeze({
+  left: "links",
+  right: "rechts",
+  top: "oben",
+  bottom: "unten"
+});
+
+function renderDiagnosticLabel(issue: RenderDiagnostic): string {
+  const severity = issue.severity === "error" ? "Fehler" : "Warnung";
+  const bounds = issue.bounds
+    ? ` Bounding-Box: X ${issue.bounds.x}–${issue.bounds.x + issue.bounds.width}, Y ${issue.bounds.y}–${issue.bounds.y + issue.bounds.height}.`
+    : "";
+  const edges = issue.edges?.length
+    ? ` Betroffene Framekante${issue.edges.length === 1 ? "" : "n"}: ${issue.edges.map((edge) => FRAME_EDGE_LABELS[edge]).join(", ")}.`
+    : "";
+  return `${severity}: ${issue.message}${bounds}${edges}`;
 }
 
 const SAVE_STATUS_COPY: Readonly<Record<WorkspaceSaveStatus, string>> =
@@ -775,7 +820,7 @@ function RigViewport({
             ))}
             {neutralPose.frame?.diagnostics.map((issue, index) => (
               <li key={`render-${issue.partId ?? "frame"}-${issue.code}-${index}`}>
-                {issue.code}: {issue.message}
+                {renderDiagnosticLabel(issue)}
               </li>
             ))}
           </ul>
@@ -843,8 +888,88 @@ interface InspectorProps {
   readonly activeClip: AnimationClip | null;
   readonly unresolvedReferenceCount: number;
   readonly partAssets: readonly AnimationPartAsset[];
+  readonly onSetPartLayerOffset: (
+    assetId: StableId,
+    layerOffset: number
+  ) => Promise<PartLayerOffsetCommitResult>;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
+}
+
+interface PartLayerOffsetControlProps {
+  readonly assetId: StableId;
+  readonly layerOffset: number;
+  readonly onCommit: (
+    assetId: StableId,
+    layerOffset: number
+  ) => Promise<PartLayerOffsetCommitResult>;
+}
+
+function PartLayerOffsetControl({
+  assetId,
+  layerOffset,
+  onCommit
+}: PartLayerOffsetControlProps) {
+  const [draft, setDraft] = useState(String(layerOffset));
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<Readonly<{
+    tone: "status" | "alert";
+    text: string;
+  }> | null>(null);
+
+  useEffect(() => {
+    setDraft(String(layerOffset));
+    setMessage(null);
+  }, [assetId, layerOffset]);
+
+  const commit = async () => {
+    const next = Number(draft);
+    if (
+      !Number.isInteger(next) ||
+      next < MIN_PROJECT_LAYER_OFFSET ||
+      next > MAX_PROJECT_LAYER_OFFSET
+    ) {
+      setMessage({
+        tone: "alert",
+        text: `Erlaubt ist eine ganze Zahl von ${MIN_PROJECT_LAYER_OFFSET} bis ${MAX_PROJECT_LAYER_OFFSET}.`
+      });
+      return;
+    }
+    setPending(true);
+    setMessage(null);
+    const result = await onCommit(assetId, next);
+    setPending(false);
+    setMessage(
+      result.status === "ok"
+        ? { tone: "status", text: "Projektweites Layer-Delta übernommen." }
+        : { tone: "alert", text: result.message }
+    );
+  };
+
+  return (
+    <div className={styles.layerOffsetControl}>
+      <label htmlFor={`part-layer-offset-${assetId}`}>Projektweites Layer-Delta</label>
+      <div>
+        <input
+          id={`part-layer-offset-${assetId}`}
+          type="number"
+          min={MIN_PROJECT_LAYER_OFFSET}
+          max={MAX_PROJECT_LAYER_OFFSET}
+          step={1}
+          value={draft}
+          onChange={(event) => setDraft(event.currentTarget.value)}
+        />
+        <button type="button" disabled={pending} onClick={() => void commit()}>
+          {pending ? "Übernimmt …" : "Layer übernehmen"}
+        </button>
+      </div>
+      <small>
+        Kleine Abweichung zur richtungsspezifischen Basisreihenfolge
+        ({MIN_PROJECT_LAYER_OFFSET} bis +{MAX_PROJECT_LAYER_OFFSET}).
+      </small>
+      {message ? <span role={message.tone}>{message.text}</span> : null}
+    </div>
+  );
 }
 
 function Inspector({
@@ -853,6 +978,7 @@ function Inspector({
   activeClip,
   unresolvedReferenceCount,
   partAssets,
+  onSetPartLayerOffset,
   dispatch,
   layout
 }: InspectorProps) {
@@ -860,10 +986,43 @@ function Inspector({
   const selectedPart = state.selectedSlot
     ? findPartAssetForSource(partAssets, state.selectedSlot, state.direction)
     : null;
-  const selectedPartDelta = selectedPart
+  const selectedAssignment = selectedPart
     ? project.parts.find(({ assetId }) => assetId === selectedPart.assetId)
-        ?.transformDelta
     : undefined;
+  const selectedPartDelta = selectedAssignment?.transformDelta;
+  const directionDrawOrder = getDirectionDrawOrder(state.direction);
+  const selectedLayerGroup = selectedPart
+    ? getDefaultLayerGroup(state.direction, selectedPart.slot)
+    : null;
+  const baseLayerIndex = selectedPart
+    ? directionDrawOrder?.entries.findIndex(
+        (entry) => entry.slot === selectedPart.slot
+      ) ?? -1
+    : -1;
+  const resolvedOrder = resolveDirectionDrawOrder(
+    state.direction,
+    partAssets
+      .filter((asset) => asset.direction === state.direction)
+      .map((asset) => {
+        const assignment = project.parts.find(
+          (candidate) => candidate.assetId === asset.assetId
+        );
+        return {
+          id: asset.assetId,
+          slot: asset.slot,
+          ...(asset.attachmentJointId
+            ? { attachmentJointId: asset.attachmentJointId }
+            : {}),
+          ...(assignment?.layerOffset !== undefined
+            ? { layerOffset: assignment.layerOffset }
+            : {})
+        };
+      })
+  );
+  const resolvedLayerIndex =
+    resolvedOrder.status === "ok" && selectedPart
+      ? resolvedOrder.parts.findIndex((part) => part.id === selectedPart.assetId)
+      : -1;
   const contexts: readonly Readonly<{
     id: WorkspaceInspectorContext;
     label: string;
@@ -936,8 +1095,19 @@ function Inspector({
                 <div><dt>Originalgröße / Trim</dt><dd>{selectedPart ? `${selectedPart.sourceSize.width} × ${selectedPart.sourceSize.height} px / X ${selectedPart.trimRect.x}, Y ${selectedPart.trimRect.y}, ${selectedPart.trimRect.width} × ${selectedPart.trimRect.height} px` : "Noch nicht verfügbar"}</dd></div>
                 <div><dt>Anker / Pivot</dt><dd>{selectedPart?.anchorStatus === "anchorsPending" ? "Ausstehend – Produktion gesperrt" : selectedPart?.anchorStatus === "invalidAnchors" ? "Ungültig – Produktion gesperrt" : selectedPart?.anchors ? `${selectedPart.anchors.proximal.x} / ${selectedPart.anchors.proximal.y}` : "Noch nicht verfügbar"}</dd></div>
                 <div><dt>Projektweite Korrektur</dt><dd>{selectedPart ? selectedPartDelta ? `Offset ${selectedPartDelta.offsetX} / ${selectedPartDelta.offsetY}, Rotation ${selectedPartDelta.rotationDelta}, Scale ${selectedPartDelta.scaleMultiplier}` : "Identität" : "Noch nicht verfügbar"}</dd></div>
+                <div><dt>Layergruppe</dt><dd>{selectedLayerGroup ? LAYER_GROUP_LABELS[selectedLayerGroup] : "Noch nicht verfügbar"}</dd></div>
+                <div><dt>Basisreihenfolge</dt><dd>{baseLayerIndex >= 0 && directionDrawOrder ? `${baseLayerIndex + 1} von ${directionDrawOrder.entries.length}` : "Nicht auflösbar"}</dd></div>
+                <div><dt>Belegte Reihenfolge</dt><dd>{resolvedLayerIndex >= 0 && resolvedOrder.status === "ok" ? `${resolvedLayerIndex + 1} von ${resolvedOrder.parts.length}` : resolvedOrder.status === "invalid" ? "Produktionsvalidierung erforderlich" : "Noch nicht verfügbar"}</dd></div>
+                <div><dt>Visuell nahe Seite</dt><dd>{directionDrawOrder?.nearSide === "left" ? "anatomisch links" : directionDrawOrder?.nearSide === "right" ? "anatomisch rechts" : "ausgeglichen"}</dd></div>
                 <div><dt>Spiegelregel</dt><dd>{selectedPart?.mirrorPolicy ?? "Noch nicht verfügbar"}</dd></div>
               </dl>
+              {selectedPart ? (
+                <PartLayerOffsetControl
+                  assetId={selectedPart.assetId}
+                  layerOffset={selectedAssignment?.layerOffset ?? 0}
+                  onCommit={onSetPartLayerOffset}
+                />
+              ) : null}
               <p className={styles.emptyDetail}>
                 Importierte Originalbilder bleiben unverändert gespeichert. Source-Anker und projektweite Korrektur werden im Viewport getrennt bearbeitet.
               </p>
@@ -1086,6 +1256,10 @@ export function AnimationWorkspace({
   onConfigurePart = async () => ({
     status: "error",
     message: "Die Ankerpersistenz ist in dieser Ansicht nicht verbunden."
+  }),
+  onSetPartLayerOffset = async () => ({
+    status: "error",
+    message: "Die Layerpersistenz ist in dieser Ansicht nicht verbunden."
   })
 }: AnimationWorkspaceProps) {
   const [state, dispatch] = useReducer(
@@ -1183,6 +1357,7 @@ export function AnimationWorkspace({
             activeClip={activeClip}
             unresolvedReferenceCount={unresolvedReferenceCount}
             partAssets={partAssets}
+            onSetPartLayerOffset={onSetPartLayerOffset}
             dispatch={dispatch}
             layout={layout}
           />

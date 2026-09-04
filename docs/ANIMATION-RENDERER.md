@@ -49,9 +49,11 @@ Strukturierte Diagnostik unterscheidet:
 
 Der Workspace lädt nur zugewiesene, für die aktive authored Richtung
 freigegebene Parts. Original-RGBA wird nach `trimRect` kopiert, über Riganker
-platziert und in der vorhandenen Projektzuweisungsreihenfolge an
-`renderFrame()` übergeben. Die richtungsabhängige Produktionsreihenfolge folgt
-separat in Prompt 41.
+platziert und anschließend über den versionierten `DirectionDrawOrder` der
+aktiven Zielrichtung aufgelöst. Erst diese bereits sortierte Partliste wird an
+`renderFrame()` übergeben. Optionale Slots werden bei Nichtbelegung
+übersprungen; projektweite Layer-Deltas bleiben kleine Abweichungen von der
+Basisorder. Details stehen in `ANIMATION-LAYER-ORDER.md`.
 
 Ein `RevisionBoundDecodedSourceCache` hält ausschließlich validierte Kopien
 dekodierter RGBA-Daten. Sein Schlüssel enthält Part-ID, Blob-ID und

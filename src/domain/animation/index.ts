@@ -79,6 +79,34 @@ export {
   invertTransform
 } from "./matrices";
 export {
+  DEFAULT_FREE_ACCESSORY_LAYER_GROUP,
+  DEFAULT_OPTIONAL_SLOT_ATTACHMENT_JOINTS,
+  DIRECTION_DRAW_ORDERS,
+  DRAW_ORDER_ISSUE_CODES,
+  DRAW_ORDER_VERSION,
+  LAYER_GROUPS,
+  MAX_PROJECT_LAYER_OFFSET,
+  MIN_PROJECT_LAYER_OFFSET,
+  getDefaultLayerGroup,
+  getDirectionDrawOrder,
+  isFreeAccessorySlot,
+  resolveDirectionDrawOrder,
+  resolvePartAttachmentJoint,
+  validateDrawOrder,
+  type AnatomicalSide,
+  type AttachmentJoint,
+  type DirectionDrawOrder,
+  type DirectionLayerEntry,
+  type DrawOrderIssue,
+  type DrawOrderIssueCode,
+  type DrawOrderValidationResult,
+  type LayerGroup,
+  type LayeredPart,
+  type ResolveDirectionDrawOrderResult,
+  type ResolvedLayeredPart,
+  type VisualNearSide
+} from "./layerOrder";
+export {
   RASTER_COORDINATE_EPSILON,
   RENDER_DIAGNOSTIC_CODES,
   blitNearestAffine,
@@ -89,6 +117,7 @@ export {
   type RasterBlitResult,
   type RasterBounds,
   type RasterSurface,
+  type FrameEdge,
   type RenderDiagnostic,
   type RenderDiagnosticCode,
   type RenderablePart,

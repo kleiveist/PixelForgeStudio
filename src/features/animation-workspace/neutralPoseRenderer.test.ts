@@ -108,4 +108,124 @@ describe("neutral pose renderer preparation", () => {
     expect(pendingResult.issues[0]?.code).toBe("sourceNotReady");
     expect(mismatch.issues[0]?.code).toBe("decodedDimensionsMismatch");
   });
+
+  it("places fixed equipment at its default attachment joint", () => {
+    const weapon = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_weapon_left_south_001",
+        blobId: "blob_weapon_left_south_001",
+        label: "Linke Waffe",
+        slot: "weapon.left",
+        sourceSize: { width: 1, height: 1 },
+        trimRect: { x: 0, y: 0, width: 1, height: 1 },
+        anchors: { proximal: { x: 0, y: 0 } }
+      })
+    );
+    const project = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [{ assetId: weapon.assetId }],
+        overrides: []
+      })
+    );
+    const prepared = prepareNeutralPoseParts(
+      project,
+      HUMANOID_80_RIG_TEMPLATE,
+      "south",
+      [weapon],
+      [{
+        assetId: weapon.assetId,
+        image: {
+          width: 1,
+          height: 1,
+          pixels: new Uint8ClampedArray([40, 210, 90, 255])
+        }
+      }]
+    );
+    const frame = renderFrame(project.frameProfile.frameSize, prepared.parts);
+    const handPixel = (86 * frame.width + 47) * 4;
+
+    expect(prepared.issues).toEqual([]);
+    expect([...frame.pixels.slice(handPixel, handPixel + 4)]).toEqual([
+      40,
+      210,
+      90,
+      255
+    ]);
+  });
+
+  it("orders attached free accessories before rendering and rejects a missing attachment", () => {
+    const createAccessory = (
+      index: 1 | 2,
+      color: readonly [number, number, number, number],
+      withAttachment = true
+    ) => {
+      const asset = parseAnimationPartAsset(
+        createAnimationPartAssetInput({
+          assetId: `part_accessory_${index}_south_001`,
+          blobId: `blob_accessory_${index}_south_001`,
+          label: `Accessory ${index}`,
+          slot: `accessory.${index}`,
+          sourceSize: { width: 1, height: 1 },
+          trimRect: { x: 0, y: 0, width: 1, height: 1 },
+          anchors: { proximal: { x: 0, y: 0 } },
+          ...(withAttachment ? { attachmentJointId: "head" } : {})
+        })
+      );
+      return {
+        asset,
+        decoded: {
+          assetId: asset.assetId,
+          image: { width: 1, height: 1, pixels: new Uint8ClampedArray(color) }
+        }
+      };
+    };
+    const first = createAccessory(1, [255, 0, 0, 255]);
+    const second = createAccessory(2, [0, 0, 255, 255]);
+    const project = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [
+          { assetId: second.asset.assetId },
+          { assetId: first.asset.assetId }
+        ],
+        overrides: []
+      })
+    );
+    const prepared = prepareNeutralPoseParts(
+      project,
+      HUMANOID_80_RIG_TEMPLATE,
+      "south",
+      [second.asset, first.asset],
+      [second.decoded, first.decoded]
+    );
+    const frame = renderFrame(project.frameProfile.frameSize, prepared.parts);
+    const headPixel = (34 * frame.width + 64) * 4;
+
+    expect(prepared.parts.map((part) => part.id)).toEqual([
+      first.asset.assetId,
+      second.asset.assetId
+    ]);
+    expect([...frame.pixels.slice(headPixel, headPixel + 4)]).toEqual([
+      0,
+      0,
+      255,
+      255
+    ]);
+
+    const missing = createAccessory(1, [255, 0, 0, 255], false);
+    const missingProject = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [{ assetId: missing.asset.assetId }],
+        overrides: []
+      })
+    );
+    const rejected = prepareNeutralPoseParts(
+      missingProject,
+      HUMANOID_80_RIG_TEMPLATE,
+      "south",
+      [missing.asset],
+      [missing.decoded]
+    );
+    expect(rejected.parts).toEqual([]);
+    expect(rejected.issues[0]?.code).toBe("missingAttachmentJoint");
+  });
 });

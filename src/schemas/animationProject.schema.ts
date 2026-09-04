@@ -10,6 +10,7 @@ import {
   AnimationNameSchema,
   AnimationPartSlotSchema,
   AnimationProjectPartDeltaSchema,
+  AnimationProjectPartLayerOffsetSchema,
   AnimationRigTemplateIdSchema,
   AnimationSchemaVersionSchema,
   AnimationTransformDeltaSchema,
@@ -24,7 +25,8 @@ import {
 export const ProjectPartAssignmentSchema = z
   .strictObject({
     assetId: StableIdSchema,
-    transformDelta: AnimationProjectPartDeltaSchema.optional()
+    transformDelta: AnimationProjectPartDeltaSchema.optional(),
+    layerOffset: AnimationProjectPartLayerOffsetSchema.optional()
   })
   .readonly();
 

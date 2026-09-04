@@ -56,8 +56,10 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   und mit einer Live-Bone-Vorschau prüfen. Das Built-in-Rig
   `humanoid-80-v1` zeigt Bones, Joints, Groundline und Pflichtslotbindungen als
   SVG. Der Software-Rasterizer erzeugt den RGBA-Projektframe; das Canvas ist
-  ausschließlich eine pixelgenaue Anzeige. Richtungs-Layer, Walk-Zyklus und
-  Character Kits bleiben getrennte folgende Fachphasen.
+  ausschließlich eine pixelgenaue Anzeige. Acht versionierte Richtungs-Layer
+  ordnen Körperteile und Ausrüstung vor dem Rendern; der Inspector verwaltet
+  kleine projektweite Layer-Deltas und der Viewport erklärt Clippingkanten.
+  Walk-Zyklus und Character Kits bleiben getrennte folgende Fachphasen.
 
 ## Einstiegspunkte
 

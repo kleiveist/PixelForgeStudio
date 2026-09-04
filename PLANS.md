@@ -2,19 +2,71 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 40 — deterministischer nearest-neighbor
-  Software-Rasterizer (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 41 — richtungsabhängige Ebenenreihenfolge und
-  Clippingdiagnostik (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 41 — richtungsabhängige Ebenenreihenfolge und
+  Clippingdiagnostik (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 42 — versionierter 8-Frame-Walk-Clip und
+  South-Generator (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
-  Phase C mit Prompts 36–39 abgeschlossen; Prompts 40–51 bleiben offen unter
-  `docs/aufgaben/pixelforge-studio-v3/prompts/`
+  Phase C mit Prompts 36–39 abgeschlossen; Prompts 40 und 41 sind umgesetzt,
+  Prompts 42–51 bleiben offen unter `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 - **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 41 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `91206c7`; Prompt 40 rendert bereits deterministisch und
+  übernimmt Parts in einer extern aufgelösten Reihenfolge.
+- Abnahme: versionierter frameworkfreier Layervertrag mit acht ausdrücklichen
+  Richtungsorders, getrennter anatomischer Nahseite, geprüften Pflichtslots
+  und kontrollierter Einordnung optionaler Ausrüstung.
+- Freie Accessoires: gültiger Attachment-Joint, Default-Layergruppe und
+  kleiner projektweiter ganzzahliger Layer-Offset statt duplizierter Liste.
+- Integration: aktive PartAssets werden exakt einmal aufgelöst, vor
+  `renderFrame()` sortiert und im Inspector samt editierbarem Projekt-Offset
+  angezeigt; per-Frame-Overrides bleiben Prompt 46 vorbehalten.
+- Diagnostik: unbekannte/doppelte Slots, fehlende Pflichtorder und
+  Attachment-Joints sowie linke, rechte, obere, untere oder vollständige
+  Frameüberschreitung werden strukturiert und im Viewport verständlich.
+- Tests: alle acht Orders, Nah-/Fernseite, optionale Einfügung, Layer-Delta,
+  farbige Überdeckung, jede Framekante, vollständiges Außerhalb,
+  Inspektoranzeige und richtungsabhängiges Re-Rendering.
+- Grenze: keine Quellspiegelung, Walk-Bewegung, per-Frame-Layerorder oder
+  DOM-z-index-basierte Pixelkomposition.
+
+## Prompt 41 — Ergebnis
+
+1. `DirectionDrawOrder` Version 1 definiert für jede der acht Zielrichtungen
+   eine eigene vollständige Reihenfolge aller 39 Slots. Nahseite,
+   anatomisches Links/Rechts und Weltlicht bleiben getrennte Begriffe.
+2. `validateDrawOrder()` und die Produktionsprüfung blockieren unbekannte
+   oder doppelte Slots, unvollständige Basisorders, freie Accessoires ohne
+   gültigen Attachment-Joint und Layer-Deltas außerhalb -8 bis +8.
+3. Nicht belegte optionale Slots werden ausgelassen. Feste Ausrüstung nutzt
+   kanonische Attachment-Joints; freie Accessoires speichern ihren Joint
+   ausdrücklich und werden standardmäßig vorn eingeordnet.
+4. Die Neutralpose platziert Parts weiterhin aus Originalanker, Rig und
+   Projektdelta, löst danach aber die Richtungsorder auf. `renderFrame()` sieht
+   nur diese fertige Reihenfolge; Projektarray und DOM steuern sie nicht.
+5. Projektzuweisungen besitzen additiv ein kleines `layerOffset`. Der Provider
+   validiert Änderungen, bewahrt das Delta bei späterer Ankerbearbeitung und
+   lässt es über den normalen Dirty-/Autosave-Lebenszyklus persistieren.
+6. Der Part-Inspector zeigt Layergruppe, Basis- und belegte Position sowie die
+   visuell nahe Seite und bietet die begrenzte Projekt-Delta-Bedienung.
+   Per-Frame-Layer-Overrides bleiben ausdrücklich offen bis Prompt 46.
+7. Rasterdiagnosen nennen Bounding-Box und betroffene linke, rechte, obere
+   oder untere Framekante. Vollständig außerhalb liegende Parts sind Fehler;
+   teilweise abgeschnittene bleiben Warnungen.
+8. Domain-, Schema-, Provider-, Placement- und RTL-Fixtures prüfen alle acht
+   Orders, farbige Überdeckung, Ausrüstung, freie Accessoires, Layer-Delta,
+   jede Clippingkante, vollständiges Außerhalb, Inspector und
+   Richtungswechsel. `npm run verify` bestand mit 153 Testdateien und 957
+   Tests, Strict-Typecheck und Produktionsbuild; `git diff --check` ist
+   sauber. PyGitIndex meldet 69 aktuelle Markdownseiten.
+9. Prompt 42 wurde nicht vorgezogen und bleibt die nächste getrennte Aufgabe.
 
 ## Prompt 40 — Ausgangsstand und Abnahme
 

@@ -129,6 +129,10 @@ export interface AnimationProjectContextValue extends AnimationProjectState {
   readonly updateActiveProject: (
     input: unknown
   ) => AnimationProjectCommandResult<AnimationProject>;
+  readonly updatePartLayerOffset: (
+    assetId: StableId,
+    layerOffset: number
+  ) => AnimationProjectCommandResult<AnimationProject>;
   readonly saveActiveProject: () => Promise<
     AnimationProjectCommandResult<AnimationProject>
   >;
@@ -660,6 +664,44 @@ export function AnimationProjectProvider({
     [dispatchState]
   );
 
+  const updatePartLayerOffset = useCallback(
+    (
+      assetId: StableId,
+      layerOffset: number
+    ): AnimationProjectCommandResult<AnimationProject> => {
+      const current = stateRef.current.activeProject;
+      if (!current) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt zum Bearbeiten geöffnet."
+        };
+      }
+      if (!current.parts.some((assignment) => assignment.assetId === assetId)) {
+        return {
+          status: "notFound",
+          message: "Der ausgewählte Part ist diesem Projekt nicht mehr zugewiesen."
+        };
+      }
+
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      return updateActiveProject({
+        ...current,
+        parts: current.parts.map((assignment) =>
+          assignment.assetId === assetId
+            ? { ...assignment, layerOffset }
+            : assignment
+        ),
+        updatedAt: timestamp
+      });
+    },
+    [now, updateActiveProject]
+  );
+
   const loadPartAssets = useCallback(
     async (
       assetIds: readonly StableId[]
@@ -899,7 +941,7 @@ export function AnimationProjectProvider({
           parts: current.parts.map((assignment) =>
             assignment.assetId === definition.assetId
               ? {
-                  assetId: assignment.assetId,
+                  ...assignment,
                   transformDelta: definition.transformDelta
                 }
               : assignment
@@ -1171,6 +1213,7 @@ export function AnimationProjectProvider({
       createProject,
       openProject,
       updateActiveProject,
+      updatePartLayerOffset,
       saveActiveProject,
       loadPartAssets,
       importPartAsset,
@@ -1197,7 +1240,8 @@ export function AnimationProjectProvider({
       renameProject,
       saveActiveProject,
       state,
-      updateActiveProject
+      updateActiveProject,
+      updatePartLayerOffset
     ]
   );
 

@@ -222,12 +222,36 @@ describe("deterministic pixel renderer", () => {
     expect(partial.diagnostics.map(({ code }) => code)).toEqual([
       "partiallyClipped"
     ]);
+    expect(partial.diagnostics[0]?.edges).toEqual(["left"]);
     expect(partial.sampledPixelCount).toBe(1);
     expect(pixelAt(partial.surface, 0, 0)).toEqual(GREEN);
     expect(outside.diagnostics.map(({ code }) => code)).toEqual([
       "fullyOutside"
     ]);
+    expect(outside.diagnostics[0]).toMatchObject({
+      severity: "error",
+      edges: ["left"]
+    });
     expect(outside.sampledPixelCount).toBe(0);
+  });
+
+  it.each([
+    ["left", createTranslationTransform(-1, 0)],
+    ["right", createTranslationTransform(1, 0)],
+    ["top", createTranslationTransform(0, -1)],
+    ["bottom", createTranslationTransform(0, 1)]
+  ] as const)("reports the affected %s frame edge", (edge, transform) => {
+    const result = blitNearestAffine(
+      createRasterSurface({ width: 2, height: 2 }),
+      rgbaImage(2, 2, [RED, GREEN, BLUE, RED]),
+      transform,
+      edge
+    );
+
+    expect(result.diagnostics[0]).toMatchObject({
+      code: "partiallyClipped",
+      edges: [edge]
+    });
   });
 
   it("reports singular matrices, empty sources and missing RGBA data", () => {

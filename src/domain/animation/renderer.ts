@@ -14,6 +14,7 @@ export const RENDER_DIAGNOSTIC_CODES = Object.freeze([
 
 export type RenderDiagnosticCode =
   (typeof RENDER_DIAGNOSTIC_CODES)[number];
+export type FrameEdge = "left" | "right" | "top" | "bottom";
 
 export type RgbaPixel = readonly [number, number, number, number];
 
@@ -37,6 +38,7 @@ export interface RenderDiagnostic {
   readonly severity: "warning" | "error";
   readonly partId?: string;
   readonly bounds?: RasterBounds;
+  readonly edges?: readonly FrameEdge[];
   readonly message: string;
 }
 
@@ -149,13 +151,15 @@ function diagnostic(
   severity: RenderDiagnostic["severity"],
   message: string,
   partId?: string,
-  bounds?: RasterBounds
+  bounds?: RasterBounds,
+  edges?: readonly FrameEdge[]
 ): RenderDiagnostic {
   return Object.freeze({
     code,
     severity,
     ...(partId ? { partId } : {}),
     ...(bounds ? { bounds: Object.freeze({ ...bounds }) } : {}),
+    ...(edges && edges.length > 0 ? { edges: Object.freeze([...edges]) } : {}),
     message
   });
 }
@@ -239,6 +243,18 @@ function intersectBounds(
   const endY = Math.min(surface.height, bounds.y + bounds.height);
   if (endX <= x || endY <= y) return null;
   return Object.freeze({ x, y, width: endX - x, height: endY - y });
+}
+
+function clippedFrameEdges(
+  bounds: RasterBounds,
+  surface: RasterSurface
+): readonly FrameEdge[] {
+  const edges: FrameEdge[] = [];
+  if (bounds.x < 0) edges.push("left");
+  if (bounds.x + bounds.width > surface.width) edges.push("right");
+  if (bounds.y < 0) edges.push("top");
+  if (bounds.y + bounds.height > surface.height) edges.push("bottom");
+  return Object.freeze(edges);
 }
 
 function sourcePixelIndex(coordinate: number): number {
@@ -342,15 +358,17 @@ export function blitNearestAffine(
   }
 
   const clippedBounds = intersectBounds(bounds, surface);
+  const clippedEdges = clippedFrameEdges(bounds, surface);
   if (!clippedBounds) {
     return resultWithoutBlit(
       surface,
       diagnostic(
         "fullyOutside",
-        "warning",
+        "error",
         "The transformed part lies completely outside the target surface.",
         partId,
-        bounds
+        bounds,
+        clippedEdges
       )
     );
   }
@@ -418,7 +436,8 @@ export function blitNearestAffine(
               "warning",
               "The transformed part is clipped by the target surface.",
               partId,
-              bounds
+              bounds,
+              clippedEdges
             )
           ]
         : []

@@ -5,6 +5,8 @@ import {
   DIRECTION_IDS,
   DIRECTION_SOURCE_MODES,
   JOINT_IDS,
+  MAX_PROJECT_LAYER_OFFSET,
+  MIN_PROJECT_LAYER_OFFSET,
   MIRROR_POLICIES,
   PART_SLOT_IDS,
   RIG_TEMPLATE_IDS
@@ -183,6 +185,12 @@ export const AnimationProjectPartDeltaSchema = z
   })
   .readonly();
 
+export const AnimationProjectPartLayerOffsetSchema = z
+  .number()
+  .int()
+  .min(MIN_PROJECT_LAYER_OFFSET)
+  .max(MAX_PROJECT_LAYER_OFFSET);
+
 export type ValidatedAnimationPoint = z.infer<typeof AnimationPointSchema>;
 export type ValidatedAnimationSize = z.infer<typeof AnimationSizeSchema>;
 export type ValidatedAnimationTrimRect = z.infer<
@@ -202,4 +210,7 @@ export type ValidatedAnimationTransformDelta = z.infer<
 >;
 export type ValidatedAnimationProjectPartDelta = z.infer<
   typeof AnimationProjectPartDeltaSchema
+>;
+export type ValidatedAnimationProjectPartLayerOffset = z.infer<
+  typeof AnimationProjectPartLayerOffsetSchema
 >;

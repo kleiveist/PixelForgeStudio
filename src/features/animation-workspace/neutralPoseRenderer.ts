@@ -1,13 +1,19 @@
 import {
   applyTransformDelta,
   composeTransforms,
+  createRotationTransform,
   createTranslationTransform,
+  createUniformScaleTransform,
   cropRgba,
   findDirectionRig,
   findSlotBinding,
   isRequiredPartSlot,
+  resolveDirectionDrawOrder,
   resolveBonePlacement,
+  resolveEffectiveAnchor,
+  resolvePartAttachmentJoint,
   type Direction,
+  type LayeredPart,
   type RenderablePart,
   type RgbaImage,
   type RigTemplate,
@@ -23,10 +29,11 @@ import type {
 export const NEUTRAL_POSE_PREPARATION_ISSUE_CODES = Object.freeze([
   "missingDirectionRig",
   "sourceNotReady",
-  "unsupportedSlot",
+  "missingAttachmentJoint",
   "missingDecodedSource",
   "decodedDimensionsMismatch",
-  "invalidPlacement"
+  "invalidPlacement",
+  "invalidLayerOrder"
 ] as const);
 
 export type NeutralPosePreparationIssueCode =
@@ -85,8 +92,8 @@ export function placementToRasterTransform(
 }
 
 /**
- * Resolves only neutral-pose geometry. The incoming project assignment order
- * remains the temporary draw order until Prompt 41 owns layering.
+ * Resolves neutral-pose geometry and applies the versioned directional order
+ * before returning Renderer-ready parts.
  */
 export function prepareNeutralPoseParts(
   project: AnimationProject,
@@ -113,7 +120,8 @@ export function prepareNeutralPoseParts(
   const sourcesByAssetId = new Map(
     decodedSources.map((source) => [source.assetId, source.image])
   );
-  const parts: RenderablePart[] = [];
+  const renderableById = new Map<string, RenderablePart>();
+  const layeredParts: LayeredPart[] = [];
   const issues: NeutralPosePreparationIssue[] = [];
 
   for (const assignment of project.parts) {
@@ -125,17 +133,6 @@ export function prepareNeutralPoseParts(
           "sourceNotReady",
           "warning",
           `Part ${asset.label} has no production-ready anchors.`,
-          asset.assetId
-        )
-      );
-      continue;
-    }
-    if (!isRequiredPartSlot(asset.slot)) {
-      issues.push(
-        issue(
-          "unsupportedSlot",
-          "warning",
-          `Optional slot ${asset.slot} has no production placement binding yet.`,
           asset.assetId
         )
       );
@@ -167,46 +164,6 @@ export function prepareNeutralPoseParts(
       );
       continue;
     }
-    const binding = findSlotBinding(template, asset.slot);
-    const parent = binding
-      ? directionRig.joints[binding.proximalJointId]?.position
-      : undefined;
-    const bone = binding
-      ? template.bones.find(({ id }) => id === binding.boneId)
-      : undefined;
-    const childId = binding?.distalJointId ?? bone?.childJointId;
-    const child = childId ? directionRig.joints[childId]?.position : undefined;
-    if (!binding || !parent || !child) {
-      issues.push(
-        issue(
-          "invalidPlacement",
-          "error",
-          `Rig placement for ${asset.label} is incomplete.`,
-          asset.assetId
-        )
-      );
-      continue;
-    }
-    const placement = resolveBonePlacement({
-      binding,
-      trimRect: asset.trimRect,
-      sourceSize: asset.sourceSize,
-      anchors: asset.anchors,
-      targetParent: parent,
-      targetChild: child
-    });
-    if (placement.status !== "ok") {
-      issues.push(
-        issue(
-          "invalidPlacement",
-          "error",
-          `Saved anchors for ${asset.label} cannot resolve a placement.`,
-          asset.assetId
-        )
-      );
-      continue;
-    }
-
     let cropped: RgbaImage;
     try {
       cropped = cropRgba(source, asset.trimRect);
@@ -221,18 +178,132 @@ export function prepareNeutralPoseParts(
       );
       continue;
     }
-    const adjusted = applyTransformDelta(
-      placement.placement,
-      assignment.transformDelta ?? IDENTITY_DELTA
-    );
-    parts.push(
+    const delta = assignment.transformDelta ?? IDENTITY_DELTA;
+    let placementTransform: Transform2D;
+    if (isRequiredPartSlot(asset.slot)) {
+      const binding = findSlotBinding(template, asset.slot);
+      const parent = binding
+        ? directionRig.joints[binding.proximalJointId]?.position
+        : undefined;
+      const bone = binding
+        ? template.bones.find(({ id }) => id === binding.boneId)
+        : undefined;
+      const childId = binding?.distalJointId ?? bone?.childJointId;
+      const child = childId
+        ? directionRig.joints[childId]?.position
+        : undefined;
+      if (!binding || !parent || !child) {
+        issues.push(
+          issue(
+            "invalidPlacement",
+            "error",
+            `Rig placement for ${asset.label} is incomplete.`,
+            asset.assetId
+          )
+        );
+        continue;
+      }
+      const placement = resolveBonePlacement({
+        binding,
+        trimRect: asset.trimRect,
+        sourceSize: asset.sourceSize,
+        anchors: asset.anchors,
+        targetParent: parent,
+        targetChild: child
+      });
+      if (placement.status !== "ok") {
+        issues.push(
+          issue(
+            "invalidPlacement",
+            "error",
+            `Saved anchors for ${asset.label} cannot resolve a placement.`,
+            asset.assetId
+          )
+        );
+        continue;
+      }
+      placementTransform = applyTransformDelta(
+        placement.placement,
+        delta
+      ).transform;
+    } else {
+      const attachmentJointId = resolvePartAttachmentJoint(
+        asset.slot,
+        asset.attachmentJointId
+      );
+      const target = attachmentJointId
+        ? directionRig.joints[attachmentJointId]?.position
+        : undefined;
+      if (!attachmentJointId || !target) {
+        issues.push(
+          issue(
+            "missingAttachmentJoint",
+            "error",
+            `Optional part ${asset.label} requires a valid attachment joint.`,
+            asset.assetId
+          )
+        );
+        continue;
+      }
+      const effectiveProximal = resolveEffectiveAnchor(
+        asset.trimRect,
+        asset.anchors.proximal
+      );
+      placementTransform = composeTransforms(
+        createTranslationTransform(
+          target.x + delta.offsetX,
+          target.y + delta.offsetY
+        ),
+        createRotationTransform(delta.rotationDelta),
+        createUniformScaleTransform(delta.scaleMultiplier),
+        createTranslationTransform(
+          -effectiveProximal.x,
+          -effectiveProximal.y
+        )
+      );
+    }
+    renderableById.set(
+      asset.assetId,
       Object.freeze({
         id: asset.assetId,
         source: cropped,
-        transform: placementToRasterTransform(adjusted.transform)
+        transform: placementToRasterTransform(placementTransform)
+      })
+    );
+    layeredParts.push(
+      Object.freeze({
+        id: asset.assetId,
+        slot: asset.slot,
+        ...(asset.attachmentJointId
+          ? { attachmentJointId: asset.attachmentJointId }
+          : {}),
+        ...(assignment.layerOffset !== undefined
+          ? { layerOffset: assignment.layerOffset }
+          : {})
       })
     );
   }
+
+  const ordered = resolveDirectionDrawOrder(direction, layeredParts);
+  if (ordered.status === "invalid") {
+    issues.push(
+      ...ordered.issues.map((orderIssue) =>
+        issue(
+          "invalidLayerOrder",
+          "error",
+          orderIssue.message
+        )
+      )
+    );
+    return Object.freeze({
+      parts: Object.freeze([]),
+      issues: Object.freeze(issues)
+    });
+  }
+  const parts = ordered.parts.flatMap((part) => {
+    const renderable = renderableById.get(part.id);
+    return renderable ? [renderable] : [];
+  });
 
   return Object.freeze({
     parts: Object.freeze(parts),

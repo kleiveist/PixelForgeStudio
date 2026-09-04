@@ -731,6 +731,41 @@
   overflow-wrap: anywhere;
 }
 
+.layerOffsetControl {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+}
+
+.layerOffsetControl > label {
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+}
+
+.layerOffsetControl > div {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 0.5fr) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.layerOffsetControl input,
+.layerOffsetControl button {
+  min-width: 0;
+}
+
+.layerOffsetControl small,
+.layerOffsetControl > span {
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.layerOffsetControl > span[role="alert"] {
+  color: var(--color-danger-text);
+}
+
 .frameStrip {
   min-width: 0;
   display: grid;

@@ -233,7 +233,10 @@ Der derzeit implementierte V3-Ausbaustand umfasst:
     `invalidAnchors` und `missing` sowie
 11. den frameworkfreien nearest-neighbor Software-Rasterizer mit
     ganzzahlig-deterministischem Source-over, strukturierten Diagnosen,
-    revisionsgebundenem RGBA-Cache und display-only Canvas-Adapter.
+    revisionsgebundenem RGBA-Cache und display-only Canvas-Adapter sowie
+12. acht versionierte richtungsspezifische Draw-Orders mit getrennter
+    Nah-/Fernseite, validierten Ausrüstungs-Attachments, kleinen
+    projektweiten Layer-Deltas und sichtbarer Kanten-/Bounding-Box-Diagnostik.
 
 Im Workspace liest das Rig-SVG Bones, Joints, Groundline und Pflichtslotlabels
 direkt aus den versionierten Produktionsdaten. Schachbrett, Raster,
@@ -243,9 +246,9 @@ die Anzeige; Projekt- und Exportkoordinaten bleiben unverändert. Nicht
 aufgelöste PartAsset-/Blob-Referenzen werden sichtbar als fehlende Quelle
 behandelt, ohne Dummybilder oder scheinpräzise Anker zu erzeugen.
 
-Die V3-Implementierung befindet sich nach Prompt 40 in Phase D und ist noch
-nicht releasevollständig. Richtungsabhängige Layer, Walk-Generierung, Playback,
-Korrektur-History, Character Kits, Sprite-Sheet-/Godot-Export und die explizite
-Prompt→Animation-Übergabe gehören zu den noch offenen Prompts 40–51. Der
+Die V3-Implementierung befindet sich nach Prompt 41 in Phase D und ist noch
+nicht releasevollständig. Walk-Generierung, Playback, Korrektur-History,
+Character Kits, Sprite-Sheet-/Godot-Export und die explizite
+Prompt→Animation-Übergabe gehören zu den noch offenen Prompts 42–51. Der
 verbindliche Ausführungsstand und die Reihenfolge stehen unter
 `aufgaben/pixelforge-studio-v3/START_HERE.md` und in `../PLANS.md`.

@@ -109,6 +109,202 @@ describe("AnimationWorkspace", () => {
     }
   });
 
+  it("rerenders authored pixels when the selected direction changes", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    const south = parseAnimationPartAsset(createAnimationPartAssetInput());
+    const east = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_head_east_001",
+        blobId: "blob_head_east_001",
+        label: "Kopf Ost",
+        direction: "east"
+      })
+    );
+    const project = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [{ assetId: south.assetId }, { assetId: east.assetId }],
+        overrides: []
+      })
+    );
+    const decoder = {
+      decode: vi.fn(async (blob: Blob) => {
+        const pixels = new Uint8ClampedArray(32 * 40 * 4);
+        const color = blob.type === "image/east" ? [0, 0, 255, 255] : [255, 0, 0, 255];
+        pixels.set(color, (30 * 32 + 16) * 4);
+        return { width: 32, height: 40, pixels };
+      })
+    };
+    const loadBlob = vi.fn(async (blobId: string) => ({
+      status: "ok" as const,
+      blob: new Blob([blobId], {
+        type: blobId === east.blobId ? "image/east" : "image/south"
+      })
+    }));
+    const snapshots: Uint8ClampedArray[] = [];
+    const context = {
+      imageSmoothingEnabled: true,
+      createImageData: vi.fn(() => ({
+        data: new Uint8ClampedArray(128 * 128 * 4)
+      } as ImageData)),
+      putImageData: vi.fn((imageData: ImageData) => {
+        snapshots.push(Uint8ClampedArray.from(imageData.data));
+      })
+    };
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue(context as unknown as CanvasRenderingContext2D);
+
+    try {
+      render(
+        <AnimationWorkspace
+          project={project}
+          canSave={false}
+          saveStatus="saved"
+          saveError={null}
+          sourceError={null}
+          onSave={vi.fn()}
+          partAssets={[south, east]}
+          missingPartAssetIds={[]}
+          imageDecoder={decoder}
+          onLoadPartBlob={loadBlob}
+        />
+      );
+
+      await waitFor(() => expect(decoder.decode).toHaveBeenCalledTimes(1));
+      await user.selectOptions(
+        screen.getByRole("combobox", { name: "Richtung" }),
+        "east"
+      );
+      await waitFor(() => expect(decoder.decode).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(snapshots.length).toBeGreaterThanOrEqual(2));
+      const eastPixelOffset = (44 * 128 + 61) * 4;
+      expect([
+        ...snapshots.at(-1)!.slice(eastPixelOffset, eastPixelOffset + 4)
+      ]).toEqual([0, 0, 255, 255]);
+      expect(loadBlob).toHaveBeenLastCalledWith(east.blobId);
+    } finally {
+      getContext.mockRestore();
+    }
+  });
+
+  it("shows directional layer facts and commits a bounded project layer delta", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    const partAsset = parseAnimationPartAsset(createAnimationPartAssetInput());
+    const project = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [{ assetId: partAsset.assetId, layerOffset: -1 }],
+        overrides: []
+      })
+    );
+    const onSetPartLayerOffset = vi.fn(async () => ({ status: "ok" as const }));
+
+    render(
+      <AnimationWorkspace
+        project={project}
+        canSave={false}
+        saveStatus="saved"
+        saveError={null}
+        sourceError={null}
+        onSave={vi.fn()}
+        partAssets={[partAsset]}
+        missingPartAssetIds={[]}
+        onSetPartLayerOffset={onSetPartLayerOffset}
+      />
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: "Kopf; Erforderlich; Produktionsbereit"
+      })
+    );
+    const inspector = screen
+      .getByRole("heading", { level: 2, name: "Eigenschaften" })
+      .closest("section");
+    if (!inspector) throw new Error("Inspector panel missing.");
+    expect(within(inspector).getByText("Kopf und Gesicht")).toBeVisible();
+    expect(within(inspector).getByText("28 von 39")).toBeVisible();
+    expect(within(inspector).getByText("1 von 1")).toBeVisible();
+    expect(within(inspector).getByText("ausgeglichen")).toBeVisible();
+
+    const layerInput = within(inspector).getByRole("spinbutton", {
+      name: "Projektweites Layer-Delta"
+    });
+    expect(layerInput).toHaveValue(-1);
+    await user.clear(layerInput);
+    await user.type(layerInput, "2");
+    await user.click(
+      within(inspector).getByRole("button", { name: "Layer übernehmen" })
+    );
+    await waitFor(() =>
+      expect(onSetPartLayerOffset).toHaveBeenCalledWith(partAsset.assetId, 2)
+    );
+    expect(
+      within(inspector).getByText("Projektweites Layer-Delta übernommen.")
+    ).toHaveAttribute("role", "status");
+  });
+
+  it("shows clipped bounding boxes and affected frame edges in the viewport", async () => {
+    setViewportWidth(1440);
+    const partAsset = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        sourceSize: { width: 128, height: 128 },
+        trimRect: { x: 0, y: 0, width: 128, height: 128 },
+        anchors: { proximal: { x: 0, y: 0 } }
+      })
+    );
+    const project = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [{ assetId: partAsset.assetId }],
+        overrides: []
+      })
+    );
+    const context = {
+      imageSmoothingEnabled: true,
+      createImageData: vi.fn(() => ({
+        data: new Uint8ClampedArray(128 * 128 * 4)
+      } as ImageData)),
+      putImageData: vi.fn()
+    };
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue(context as unknown as CanvasRenderingContext2D);
+    const sourcePixels = new Uint8ClampedArray(128 * 128 * 4);
+    sourcePixels.set([255, 255, 255, 255], 0);
+
+    try {
+      render(
+        <AnimationWorkspace
+          project={project}
+          canSave={false}
+          saveStatus="saved"
+          saveError={null}
+          sourceError={null}
+          onSave={vi.fn()}
+          partAssets={[partAsset]}
+          missingPartAssetIds={[]}
+          imageDecoder={{
+            decode: vi.fn(async () => ({
+              width: 128,
+              height: 128,
+              pixels: sourcePixels
+            }))
+          }}
+          onLoadPartBlob={async () => ({
+            status: "ok",
+            blob: new Blob(["wide"], { type: "image/png" })
+          })}
+        />
+      );
+
+      expect(
+        await screen.findByText(/Bounding-Box: X 64–192, Y 44–172\./)
+      ).toHaveTextContent("Betroffene Framekanten: rechts, unten.");
+    } finally {
+      getContext.mockRestore();
+    }
+  });
+
   it("shows the complete loaded desktop workspace and honest unavailable actions", async () => {
     setViewportWidth(1440);
     const user = userEvent.setup();

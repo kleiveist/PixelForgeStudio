@@ -53,6 +53,9 @@ Die Projektzuweisung darf eine enge projektweite `transformDelta`-Korrektur
 tragen. Sie bleibt getrennt vom PartAsset und enthält ausschließlich Offset,
 Rotationsdelta und einen uniformen Scale-Multiplikator. Die automatisch aus
 Rig und SourceAnchors berechnete Grundmatrix wird nicht persistiert.
+Additiv darf dieselbe Zuweisung ein ganzzahliges `layerOffset` von -8 bis +8
+tragen. Es ist ausschließlich eine kleine Abweichung vom versionierten
+richtungsspezifischen `DirectionDrawOrder` und keine kopierte Layerliste.
 
 Binärdaten werden seit Prompt 34 getrennt in IndexedDB gespeichert. Prompt 37
 schreibt Original-PNG, PartAsset-Metadaten und die aktualisierte

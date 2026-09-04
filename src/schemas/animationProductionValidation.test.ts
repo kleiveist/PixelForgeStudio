@@ -166,4 +166,61 @@ describe("animation production source validation", () => {
 
     expect(firstMissingByDirection).toEqual(DIRECTION_IDS);
   });
+
+  it("blocks duplicate occupied slots in one authored direction", () => {
+    const required = requiredAssetsForDirections(["south"]);
+    const duplicateHead = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_duplicate_head_001",
+        blobId: "blob_duplicate_head_001",
+        label: "Duplicate head",
+        slot: "head",
+        direction: "south",
+        anchors: {
+          proximal: { x: 8, y: 6 },
+          distal: { x: 10, y: 30 }
+        }
+      })
+    );
+    const assets = [...required, duplicateHead];
+
+    expect(
+      validateAnimationProjectProductionSources(
+        projectForAssets("singleDirectionPrototype", assets),
+        assets
+      )
+    ).toContainEqual({
+      code: "duplicatePartSlot",
+      slot: "head",
+      direction: "south",
+      assetIds: [required[0]?.assetId, duplicateHead.assetId]
+    });
+  });
+
+  it("blocks a free accessory without an explicit attachment joint", () => {
+    const required = requiredAssetsForDirections(["south"]);
+    const accessory = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_accessory_spark_001",
+        blobId: "blob_accessory_spark_001",
+        label: "Spark",
+        slot: "accessory.1",
+        direction: "south",
+        anchors: { proximal: { x: 2, y: 2 } }
+      })
+    );
+    const assets = [...required, accessory];
+
+    expect(
+      validateAnimationProjectProductionSources(
+        projectForAssets("singleDirectionPrototype", assets),
+        assets
+      )
+    ).toContainEqual({
+      code: "missingAttachmentJoint",
+      assetId: accessory.assetId,
+      slot: "accessory.1",
+      direction: "south"
+    });
+  });
 });

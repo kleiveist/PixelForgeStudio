@@ -345,6 +345,37 @@ describe("AnimationProjectProvider", () => {
     expect(context.projectSummaries).toEqual([]);
   });
 
+  it("updates a bounded project-wide part layer delta without duplicating the order", async () => {
+    const repository = new MemoryAnimationRepository();
+    const project = await seedProject(repository, {
+      parts: [{ assetId: "part_layer_delta_001" }]
+    });
+    const assetId = project.parts[0]!.assetId;
+    renderProvider(repository, { now: () => NOW, autosaveDelayMs: 60_000 });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+
+    act(() => {
+      expect(
+        context.updatePartLayerOffset(assetId, 3)
+      ).toMatchObject({ status: "ok" });
+    });
+    expect(context.activeProject?.parts).toEqual([
+      { assetId: "part_layer_delta_001", layerOffset: 3 }
+    ]);
+    expect(context.activeProject?.updatedAt).toBe(NOW);
+    expect(context.projectDirty).toBe(true);
+
+    act(() => {
+      expect(
+        context.updatePartLayerOffset(assetId, 9)
+      ).toMatchObject({ status: "invalid" });
+    });
+    expect(context.activeProject?.parts[0]?.layerOffset).toBe(3);
+  });
+
   it("loads assigned PartAssets and atomically imports an anchor-pending source", async () => {
     const repository = new MemoryAnimationRepository();
     const existing = parseAnimationPartAsset(createAnimationPartAssetInput());
@@ -459,7 +490,7 @@ describe("AnimationProjectProvider", () => {
     const sourceBlob = new Blob(["source"], { type: "image/png" });
     await repository.writePartAsset(draft, sourceBlob);
     const project = await seedProject(repository, {
-      parts: [{ assetId: draft.assetId }]
+      parts: [{ assetId: draft.assetId, layerOffset: -2 }]
     });
     renderProvider(repository, { now: () => NOW });
     await expectListReady();
@@ -494,6 +525,7 @@ describe("AnimationProjectProvider", () => {
       rotationDelta: 0.1,
       scaleMultiplier: 1.1
     });
+    expect(context.activeProject?.parts[0]?.layerOffset).toBe(-2);
 
     await act(async () => {
       expect(

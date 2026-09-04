@@ -30,7 +30,8 @@ export function AnimationWorkspaceLifecycleView({
     rawProjectError,
     saveActiveProject,
     saveError,
-    saveStatus
+    saveStatus,
+    updatePartLayerOffset
   } = useAnimationProject();
   const { navigateTo } = useNavigation();
   const attemptedProjectRef = useRef<StableId | null>(null);
@@ -124,6 +125,16 @@ export function AnimationWorkspaceLifecycleView({
       : { status: "error" as const, message: result.message };
   };
 
+  const commitPartLayerOffset = async (
+    assetId: StableId,
+    layerOffset: number
+  ) => {
+    const result = updatePartLayerOffset(assetId, layerOffset);
+    return result.status === "ok"
+      ? { status: "ok" as const }
+      : { status: "error" as const, message: result.message };
+  };
+
   if (!projectId) {
     return (
       <div className={styles.view}>
@@ -214,6 +225,7 @@ export function AnimationWorkspaceLifecycleView({
       onImportPart={commitPartImport}
       onLoadPartBlob={loadPartBlob}
       onConfigurePart={commitPartSetup}
+      onSetPartLayerOffset={commitPartLayerOffset}
     />
   );
 }

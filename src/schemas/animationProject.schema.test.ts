@@ -137,6 +137,25 @@ describe("AnimationProjectSchema", () => {
     ).toBe(false);
   });
 
+  it("stores only a small integer project-wide layer offset", () => {
+    const parsed = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [{ assetId: "part_head_south_001", layerOffset: -2 }]
+      })
+    );
+
+    expect(parsed.parts[0]?.layerOffset).toBe(-2);
+    for (const layerOffset of [-9, 1.5, 9]) {
+      expect(
+        AnimationProjectSchema.safeParse(
+          createAnimationProjectInput({
+            parts: [{ assetId: "part_head_south_001", layerOffset }]
+          })
+        ).success
+      ).toBe(false);
+    }
+  });
+
   it.each([
     ["offset", { offsetX: -33, offsetY: 0, rotationDelta: 0, scaleMultiplier: 1 }],
     ["rotation", { offsetX: 0, offsetY: 0, rotationDelta: Math.PI, scaleMultiplier: 1 }],

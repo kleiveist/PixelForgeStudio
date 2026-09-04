@@ -590,6 +590,16 @@ revisionsgebundener Servicecache hält nur kopierte RGBA-Daten, niemals Blobs.
 Canvas erhält den fertigen Frame per `ImageData`/`putImageData`, deaktiviert
 Glättung und bleibt reine Anzeige statt Render- oder Exportquelle.
 
+Prompt 41 ergänzt `domain/animation/layerOrder.ts` als frameworkfreie,
+versionierte Quelle der Ebenenreihenfolge. Jede der acht Zielrichtungen
+besitzt eine ausdrückliche Liste aller Slots und eine getrennte Angabe der
+visuell nahen anatomischen Seite. Freie Accessoires benötigen einen gültigen
+Attachment-Joint; Projektzuweisungen dürfen nur ein kleines ganzzahliges
+Layer-Delta von -8 bis +8 speichern. Der Workspace löst die belegten Parts
+vor dem Renderer auf und zeigt Layergruppe, Position sowie Bounding-Box und
+betroffene Framekante an. Vollständig außerhalb liegende Parts sind Fehler;
+Canvas und DOM bleiben reine Anzeigegrenzen.
+
 ## Styling
 
 - `src/styles/tokens.css`: globale semantische Design-Tokens

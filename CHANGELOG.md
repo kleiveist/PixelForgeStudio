@@ -114,6 +114,13 @@
 - revisionsgebundenen Decoded-RGBA-Cache ohne Blob-State sowie eine gerenderte
   Neutralpose im Workspace eingeführt; Canvas zeigt fertige Bytes nur per
   `ImageData`/`putImageData` mit deaktivierter Glättung an
+- acht ausdrückliche versionierte Richtungs-Draw-Orders mit getrennter
+  anatomischer Nahseite, validierten optionalen Attachment-Joints und
+  kontrollierter Einordnung belegter Ausrüstung ergänzt
+- kleine projektweite Part-Layer-Deltas im Schema, Provider und Inspector
+  ergänzt; Renderer erhält ausschließlich die zuvor aufgelöste Reihenfolge
+- Clippingdiagnostik um Bounding-Box, betroffene Framekanten und vollständig
+  außerhalb als sichtbaren Fehler erweitert
 
 ## 2.0.0 — 2026-09-03
 
