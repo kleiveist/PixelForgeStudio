@@ -1,4 +1,11 @@
-# Codex-Promptkatalog — PixelForge Prompt Studio V2 (React + TypeScript)
+<!-- PYGINDEX:NAVIGATION START -->
+[Zur Übersicht](index.md)
+<!-- PYGINDEX:NAVIGATION END -->
+
+# Archiv — Codex-Promptkatalog PixelForge Prompt Studio V2
+
+> Die Prompts 00–27 sind abgeschlossen. Dieses Dokument ist eine historische
+> Referenz und keine aktive Aufgabenliste für neue Phasen.
 
 ## Verwendung
 

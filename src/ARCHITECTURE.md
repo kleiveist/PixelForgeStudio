@@ -101,8 +101,13 @@ resolver whether direction, animation, scale, or other question groups apply.
 catalog API. It owns the stable values used by schema and UI, the canonical
 `idle → walk → run → attack → use → talk → interact → hurt → special`
 action order, 1-to-8-frame UI defaults (Walk: 5), and the pure NPC-context and
-humanoid-subtype guards. This keeps subtype gating and new Character answer
-serialization out of React literals.
+humanoid-subtype guards. It also exports the exhaustive field list and the
+German-only `CHARACTER_TEXT_PRESETS_DE` suggestion package for every Character
+text answer. Presets are prompt-ready strings but never eager defaults: React
+applies one only after an explicit selection and persists it through the same
+RHF/Zod field as a custom value. This keeps subtype gating, preset content, and
+new Character answer serialization out of React literals; a later English
+package can be added without changing the persisted schema.
 
 `domain/moving-objects/index.ts` is the public, framework-free Moving Object
 catalog API. It owns stable object-class, movement, animation, anchor,
@@ -771,10 +776,10 @@ technical, and prompt content wraps inside its surface. At
 `prefers-reduced-motion: reduce`, transitions are disabled and animations are
 reduced to a single 1 ms iteration. The verified desktop/tablet/360-px matrix,
 keyboard paths, and contrast measurements are recorded in
-`docs/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
+`docs/erledigt/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
 
 Prompt 27 completes the numbered V2 series. Startup migration now precedes
 provider reads, full workspace transfer rehydrates public provider boundaries,
 and the executable Legacy UI was removed only after the automated and browser
-parity evidence recorded in `docs/V2-RELEASE-ACCEPTANCE.md`. Prompts 00 through
+parity evidence recorded in `docs/erledigt/V2-RELEASE-ACCEPTANCE.md`. Prompts 00 through
 27 are complete; PWA and Tauri remain unstarted optional projects.

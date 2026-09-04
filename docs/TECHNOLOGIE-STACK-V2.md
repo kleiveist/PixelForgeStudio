@@ -477,12 +477,12 @@ Oberflächen. Das globale Stylesheet deaktiviert unter
 `prefers-reduced-motion: reduce` Übergänge, begrenzt Animationen und erhält in
 erzwungenen Systemfarben einen sichtbaren Fokusring. Die geprüfte
 Desktop-/Tablet-/Schmalviewport-Matrix und die Kontrastwerte stehen in
-`V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
+`erledigt/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
 
 Prompt 27 bindet die backup-gesicherte V1-Migration vor dem ersten
 Provider-Read in den Browserstart ein, stellt den vollständigen
 Workspace-JSON-Transfer über Einstellungen bereit und dokumentiert die
-erfolgreiche Release-Abnahme in `V2-RELEASE-ACCEPTANCE.md`. Die ausführbare
+erfolgreiche Release-Abnahme in `erledigt/V2-RELEASE-ACCEPTANCE.md`. Die ausführbare
 Legacy-UI wurde erst danach entfernt. Prompts 00 bis 27 sind abgeschlossen.
 
 ## Speicherung

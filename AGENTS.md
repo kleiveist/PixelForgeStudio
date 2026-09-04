@@ -13,8 +13,12 @@ Vor funktionalen Änderungen lesen:
 1. `docs/TECHNOLOGIE-STACK-V2.md`
 2. `docs/CODEX-V2-UMSETZUNGSANWEISUNG.md`
 3. `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md`
-4. `docs/CODEX-V2-PROMPTS.md`
-5. `docs/PROMPT-SPECIFICATION.md`
+4. `docs/PROMPT-SPECIFICATION.md`
+5. `PLANS.md` und die dort benannte aktive Prompt-Unterlage
+
+Der abgeschlossene Katalog der Prompts 00–27 liegt ausschließlich als
+historische Referenz unter `docs/erledigt/CODEX-V2-PROMPTS.md` und ist keine
+aktive Aufgabenliste.
 
 ## Verbindlicher Ziel-Stack
 
@@ -39,7 +43,8 @@ erhalten. Neue Features dürfen nicht als Vanilla-DOM-Architektur entstehen.
 
 ## Arbeitsweise
 
-1. Genau eine Aufgabe aus `docs/CODEX-V2-PROMPTS.md` bearbeiten.
+1. Genau eine konkret beauftragte Aufgabe beziehungsweise neue Prompt-Phase
+   bearbeiten und ihren Status in `PLANS.md` führen.
 2. Vor Änderungen betroffene V2- und gegebenenfalls
    Legacy-Kompatibilitätsdateien untersuchen.
 3. Bei komplexen Schritten den Status in `PLANS.md` aktualisieren.

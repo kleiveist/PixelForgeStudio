@@ -170,10 +170,10 @@ Pfeil-, Home- und End-Steuerung samt sichtbarem Fokus, lange Prompt- und
 Technikzeilen bleiben bei 360 px innerhalb des Output-Panels und reduzierte
 Bewegung deaktiviert Übergänge. Die reproduzierte Viewport-, Theme-,
 Keyboard- und Kontrastprüfung ist in
-`V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` dokumentiert.
+`erledigt/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` dokumentiert.
 
 Prompt 27 bestätigt Inhalt und Download-Roundtrip aller vier Ausgaben in der
 Release-Abnahme. App-eigene Vorlagen und erzeugte Release-Beispiele enthalten
 keine direkten Namen bestehender Spiele, Marken, Figuren, Werke oder
 Kunstschaffender; die generische negative Regel gegen namentliche Imitation
-bleibt erhalten. Evidenz: `V2-RELEASE-ACCEPTANCE.md`.
+bleibt erhalten. Evidenz: `erledigt/V2-RELEASE-ACCEPTANCE.md`.

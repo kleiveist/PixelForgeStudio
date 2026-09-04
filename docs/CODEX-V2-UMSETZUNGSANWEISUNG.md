@@ -16,7 +16,10 @@ Dieses Dokument ist der technische Bauplan für die Migration und vollständige 
 4. `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md`
 5. `docs/PROMPT-SPECIFICATION.md`
 
-Codex bearbeitet immer genau einen Auftrag aus `docs/CODEX-V2-PROMPTS.md`, testet ihn vollständig und stoppt danach.
+Codex bearbeitet immer genau einen konkret beauftragten Auftrag, führt ihn in
+`PLANS.md`, testet ihn vollständig und stoppt danach. Der abgeschlossene
+Katalog 00–27 unter `docs/erledigt/CODEX-V2-PROMPTS.md` ist nur historische
+Referenz und keine aktive Aufgabenliste.
 
 > Die V1 ist Legacy. Die verbindliche V2-Zielarchitektur ist **TypeScript + React + Vite + npm**.
 
@@ -617,9 +620,9 @@ Umgesetzter Vertrag seit Prompt 10, erweitert in Prompt 13:
   einer bestehenden Basisfamilie bleiben ausgeschlossen. Der abschließende
   UI-Querschnitt ist für Desktop, Tablet und 360-px-Viewports, Hell/Dunkel/
   System, Tastaturfokus, Kontrast und reduzierte Bewegung geprüft und in
-  `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` dokumentiert. Die produktive
+  `erledigt/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` dokumentiert. Die produktive
   Startmigration, der vollständige Workspace-Transfer und die belegte
-  Legacy-Entfernung stehen in `V2-RELEASE-ACCEPTANCE.md`.
+  Legacy-Entfernung stehen in `erledigt/V2-RELEASE-ACCEPTANCE.md`.
 
 ---
 
@@ -858,13 +861,19 @@ Fragen mindestens:
 Umgesetzt seit Prompt 14:
 
 - `src/domain/characters/` veröffentlicht die stabilen Auswahlkataloge,
-  NPC-/Humanoid-Guards, Aktionsreihenfolge und Frame-Defaults ohne React.
+  NPC-/Humanoid-Guards, Aktionsreihenfolge, Frame-Defaults und das explizit
+  deutsche Vorlagenpaket für alle Character-Freitextfelder ohne React.
 - `CharacterAnswersSchema` erweitert den bestehenden Character-Vertrag strikt
   und additiv um optionale, begrenzte Detailfelder. Die Figurenhöhe gehört
   bewusst nicht zu diesen Antworten.
 - `src/features/character-editor/` rendert den Detail- und den separaten
   Animationseditor; der Wizard bindet den Detailteil direkt nach dem
   Basisprofil ein.
+- Freitextangaben beginnen mit „Nicht festgelegt“ und mehreren deutschen
+  Vorauswahlen. Erst eine bewusste Auswahl schreibt den vorhandenen RHF-Wert;
+  „Eigene Eingabe“ und bereits gespeicherte freie Werte verwenden weiterhin
+  denselben validierten Datenpfad. Es entstehen keine eager Defaults und kein
+  separates Vorlagen-Persistenzmodell.
 - Das neue persistierte Aktionsmodell ist
   `animationActions: [{ action, frames }]`. Jede Aktion ist eindeutig und hat
   1 bis 8 Frames; die kanonische Domainreihenfolge macht die Ausgabe
@@ -1356,7 +1365,7 @@ Querschnitt seit Prompt 26:
   Übergänge, begrenzt Animationen und entfernt bewegte Hover-Effekte;
   Forced-Colors behält einen sichtbaren Systemfokusring.
 - Viewportmatrix, Keyboard-Flows, gemessene Kontrastwerte und die Grenze der
-  Browserprüfung stehen in `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
+  Browserprüfung stehen in `erledigt/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
 
 Releasegrenze seit Prompt 27:
 
@@ -1372,7 +1381,7 @@ Releasegrenze seit Prompt 27:
 - Die ausführbare Legacy-UI wurde erst nach erfolgreicher Test- und
   Browserparität entfernt. Pure Kompatibilitätslogik und synthetische Fixtures
   bleiben erhalten; die vollständige Evidenz steht in
-  `V2-RELEASE-ACCEPTANCE.md`.
+  `erledigt/V2-RELEASE-ACCEPTANCE.md`.
 
 ---
 
@@ -1555,4 +1564,4 @@ V2 ist releasefähig, wenn:
 
 Diese Definition of Done ist seit Prompt 27 erfüllt. Prüfmatrix, Löschentscheid
 und verbleibende nicht blockierende Risiken stehen in
-`V2-RELEASE-ACCEPTANCE.md`.
+`erledigt/V2-RELEASE-ACCEPTANCE.md`.

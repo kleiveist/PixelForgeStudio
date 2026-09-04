@@ -139,7 +139,8 @@ Optimierung, kein Fehler des aktuellen Funktionsstands.
 Es ist **kein nummerierter V2-Prompt mehr offen**. PWA und Tauri 2 bleiben
 bewusst ungestartete Optionen und benötigen einen eigenen Auftrag. Die
 verbindliche Abschlussgrenze und Restrisiken stehen in
-`docs/V2-RELEASE-ACCEPTANCE.md` und `PLANS.md`.
+`docs/erledigt/V2-RELEASE-ACCEPTANCE.md` und
+`docs/erledigt/PLANS-V2.md`.
 
 ## Git- und Remote-Hinweis
 

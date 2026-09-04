@@ -504,6 +504,13 @@ Die Sichtbarkeit von Fragen wird nicht nur über die Kategorie, sondern über F�
   bilden die Character-Felder vollständig ab. Hydration und Resume schreiben
   nicht; Kategorie- oder Untertypwechsel bereinigen alte Character-Antworten,
   ein Basiswechsel erhält sie.
+- Alle Character-Freitextfelder besitzen ein auswahlorientiertes deutsches
+  Vorlagenpaket. „Nicht festgelegt“ bleibt der schreibfreie Ausgangszustand;
+  eine Vorlage wird erst nach ausdrücklicher Auswahl in das bestehende
+  RHF-/Schemafeld übernommen. „Eigene Eingabe“ öffnet weiterhin freien Text,
+  und bereits gespeicherte individuelle Werte werden automatisch in diesem
+  Modus dargestellt. Ein englisches Vorlagenpaket ist nicht Teil dieser
+  Einzelaufgabe.
 - Der Output-Wunsch bleibt außerhalb des RHF-Fachschritts; Prompt Engine und
   Review-/Output-Workspace lesen die validierten Character-Daten seit Prompts
   23 und 24 aus dem aufgelösten Profil.
@@ -1235,7 +1242,7 @@ Basisprofil
 - Hell, Dunkel und System verwenden die zentralen Kontrast- und Fokustokens;
   reduzierte Bewegung und Forced-Colors werden am globalen Stylesheet
   respektiert. Die Mess- und Viewportdetails stehen in
-  `V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
+  `erledigt/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
 - Prompt 27 startet die idempotente V1→V2-Migration vor der Provider-
   Hydration, zeigt ihren strukturierten Zustand und belässt V1-Quellkeys
   unverändert.
@@ -1246,7 +1253,7 @@ Basisprofil
 - Die Release-Abnahme belegt alle neun Editoren, Direction-Gating, vier
   Ausgaben, JSON/TXT, Themes und Keyboard/Responsive. Erst danach wurde die
   ausführbare Legacy-UI entfernt; Details stehen in
-  `V2-RELEASE-ACCEPTANCE.md`.
+  `erledigt/V2-RELEASE-ACCEPTANCE.md`.
 
 ---
 
