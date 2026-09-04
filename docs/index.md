@@ -8,13 +8,11 @@
 ## Inhalt
 
 ### Seiten
-- [Assistant-Master-Prompt für Pixelart-Assets](ASSISTANT-MASTER-PROMPT.md)
-- [Codex-Umsetzungsanweisung — PixelForge Prompt Studio V2](CODEX-V2-UMSETZUNGSANWEISUNG.md)
-- [PixelForge Prompt Studio — Legacy-V1-Migrationsbaseline](LEGACY-V1-BASELINE.md)
 - [Technische Prompt-Spezifikation](PROMPT-SPECIFICATION.md)
 - [PixelForge Prompt Studio V2 — verbindlicher Technologie-Stack](TECHNOLOGIE-STACK-V2.md)
 - [PixelForge Prompt Studio V2 — Abfragekatalog und Profilmodell](V2-ABFRAGEKATALOG-UND-PROFILMODELL.md)
 
 ### Bereiche
+- [Aufgaben](aufgaben/index.md)
 - [Erledigt](erledigt/index.md)
 <!-- PYGINDEX:INDEX END -->

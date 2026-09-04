@@ -3,12 +3,13 @@
 <!-- PYGINDEX:README START -->
 ## Dokumentation
 - [Dokumentationsübersicht](docs/index.md)
+- [Aufgaben](docs/aufgaben/index.md)
 - [Erledigt](docs/erledigt/index.md)
 
 ## Projektdateien
 - [AGENTS.md — PixelForge Prompt Studio V2](AGENTS.md)
 - [Changelog](CHANGELOG.md)
-- [PixelForge Prompt Studio V2 — Arbeitsplan](PLANS.md)
+- [PixelForge Studio — Arbeitsplan](PLANS.md)
 <!-- PYGINDEX:README END -->
 
 PixelForge Prompt Studio ist eine lokale React-Anwendung zur strukturierten

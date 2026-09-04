@@ -8,7 +8,10 @@
 ## Inhalt
 
 ### Seiten
+- [Assistant-Master-Prompt für Pixelart-Assets](ASSISTANT-MASTER-PROMPT.md)
 - [Archiv — Codex-Promptkatalog PixelForge Prompt Studio V2](CODEX-V2-PROMPTS.md)
+- [Codex-Umsetzungsanweisung — PixelForge Prompt Studio V2](CODEX-V2-UMSETZUNGSANWEISUNG.md)
+- [PixelForge Prompt Studio — Legacy-V1-Migrationsbaseline](LEGACY-V1-BASELINE.md)
 - [Archiv — PixelForge Prompt Studio V2 Ausführungsplan](PLANS-V2.md)
 - [PixelForge Prompt Studio V2 — Accessibility- und Responsive-Audit](V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md)
 - [PixelForge Prompt Studio V2 — Implementierungsstatus](V2-IMPLEMENTIERUNGSSTATUS.md)

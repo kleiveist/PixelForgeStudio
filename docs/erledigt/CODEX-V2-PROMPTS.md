@@ -15,7 +15,7 @@ Vor jedem Auftrag lesen:
 
 - `AGENTS.md`
 - `docs/TECHNOLOGIE-STACK-V2.md`
-- `docs/CODEX-V2-UMSETZUNGSANWEISUNG.md`
+- `docs/erledigt/CODEX-V2-UMSETZUNGSANWEISUNG.md`
 - `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md`
 
 ---

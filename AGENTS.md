@@ -11,14 +11,19 @@ Profilvererbung und spezialisierten Asset-Editoren.
 Vor funktionalen Änderungen lesen:
 
 1. `docs/TECHNOLOGIE-STACK-V2.md`
-2. `docs/CODEX-V2-UMSETZUNGSANWEISUNG.md`
-3. `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md`
-4. `docs/PROMPT-SPECIFICATION.md`
-5. `PLANS.md` und die dort benannte aktive Prompt-Unterlage
+2. `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md`
+3. `docs/PROMPT-SPECIFICATION.md`
+4. `PLANS.md` und die dort benannte aktive Prompt-Unterlage
+
+Für die vorbereitete, noch nicht begonnene Serie 28–51 zusätzlich zuerst
+`docs/aufgaben/pixelforge-studio-v3/START_HERE.md` und anschließend
+genau die beauftragte Einzeldatei unter
+`docs/aufgaben/pixelforge-studio-v3/prompts/` lesen.
 
 Der abgeschlossene Katalog der Prompts 00–27 liegt ausschließlich als
 historische Referenz unter `docs/erledigt/CODEX-V2-PROMPTS.md` und ist keine
-aktive Aufgabenliste.
+aktive Aufgabenliste. Die frühere V2-Umsetzungsanweisung und die
+V1-Migrationsbaseline liegen ebenfalls nur noch unter `docs/erledigt/`.
 
 ## Verbindlicher Ziel-Stack
 

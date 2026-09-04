@@ -1477,7 +1477,7 @@
 
 ## Historisch erfasster Legacy-Ist-Stand (Prompt 00)
 
-- Reproduzierbare Detailaufnahme: `docs/LEGACY-V1-BASELINE.md`
+- Reproduzierbare Detailaufnahme: `docs/erledigt/LEGACY-V1-BASELINE.md`
 - V1 besitzt acht Formularabschnitte mit 51 flachen State-Feldern.
 - Zwei localStorage-Namespaces, zwei mitgelieferte Import-Presets und vier
   Promptausgaben sind als Migrationsverträge erfasst.
@@ -1496,7 +1496,7 @@
 
 - `AGENTS.md`
 - `docs/TECHNOLOGIE-STACK-V2.md`
-- `docs/CODEX-V2-UMSETZUNGSANWEISUNG.md`
+- `docs/erledigt/CODEX-V2-UMSETZUNGSANWEISUNG.md`
 - `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md`
 - `docs/erledigt/CODEX-V2-PROMPTS.md`
 
