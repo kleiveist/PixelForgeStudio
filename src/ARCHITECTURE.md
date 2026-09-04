@@ -153,6 +153,16 @@ RHF/Zod field as a custom value. This keeps subtype gating, preset content, and
 new Character answer serialization out of React literals; a later English
 package can be added without changing the persisted schema.
 
+`domain/guided-answers/index.ts` is the shared, framework-free German answer
+catalog for every creative text question outside the Character editor. Its
+exhaustive field list covers Moving Object, Static Object, Texture, Nature,
+Building, Tileset, Item, and Artwork. `features/wizard/GuidedTextChoice.tsx`
+renders these values selection-first: no free-text control exists initially,
+an explicit preset enters the existing RHF/Zod field, and only "Eigene
+Eingabe" reveals the registered text control. Persisted individual text is
+recognized as custom during write-free hydration, so this UI change neither
+adds schema fields nor materializes defaults.
+
 `domain/moving-objects/index.ts` is the public, framework-free Moving Object
 catalog API. It owns stable object-class, movement, animation, anchor,
 mechanism, material, condition, lighting, and shadow IDs; canonical sequence
@@ -664,6 +674,9 @@ Context/Reducer stays mounted above changing views, so non-persisted filters
 survive navigation. Asset favorite/duplicate/delete and Base create/duplicate
 commands operate on the latest in-memory ref, validate the complete candidate
 with Zod, then delegate one logical full-graph write to the storage adapter.
+Base deletion uses the same boundary and refuses a mutation while a Category
+or Asset profile still references the production family; it never cascades or
+reparents children implicitly.
 The reducer adopts it only after a successful write; invalid and unavailable
 results leave the previous graph untouched and expose a typed visible notice.
 An initially empty library is a writable empty graph; invalid or unavailable

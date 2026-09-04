@@ -11,6 +11,29 @@
   Phase C mit Prompts 36–39 abgeschlossen; Prompts 40–51 bleiben offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
+- **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
+  Fachbereiche und bestätigtes, referenzsicheres Löschen von
+  Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
+  separat abgeschlossen
+
+## Wizard-Auswahlkatalog und Produktionsfamilien-Löschung — Ergebnis
+
+1. Alle kreativen Textfelder von Charakter, beweglichem/statischem Objekt,
+   Textur, Natur, Gebäude, Tileset, Item und Artwork beginnen als Auswahl mit
+   mehreren promptfähigen Antworten. „Eigene Eingabe“ blendet den registrierten
+   Freitext erst bewusst ein; bestehende individuelle Werte bleiben ohne
+   Hydration-Write bearbeitbar.
+2. Ein vollständiger, frameworkfreier deutscher Vorgabenkatalog deckt die acht
+   Nicht-Character-Editoren ab. Die bestehenden Character-Vorgaben bleiben an
+   ihrer öffentlichen Domaingrenze; neue Felder, Defaults oder eine
+   Schemaerhöhung entstehen nicht.
+3. Produktionsfamilien besitzen im Basisprofil-Schritt einen sichtbaren
+   Löschbutton und reagieren bei fokussierter Auswahl auf `Entf`. Abbruch und
+   Bestätigung sind fokusgeführt; referenzierte Familien werden mit sichtbarer
+   Begründung nicht gelöscht, Kinder nie kaskadiert oder still umgehängt.
+4. Domain-, Provider-, Fachbereichs- und Wizard-Integrationstests decken
+   Katalogvollständigkeit, Preset-/Custom-Verhalten, Button-/Tastaturbedienung,
+   Bestätigung, Persistenz und Referenzschutz ab.
 
 ## Prompt 39 — Ausgangsstand und Ergebnis
 

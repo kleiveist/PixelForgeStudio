@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm, type DefaultValues, type UseFormReturn } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
@@ -8,6 +8,20 @@ import {
 } from "../../domain/buildings";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
 import { BuildingArchitectureEditor } from ".";
+
+async function chooseCustomText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const select = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    select,
+    within(select).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
+}
 
 function BuildingEditorHarness({
   defaultValues,
@@ -34,7 +48,11 @@ function BuildingEditorHarness({
 
   return (
     <form>
-      <BuildingArchitectureEditor form={form} subtype={subtype} />
+      <BuildingArchitectureEditor
+        form={form}
+        notifyProgrammaticChange={() => undefined}
+        subtype={subtype}
+      />
       {onRead ? (
         <button type="button" onClick={() => onRead(form.getValues())}>
           Formularwerte lesen
@@ -86,11 +104,11 @@ describe("BuildingArchitectureEditor", () => {
     await user.type(screen.getByLabelText("Stockwerke"), "2");
     await user.type(screen.getByLabelText("Gesamthöhe in Pixeln"), "192");
     await user.type(
-      screen.getByLabelText("Nutzung und Bewohnerrolle"),
+      await chooseCustomText(user, "Nutzung und Bewohnerrolle"),
       "Bewachter Stadteingang"
     );
     await user.type(
-      screen.getByLabelText("Kurze Gebäudebeschreibung"),
+      await chooseCustomText(user, "Kurze Gebäudebeschreibung"),
       "Massiver Torbau mit klarer Durchfahrt"
     );
     await user.type(screen.getByLabelText("Footprint · Breite in Tiles"), "4");
@@ -120,7 +138,7 @@ describe("BuildingArchitectureEditor", () => {
       "visibleSources"
     );
     await user.type(
-      screen.getByLabelText("Sichtbare Lichtquellen"),
+      await chooseCustomText(user, "Sichtbare Lichtquellen"),
       "Zwei warme Laternen am Durchgang"
     );
     await user.click(screen.getByRole("button", { name: "Formularwerte lesen" }));

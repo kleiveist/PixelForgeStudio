@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm, type DefaultValues, type UseFormReturn } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
@@ -8,6 +8,20 @@ import {
 } from "../../domain/tilesets";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
 import { TilesetEditor } from ".";
+
+async function chooseCustomText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const select = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    select,
+    within(select).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
+}
 
 function TilesetEditorHarness({
   defaultValues,
@@ -34,7 +48,11 @@ function TilesetEditorHarness({
 
   return (
     <form>
-      <TilesetEditor form={form} subtype={subtype} />
+      <TilesetEditor
+        form={form}
+        notifyProgrammaticChange={() => undefined}
+        subtype={subtype}
+      />
       {onRead ? (
         <button type="button" onClick={() => onRead(form.getValues())}>
           Formularwerte lesen
@@ -83,7 +101,7 @@ describe("TilesetEditor", () => {
       "transition"
     );
     await user.type(
-      screen.getByLabelText("Tileset-Beschreibung"),
+      await chooseCustomText(user, "Tileset-Beschreibung"),
       "Gras-zu-Erde-Autotile"
     );
     await user.selectOptions(
@@ -91,7 +109,7 @@ describe("TilesetEditor", () => {
       "cardinalAndDiagonal"
     );
     await user.type(
-      screen.getByLabelText("Kantenregeln"),
+      await chooseCustomText(user, "Kantenregeln"),
       "Alle acht Nachbarzustände"
     );
     await user.selectOptions(
@@ -102,8 +120,8 @@ describe("TilesetEditor", () => {
       screen.getByLabelText("Übergangslogik"),
       "bidirectional"
     );
-    await user.type(screen.getByLabelText("Ausgangsmaterial"), "Gras");
-    await user.type(screen.getByLabelText("Nachbarmaterial"), "Erde");
+    await user.type(await chooseCustomText(user, "Ausgangsmaterial"), "Gras");
+    await user.type(await chooseCustomText(user, "Nachbarmaterial"), "Erde");
     await user.selectOptions(
       screen.getByLabelText("Kachelbare Achsen"),
       "both"

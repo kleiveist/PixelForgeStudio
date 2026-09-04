@@ -71,7 +71,7 @@ function primaryNavigation(): HTMLElement {
   return screen.getByRole("navigation", { name: "Hauptnavigation" });
 }
 
-async function chooseCustomCharacterText(
+async function chooseCustomText(
   user: ReturnType<typeof userEvent.setup>,
   label: string
 ): Promise<HTMLElement> {
@@ -593,11 +593,11 @@ describe("guided Wizard integration", () => {
     expect(screen.getByText("Karren / Wagen", { selector: "output" })).toBeVisible();
 
     await user.type(
-      screen.getByRole("textbox", { name: "Zweck / Funktion" }),
+      await chooseCustomText(user, "Zweck / Funktion"),
       "Versorgung zwischen Dorf und Mine"
     );
     await user.type(
-      screen.getByRole("textbox", { name: "Grundform" }),
+      await chooseCustomText(user, "Grundform"),
       "breiter Holzkasten mit zwei großen Rädern"
     );
     await user.type(
@@ -927,7 +927,7 @@ describe("guided Wizard integration", () => {
     ).not.toBeInTheDocument();
 
     await user.type(
-      await chooseCustomCharacterText(user, "Rolle / Beruf"),
+      await chooseCustomText(user, "Rolle / Beruf"),
       "Kräuterhändlerin"
     );
     await user.selectOptions(
@@ -939,7 +939,7 @@ describe("guided Wizard integration", () => {
       "Langes silbergraues Haar"
     );
     await user.type(
-      await chooseCustomCharacterText(user, "Ausrüstung / Werkzeug"),
+      await chooseCustomText(user, "Ausrüstung / Werkzeug"),
       "Kräuterkorb"
     );
 
@@ -1275,7 +1275,13 @@ describe("guided Wizard integration", () => {
       screen.getByRole("heading", { level: 2, name: "Pflanze und Natur" })
     ).toBeVisible();
     expect(screen.getByText("Baum", { selector: "output" })).toBeVisible();
-    await user.type(screen.getByRole("textbox", { name: "Art / Spezies" }), "Hüteeiche");
+    await user.type(await chooseCustomText(user, "Art / Spezies"), "Hüteeiche");
+    await user.selectOptions(
+      screen.getByRole("combobox", {
+        name: "Rinde, Verzweigung und Hohlräume"
+      }),
+      "Tiefe Rindenfurchen, niedrige Astansätze und ein kleiner Hohlraum"
+    );
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Klimazone" }),
       "temperate"
@@ -1323,6 +1329,8 @@ describe("guided Wizard integration", () => {
         answers: {
           plantType: "tree",
           species: "Hüteeiche",
+          trunkDetails:
+            "Tiefe Rindenfurchen, niedrige Astansätze und ein kleiner Hohlraum",
           climate: "temperate",
           season: "autumn",
           silhouette: "broad",
@@ -1395,9 +1403,23 @@ describe("guided Wizard integration", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "Pflanze und Natur" })
     ).toBeVisible();
-    expect(screen.getByRole("textbox", { name: "Art / Spezies" })).toHaveValue(
-      "Hüteeiche"
+    expect(
+      screen.getByRole("textbox", {
+        name: "Eigene Eingabe für Art / Spezies"
+      })
+    ).toHaveValue("Hüteeiche");
+    expect(
+      screen.getByRole("combobox", {
+        name: "Rinde, Verzweigung und Hohlräume"
+      })
+    ).toHaveValue(
+      "Tiefe Rindenfurchen, niedrige Astansätze und ein kleiner Hohlraum"
     );
+    expect(
+      screen.queryByRole("textbox", {
+        name: "Eigene Eingabe für Rinde, Verzweigung und Hohlräume"
+      })
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Klimazone" })).toHaveValue(
       "temperate"
     );
@@ -1461,7 +1483,7 @@ describe("guided Wizard integration", () => {
     expect(screen.queryByLabelText(/Figurenhöhe/i)).not.toBeInTheDocument();
 
     await user.type(
-      screen.getByRole("textbox", { name: "Nutzung und Bewohnerrolle" }),
+      await chooseCustomText(user, "Nutzung und Bewohnerrolle"),
       "Bewachter Stadteingang"
     );
     await user.selectOptions(
@@ -1576,7 +1598,9 @@ describe("guided Wizard integration", () => {
       screen.getByRole("heading", { level: 2, name: "Gebäude und Architektur" })
     ).toBeVisible();
     expect(
-      screen.getByRole("textbox", { name: "Nutzung und Bewohnerrolle" })
+      screen.getByRole("textbox", {
+        name: "Eigene Eingabe für Nutzung und Bewohnerrolle"
+      })
     ).toHaveValue("Bewachter Stadteingang");
     expect(
       screen.getByRole("spinbutton", { name: "Footprint · Breite in Tiles" })
@@ -1631,11 +1655,11 @@ describe("guided Wizard integration", () => {
       "bidirectional"
     );
     await user.type(
-      screen.getByRole("textbox", { name: "Ausgangsmaterial" }),
+      await chooseCustomText(user, "Ausgangsmaterial"),
       "Waldgras"
     );
     await user.type(
-      screen.getByRole("textbox", { name: "Nachbarmaterial" }),
+      await chooseCustomText(user, "Nachbarmaterial"),
       "Steinweg"
     );
     await user.selectOptions(
@@ -1733,9 +1757,11 @@ describe("guided Wizard integration", () => {
     expect(
       screen.getByRole("combobox", { name: "Innen-/Außenecken" })
     ).toHaveValue("innerAndOuter");
-    expect(screen.getByRole("textbox", { name: "Ausgangsmaterial" })).toHaveValue(
-      "Waldgras"
-    );
+    expect(
+      screen.getByRole("textbox", {
+        name: "Eigene Eingabe für Ausgangsmaterial"
+      })
+    ).toHaveValue("Waldgras");
     expect(
       screen.getByRole("spinbutton", { name: "Atlas-Tiles insgesamt" })
     ).toHaveValue(47);
@@ -2558,6 +2584,108 @@ describe("guided Wizard integration", () => {
       values: { tileSize: 32, characterHeight: 80 }
     });
     expect(createBaseProfileId).toHaveBeenCalledTimes(2);
+  });
+
+  it("confirms production-family deletion from its button or the Delete key", async () => {
+    const library = createProfileLibraryFixture();
+    const source = library.baseProfiles[0];
+    if (!source) throw new Error("Expected a Base profile fixture.");
+    const removable = parseBaseProfile({
+      ...source,
+      id: "base_removable_wizard_family",
+      name: "Entfernbare Wizard-Familie",
+      createdAt: SAVED_TIMESTAMP,
+      updatedAt: SAVED_TIMESTAMP
+    });
+    const storage = populatedStorage(
+      ProfileLibrarySchema.parse({
+        ...library,
+        baseProfiles: [...library.baseProfiles, removable]
+      })
+    );
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({ storage });
+
+    await user.type(projectNameInput(), "Familie aufräumen");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+
+    const choice = baseProfileChoice(/^Entfernbare Wizard-Familie/);
+    const deleteButton = screen.getByRole("button", {
+      name: "Produktionsfamilie „Entfernbare Wizard-Familie“ löschen"
+    });
+    await user.click(choice);
+    expect(choice).toBeChecked();
+    await user.click(deleteButton);
+    let confirmation = screen.getByRole("alertdialog", {
+      name: "Produktionsfamilie löschen?"
+    });
+    expect(confirmation).toHaveTextContent(
+      "Abhängige Profile werden nie automatisch mitgelöscht oder umgehängt."
+    );
+    await user.click(
+      within(confirmation).getByRole("button", { name: "Abbrechen" })
+    );
+    await waitFor(() => expect(deleteButton).toHaveFocus());
+
+    choice.focus();
+    await user.keyboard("{Delete}");
+    confirmation = screen.getByRole("alertdialog", {
+      name: "Produktionsfamilie löschen?"
+    });
+    await user.click(
+      within(confirmation).getByRole("button", {
+        name: "Produktionsfamilie endgültig löschen"
+      })
+    );
+
+    expect(
+      screen.getByText(
+        "Produktionsfamilie „Entfernbare Wizard-Familie“ wurde gelöscht."
+      )
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("radio", { name: /^Entfernbare Wizard-Familie/ })
+    ).not.toBeInTheDocument();
+    expect(
+      readValidProfileLibrary(adapter).baseProfiles.some(
+        (profile) => profile.id === removable.id
+      )
+    ).toBe(false);
+    await waitFor(() =>
+      expect(readValidDraft(adapter)).not.toHaveProperty("baseProfileId")
+    );
+  });
+
+  it("keeps referenced production families when deletion is confirmed", async () => {
+    const storage = populatedStorage();
+    const user = userEvent.setup();
+    const { adapter } = renderStudio({ storage });
+    const before = readValidProfileLibrary(adapter);
+
+    await user.type(projectNameInput(), "Geschützte Familie");
+    await user.click(screen.getByRole("button", { name: /Weiter/ }));
+    await selectAssetClassification(user, /Charakter \/ Figur/, "npc");
+    await enterBaseProfileStep(user);
+    await user.click(
+      screen.getByRole("button", {
+        name: "Produktionsfamilie „Weltfamilie 32 px / Figuren 80 px“ löschen"
+      })
+    );
+    const confirmation = screen.getByRole("alertdialog", {
+      name: "Produktionsfamilie löschen?"
+    });
+    await user.click(
+      within(confirmation).getByRole("button", {
+        name: "Produktionsfamilie endgültig löschen"
+      })
+    );
+
+    expect(within(confirmation).getByRole("alert")).toHaveTextContent(
+      /wird noch von \d+ Profilen verwendet und wurde nicht gelöscht/
+    );
+    expect(readValidProfileLibrary(adapter)).toEqual(before);
   });
 
   it("rejects a newly locked character family with no character height before storage", async () => {

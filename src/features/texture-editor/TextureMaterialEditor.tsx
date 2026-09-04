@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
+import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
 import {
   TEXTURE_CONDITION_IDS,
   TEXTURE_ICING_IDS,
@@ -22,6 +23,7 @@ import {
   type TextureUsage
 } from "../../domain/textures";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
+import { GuidedTextChoice } from "../wizard/GuidedTextChoice";
 import styles from "./TextureMaterialEditor.module.css";
 
 type TextureForm = UseFormReturn<WizardCoreFormValues>;
@@ -288,35 +290,45 @@ function TextField({
   help,
   label,
   maxLength,
-  name
+  name,
+  notifyProgrammaticChange
 }: Readonly<{
   form: TextureForm;
   help: string;
   label: string;
   maxLength: number;
   name: TextureTextFieldName;
+  notifyProgrammaticChange: () => void;
 }>) {
   const id = `texture-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
+  const value = useWatch({ control: form.control, name });
 
   return (
-    <FieldShell
+    <GuidedTextChoice
+      describedBy={describedBy}
       error={error}
+      errorClassName={styles.error}
+      fieldClassName={`${styles.field} ${styles.wideField}`}
       help={help}
+      helpClassName={styles.help}
       id={id}
       label={label}
-      wide
-    >
-      <textarea
-        id={id}
-        rows={4}
-        maxLength={maxLength}
-        aria-describedby={describedBy}
-        aria-invalid={error ? "true" : "false"}
-        {...form.register(name, { setValueAs: optionalTextValue })}
-      />
-    </FieldShell>
+      maxLength={maxLength}
+      multiline
+      onChoose={(nextValue) => {
+        form.setValue(name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true
+        });
+        notifyProgrammaticChange();
+      }}
+      presets={GUIDED_TEXT_PRESETS_DE[name]}
+      registration={form.register(name, { setValueAs: optionalTextValue })}
+      value={value}
+    />
   );
 }
 
@@ -405,11 +417,13 @@ function TileSizeField({ tileSize }: Readonly<{ tileSize?: number }>) {
 
 export interface TextureMaterialEditorProps {
   readonly form: TextureForm;
+  readonly notifyProgrammaticChange: () => void;
   readonly subtype: TextureSubtype;
 }
 
 export function TextureMaterialEditor({
   form,
+  notifyProgrammaticChange,
   subtype
 }: TextureMaterialEditorProps) {
   const materialType = getDefaultTextureMaterialType(subtype);
@@ -470,6 +484,7 @@ export function TextureMaterialEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="textureDescription"
             label={
               materialType === "customMaterial"
@@ -575,6 +590,7 @@ export function TextureMaterialEditor({
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="textureExtraDetails"
             label="Farben, Elemente und Randregeln"
             help="Optionale Angaben zu Grundton, Variation, Akzenten, Fugen, Knoten, Rissen, Körnung und weiteren Randregeln."

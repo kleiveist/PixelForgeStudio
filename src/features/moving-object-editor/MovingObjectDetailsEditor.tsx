@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import type { UseFormReturn } from "react-hook-form";
+import { useWatch, type UseFormReturn } from "react-hook-form";
 import { resolveCapabilities } from "../../domain/assets";
+import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
 import {
   MOVING_OBJECT_ANCHOR_MODE_IDS,
   MOVING_OBJECT_CONDITION_IDS,
@@ -21,6 +22,7 @@ import {
   type MovingObjectSubtype
 } from "../../domain/moving-objects";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
+import { GuidedTextChoice } from "../wizard/GuidedTextChoice";
 import styles from "./MovingObjectEditor.module.css";
 
 type MovingObjectForm = UseFormReturn<WizardCoreFormValues>;
@@ -260,46 +262,50 @@ function FieldShell({
 
 function TextField({
   definition,
-  form
+  form,
+  notifyProgrammaticChange
 }: Readonly<{
   definition: TextFieldDefinition;
   form: MovingObjectForm;
+  notifyProgrammaticChange: () => void;
 }>) {
   const { help, label, maxLength, name } = definition;
   const id = `moving-object-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
   const registration = form.register(name, { setValueAs: optionalTextValue });
+  const value = useWatch({ control: form.control, name });
 
   return (
-    <FieldShell
+    <GuidedTextChoice
+      describedBy={describedBy}
       error={error}
+      errorClassName={styles.error}
+      fieldClassName={
+        definition.wide
+          ? `${styles.field} ${styles.wideField}`
+          : styles.field
+      }
       help={help}
+      helpClassName={styles.help}
       id={id}
       label={label}
-      {...(definition.wide === undefined ? {} : { wide: definition.wide })}
-    >
-      {definition.multiline ? (
-        <textarea
-          id={id}
-          rows={4}
-          maxLength={maxLength}
-          aria-describedby={describedBy}
-          aria-invalid={error ? "true" : "false"}
-          {...registration}
-        />
-      ) : (
-        <input
-          id={id}
-          type="text"
-          autoComplete="off"
-          maxLength={maxLength}
-          aria-describedby={describedBy}
-          aria-invalid={error ? "true" : "false"}
-          {...registration}
-        />
-      )}
-    </FieldShell>
+      maxLength={maxLength}
+      {...(definition.multiline === undefined
+        ? {}
+        : { multiline: definition.multiline })}
+      onChoose={(nextValue) => {
+        form.setValue(name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true
+        });
+        notifyProgrammaticChange();
+      }}
+      presets={GUIDED_TEXT_PRESETS_DE[name]}
+      registration={registration}
+      value={value}
+    />
   );
 }
 
@@ -406,11 +412,13 @@ function DerivedObjectClass({
 
 export interface MovingObjectDetailsEditorProps {
   readonly form: MovingObjectForm;
+  readonly notifyProgrammaticChange: () => void;
   readonly subtype: MovingObjectSubtype;
 }
 
 export function MovingObjectDetailsEditor({
   form,
+  notifyProgrammaticChange,
   subtype
 }: MovingObjectDetailsEditorProps) {
   const capabilities = resolveCapabilities("movingObject", subtype);
@@ -458,6 +466,7 @@ export function MovingObjectDetailsEditor({
               key={definition.name}
               definition={definition}
               form={form}
+              notifyProgrammaticChange={notifyProgrammaticChange}
             />
           ))}
         </div>
@@ -551,6 +560,7 @@ export function MovingObjectDetailsEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             definition={{
               name: "movingObjectMaterialDetails",
               label: "Materialdetails",
@@ -592,6 +602,7 @@ export function MovingObjectDetailsEditor({
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             definition={{
               name: "movingObjectExtraDetails",
               label: "Weitere Objektdetails",

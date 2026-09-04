@@ -14,6 +14,7 @@ import {
   createBaseProfile,
   createDuplicateProfileName,
   deleteAssetProfile,
+  deleteBaseProfile,
   duplicateAssetProfile,
   duplicateBaseProfile,
   saveAssetProfile,
@@ -21,6 +22,7 @@ import {
   type AssetProfileSaveDefinition,
   type AssetProfileLibraryChange,
   type BaseProfileDefinition,
+  type BaseProfileDeletionChange,
   type BaseProfileLibraryChange
 } from "./index";
 
@@ -46,8 +48,8 @@ function expectChanged(
 }
 
 function expectBaseChanged(
-  result: BaseProfileLibraryChange
-): asserts result is Extract<BaseProfileLibraryChange, { status: "changed" }> {
+  result: BaseProfileLibraryChange | BaseProfileDeletionChange
+): asserts result is Extract<BaseProfileDeletionChange, { status: "changed" }> {
   expect(result.status).toBe("changed");
   if (result.status !== "changed") {
     throw new Error(`Expected a changed library, received "${result.status}".`);
@@ -266,6 +268,61 @@ describe("base profile library mutations", () => {
         "2026-09-03T21:00:00.000Z"
       )
     ).toEqual({ status: "idConflict", profileId: occupiedId });
+    expect(library).toEqual(createProfileLibraryFixture());
+  });
+
+  it("deletes only an unreferenced production family without cascading", () => {
+    const sourceLibrary = createProfileLibraryFixture();
+    const source = baseById(sourceLibrary, "base_world_80");
+    const removableId = StableIdSchema.parse("base_removable_family");
+    const created = createBaseProfile(
+      sourceLibrary,
+      removableId,
+      "2026-09-04T09:00:00.000Z",
+      {
+        name: "Entfernbare Produktionsfamilie",
+        iconId: source.iconId,
+        values: source.values,
+        locks: source.locks
+      }
+    );
+    expectBaseChanged(created);
+    const library = deepFreeze(created.library);
+
+    const deleted = deleteBaseProfile(library, removableId);
+
+    expectBaseChanged(deleted);
+    expect(deleted.profile.id).toBe(removableId);
+    expect(deleted.library.baseProfiles).toHaveLength(
+      library.baseProfiles.length - 1
+    );
+    expect(deleted.library.baseProfiles).not.toContainEqual(
+      expect.objectContaining({ id: removableId })
+    );
+    expect(deleted.library.categoryProfiles).toBe(library.categoryProfiles);
+    expect(deleted.library.assetProfiles).toBe(library.assetProfiles);
+    expect(ProfileLibrarySchema.safeParse(deleted.library).success).toBe(true);
+  });
+
+  it("blocks deletion of referenced or missing production families", () => {
+    const library = deepFreeze(createProfileLibraryFixture());
+    const referencedId = StableIdSchema.parse("base_world_80");
+    const missingId = StableIdSchema.parse("base_missing_family");
+
+    const blocked = deleteBaseProfile(library, referencedId);
+
+    expect(blocked).toMatchObject({
+      status: "inUse",
+      profileId: referencedId
+    });
+    if (blocked.status !== "inUse") {
+      throw new Error("Expected an in-use production family.");
+    }
+    expect(blocked.categoryProfileCount + blocked.assetProfileCount).toBeGreaterThan(0);
+    expect(deleteBaseProfile(library, missingId)).toEqual({
+      status: "notFound",
+      profileId: missingId
+    });
     expect(library).toEqual(createProfileLibraryFixture());
   });
 });

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm, type DefaultValues, type UseFormReturn } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
@@ -8,6 +8,20 @@ import {
 } from "../../domain/static-objects";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
 import { StaticWorldObjectEditor } from ".";
+
+async function chooseCustomText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const select = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    select,
+    within(select).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
+}
 
 function StaticObjectEditorHarness({
   defaultValues,
@@ -34,7 +48,11 @@ function StaticObjectEditorHarness({
 
   return (
     <form>
-      <StaticWorldObjectEditor form={form} subtype={subtype} />
+      <StaticWorldObjectEditor
+        form={form}
+        notifyProgrammaticChange={() => undefined}
+        subtype={subtype}
+      />
       {onRead ? (
         <button type="button" onClick={() => onRead(form.getValues())}>
           Formularwerte lesen
@@ -84,7 +102,7 @@ describe("StaticWorldObjectEditor", () => {
     await user.selectOptions(screen.getByLabelText("Proportion"), "compact");
     await user.selectOptions(screen.getByLabelText("Symmetrie"), "bilateral");
     await user.type(
-      screen.getByLabelText("Kurze Objektbeschreibung"),
+      await chooseCustomText(user, "Kurze Objektbeschreibung"),
       "Eine schwere Schatztruhe mit klar lesbarem Deckel"
     );
     await user.selectOptions(screen.getByLabelText("Hauptmaterial"), "wood");
@@ -94,15 +112,15 @@ describe("StaticWorldObjectEditor", () => {
     );
     await user.selectOptions(screen.getByLabelText("Zustand"), "weathered");
     await user.type(
-      screen.getByLabelText("Materialaufbau und Oberfläche"),
+      await chooseCustomText(user, "Materialaufbau und Oberfläche"),
       "Breite Eichenplanken mit dunklen Eisenbändern"
     );
     await user.type(
-      screen.getByLabelText("Lesbare Detail-Elemente"),
+      await chooseCustomText(user, "Lesbare Detail-Elemente"),
       "Großes Schloss und zwei seitliche Griffe"
     );
     await user.type(
-      screen.getByLabelText("Sichtbarer Inhalt"),
+      await chooseCustomText(user, "Sichtbarer Inhalt"),
       "Goldmünzen und ein gefaltetes Tuch"
     );
     await user.selectOptions(screen.getByLabelText("Interaktion"), "open");
@@ -117,7 +135,7 @@ describe("StaticWorldObjectEditor", () => {
     );
     await user.type(screen.getByLabelText("Verwandte Varianten"), "4");
     await user.type(
-      screen.getByLabelText("Weitere Objektdetails"),
+      await chooseCustomText(user, "Weitere Objektdetails"),
       "Für einen düsteren Dungeon, frontal gut erkennbar"
     );
     await user.click(screen.getByRole("button", { name: "Formularwerte lesen" }));

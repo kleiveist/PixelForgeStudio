@@ -420,6 +420,85 @@ describe("ProfileLibraryProvider", () => {
     });
   });
 
+  it("deletes an unreferenced production family through one validated graph write", () => {
+    const sourceLibrary = createProfileLibraryFixture();
+    const source = sourceLibrary.baseProfiles[0];
+    if (!source) throw new Error("Expected a Base profile fixture.");
+    const removableId = StableIdSchema.parse("base_unused_family");
+    const library = ProfileLibrarySchema.parse({
+      ...sourceLibrary,
+      baseProfiles: [
+        ...sourceLibrary.baseProfiles,
+        {
+          ...source,
+          id: removableId,
+          name: "Ungenutzte Familie",
+          createdAt: DUPLICATE_TIMESTAMP,
+          updatedAt: DUPLICATE_TIMESTAMP
+        }
+      ]
+    });
+    const { storageAdapter, writeProfileLibrary } = validStorageWithMutation(
+      library,
+      { status: "ok" }
+    );
+    const rendered = renderProvider(storageAdapter);
+    let result:
+      | ReturnType<ProfileLibraryContextValue["deleteBaseProfile"]>
+      | undefined;
+
+    act(() => {
+      result = rendered.getContext().deleteBaseProfile(removableId);
+    });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      profile: { id: removableId, name: "Ungenutzte Familie" }
+    });
+    expect(writeProfileLibrary).toHaveBeenCalledTimes(1);
+    expect(
+      contextLibrary(rendered.getContext()).baseProfiles.some(
+        (profile) => profile.id === removableId
+      )
+    ).toBe(false);
+    expect(rendered.getContext().mutation).toMatchObject({
+      status: "saved",
+      operation: "deleteBase",
+      profileId: removableId
+    });
+  });
+
+  it("does not delete or rewrite a production family that still has descendants", () => {
+    const library = createProfileLibraryFixture();
+    const source = library.baseProfiles.find(
+      (profile) => profile.id === "base_world_80"
+    );
+    if (!source) throw new Error("Expected a referenced Base profile fixture.");
+    const { storageAdapter, writeProfileLibrary } = validStorageWithMutation(
+      library,
+      { status: "ok" }
+    );
+    const rendered = renderProvider(storageAdapter);
+    let result:
+      | ReturnType<ProfileLibraryContextValue["deleteBaseProfile"]>
+      | undefined;
+
+    act(() => {
+      result = rendered.getContext().deleteBaseProfile(source.id);
+    });
+
+    expect(result).toMatchObject({
+      status: "inUse",
+      message: expect.stringContaining("verwendet")
+    });
+    expect(writeProfileLibrary).not.toHaveBeenCalled();
+    expect(contextLibrary(rendered.getContext())).toBe(library);
+    expect(rendered.getContext().mutation).toMatchObject({
+      status: "inUse",
+      operation: "deleteBase"
+    });
+  });
+
   it("does not adopt a Base when the complete graph write fails", () => {
     const library = createProfileLibraryFixture();
     const definition = baseDefinition(library, { name: "Nicht gespeichert" });

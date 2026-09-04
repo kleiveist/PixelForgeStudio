@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import { resolveCapabilities } from "../../domain/assets";
+import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
 import {
   NATURE_AGE_IDS,
   NATURE_CLIMATE_IDS,
@@ -38,6 +39,7 @@ import {
   type NatureVineGrowth
 } from "../../domain/nature";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
+import { GuidedTextChoice } from "../wizard/GuidedTextChoice";
 import styles from "./NatureTreeEditor.module.css";
 
 type NatureForm = UseFormReturn<WizardCoreFormValues>;
@@ -369,6 +371,7 @@ function TextField({
   maxLength,
   multiline = false,
   name,
+  notifyProgrammaticChange,
   wide = false
 }: Readonly<{
   form: NatureForm;
@@ -377,36 +380,39 @@ function TextField({
   maxLength: number;
   multiline?: boolean;
   name: NatureTextFieldName;
+  notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
   const id = `nature-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
   const registration = form.register(name, { setValueAs: optionalTextValue });
+  const value = useWatch({ control: form.control, name });
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label} wide={wide}>
-      {multiline ? (
-        <textarea
-          id={id}
-          rows={4}
-          maxLength={maxLength}
-          aria-describedby={describedBy}
-          aria-invalid={error ? "true" : "false"}
-          {...registration}
-        />
-      ) : (
-        <input
-          id={id}
-          type="text"
-          autoComplete="off"
-          maxLength={maxLength}
-          aria-describedby={describedBy}
-          aria-invalid={error ? "true" : "false"}
-          {...registration}
-        />
-      )}
-    </FieldShell>
+    <GuidedTextChoice
+      describedBy={describedBy}
+      error={error}
+      errorClassName={styles.error}
+      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+      help={help}
+      helpClassName={styles.help}
+      id={id}
+      label={label}
+      maxLength={maxLength}
+      multiline={multiline}
+      onChoose={(nextValue) => {
+        form.setValue(name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true
+        });
+        notifyProgrammaticChange();
+      }}
+      presets={GUIDED_TEXT_PRESETS_DE[name]}
+      registration={registration}
+      value={value}
+    />
   );
 }
 
@@ -507,10 +513,15 @@ function TileSizeField({ tileSize }: Readonly<{ tileSize?: number }>) {
 
 export interface NatureTreeEditorProps {
   readonly form: NatureForm;
+  readonly notifyProgrammaticChange: () => void;
   readonly subtype: NatureSubtype;
 }
 
-export function NatureTreeEditor({ form, subtype }: NatureTreeEditorProps) {
+export function NatureTreeEditor({
+  form,
+  notifyProgrammaticChange,
+  subtype
+}: NatureTreeEditorProps) {
   const plantType = getDefaultNaturePlantType(subtype);
   const capabilities = resolveCapabilities("nature", subtype);
   const tileSize = useWatch({ control: form.control, name: "tileSize" });
@@ -577,6 +588,7 @@ export function NatureTreeEditor({ form, subtype }: NatureTreeEditorProps) {
           <PlantTypeField form={form} plantType={plantType} subtype={subtype} />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="natureSpecies"
             label="Art / Spezies"
             help="Konkrete botanische oder frei erfundene Art, ohne bestehende Marken- oder Werkbezüge."
@@ -584,6 +596,7 @@ export function NatureTreeEditor({ form, subtype }: NatureTreeEditorProps) {
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="natureDescription"
             label="Kurze Naturbeschreibung"
             help="Fasse Motiv, Alterswirkung und wichtigste Erkennungsmerkmale zusammen."
@@ -646,6 +659,7 @@ export function NatureTreeEditor({ form, subtype }: NatureTreeEditorProps) {
             />
             <TextField
               form={form}
+              notifyProgrammaticChange={notifyProgrammaticChange}
               name="natureTrunkDetails"
               label="Rinde, Verzweigung und Hohlräume"
               help="Beschreibe lesbare Rindenstruktur, Astansätze, Brüche oder Hohlräume."
@@ -681,6 +695,7 @@ export function NatureTreeEditor({ form, subtype }: NatureTreeEditorProps) {
             />
             <TextField
               form={form}
+              notifyProgrammaticChange={notifyProgrammaticChange}
               name="natureFoliageDetails"
               label="Blätter, Nadeln und Cluster"
               help="Beschreibe Clustergröße, Dichte, Schichtung und kontrollierte Farbvariation."
@@ -709,6 +724,7 @@ export function NatureTreeEditor({ form, subtype }: NatureTreeEditorProps) {
             />
             <TextField
               form={form}
+              notifyProgrammaticChange={notifyProgrammaticChange}
               name="natureRootDetails"
               label="Wurzelform und Verlauf"
               help="Beschreibe Richtung, Ausladung und Kontakt mit Boden oder Fels."
@@ -815,6 +831,7 @@ export function NatureTreeEditor({ form, subtype }: NatureTreeEditorProps) {
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="natureExtraDetails"
             label="Weitere Naturdetails"
             help="Optionale Ergänzungen zu Farbe, Flechten, Frost, Nässe, Staub oder magischen Merkmalen."

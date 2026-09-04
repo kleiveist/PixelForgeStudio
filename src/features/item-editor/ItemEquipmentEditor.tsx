@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
+import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
 import {
   ITEM_CONDITION_IDS,
   ITEM_GLOW_MODE_IDS,
@@ -27,6 +28,7 @@ import {
   type ItemWearPosition
 } from "../../domain/items";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
+import { GuidedTextChoice } from "../wizard/GuidedTextChoice";
 import styles from "./ItemEquipmentEditor.module.css";
 
 type ItemForm = UseFormReturn<WizardCoreFormValues>;
@@ -232,27 +234,43 @@ function SelectField({ form, help, label, name, options }: Readonly<{
   );
 }
 
-function TextField({ form, help, label, maxLength = 500, name, wide = false }: Readonly<{
+function TextField({ form, help, label, maxLength = 500, name, notifyProgrammaticChange, wide = false }: Readonly<{
   form: ItemForm;
   help: string;
   label: string;
   maxLength?: number;
   name: ItemTextFieldName;
+  notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
   const id = `item-${name}`;
   const error = fieldError(form, name);
+  const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
+  const value = useWatch({ control: form.control, name });
   return (
-    <FieldShell error={error} help={help} id={id} label={label} wide={wide}>
-      <textarea
-        id={id}
-        rows={3}
-        maxLength={maxLength}
-        aria-describedby={`${id}-help${error ? ` ${id}-error` : ""}`}
-        aria-invalid={error ? "true" : "false"}
-        {...form.register(name, { setValueAs: optionalTextValue })}
-      />
-    </FieldShell>
+    <GuidedTextChoice
+      describedBy={describedBy}
+      error={error}
+      errorClassName={styles.error}
+      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+      help={help}
+      helpClassName={styles.help}
+      id={id}
+      label={label}
+      maxLength={maxLength}
+      multiline
+      onChoose={(nextValue) => {
+        form.setValue(name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true
+        });
+        notifyProgrammaticChange();
+      }}
+      presets={GUIDED_TEXT_PRESETS_DE[name]}
+      registration={form.register(name, { setValueAs: optionalTextValue })}
+      value={value}
+    />
   );
 }
 
@@ -311,10 +329,11 @@ const SHADOW_OPTIONS = optionsFromIds(ITEM_SHADOW_MODE_IDS, SHADOW_LABELS);
 
 export interface ItemEquipmentEditorProps {
   readonly form: ItemForm;
+  readonly notifyProgrammaticChange: () => void;
   readonly subtype: ItemSubtype;
 }
 
-export function ItemEquipmentEditor({ form, subtype }: ItemEquipmentEditorProps) {
+export function ItemEquipmentEditor({ form, notifyProgrammaticChange, subtype }: ItemEquipmentEditorProps) {
   const pixelDensity = useWatch({ control: form.control, name: "pixelDensity" });
   const tileSize = useWatch({ control: form.control, name: "tileSize" });
   const backgroundMode = useWatch({ control: form.control, name: "backgroundMode" });
@@ -351,8 +370,8 @@ export function ItemEquipmentEditor({ form, subtype }: ItemEquipmentEditorProps)
           <SelectField form={form} name="itemPurpose" label="Zweck" help="Praktische, dekorative, tragbare oder benutzbare Rolle." options={purposeOptions} />
           <SelectField form={form} name="itemPresentation" label="Darstellung" help="Inventar-Icon, Weltobjekt oder ausgerüstete Ansicht." options={presentationOptions} />
           {wearable ? <SelectField form={form} name="itemWearPosition" label="Trageposition" help="Nur für explizit tragbare Item-Untertypen verfügbar." options={WEAR_POSITION_OPTIONS} /> : null}
-          <TextField form={form} name="itemDescription" label="Motivbeschreibung" help="Konkrete Form, Bestandteile und visuelle Identität." maxLength={4000} wide />
-          <TextField form={form} name="itemFunctionDetails" label="Funktion" help="Wie das Item benutzt wird und welche Merkmale diese Funktion sichtbar machen." wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="itemDescription" label="Motivbeschreibung" help="Konkrete Form, Bestandteile und visuelle Identität." maxLength={4000} wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="itemFunctionDetails" label="Funktion" help="Wie das Item benutzt wird und welche Merkmale diese Funktion sichtbar machen." wide />
         </div>
       </fieldset>
 
@@ -363,7 +382,7 @@ export function ItemEquipmentEditor({ form, subtype }: ItemEquipmentEditorProps)
           <SelectField form={form} name="itemSecondaryMaterial" label="Sekundärmaterial" help="Optionales zweites Material für Kontrast und Konstruktion." options={MATERIAL_OPTIONS} />
           <SelectField form={form} name="itemCondition" label="Zustand" help="Alterung und Gebrauchsspuren ohne die Silhouette zu verschleiern." options={CONDITION_OPTIONS} />
           <SelectField form={form} name="itemGlowMode" label="Leuchteffekt" help="Kontrolliertes Emissionslicht; kein Ersatz für das Weltlicht." options={GLOW_OPTIONS} />
-          <TextField form={form} name="itemMaterialDetails" label="Materialdetails" help="Oberfläche, Verarbeitung, Beschläge und Materialübergänge." wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="itemMaterialDetails" label="Materialdetails" help="Oberfläche, Verarbeitung, Beschläge und Materialübergänge." wide />
         </div>
       </fieldset>
 
@@ -372,8 +391,8 @@ export function ItemEquipmentEditor({ form, subtype }: ItemEquipmentEditorProps)
         <div className={styles.fieldGrid}>
           <SelectField form={form} name="itemSignificance" label="Bedeutung" help="Wert, Seltenheit oder narrative Relevanz." options={SIGNIFICANCE_OPTIONS} />
           <SelectField form={form} name="itemReadability" label="Detaildichte" help="Priorität zwischen starker Silhouette und feinen Details." options={READABILITY_OPTIONS} />
-          <TextField form={form} name="itemMeaningDetails" label="Symbolik und Bedeutung" help="Erkennbare Zeichen, Herkunft oder erzählerische Funktion." wide />
-          <TextField form={form} name="itemSilhouette" label="Silhouettenmerkmale" help="Unverwechselbare Außenkontur und klare Negativräume." wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="itemMeaningDetails" label="Symbolik und Bedeutung" help="Erkennbare Zeichen, Herkunft oder erzählerische Funktion." wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="itemSilhouette" label="Silhouettenmerkmale" help="Unverwechselbare Außenkontur und klare Negativräume." wide />
         </div>
       </fieldset>
 
@@ -386,7 +405,7 @@ export function ItemEquipmentEditor({ form, subtype }: ItemEquipmentEditorProps)
           <SelectField form={form} name="itemShadowMode" label="Schatten" help="Freigestellt ohne Schatten oder mit kleinem Kontaktschatten." options={SHADOW_OPTIONS} />
           <DerivedField id="item-background" label="Hintergrund" value={`${backgroundMode === "scene" ? "Szene" : "Transparent"}${alphaPadding === undefined ? "" : ` · ${String(alphaPadding)} px Alpha-Rand`}`} help="Wird aus dem wirksamen Basisprofil übernommen." />
           <DerivedField id="item-scale" label="Produktionsmaßstab" value={`${tileSize === undefined ? "–" : `${String(tileSize)} px Tile`} · ${pixelDensity ?? "–"}`} help="Technischer Maßstab aus der gewählten Produktionsfamilie." />
-          <TextField form={form} name="itemExtraDetails" label="Weitere Vorgaben" help="Nur zusätzliche, itemspezifische Produktionshinweise." maxLength={4000} wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="itemExtraDetails" label="Weitere Vorgaben" help="Nur zusätzliche, itemspezifische Produktionshinweise." maxLength={4000} wide />
         </div>
       </fieldset>
     </div>

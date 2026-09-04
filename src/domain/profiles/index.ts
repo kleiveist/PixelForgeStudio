@@ -16,6 +16,7 @@ export {
   createBaseProfile,
   createDuplicateProfileName,
   deleteAssetProfile,
+  deleteBaseProfile,
   duplicateBaseProfile,
   duplicateAssetProfile,
   saveAssetProfile,
@@ -23,6 +24,7 @@ export {
   type AssetProfileSaveDefinition,
   type AssetProfileLibraryChange,
   type BaseProfileDefinition,
+  type BaseProfileDeletionChange,
   type BaseProfileLibraryChange,
   type ProfileLibraryChange
 } from "./profileLibrary";

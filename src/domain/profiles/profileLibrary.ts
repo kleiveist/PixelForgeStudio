@@ -23,6 +23,14 @@ export type ProfileLibraryChange<Profile extends AssetProfile | BaseProfile> =
 
 export type AssetProfileLibraryChange = ProfileLibraryChange<AssetProfile>;
 export type BaseProfileLibraryChange = ProfileLibraryChange<BaseProfile>;
+export type BaseProfileDeletionChange =
+  | BaseProfileLibraryChange
+  | Readonly<{
+      status: "inUse";
+      profileId: StableId;
+      categoryProfileCount: number;
+      assetProfileCount: number;
+    }>;
 export type BaseProfileDefinition = Readonly<
   Pick<BaseProfile, "name" | "iconId" | "values" | "locks">
 >;
@@ -206,6 +214,49 @@ export function duplicateBaseProfile(
   };
 
   return appendBaseProfile(library, profile);
+}
+
+/**
+ * Removes only an unreferenced production family. Descendants are never
+ * cascaded or re-parented implicitly because either action could silently
+ * change persisted production output.
+ */
+export function deleteBaseProfile(
+  library: ProfileLibrary,
+  profileId: StableId
+): BaseProfileDeletionChange {
+  const profile = library.baseProfiles.find(
+    (candidate) => candidate.id === profileId
+  );
+  if (!profile) return { status: "notFound", profileId };
+
+  const categoryProfileCount = library.categoryProfiles.filter(
+    (candidate) => candidate.baseProfileId === profileId
+  ).length;
+  const assetProfileCount = library.assetProfiles.filter(
+    (candidate) => candidate.baseProfileId === profileId
+  ).length;
+  if (categoryProfileCount > 0 || assetProfileCount > 0) {
+    return {
+      status: "inUse",
+      profileId,
+      categoryProfileCount,
+      assetProfileCount
+    };
+  }
+
+  return {
+    status: "changed",
+    library: {
+      ...library,
+      baseProfiles: library.baseProfiles.filter(
+        (candidate) => candidate.id !== profileId
+      ),
+      categoryProfiles: library.categoryProfiles,
+      assetProfiles: library.assetProfiles
+    },
+    profile
+  };
 }
 
 export function toggleAssetProfileFavorite(

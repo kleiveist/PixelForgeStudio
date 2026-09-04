@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm, type DefaultValues, type UseFormReturn } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
@@ -8,6 +8,20 @@ import {
 } from "../../domain/nature";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
 import { NatureTreeEditor } from ".";
+
+async function chooseCustomText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const select = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    select,
+    within(select).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
+}
 
 function NatureEditorHarness({
   defaultValues,
@@ -34,7 +48,11 @@ function NatureEditorHarness({
 
   return (
     <form>
-      <NatureTreeEditor form={form} subtype={subtype} />
+      <NatureTreeEditor
+        form={form}
+        notifyProgrammaticChange={() => undefined}
+        subtype={subtype}
+      />
       {onRead ? (
         <button type="button" onClick={() => onRead(form.getValues())}>
           Formularwerte lesen
@@ -78,9 +96,9 @@ describe("NatureTreeEditor", () => {
       screen.getByRole("status", { name: "Wirksame Tilegröße" })
     ).toHaveTextContent("32 × 32 px");
 
-    await user.type(screen.getByLabelText("Art / Spezies"), "Silbereiche");
+    await user.type(await chooseCustomText(user, "Art / Spezies"), "Silbereiche");
     await user.type(
-      screen.getByLabelText("Kurze Naturbeschreibung"),
+      await chooseCustomText(user, "Kurze Naturbeschreibung"),
       "Ein uralter, schneebedeckter Baum"
     );
     await user.selectOptions(screen.getByLabelText("Klimazone"), "snow");
@@ -96,13 +114,13 @@ describe("NatureTreeEditor", () => {
     await user.selectOptions(screen.getByLabelText("Stammdicke"), "thick");
     await user.selectOptions(screen.getByLabelText("Stammform"), "twisted");
     await user.type(
-      screen.getByLabelText("Rinde, Verzweigung und Hohlräume"),
+      await chooseCustomText(user, "Rinde, Verzweigung und Hohlräume"),
       "Tiefe Rindencluster und ein kleiner Hohlraum"
     );
     await user.selectOptions(screen.getByLabelText("Kronenform"), "spreading");
     await user.selectOptions(screen.getByLabelText("Kronendichte"), "dense");
     await user.type(
-      screen.getByLabelText("Blätter, Nadeln und Cluster"),
+      await chooseCustomText(user, "Blätter, Nadeln und Cluster"),
       "Große, klar getrennte Blattcluster"
     );
     await user.selectOptions(
@@ -110,7 +128,7 @@ describe("NatureTreeEditor", () => {
       "visible"
     );
     await user.type(
-      screen.getByLabelText("Wurzelform und Verlauf"),
+      await chooseCustomText(user, "Wurzelform und Verlauf"),
       "Breite Wurzeln auf felsigem Boden"
     );
     await user.selectOptions(screen.getByLabelText("Moosbewuchs"), "heavy");
@@ -140,7 +158,7 @@ describe("NatureTreeEditor", () => {
     );
     await user.type(screen.getByLabelText("Verwandte Varianten"), "4");
     await user.type(
-      screen.getByLabelText("Weitere Naturdetails"),
+      await chooseCustomText(user, "Weitere Naturdetails"),
       "Einzelne Eiszapfen an den unteren Ästen"
     );
     await user.click(screen.getByRole("button", { name: "Formularwerte lesen" }));
@@ -176,6 +194,47 @@ describe("NatureTreeEditor", () => {
     );
     expect(onRead.mock.calls[0]?.[0]).not.toHaveProperty("directionCount");
     expect(onRead.mock.calls[0]?.[0]).not.toHaveProperty("animationType");
+  });
+
+  it("offers bark and root presets before exposing a custom text field", async () => {
+    const user = userEvent.setup();
+    const formRef: { current: UseFormReturn<WizardCoreFormValues> | null } = {
+      current: null
+    };
+    render(<NatureEditorHarness formRef={formRef} />);
+
+    const barkChoice = screen.getByRole("combobox", {
+      name: "Rinde, Verzweigung und Hohlräume"
+    });
+    const rootChoice = screen.getByRole("combobox", {
+      name: "Wurzelform und Verlauf"
+    });
+
+    expect(within(barkChoice).getAllByRole("option")).toHaveLength(6);
+    expect(within(rootChoice).getAllByRole("option")).toHaveLength(6);
+    expect(
+      screen.queryByRole("textbox", {
+        name: "Eigene Eingabe für Rinde, Verzweigung und Hohlräume"
+      })
+    ).not.toBeInTheDocument();
+
+    await user.selectOptions(
+      barkChoice,
+      "Tiefe Rindenfurchen, niedrige Astansätze und ein kleiner Hohlraum"
+    );
+    expect(formRef.current?.getValues("natureTrunkDetails")).toBe(
+      "Tiefe Rindenfurchen, niedrige Astansätze und ein kleiner Hohlraum"
+    );
+
+    await user.selectOptions(
+      rootChoice,
+      within(rootChoice).getByRole("option", { name: "Eigene Eingabe" })
+    );
+    expect(
+      screen.getByRole("textbox", {
+        name: "Eigene Eingabe für Wurzelform und Verlauf"
+      })
+    ).toBeVisible();
   });
 
   it("hides tree anatomy for a mushroom while retaining relevant nature fields", () => {

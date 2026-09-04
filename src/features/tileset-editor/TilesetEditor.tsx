@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useController, useWatch, type UseFormReturn } from "react-hook-form";
+import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
 import {
   TILESET_ATLAS_LAYOUT_IDS,
   TILESET_CORNER_SET_IDS,
@@ -29,6 +30,7 @@ import {
   type TilesetVariantKind
 } from "../../domain/tilesets";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
+import { GuidedTextChoice } from "../wizard/GuidedTextChoice";
 import styles from "./TilesetEditor.module.css";
 
 type TilesetForm = UseFormReturn<WizardCoreFormValues>;
@@ -306,7 +308,7 @@ function TextField({
   label,
   maxLength,
   name,
-  rows = 3,
+  notifyProgrammaticChange,
   wide = false
 }: Readonly<{
   form: TilesetForm;
@@ -314,24 +316,38 @@ function TextField({
   label: string;
   maxLength: number;
   name: TilesetTextFieldName;
-  rows?: number;
+  notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
   const id = `tileset-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
+  const value = useWatch({ control: form.control, name });
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label} wide={wide}>
-      <textarea
-        id={id}
-        rows={rows}
-        maxLength={maxLength}
-        aria-describedby={describedBy}
-        aria-invalid={error ? "true" : "false"}
-        {...form.register(name, { setValueAs: optionalTextValue })}
-      />
-    </FieldShell>
+    <GuidedTextChoice
+      describedBy={describedBy}
+      error={error}
+      errorClassName={styles.error}
+      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+      help={help}
+      helpClassName={styles.help}
+      id={id}
+      label={label}
+      maxLength={maxLength}
+      multiline
+      onChoose={(nextValue) => {
+        form.setValue(name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true
+        });
+        notifyProgrammaticChange();
+      }}
+      presets={GUIDED_TEXT_PRESETS_DE[name]}
+      registration={form.register(name, { setValueAs: optionalTextValue })}
+      value={value}
+    />
   );
 }
 
@@ -577,10 +593,15 @@ function TechnicalSpecificationCard({
 
 export interface TilesetEditorProps {
   readonly form: TilesetForm;
+  readonly notifyProgrammaticChange: () => void;
   readonly subtype: TilesetSubtype;
 }
 
-export function TilesetEditor({ form, subtype }: TilesetEditorProps) {
+export function TilesetEditor({
+  form,
+  notifyProgrammaticChange,
+  subtype
+}: TilesetEditorProps) {
   const tilesetType = getDefaultTilesetType(subtype);
   const supportsEdges = tilesetSubtypeSupportsEdges(subtype);
   const supportsCorners = tilesetSubtypeSupportsCorners(subtype);
@@ -700,11 +721,11 @@ export function TilesetEditor({ form, subtype }: TilesetEditorProps) {
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="tilesetDescription"
             label="Tileset-Beschreibung"
             help="Material, Lesbarkeit und charakteristische Flächendetails."
             maxLength={4000}
-            rows={4}
             wide
           />
         </div>
@@ -729,6 +750,7 @@ export function TilesetEditor({ form, subtype }: TilesetEditorProps) {
                 />
                 <TextField
                   form={form}
+                  notifyProgrammaticChange={notifyProgrammaticChange}
                   name="tilesetEdgeDetails"
                   label="Kantenregeln"
                   help="Reihenfolge, Nachbarschaftsmasken und pixelgenaue Randlogik."
@@ -756,6 +778,7 @@ export function TilesetEditor({ form, subtype }: TilesetEditorProps) {
                 />
                 <TextField
                   form={form}
+                  notifyProgrammaticChange={notifyProgrammaticChange}
                   name="tilesetSourceMaterial"
                   label="Ausgangsmaterial"
                   help="Material auf der primären Seite des Übergangs."
@@ -763,6 +786,7 @@ export function TilesetEditor({ form, subtype }: TilesetEditorProps) {
                 />
                 <TextField
                   form={form}
+                  notifyProgrammaticChange={notifyProgrammaticChange}
                   name="tilesetTargetMaterial"
                   label="Nachbarmaterial"
                   help="Material, das an der gegenüberliegenden Seite anschließt."
@@ -809,6 +833,7 @@ export function TilesetEditor({ form, subtype }: TilesetEditorProps) {
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="tilesetSeamDetails"
             label="Seam- und Wiederholungsdetails"
             help="Zum Beispiel identische Randzeilen, versetzte Motive oder kontrollierter Bleed."
@@ -902,11 +927,11 @@ export function TilesetEditor({ form, subtype }: TilesetEditorProps) {
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="tilesetExtraDetails"
             label="Weitere Produktionshinweise"
             help="Optionale Ergänzungen zu Slotreihenfolge, Export oder Mappingkonventionen."
             maxLength={4000}
-            rows={4}
             wide
           />
         </div>

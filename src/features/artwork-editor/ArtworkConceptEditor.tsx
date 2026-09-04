@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
+import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
 import {
   ARTWORK_BACKGROUND_IDS,
   ARTWORK_COMPOSITION_IDS,
@@ -22,6 +23,7 @@ import {
   type ArtworkType
 } from "../../domain/artworks";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
+import { GuidedTextChoice } from "../wizard/GuidedTextChoice";
 import styles from "./ArtworkConceptEditor.module.css";
 
 type ArtworkForm = UseFormReturn<WizardCoreFormValues>;
@@ -200,6 +202,7 @@ function TextField({
   label,
   maxLength = 1000,
   name,
+  notifyProgrammaticChange,
   wide = false
 }: Readonly<{
   form: ArtworkForm;
@@ -207,21 +210,37 @@ function TextField({
   label: string;
   maxLength?: number;
   name: ArtworkTextFieldName;
+  notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
   const id = `artwork-${name}`;
   const error = fieldError(form, name);
+  const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
+  const value = useWatch({ control: form.control, name });
   return (
-    <FieldShell error={error} help={help} id={id} label={label} wide={wide}>
-      <textarea
-        id={id}
-        rows={3}
-        maxLength={maxLength}
-        aria-describedby={`${id}-help${error ? ` ${id}-error` : ""}`}
-        aria-invalid={error ? "true" : "false"}
-        {...form.register(name, { setValueAs: optionalTextValue })}
-      />
-    </FieldShell>
+    <GuidedTextChoice
+      describedBy={describedBy}
+      error={error}
+      errorClassName={styles.error}
+      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+      help={help}
+      helpClassName={styles.help}
+      id={id}
+      label={label}
+      maxLength={maxLength}
+      multiline
+      onChoose={(nextValue) => {
+        form.setValue(name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true
+        });
+        notifyProgrammaticChange();
+      }}
+      presets={GUIDED_TEXT_PRESETS_DE[name]}
+      registration={form.register(name, { setValueAs: optionalTextValue })}
+      value={value}
+    />
   );
 }
 
@@ -263,11 +282,13 @@ const DETAIL_OPTIONS = optionsFromIds(
 
 export interface ArtworkConceptEditorProps {
   readonly form: ArtworkForm;
+  readonly notifyProgrammaticChange: () => void;
   readonly subtype: ArtworkSubtype;
 }
 
 export function ArtworkConceptEditor({
   form,
+  notifyProgrammaticChange,
   subtype
 }: ArtworkConceptEditorProps) {
   const pixelDensity = useWatch({ control: form.control, name: "pixelDensity" });
@@ -309,7 +330,7 @@ export function ArtworkConceptEditor({
           <SelectField form={form} name="artworkPurpose" label="Zweck" help="Konzept, Präsentation oder belastbare Produktionsreferenz." options={PURPOSE_OPTIONS} />
           <SelectField form={form} name="artworkMotif" label="Motivart" help="Legt die zentrale Bildidee fest, ohne ein Asset-Raster zu erzwingen." options={MOTIF_OPTIONS} />
           <DerivedField id="artwork-direction" label="Geerbte Art Direction" value={artDirection} help="Stilwerte stammen aus dem Basisprofil; Weltkamera und Tilegröße gelten hier nicht." />
-          <TextField form={form} name="artworkDescription" label="Motivbeschreibung" help="Konkretes Hauptmotiv, Formensprache und erzählerische Identität." maxLength={4000} wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkDescription" label="Motivbeschreibung" help="Konkretes Hauptmotiv, Formensprache und erzählerische Identität." maxLength={4000} wide />
         </div>
       </fieldset>
 
@@ -322,8 +343,8 @@ export function ArtworkConceptEditor({
         <div className={styles.fieldGrid}>
           <SelectField form={form} name="artworkComposition" label="Komposition" help="Einzelmotiv, Gruppe oder gestaffelte Szene." options={COMPOSITION_OPTIONS} />
           <SelectField form={form} name="artworkFocus" label="Fokus" help="Form, Material, Stimmung, Geschichte oder Maßstab als Hauptaussage." options={FOCUS_OPTIONS} />
-          <TextField form={form} name="artworkSceneDescription" label="Szene" help="Ort, Handlung, Figurenbezüge und räumlicher Kontext." wide />
-          <TextField form={form} name="artworkCompositionDetails" label="Kompositionsdetails" help="Blickführung, Gewichtung sowie Vorder-, Mittel- und Hintergrund." wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkSceneDescription" label="Szene" help="Ort, Handlung, Figurenbezüge und räumlicher Kontext." wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkCompositionDetails" label="Kompositionsdetails" help="Blickführung, Gewichtung sowie Vorder-, Mittel- und Hintergrund." wide />
         </div>
       </fieldset>
 
@@ -332,7 +353,7 @@ export function ArtworkConceptEditor({
         <div className={styles.fieldGrid}>
           <SelectField form={form} name="artworkFormat" label="Format" help="Quadratisch, Hochformat, Querformat oder bewusst frei." options={FORMAT_OPTIONS} />
           <SelectField form={form} name="artworkBackground" label="Artwork-Hintergrund" help="Transparent, einfach gehalten oder vollständig ausgearbeitet." options={BACKGROUND_OPTIONS} />
-          <TextField form={form} name="artworkBackgroundDetails" label="Hintergrunddetails" help="Umgebungsebenen, Tiefe und gewünschte Ausarbeitung." wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkBackgroundDetails" label="Hintergrunddetails" help="Umgebungsebenen, Tiefe und gewünschte Ausarbeitung." wide />
         </div>
       </fieldset>
 
@@ -341,8 +362,8 @@ export function ArtworkConceptEditor({
         <div className={styles.fieldGrid}>
           <SelectField form={form} name="artworkLightingDrama" label="Lichtdramaturgie" help="Die emotionale Lichtwirkung der gesamten Komposition." options={LIGHTING_OPTIONS} />
           <SelectField form={form} name="artworkDetailLevel" label="Detailgrad" help="Von der Übersicht über das Produktionskonzept bis zum Showcase." options={DETAIL_OPTIONS} />
-          <TextField form={form} name="artworkLightingDetails" label="Lichtdetails" help="Lichtquellen, Temperatur, Kontrast und dramatische Akzente." wide />
-          <TextField form={form} name="artworkExtraDetails" label="Zusatzdetails" help="Weitere freie Produktionshinweise; eingebrannte Schrift ist standardmäßig nicht vorgesehen." maxLength={4000} wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkLightingDetails" label="Lichtdetails" help="Lichtquellen, Temperatur, Kontrast und dramatische Akzente." wide />
+          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkExtraDetails" label="Zusatzdetails" help="Weitere freie Produktionshinweise; eingebrannte Schrift ist standardmäßig nicht vorgesehen." maxLength={4000} wide />
         </div>
       </fieldset>
     </div>

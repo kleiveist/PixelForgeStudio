@@ -99,6 +99,10 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
 - Der Wizard speichert gültige Nutzeränderungen verzögert und bewusste
   Schrittwechsel sofort lokal. Initialisierung, Profil-Hydration und Resume
   lösen keinen Write aus.
+- Kreative Textfragen beginnen in allen neun Fachbereichen als Auswahl mit
+  mehreren deutschsprachigen, promptfähigen Antworten. Ein freies Textfeld
+  wird erst nach der ausdrücklichen Wahl „Eigene Eingabe“ sichtbar; vorhandene
+  individuelle Werte öffnen diesen Modus beim schreibfreien Resume automatisch.
 
 ## 4.3 Umgesetzter Einstieg bis Prompt 22
 
@@ -300,6 +304,11 @@ Regeln:
 7. Anlage und Duplikation verändern weder eine bestehende Familie noch deren
    Nachkommen oder Elternreferenzen. In-place-Bearbeitung und Reparenting sind
    nicht Bestandteil des Prompt-13-Schritts.
+8. Eine Produktionsfamilie kann im Wizard über den sichtbaren Löschbutton oder
+   mit `Entf` auf ihrer fokussierten Auswahl zum Löschen vorgemerkt werden. Die
+   Mutation erfolgt erst nach einer ausdrücklichen Bestätigung. Familien mit
+   referenzierenden Kategorie- oder Assetprofilen bleiben erhalten; es gibt
+   weder kaskadierendes Löschen noch stilles Reparenting.
 
 Im Wizard sind entsperrte technische Felder RHF-gesteuerte lokale
 Entwurfswerte. Das Draft-Mapping vergleicht sie mit der wirksamen
@@ -508,12 +517,14 @@ Die Sichtbarkeit von Fragen wird nicht nur über die Kategorie, sondern über F�
   nicht; Kategorie- oder Untertypwechsel bereinigen alte Character-Antworten,
   ein Basiswechsel erhält sie.
 - Alle Character-Freitextfelder besitzen ein auswahlorientiertes deutsches
-  Vorlagenpaket. „Nicht festgelegt“ bleibt der schreibfreie Ausgangszustand;
-  eine Vorlage wird erst nach ausdrücklicher Auswahl in das bestehende
-  RHF-/Schemafeld übernommen. „Eigene Eingabe“ öffnet weiterhin freien Text,
-  und bereits gespeicherte individuelle Werte werden automatisch in diesem
-  Modus dargestellt. Ein englisches Vorlagenpaket ist nicht Teil dieser
-  Einzelaufgabe.
+  Vorlagenpaket. Dasselbe Auswahl-zuerst-Muster gilt für sämtliche kreativen
+  Textfelder der acht übrigen Fachbereiche; darunter ausdrücklich „Rinde,
+  Verzweigung und Hohlräume“ sowie „Wurzelform und Verlauf“. „Nicht festgelegt“
+  bleibt der schreibfreie Ausgangszustand; eine Vorlage wird erst nach
+  ausdrücklicher Auswahl in das bestehende RHF-/Schemafeld übernommen.
+  „Eigene Eingabe“ öffnet freien Text, und bereits gespeicherte individuelle
+  Werte werden automatisch in diesem Modus dargestellt. Ein englisches
+  Vorlagenpaket ist nicht Bestandteil dieses Stands.
 - Der Output-Wunsch bleibt außerhalb des RHF-Fachschritts; Prompt Engine und
   Review-/Output-Workspace lesen die validierten Character-Daten seit Prompts
   23 und 24 aus dem aufgelösten Profil.

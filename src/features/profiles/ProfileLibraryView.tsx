@@ -39,6 +39,8 @@ function mutationMessage(
       return `„${mutation.profileName}“ wurde als Assetprofil gespeichert.`;
     case "delete":
       return `„${mutation.profileName}“ wurde gelöscht.`;
+    case "deleteBase":
+      return `Produktionsfamilie „${mutation.profileName}“ wurde gelöscht.`;
     case "createBase":
       return `„${mutation.profileName}“ wurde als neues Basisprofil angelegt.`;
     case "duplicateBase":

@@ -373,6 +373,7 @@ export function BaseProfileStep({
 >) {
   const {
     createBaseProfile,
+    deleteBaseProfile,
     duplicateBaseProfile,
     libraryResult
   } = useProfileLibrary();
@@ -381,6 +382,9 @@ export function BaseProfileStep({
     null
   );
   const [pendingBase, setPendingBase] = useState<BaseProfile | null>(null);
+  const [pendingDeleteBase, setPendingDeleteBase] =
+    useState<BaseProfile | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pendingCreatedBase, setPendingCreatedBase] =
     useState<BaseProfile | null>(null);
   const [localNotice, setLocalNotice] = useState<
@@ -389,9 +393,12 @@ export function BaseProfileStep({
   const chooserRef = useRef<HTMLFieldSetElement>(null);
   const conflictHeadingRef = useRef<HTMLHeadingElement>(null);
   const switchHeadingRef = useRef<HTMLHeadingElement>(null);
+  const deleteHeadingRef = useRef<HTMLHeadingElement>(null);
   const conflictTriggerRef = useRef<HTMLButtonElement | null>(null);
   const editorTriggerRef = useRef<HTMLButtonElement | null>(null);
   const switchTriggerRef = useRef<HTMLInputElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLElement | null>(null);
+  const newFamilyButtonRef = useRef<HTMLButtonElement | null>(null);
   const editorNameRef = useRef<HTMLInputElement | null>(null);
   const [focusProfileId, setFocusProfileId] = useState<string | null>(null);
 
@@ -646,6 +653,51 @@ export function BaseProfileStep({
     requestAnimationFrame(() => switchTriggerRef.current?.focus());
   }, []);
 
+  const requestBaseDeletion = useCallback(
+    (profile: BaseProfile, trigger: HTMLElement) => {
+      deleteTriggerRef.current = trigger;
+      setEditorMode(null);
+      setPendingBase(null);
+      setDeleteError(null);
+      setLocalNotice(null);
+      setPendingDeleteBase(profile);
+    },
+    []
+  );
+
+  const cancelBaseDeletion = useCallback(() => {
+    setPendingDeleteBase(null);
+    setDeleteError(null);
+    requestAnimationFrame(() => deleteTriggerRef.current?.focus());
+  }, []);
+
+  const confirmBaseDeletion = useCallback(() => {
+    if (!pendingDeleteBase) return;
+    const result = deleteBaseProfile(pendingDeleteBase.id);
+    if (result.status !== "ok") {
+      setDeleteError(result.message);
+      return;
+    }
+
+    const deletedSelectedBase =
+      form.getValues("baseProfileId") === pendingDeleteBase.id;
+    if (deletedSelectedBase) {
+      form.setValue("baseProfileId", undefined, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true
+      });
+      notifyProgrammaticChange();
+    }
+    setPendingDeleteBase(null);
+    setDeleteError(null);
+    setLocalNotice({
+      kind: "success",
+      message: `Produktionsfamilie „${result.profile.name}“ wurde gelöscht.`
+    });
+    requestAnimationFrame(() => newFamilyButtonRef.current?.focus());
+  }, [deleteBaseProfile, form, notifyProgrammaticChange, pendingDeleteBase]);
+
   const openConflict = useCallback(
     (key: ProfileValueKey, trigger: HTMLButtonElement) => {
       conflictTriggerRef.current = trigger;
@@ -738,6 +790,10 @@ export function BaseProfileStep({
   }, [pendingBase]);
 
   useEffect(() => {
+    if (pendingDeleteBase !== null) deleteHeadingRef.current?.focus();
+  }, [pendingDeleteBase]);
+
+  useEffect(() => {
     if (editorMode !== null) editorNameRef.current?.focus();
   }, [editorMode]);
 
@@ -813,49 +869,68 @@ export function BaseProfileStep({
                 !missingCharacterHeight ||
                 profile.locks.characterHeight !== true;
               return (
-                <label
+                <div
                   key={profile.id}
                   className={styles.choiceCard}
                   data-selected={selected ? "true" : "false"}
                   data-pending={pending ? "true" : "false"}
                 >
-                  <input
-                    type="radio"
-                    {...baseRegistration}
-                    value={profile.id}
-                    checked={selected}
-                    disabled={!compatible}
-                    onChange={(event) =>
-                      requestProfile(profile, event.currentTarget)
-                    }
-                  />
-                  <span>
-                    <strong>{profile.name}</strong>
-                    <small>
-                      {formatProfileValue(
-                        "pixelDensity",
-                        profile.values.pixelDensity
-                      )}
-                      {showWorldGeometry
-                        ? ` · ${profile.values.tileSize} px`
-                        : ""}
-                      {capabilities?.scaledCharacter &&
-                      profile.values.characterHeight !== undefined
-                        ? ` · Figuren ${profile.values.characterHeight} px`
-                        : ""}
-                    </small>
-                    <span className={styles.choiceMeta}>
-                      {Object.values(profile.locks).filter(Boolean).length}{" "}
-                      gesperrte Regeln
-                      {selected ? " · Im Entwurf ausgewählt" : ""}
-                      {missingCharacterHeight
-                        ? compatible
-                          ? " · Figurenhöhe im Entwurf ergänzen"
-                          : " · Nicht kompatibel: gesperrte Figurenhöhe fehlt"
-                        : ""}
+                  <label className={styles.choiceSelection}>
+                    <input
+                      type="radio"
+                      {...baseRegistration}
+                      value={profile.id}
+                      checked={selected}
+                      disabled={!compatible}
+                      onChange={(event) =>
+                        requestProfile(profile, event.currentTarget)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key !== "Delete") return;
+                        event.preventDefault();
+                        requestBaseDeletion(profile, event.currentTarget);
+                      }}
+                    />
+                    <span>
+                      <strong>{profile.name}</strong>
+                      <small>
+                        {formatProfileValue(
+                          "pixelDensity",
+                          profile.values.pixelDensity
+                        )}
+                        {showWorldGeometry
+                          ? ` · ${profile.values.tileSize} px`
+                          : ""}
+                        {capabilities?.scaledCharacter &&
+                        profile.values.characterHeight !== undefined
+                          ? ` · Figuren ${profile.values.characterHeight} px`
+                          : ""}
+                      </small>
+                      <span className={styles.choiceMeta}>
+                        {Object.values(profile.locks).filter(Boolean).length}{" "}
+                        gesperrte Regeln
+                        {selected ? " · Im Entwurf ausgewählt" : ""}
+                        {missingCharacterHeight
+                          ? compatible
+                            ? " · Figurenhöhe im Entwurf ergänzen"
+                            : " · Nicht kompatibel: gesperrte Figurenhöhe fehlt"
+                          : ""}
+                      </span>
                     </span>
-                  </span>
-                </label>
+                  </label>
+                  <button
+                    type="button"
+                    className={styles.deleteChoiceButton}
+                    aria-label={`Produktionsfamilie „${profile.name}“ löschen`}
+                    title="Löschen (auch mit Entf bei fokussierter Auswahl)"
+                    onClick={(event) =>
+                      requestBaseDeletion(profile, event.currentTarget)
+                    }
+                  >
+                    <span aria-hidden="true">×</span>
+                    Löschen
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -874,6 +949,7 @@ export function BaseProfileStep({
 
         <div className={styles.chooserActions}>
           <button
+            ref={newFamilyButtonRef}
             type="button"
             className={styles.primaryButton}
             onClick={(event) =>
@@ -927,6 +1003,49 @@ export function BaseProfileStep({
               onClick={confirmProfileSwitch}
             >
               Zu „{pendingBase.name}“ wechseln
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {pendingDeleteBase ? (
+        <section
+          className={styles.conflictPanel}
+          role="alertdialog"
+          aria-labelledby="base-profile-delete-title"
+          aria-describedby="base-profile-delete-description"
+        >
+          <h3
+            id="base-profile-delete-title"
+            ref={deleteHeadingRef}
+            tabIndex={-1}
+          >
+            Produktionsfamilie löschen?
+          </h3>
+          <p id="base-profile-delete-description">
+            „{pendingDeleteBase.name}“ wird nur gelöscht, wenn kein Kategorie-
+            oder Assetprofil mehr davon abhängt. Abhängige Profile werden nie
+            automatisch mitgelöscht oder umgehängt.
+          </p>
+          {deleteError ? (
+            <p className={styles.errorNotice} role="alert">
+              {deleteError}
+            </p>
+          ) : null}
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={cancelBaseDeletion}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className={styles.dangerButton}
+              onClick={confirmBaseDeletion}
+            >
+              Produktionsfamilie endgültig löschen
             </button>
           </div>
         </section>

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
@@ -10,6 +10,20 @@ import {
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
 import { MovingObjectAnimationEditor } from "./MovingObjectAnimationEditor";
 import { MovingObjectDetailsEditor } from "./MovingObjectDetailsEditor";
+
+async function chooseCustomText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const select = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    select,
+    within(select).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
+}
 
 function MovingObjectDetailsHarness({
   onRead,
@@ -29,7 +43,11 @@ function MovingObjectDetailsHarness({
 
   return (
     <form>
-      <MovingObjectDetailsEditor form={form} subtype={subtype} />
+      <MovingObjectDetailsEditor
+        form={form}
+        notifyProgrammaticChange={() => undefined}
+        subtype={subtype}
+      />
       {onRead ? (
         <button type="button" onClick={() => onRead(form.getValues())}>
           Formularwerte lesen
@@ -118,10 +136,10 @@ describe("MovingObjectDetailsEditor", () => {
     ).toHaveTextContent("Karren / Wagen");
     expect(screen.getByText("Richtungsset verfügbar")).toBeVisible();
 
-    await user.type(screen.getByLabelText("Zweck / Funktion"), "  Handel  ");
-    await user.type(screen.getByLabelText("Grundform"), "Breiter Kasten");
+    await user.type(await chooseCustomText(user, "Zweck / Funktion"), "  Handel  ");
+    await user.type(await chooseCustomText(user, "Grundform"), "Breiter Kasten");
     await user.type(
-      screen.getByLabelText("Kurze Objektbeschreibung"),
+      await chooseCustomText(user, "Kurze Objektbeschreibung"),
       "Überdachter Händlerwagen"
     );
     await user.type(

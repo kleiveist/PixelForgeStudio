@@ -20,6 +20,7 @@ export type ProfileMutationOperation =
   | "duplicate"
   | "save"
   | "delete"
+  | "deleteBase"
   | "createBase"
   | "duplicateBase";
 
@@ -32,7 +33,12 @@ export type ProfileMutationNotice =
       profileName: string;
     }>
   | Readonly<{
-      status: "invalid" | "unavailable" | "notFound" | "idConflict";
+      status:
+        | "invalid"
+        | "unavailable"
+        | "notFound"
+        | "idConflict"
+        | "inUse";
       operation: ProfileMutationOperation;
       message: string;
     }>;

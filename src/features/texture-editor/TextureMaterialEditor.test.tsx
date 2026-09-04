@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm, type DefaultValues, type UseFormReturn } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
@@ -8,6 +8,20 @@ import {
 } from "../../domain/textures";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
 import { TextureMaterialEditor } from "./TextureMaterialEditor";
+
+async function chooseCustomText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const select = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    select,
+    within(select).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
+}
 
 function TextureEditorHarness({
   defaultValues,
@@ -33,7 +47,11 @@ function TextureEditorHarness({
 
   return (
     <form>
-      <TextureMaterialEditor form={form} subtype={subtype} />
+      <TextureMaterialEditor
+        form={form}
+        notifyProgrammaticChange={() => undefined}
+        subtype={subtype}
+      />
       {onRead ? (
         <button type="button" onClick={() => onRead(form.getValues())}>
           Formularwerte lesen
@@ -105,7 +123,7 @@ describe("TextureMaterialEditor", () => {
 
     await user.selectOptions(screen.getByLabelText("Einsatzbereich"), "floor");
     await user.type(
-      screen.getByLabelText("Unterart und gewünschte Wirkung"),
+      await chooseCustomText(user, "Unterart und gewünschte Wirkung"),
       "Verwitterte Eichenplanken"
     );
     await user.selectOptions(
@@ -129,7 +147,7 @@ describe("TextureMaterialEditor", () => {
       "neutralEven"
     );
     await user.type(
-      screen.getByLabelText("Farben, Elemente und Randregeln"),
+      await chooseCustomText(user, "Farben, Elemente und Randregeln"),
       "Warme Brauntöne, unauffällige Knoten"
     );
     await user.click(screen.getByRole("button", { name: "Formularwerte lesen" }));

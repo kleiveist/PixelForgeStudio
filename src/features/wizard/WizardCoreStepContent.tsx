@@ -836,7 +836,10 @@ function CharacterDetailsStep({
   );
 }
 
-function MovingObjectDetailsStep({ form }: CoreStepProps) {
+function MovingObjectDetailsStep({
+  form,
+  notifyProgrammaticChange
+}: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownMovingObjectSubtypes: readonly string[] =
@@ -861,12 +864,16 @@ function MovingObjectDetailsStep({ form }: CoreStepProps) {
   return (
     <MovingObjectDetailsEditor
       form={form}
+      notifyProgrammaticChange={notifyProgrammaticChange}
       subtype={subtype as MovingObjectSubtype}
     />
   );
 }
 
-function TextureDetailsStep({ form }: CoreStepProps) {
+function TextureDetailsStep({
+  form,
+  notifyProgrammaticChange
+}: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownTextureSubtypes: readonly string[] = ASSET_SUBTYPES.texture;
@@ -889,12 +896,16 @@ function TextureDetailsStep({ form }: CoreStepProps) {
   return (
     <TextureMaterialEditor
       form={form}
+      notifyProgrammaticChange={notifyProgrammaticChange}
       subtype={subtype as TextureSubtype}
     />
   );
 }
 
-function NatureDetailsStep({ form }: CoreStepProps) {
+function NatureDetailsStep({
+  form,
+  notifyProgrammaticChange
+}: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownNatureSubtypes: readonly string[] = ASSET_SUBTYPES.nature;
@@ -918,12 +929,16 @@ function NatureDetailsStep({ form }: CoreStepProps) {
   return (
     <NatureTreeEditor
       form={form}
+      notifyProgrammaticChange={notifyProgrammaticChange}
       subtype={subtype as NatureSubtype}
     />
   );
 }
 
-function StaticObjectDetailsStep({ form }: CoreStepProps) {
+function StaticObjectDetailsStep({
+  form,
+  notifyProgrammaticChange
+}: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownStaticObjectSubtypes: readonly string[] =
@@ -948,12 +963,16 @@ function StaticObjectDetailsStep({ form }: CoreStepProps) {
   return (
     <StaticWorldObjectEditor
       form={form}
+      notifyProgrammaticChange={notifyProgrammaticChange}
       subtype={subtype as StaticObjectSubtype}
     />
   );
 }
 
-function BuildingDetailsStep({ form }: CoreStepProps) {
+function BuildingDetailsStep({
+  form,
+  notifyProgrammaticChange
+}: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownBuildingSubtypes: readonly string[] = ASSET_SUBTYPES.building;
@@ -977,12 +996,16 @@ function BuildingDetailsStep({ form }: CoreStepProps) {
   return (
     <BuildingArchitectureEditor
       form={form}
+      notifyProgrammaticChange={notifyProgrammaticChange}
       subtype={subtype as BuildingSubtype}
     />
   );
 }
 
-function TilesetDetailsStep({ form }: CoreStepProps) {
+function TilesetDetailsStep({
+  form,
+  notifyProgrammaticChange
+}: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownTilesetSubtypes: readonly string[] = ASSET_SUBTYPES.tileset;
@@ -1003,10 +1026,16 @@ function TilesetDetailsStep({ form }: CoreStepProps) {
     );
   }
 
-  return <TilesetEditor form={form} subtype={subtype as TilesetSubtype} />;
+  return (
+    <TilesetEditor
+      form={form}
+      notifyProgrammaticChange={notifyProgrammaticChange}
+      subtype={subtype as TilesetSubtype}
+    />
+  );
 }
 
-function ItemDetailsStep({ form }: CoreStepProps) {
+function ItemDetailsStep({ form, notifyProgrammaticChange }: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownItemSubtypes: readonly string[] = ASSET_SUBTYPES.item;
@@ -1027,10 +1056,19 @@ function ItemDetailsStep({ form }: CoreStepProps) {
     );
   }
 
-  return <ItemEquipmentEditor form={form} subtype={subtype as ItemSubtype} />;
+  return (
+    <ItemEquipmentEditor
+      form={form}
+      notifyProgrammaticChange={notifyProgrammaticChange}
+      subtype={subtype as ItemSubtype}
+    />
+  );
 }
 
-function ArtworkDetailsStep({ form }: CoreStepProps) {
+function ArtworkDetailsStep({
+  form,
+  notifyProgrammaticChange
+}: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownArtworkSubtypes: readonly string[] = ASSET_SUBTYPES.artwork;
@@ -1054,6 +1092,7 @@ function ArtworkDetailsStep({ form }: CoreStepProps) {
   return (
     <ArtworkConceptEditor
       form={form}
+      notifyProgrammaticChange={notifyProgrammaticChange}
       subtype={subtype as ArtworkSubtype}
     />
   );

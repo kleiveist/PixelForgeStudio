@@ -6,6 +6,20 @@ import type { ItemSubtype } from "../../domain/items";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
 import { ItemEquipmentEditor } from ".";
 
+async function chooseCustomText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const select = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    select,
+    within(select).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
+}
+
 function Harness({ defaultValues, formRef, onRead, subtype = "armorPiece" }: Readonly<{
   defaultValues?: DefaultValues<WizardCoreFormValues>;
   formRef?: { current: UseFormReturn<WizardCoreFormValues> | null };
@@ -17,7 +31,11 @@ function Harness({ defaultValues, formRef, onRead, subtype = "armorPiece" }: Rea
   });
   if (formRef) formRef.current = form;
   return <form>
-    <ItemEquipmentEditor form={form} subtype={subtype} />
+    <ItemEquipmentEditor
+      form={form}
+      notifyProgrammaticChange={() => undefined}
+      subtype={subtype}
+    />
     {onRead ? <button type="button" onClick={() => onRead(form.getValues())}>Formularwerte lesen</button> : null}
   </form>;
 }
@@ -38,8 +56,8 @@ describe("ItemEquipmentEditor", () => {
     await user.selectOptions(screen.getByLabelText("Zweck"), "wearable");
     await user.selectOptions(screen.getByLabelText("Darstellung"), "equipped");
     await user.selectOptions(screen.getByLabelText("Trageposition"), "body");
-    await user.type(screen.getByLabelText("Motivbeschreibung"), "Gravierte Schulterplatte");
-    await user.type(screen.getByLabelText("Funktion"), "Schützt Schulter und Oberarm");
+    await user.type(await chooseCustomText(user, "Motivbeschreibung"), "Gravierte Schulterplatte");
+    await user.type(await chooseCustomText(user, "Funktion"), "Schützt Schulter und Oberarm");
     await user.selectOptions(screen.getByLabelText("Hauptmaterial"), "metal");
     await user.selectOptions(screen.getByLabelText("Sekundärmaterial"), "leather");
     await user.selectOptions(screen.getByLabelText("Zustand"), "worn");

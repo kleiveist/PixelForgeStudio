@@ -12,6 +12,7 @@ import type { AssetCategory } from "../../domain/assets";
 import {
   createBaseProfile as createBaseProfileInLibrary,
   deleteAssetProfile,
+  deleteBaseProfile as deleteBaseProfileInLibrary,
   duplicateBaseProfile as duplicateBaseProfileInLibrary,
   duplicateAssetProfile,
   saveAssetProfile as saveAssetProfileInLibrary,
@@ -52,7 +53,12 @@ type ProfileEntity = AssetProfile | BaseProfile;
 export type ProfileActionResult<Profile extends ProfileEntity = AssetProfile> =
   | Readonly<{ status: "ok"; profile: Profile }>
   | Readonly<{
-      status: "invalid" | "unavailable" | "notFound" | "idConflict";
+      status:
+        | "invalid"
+        | "unavailable"
+        | "notFound"
+        | "idConflict"
+        | "inUse";
       message: string;
     }>;
 
@@ -77,6 +83,9 @@ export interface ProfileLibraryContextValue {
     definition: AssetProfileSaveDefinition
   ) => ProfileActionResult;
   readonly deleteProfile: (profileId: StableId) => ProfileActionResult;
+  readonly deleteBaseProfile: (
+    profileId: StableId
+  ) => ProfileActionResult<BaseProfile>;
   readonly createBaseProfile: (
     definition: BaseProfileDefinition
   ) => ProfileActionResult<BaseProfile>;
@@ -161,6 +170,8 @@ function actionLabel(operation: ProfileMutationOperation): string {
       return "Assetprofil";
     case "delete":
       return "Löschung";
+    case "deleteBase":
+      return "Löschung der Produktionsfamilie";
     case "createBase":
       return "Basisprofil";
     case "duplicateBase":
@@ -279,7 +290,7 @@ export function ProfileLibraryProvider({
       // validated library; every other mutation returns the canonical entity
       // produced by parsing the resulting graph.
       const canonicalProfile =
-        operation === "delete"
+        operation === "delete" || operation === "deleteBase"
           ? change.profile
           : findCanonicalChangedProfile(candidate.data, change.profile);
       if (canonicalProfile === null) {
@@ -395,6 +406,27 @@ export function ProfileLibraryProvider({
       return commitChange("delete", deleteAssetProfile(library, profileId));
     },
     [commitChange, currentLibraryOrFailure]
+  );
+
+  const deleteBaseProfile = useCallback(
+    (profileId: StableId): ProfileActionResult<BaseProfile> => {
+      const library = currentLibraryOrFailure("deleteBase");
+      if (!("assetProfiles" in library)) return library;
+      const change = deleteBaseProfileInLibrary(library, profileId);
+      if (change.status === "inUse") {
+        const referencedCount =
+          change.categoryProfileCount + change.assetProfileCount;
+        return fail(
+          "deleteBase",
+          "inUse",
+          `Die Produktionsfamilie wird noch von ${String(referencedCount)} ${
+            referencedCount === 1 ? "Profil" : "Profilen"
+          } verwendet und wurde nicht gelöscht.`
+        );
+      }
+      return commitChange("deleteBase", change);
+    },
+    [commitChange, currentLibraryOrFailure, fail]
   );
 
   const saveAssetProfile = useCallback(
@@ -627,6 +659,7 @@ export function ProfileLibraryProvider({
       duplicateProfile,
       saveAssetProfile,
       deleteProfile,
+      deleteBaseProfile,
       createBaseProfile,
       duplicateBaseProfile,
       importProfileBundle,
@@ -634,6 +667,7 @@ export function ProfileLibraryProvider({
     }),
     [
       deleteProfile,
+      deleteBaseProfile,
       createBaseProfile,
       duplicateBaseProfile,
       duplicateProfile,

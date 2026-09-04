@@ -224,6 +224,20 @@ Kategorieverknüpfung gelöst; die Projektion materialisiert alle übrigen
 wirksamen Fach- und Technikwerte relativ zur Base, damit kein Default beim
 Resume unbeabsichtigt zurückkehrt.
 
+Die kreativen Freitextantworten aller neun Fachbereiche verwenden im Wizard
+ein gemeinsames, auswahlorientiertes Bedienelement. Charaktervorschläge bleiben
+in der Character-Domain; die acht übrigen Editoren beziehen ihre vollständigen
+deutschen Vorgaben aus `domain/guided-answers`. Erst „Eigene Eingabe“ mountet
+das registrierte Textfeld. Vorgabe und individueller Text nutzen unverändert
+dasselbe RHF-/Zod-Feld, sodass Schema V2, Draft-Mapping und Exportformat stabil
+bleiben und bestehende individuelle Werte schreibfrei hydriert werden.
+
+Produktionsfamilien werden über den Profile-Library-Provider gelöscht. Die
+Domain prüft vorher referenzierende Kategorie- und Assetprofile, der Provider
+persistiert nur den vollständig validierten Kandidatengraphen, und die UI
+verlangt nach Löschbutton oder `Entf` eine Bestätigung. Es gibt keinen
+impliziten Cascade-Delete und kein automatisches Reparenting.
+
 Die wirksame Figurenhöhe bleibt ein technischer Wert der
 Base→Category→lokal-Kette. Der Character-Editor zeigt sie mit Quelle und Lock
 read-only und speichert sie weder in `CharacterAnswers` noch redundant als

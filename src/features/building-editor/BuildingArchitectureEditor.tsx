@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import { resolveCapabilities } from "../../domain/assets";
+import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
 import {
   BUILDING_COLLISION_MODE_IDS,
   BUILDING_CONDITION_IDS,
@@ -43,6 +44,7 @@ import {
   type BuildingWindowShape
 } from "../../domain/buildings";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
+import { GuidedTextChoice } from "../wizard/GuidedTextChoice";
 import styles from "./BuildingArchitectureEditor.module.css";
 
 type BuildingForm = UseFormReturn<WizardCoreFormValues>;
@@ -466,6 +468,7 @@ function TextField({
   label,
   maxLength,
   name,
+  notifyProgrammaticChange,
   wide = false
 }: Readonly<{
   form: BuildingForm;
@@ -473,23 +476,38 @@ function TextField({
   label: string;
   maxLength: number;
   name: BuildingTextFieldName;
+  notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
   const id = `building-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
+  const value = useWatch({ control: form.control, name });
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label} wide={wide}>
-      <textarea
-        id={id}
-        rows={4}
-        maxLength={maxLength}
-        aria-describedby={describedBy}
-        aria-invalid={error ? "true" : "false"}
-        {...form.register(name, { setValueAs: optionalTextValue })}
-      />
-    </FieldShell>
+    <GuidedTextChoice
+      describedBy={describedBy}
+      error={error}
+      errorClassName={styles.error}
+      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+      help={help}
+      helpClassName={styles.help}
+      id={id}
+      label={label}
+      maxLength={maxLength}
+      multiline
+      onChoose={(nextValue) => {
+        form.setValue(name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true
+        });
+        notifyProgrammaticChange();
+      }}
+      presets={GUIDED_TEXT_PRESETS_DE[name]}
+      registration={form.register(name, { setValueAs: optionalTextValue })}
+      value={value}
+    />
   );
 }
 
@@ -624,11 +642,13 @@ function TechnicalGeometryFields({
 
 export interface BuildingArchitectureEditorProps {
   readonly form: BuildingForm;
+  readonly notifyProgrammaticChange: () => void;
   readonly subtype: BuildingSubtype;
 }
 
 export function BuildingArchitectureEditor({
   form,
+  notifyProgrammaticChange,
   subtype
 }: BuildingArchitectureEditorProps) {
   const buildingType = getDefaultBuildingType(subtype);
@@ -743,6 +763,7 @@ export function BuildingArchitectureEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingPurpose"
             label="Nutzung und Bewohnerrolle"
             help="Zum Beispiel Wohnhaus einer Handwerkerfamilie, Laden oder Wachposten."
@@ -750,6 +771,7 @@ export function BuildingArchitectureEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingDescription"
             label="Kurze Gebäudebeschreibung"
             help="Fasse Funktion, Silhouette und wichtigste Erkennungsmerkmale zusammen."
@@ -861,6 +883,7 @@ export function BuildingArchitectureEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingMaterialDetails"
             label="Material- und Konstruktionsdetails"
             help="Beschreibe Balken, Mauerfugen, Putz, Stützen und Materialwechsel."
@@ -897,6 +920,7 @@ export function BuildingArchitectureEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingRoofDetails"
             label="Dachdetails"
             help="Zum Beispiel Gauben, Schornsteine, First, Lücken oder Bewuchs."
@@ -911,6 +935,7 @@ export function BuildingArchitectureEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingFacadeDetails"
             label="Fassadendetails"
             help="Balken, Steine, Schilder, Stützen, Ornamente oder Bruchstellen."
@@ -951,6 +976,7 @@ export function BuildingArchitectureEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingDoorPosition"
             label="Türposition und Eingangsausrichtung"
             help="Position relativ zum Footprint und zu begehbaren Tile-Kanten."
@@ -980,6 +1006,7 @@ export function BuildingArchitectureEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingWindowDetails"
             label="Fensterdetails"
             help="Rahmen, Läden, Verglasung, Gitter oder beschädigte Öffnungen."
@@ -1025,6 +1052,7 @@ export function BuildingArchitectureEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingLightSourceDetails"
             label="Sichtbare Lichtquellen"
             help="Zum Beispiel Fensterlicht, Laternen oder ein schwacher magischer Akzent."
@@ -1039,6 +1067,7 @@ export function BuildingArchitectureEditor({
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingExtraDetails"
             label="Weitere Architekturdetails"
             help="Optionale Ergänzungen zu Umgebung, Schildern, Lesbarkeit oder modularen Anschlüssen."

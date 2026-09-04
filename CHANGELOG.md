@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- alle kreativen Textfragen des geführten Asset-Wizards auf mehrere
+  deutschsprachige Antwortvorgaben umgestellt; freie Texteingabe erscheint nur
+  noch nach „Eigene Eingabe“, während bestehende Individualwerte kompatibel
+  bleiben
+- bestätigtes Löschen unreferenzierter Produktionsfamilien per sichtbarem
+  Löschbutton oder `Entf` ergänzt und referenzierte Familien ohne Kaskade oder
+  stilles Reparenting abgesichert
 - Dachprodukt und Repository zu **PixelForge Studio** umbenannt und das
   npm-Paket auf `pixelforge-studio` umgestellt
 - Prompt Studio und Animation Studio als getrennte, zentral typisierte

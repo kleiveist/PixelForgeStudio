@@ -1,10 +1,24 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
 import type { ArtworkSubtype } from "../../domain/artworks";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
 import { ArtworkConceptEditor } from ".";
+
+async function chooseCustomText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const select = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    select,
+    within(select).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
+}
 
 function Harness({
   formRef,
@@ -28,7 +42,11 @@ function Harness({
   if (formRef) formRef.current = form;
   return (
     <form>
-      <ArtworkConceptEditor form={form} subtype={subtype} />
+      <ArtworkConceptEditor
+        form={form}
+        notifyProgrammaticChange={() => undefined}
+        subtype={subtype}
+      />
       {onRead ? (
         <button type="button" onClick={() => onRead(form.getValues())}>
           Formularwerte lesen
@@ -59,8 +77,8 @@ describe("ArtworkConceptEditor", () => {
 
     await user.selectOptions(screen.getByLabelText("Zweck"), "productionReference");
     await user.selectOptions(screen.getByLabelText("Motivart"), "environment");
-    await user.type(screen.getByLabelText("Motivbeschreibung"), "Altes Observatorium");
-    await user.type(screen.getByLabelText("Szene"), "Forscherin im Sturm");
+    await user.type(await chooseCustomText(user, "Motivbeschreibung"), "Altes Observatorium");
+    await user.type(await chooseCustomText(user, "Szene"), "Forscherin im Sturm");
     await user.selectOptions(screen.getByLabelText("Komposition"), "scene");
     await user.selectOptions(screen.getByLabelText("Format"), "landscape");
     await user.selectOptions(screen.getByLabelText("Artwork-Hintergrund"), "complete");

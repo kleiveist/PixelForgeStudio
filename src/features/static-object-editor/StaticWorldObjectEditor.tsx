@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import { resolveCapabilities } from "../../domain/assets";
+import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
 import {
   STATIC_OBJECT_BASIC_SHAPE_IDS,
   STATIC_OBJECT_CONDITION_IDS,
@@ -23,6 +24,7 @@ import {
   type StaticObjectSymmetry
 } from "../../domain/static-objects";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
+import { GuidedTextChoice } from "../wizard/GuidedTextChoice";
 import styles from "./StaticWorldObjectEditor.module.css";
 
 type StaticObjectForm = UseFormReturn<WizardCoreFormValues>;
@@ -293,6 +295,7 @@ function TextField({
   label,
   maxLength,
   name,
+  notifyProgrammaticChange,
   wide = false
 }: Readonly<{
   form: StaticObjectForm;
@@ -300,23 +303,38 @@ function TextField({
   label: string;
   maxLength: number;
   name: StaticObjectTextFieldName;
+  notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
   const id = `static-object-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
+  const value = useWatch({ control: form.control, name });
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label} wide={wide}>
-      <textarea
-        id={id}
-        rows={4}
-        maxLength={maxLength}
-        aria-describedby={describedBy}
-        aria-invalid={error ? "true" : "false"}
-        {...form.register(name, { setValueAs: optionalTextValue })}
-      />
-    </FieldShell>
+    <GuidedTextChoice
+      describedBy={describedBy}
+      error={error}
+      errorClassName={styles.error}
+      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+      help={help}
+      helpClassName={styles.help}
+      id={id}
+      label={label}
+      maxLength={maxLength}
+      multiline
+      onChoose={(nextValue) => {
+        form.setValue(name, nextValue, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true
+        });
+        notifyProgrammaticChange();
+      }}
+      presets={GUIDED_TEXT_PRESETS_DE[name]}
+      registration={form.register(name, { setValueAs: optionalTextValue })}
+      value={value}
+    />
   );
 }
 
@@ -408,11 +426,13 @@ function TileSizeField({ tileSize }: Readonly<{ tileSize?: number }>) {
 
 export interface StaticWorldObjectEditorProps {
   readonly form: StaticObjectForm;
+  readonly notifyProgrammaticChange: () => void;
   readonly subtype: StaticObjectSubtype;
 }
 
 export function StaticWorldObjectEditor({
   form,
+  notifyProgrammaticChange,
   subtype
 }: StaticWorldObjectEditorProps) {
   const objectClass = getDefaultStaticObjectClass(subtype);
@@ -513,6 +533,7 @@ export function StaticWorldObjectEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectDescription"
             label="Kurze Objektbeschreibung"
             help="Fasse Motiv, Funktion und wichtigste Erkennungsmerkmale zusammen."
@@ -552,6 +573,7 @@ export function StaticWorldObjectEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectMaterialDetails"
             label="Materialaufbau und Oberfläche"
             help="Beschreibe Maserung, Fugen, Beschläge, Bruchkanten oder Materialwechsel."
@@ -559,6 +581,7 @@ export function StaticWorldObjectEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectDetailElements"
             label="Lesbare Detail-Elemente"
             help="Nenne funktionale Griffe, Bänder, Symbole, Kanten oder andere wichtige Details."
@@ -577,6 +600,7 @@ export function StaticWorldObjectEditor({
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectContents"
             label="Sichtbarer Inhalt"
             help="Optionaler Inhalt, eine Einlage oder der Zustand des geöffneten Innenraums."
@@ -650,6 +674,7 @@ export function StaticWorldObjectEditor({
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectExtraDetails"
             label="Weitere Objektdetails"
             help="Optionale Ergänzungen zu Nutzungskontext, Farbwirkung, Alterung oder Lesbarkeit."
