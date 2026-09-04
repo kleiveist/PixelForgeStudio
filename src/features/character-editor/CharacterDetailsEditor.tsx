@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import type { UseFormReturn } from "react-hook-form";
+import { useState, type ReactNode } from "react";
+import { useWatch, type UseFormReturn } from "react-hook-form";
 import {
   CHARACTER_AGE_IDS,
   CHARACTER_BODY_BUILD_IDS,
@@ -11,6 +11,7 @@ import {
   CHARACTER_PALETTE_SOURCE_IDS,
   CHARACTER_POSTURE_IDS,
   CHARACTER_RELATIVE_HEIGHT_IDS,
+  CHARACTER_TEXT_PRESETS_DE,
   CHARACTER_WEALTH_IDS,
   isHumanoidCharacterSubtype,
   isNpcContextSubtype,
@@ -25,46 +26,13 @@ import {
   type CharacterPosture,
   type CharacterRelativeHeight,
   type CharacterSubtype,
+  type CharacterTextPresetField,
   type CharacterWealth
 } from "../../domain/characters";
 import type { WizardCoreFormValues } from "../wizard/wizardSteps";
 import styles from "./CharacterEditor.module.css";
 
 type CharacterForm = UseFormReturn<WizardCoreFormValues>;
-
-type CharacterTextFieldName =
-  | "role"
-  | "subjectDescription"
-  | "faceShape"
-  | "skinTone"
-  | "hair"
-  | "hairstyle"
-  | "beard"
-  | "hat"
-  | "scarf"
-  | "outerwear"
-  | "lowerwear"
-  | "clothingLayers"
-  | "gloves"
-  | "handPose"
-  | "shoes"
-  | "beltBags"
-  | "accessories"
-  | "backItem"
-  | "equipment"
-  | "materials"
-  | "primaryColor"
-  | "secondaryColor"
-  | "accentColor"
-  | "silhouette"
-  | "pose"
-  | "socialRole"
-  | "culturalFunction"
-  | "typicalActivity"
-  | "conversationGesture"
-  | "everydayTool"
-  | "frontBackDetails"
-  | "extraDetails";
 
 type CharacterSelectFieldName =
   | "genderPresentation"
@@ -80,7 +48,7 @@ type CharacterSelectFieldName =
   | "wealth";
 
 interface TextFieldDefinition {
-  readonly name: CharacterTextFieldName;
+  readonly name: CharacterTextPresetField;
   readonly label: string;
   readonly help: string;
   readonly multiline?: boolean;
@@ -92,6 +60,8 @@ interface SelectOption<Value extends string = string> {
   readonly value: Value;
   readonly label: string;
 }
+
+const CUSTOM_TEXT_PRESET_VALUE = "__custom__";
 
 const GENDER_PRESENTATION_LABELS: Readonly<
   Record<CharacterGenderPresentation, string>
@@ -459,16 +429,51 @@ function FieldShell({
 
 function TextField({
   definition,
-  form
+  form,
+  notifyProgrammaticChange
 }: Readonly<{
   definition: TextFieldDefinition;
   form: CharacterForm;
+  notifyProgrammaticChange: () => void;
 }>) {
   const { help, label, name } = definition;
   const id = `character-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
-  const registration = form.register(name, { setValueAs: optionalTextValue });
+  const presets: readonly string[] = CHARACTER_TEXT_PRESETS_DE[name];
+  const watchedValue = useWatch({ control: form.control, name });
+  const currentValue = typeof watchedValue === "string" ? watchedValue : "";
+  const matchesPreset = presets.includes(currentValue);
+  const [customRequested, setCustomRequested] = useState(
+    () => currentValue !== "" && !matchesPreset
+  );
+  const customActive =
+    customRequested || (currentValue !== "" && !matchesPreset);
+  const selectedValue = customActive
+    ? CUSTOM_TEXT_PRESET_VALUE
+    : matchesPreset
+      ? currentValue
+      : "";
+
+  function updateValue(value: string | undefined): void {
+    form.setValue(name, value, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true
+    });
+    notifyProgrammaticChange();
+  }
+
+  function choosePreset(value: string): void {
+    if (value === CUSTOM_TEXT_PRESET_VALUE) {
+      setCustomRequested(true);
+      return;
+    }
+
+    setCustomRequested(false);
+    const nextValue = optionalTextValue(value);
+    if (nextValue !== currentValue) updateValue(nextValue);
+  }
 
   return (
     <FieldShell
@@ -478,39 +483,67 @@ function TextField({
       label={label}
       {...(definition.wide === undefined ? {} : { wide: definition.wide })}
     >
-      {definition.multiline ? (
-        <textarea
-          id={id}
-          rows={4}
-          maxLength={definition.maxLength ?? 500}
-          aria-describedby={describedBy}
-          aria-invalid={error ? "true" : "false"}
-          {...registration}
-        />
-      ) : (
-        <input
-          id={id}
-          type="text"
-          autoComplete="off"
-          maxLength={definition.maxLength ?? 200}
-          aria-describedby={describedBy}
-          aria-invalid={error ? "true" : "false"}
-          {...registration}
-        />
-      )}
+      <select
+        id={id}
+        value={selectedValue}
+        aria-describedby={describedBy}
+        aria-invalid={error ? "true" : "false"}
+        onChange={(event) => choosePreset(event.currentTarget.value)}
+      >
+        <option value="">Nicht festgelegt</option>
+        {presets.map((preset) => (
+          <option key={preset} value={preset}>
+            {preset}
+          </option>
+        ))}
+        <option value={CUSTOM_TEXT_PRESET_VALUE}>Eigene Eingabe</option>
+      </select>
+      {customActive ? (
+        <div className={styles.customInput}>
+          <label htmlFor={`${id}-custom`}>Eigene Eingabe für {label}</label>
+          {definition.multiline ? (
+            <textarea
+              id={`${id}-custom`}
+              rows={4}
+              maxLength={definition.maxLength ?? 500}
+              autoComplete="off"
+              aria-describedby={describedBy}
+              aria-invalid={error ? "true" : "false"}
+              {...form.register(name, { setValueAs: optionalTextValue })}
+            />
+          ) : (
+            <input
+              id={`${id}-custom`}
+              type="text"
+              autoComplete="off"
+              maxLength={definition.maxLength ?? 200}
+              aria-describedby={describedBy}
+              aria-invalid={error ? "true" : "false"}
+              {...form.register(name, { setValueAs: optionalTextValue })}
+            />
+          )}
+        </div>
+      ) : null}
     </FieldShell>
   );
 }
 
 function TextFields({
   fields,
-  form
+  form,
+  notifyProgrammaticChange
 }: Readonly<{
   fields: readonly TextFieldDefinition[];
   form: CharacterForm;
+  notifyProgrammaticChange: () => void;
 }>) {
   return fields.map((definition) => (
-    <TextField key={definition.name} definition={definition} form={form} />
+    <TextField
+      key={definition.name}
+      definition={definition}
+      form={form}
+      notifyProgrammaticChange={notifyProgrammaticChange}
+    />
   ));
 }
 
@@ -618,6 +651,7 @@ export interface CharacterDetailsEditorProps {
   readonly heightSourceName: string;
   readonly heightSource: CharacterHeightSource;
   readonly heightLocked: boolean;
+  readonly notifyProgrammaticChange: () => void;
   readonly subtype: CharacterSubtype;
 }
 
@@ -627,6 +661,7 @@ export function CharacterDetailsEditor({
   heightLocked,
   heightSource,
   heightSourceName,
+  notifyProgrammaticChange,
   subtype
 }: CharacterDetailsEditorProps) {
   const showHumanoidWardrobe = isHumanoidCharacterSubtype(subtype);
@@ -661,6 +696,12 @@ export function CharacterDetailsEditor({
         </div>
       </section>
 
+      <p className={styles.logicNote} role="note">
+        Deutsche Vorlagen stehen bei allen Freitextangaben an erster Stelle.
+        Wähle „Eigene Eingabe“, wenn du stattdessen einen individuellen Text
+        eintragen möchtest.
+      </p>
+
       <fieldset className={styles.group}>
         <legend>Identität und Varianten</legend>
         <p className={styles.groupIntro}>
@@ -668,7 +709,11 @@ export function CharacterDetailsEditor({
           wiederholen.
         </p>
         <div className={styles.fieldGrid}>
-          <TextFields fields={IDENTITY_FIELDS} form={form} />
+          <TextFields
+            fields={IDENTITY_FIELDS}
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+          />
           <VariantCountField form={form} />
           <SelectField
             form={form}
@@ -715,7 +760,11 @@ export function CharacterDetailsEditor({
             help="Grundhaltung unabhängig von einer späteren Animationsaktion."
             options={POSTURE_OPTIONS}
           />
-          <TextFields fields={FACE_FIELDS} form={form} />
+          <TextFields
+            fields={FACE_FIELDS}
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+          />
           <SelectField
             form={form}
             name="eyeVisibility"
@@ -730,7 +779,11 @@ export function CharacterDetailsEditor({
             help="Zurückhaltender Ausdruck, der auch in kleiner Darstellung lesbar bleibt."
             options={EXPRESSION_OPTIONS}
           />
-          <TextFields fields={READABILITY_FIELDS} form={form} />
+          <TextFields
+            fields={READABILITY_FIELDS}
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+          />
         </div>
       </fieldset>
 
@@ -742,7 +795,11 @@ export function CharacterDetailsEditor({
             Vorder-, Seiten- und Rückansichten.
           </p>
           <div className={styles.fieldGrid}>
-            <TextFields fields={WARDROBE_FIELDS.slice(0, 1)} form={form} />
+            <TextFields
+              fields={WARDROBE_FIELDS.slice(0, 1)}
+              form={form}
+              notifyProgrammaticChange={notifyProgrammaticChange}
+            />
             <SelectField
               form={form}
               name="headwearCondition"
@@ -750,7 +807,11 @@ export function CharacterDetailsEditor({
               help="Abnutzung und Materialwirkung der gewählten Kopfbedeckung."
               options={HEADWEAR_CONDITION_OPTIONS}
             />
-            <TextFields fields={WARDROBE_FIELDS.slice(1)} form={form} />
+            <TextFields
+              fields={WARDROBE_FIELDS.slice(1)}
+              form={form}
+              notifyProgrammaticChange={notifyProgrammaticChange}
+            />
           </div>
         </fieldset>
       ) : (
@@ -768,7 +829,11 @@ export function CharacterDetailsEditor({
           erhalten bleiben sollen.
         </p>
         <div className={styles.fieldGrid}>
-          <TextFields fields={GEAR_FIELDS} form={form} />
+          <TextFields
+            fields={GEAR_FIELDS}
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+          />
           <SelectField
             form={form}
             name="condition"
@@ -795,6 +860,7 @@ export function CharacterDetailsEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             definition={{
               name: "primaryColor",
               label: "Hauptfarbe",
@@ -803,6 +869,7 @@ export function CharacterDetailsEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             definition={{
               name: "secondaryColor",
               label: "Nebenfarbe",
@@ -811,6 +878,7 @@ export function CharacterDetailsEditor({
           />
           <TextField
             form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
             definition={{
               name: "accentColor",
               label: "Akzentfarbe",
@@ -836,7 +904,11 @@ export function CharacterDetailsEditor({
               help="Sichtbarer materieller Status ohne moderne Markenmerkmale."
               options={WEALTH_OPTIONS}
             />
-            <TextFields fields={NPC_FIELDS} form={form} />
+            <TextFields
+              fields={NPC_FIELDS}
+              form={form}
+              notifyProgrammaticChange={notifyProgrammaticChange}
+            />
           </div>
         </fieldset>
       ) : null}

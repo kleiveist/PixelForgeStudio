@@ -758,7 +758,12 @@ function DirectionsStep({ form }: CoreStepProps) {
   );
 }
 
-function CharacterDetailsStep({ context, draft, form }: CoreStepProps) {
+function CharacterDetailsStep({
+  context,
+  draft,
+  form,
+  notifyProgrammaticChange
+}: CoreStepProps) {
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const baseProfileId = useWatch({
@@ -825,6 +830,7 @@ function CharacterDetailsStep({ context, draft, form }: CoreStepProps) {
       heightLocked={baseProfile.locks.characterHeight === true}
       heightSource={heightSource}
       heightSourceName={heightSourceName}
+      notifyProgrammaticChange={notifyProgrammaticChange}
       subtype={subtype as CharacterSubtype}
     />
   );

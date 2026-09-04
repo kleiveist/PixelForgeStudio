@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
@@ -8,9 +8,11 @@ import { CharacterAnimationEditor } from "./CharacterAnimationEditor";
 import { CharacterDetailsEditor } from "./CharacterDetailsEditor";
 
 function CharacterDetailsHarness({
+  notifyProgrammaticChange = () => undefined,
   onRead,
   subtype = "npc"
 }: Readonly<{
+  notifyProgrammaticChange?: () => void;
   onRead?: (values: WizardCoreFormValues) => void;
   subtype?: CharacterSubtype;
 }>) {
@@ -30,6 +32,7 @@ function CharacterDetailsHarness({
         heightSourceName="Weltfamilie 32 px / Figuren 80 px"
         heightSource="Basisprofil"
         heightLocked
+        notifyProgrammaticChange={notifyProgrammaticChange}
         subtype={subtype}
       />
       {onRead ? (
@@ -39,6 +42,20 @@ function CharacterDetailsHarness({
       ) : null}
     </form>
   );
+}
+
+async function chooseCustomText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const presetSelect = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    presetSelect,
+    within(presetSelect).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
 }
 
 function CharacterAnimationHarness({
@@ -159,12 +176,18 @@ describe("CharacterDetailsEditor", () => {
       expect(screen.getByLabelText(label)).toBeVisible();
     }
 
-    await user.type(screen.getByLabelText("Rolle / Beruf"), "  Schmied  ");
+    await user.type(
+      await chooseCustomText(user, "Rolle / Beruf"),
+      "  Schmied  "
+    );
     await user.selectOptions(screen.getByLabelText("Figurenvarianten"), "3");
     await user.selectOptions(screen.getByLabelText("Alterswirkung"), "adult");
     await user.selectOptions(screen.getByLabelText("Beruf sofort lesbar?"), "true");
     await user.selectOptions(screen.getByLabelText("Wohlstandsstufe"), "modest");
-    await user.type(screen.getByLabelText("Silhouettenmerkmal"), "Breite Schürze");
+    await user.type(
+      await chooseCustomText(user, "Silhouettenmerkmal"),
+      "Breite Schürze"
+    );
     await user.click(screen.getByRole("button", { name: "Formularwerte lesen" }));
 
     expect(onRead).toHaveBeenCalledWith(
@@ -177,6 +200,92 @@ describe("CharacterDetailsEditor", () => {
         silhouette: "Breite Schürze"
       })
     );
+  });
+
+  it("offers German presets first for every text field and preserves explicit free text", async () => {
+    const user = userEvent.setup();
+    const notifyProgrammaticChange = vi.fn();
+    const onRead = vi.fn();
+    render(
+      <CharacterDetailsHarness
+        notifyProgrammaticChange={notifyProgrammaticChange}
+        onRead={onRead}
+      />
+    );
+
+    const textFieldLabels = [
+      "Rolle / Beruf",
+      "Kurze Figurenbeschreibung",
+      "Gesichtsform",
+      "Hautwirkung",
+      "Haare",
+      "Frisur",
+      "Bart",
+      "Silhouettenmerkmal",
+      "Pose",
+      "Weitere Figurendetails",
+      "Kopfbedeckung",
+      "Schal / Kragen",
+      "Oberbekleidung",
+      "Unterbekleidung",
+      "Kleidungsschichten",
+      "Handschuhe",
+      "Hand- / Werkzeughaltung",
+      "Schuhe / Stiefel",
+      "Gürtel / Taschen",
+      "Rückenelement",
+      "Accessoires",
+      "Ausrüstung / Werkzeug",
+      "Materialmix",
+      "Hauptfarbe",
+      "Nebenfarbe",
+      "Akzentfarbe",
+      "Soziale Rolle",
+      "Kulturelle Funktion",
+      "Typische Tätigkeit",
+      "Gesprächshaltung / Idle-Geste",
+      "Alltagswerkzeug",
+      "Besondere Vorder- / Rückseitendetails"
+    ];
+
+    for (const label of textFieldLabels) {
+      const presetSelect = screen.getByRole("combobox", { name: label });
+      const options = within(presetSelect).getAllByRole("option");
+      expect(options[0]).toHaveTextContent("Nicht festgelegt");
+      expect(options.at(-1)).toHaveTextContent("Eigene Eingabe");
+      expect(options.length).toBeGreaterThanOrEqual(6);
+    }
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Gesichtsform" }),
+      "Markant mit ausgeprägter Kieferlinie"
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Bart" }),
+      "Kurzer gepflegter Vollbart"
+    );
+    const beardPresets = screen.getByRole("combobox", { name: "Bart" });
+    await user.selectOptions(
+      beardPresets,
+      within(beardPresets).getByRole("option", { name: "Eigene Eingabe" })
+    );
+    expect(
+      screen.getByRole("textbox", { name: "Eigene Eingabe für Bart" })
+    ).toHaveValue("Kurzer gepflegter Vollbart");
+    await user.type(
+      await chooseCustomText(user, "Frisur"),
+      "Seitlich kurz, oben zerzaust"
+    );
+    await user.click(screen.getByRole("button", { name: "Formularwerte lesen" }));
+
+    expect(onRead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        faceShape: "Markant mit ausgeprägter Kieferlinie",
+        beard: "Kurzer gepflegter Vollbart",
+        hairstyle: "Seitlich kurz, oben zerzaust"
+      })
+    );
+    expect(notifyProgrammaticChange).toHaveBeenCalledTimes(2);
   });
 
   it("hides NPC context and humanoid clothing for animals while keeping useful gear fields", () => {

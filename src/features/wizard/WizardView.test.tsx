@@ -71,6 +71,20 @@ function primaryNavigation(): HTMLElement {
   return screen.getByRole("navigation", { name: "Hauptnavigation" });
 }
 
+async function chooseCustomCharacterText(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string
+): Promise<HTMLElement> {
+  const presetSelect = screen.getByRole("combobox", { name: label });
+  await user.selectOptions(
+    presetSelect,
+    within(presetSelect).getByRole("option", { name: "Eigene Eingabe" })
+  );
+  return screen.getByRole("textbox", {
+    name: `Eigene Eingabe für ${label}`
+  });
+}
+
 async function selectAssetClassification(
   user: ReturnType<typeof userEvent.setup>,
   categoryName: RegExp,
@@ -913,16 +927,19 @@ describe("guided Wizard integration", () => {
     ).not.toBeInTheDocument();
 
     await user.type(
-      screen.getByRole("textbox", { name: "Rolle / Beruf" }),
+      await chooseCustomCharacterText(user, "Rolle / Beruf"),
       "Kräuterhändlerin"
     );
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Alterswirkung" }),
       "older"
     );
-    await user.type(screen.getByRole("textbox", { name: "Haare" }), "silberner Zopf");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Haare" }),
+      "Langes silbergraues Haar"
+    );
     await user.type(
-      screen.getByRole("textbox", { name: "Ausrüstung / Werkzeug" }),
+      await chooseCustomCharacterText(user, "Ausrüstung / Werkzeug"),
       "Kräuterkorb"
     );
 
@@ -932,7 +949,7 @@ describe("guided Wizard integration", () => {
         answers: {
           role: "Kräuterhändlerin",
           age: "older",
-          hair: "silberner Zopf",
+          hair: "Langes silbergraues Haar",
           equipment: "Kräuterkorb"
         }
       })
@@ -1913,12 +1930,14 @@ describe("guided Wizard integration", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "Figur und Rolle" })
     ).toBeVisible();
-    expect(screen.getByRole("textbox", { name: "Rolle / Beruf" })).toHaveValue(
-      "Torwache"
-    );
-    expect(screen.getByRole("textbox", { name: "Haare" })).toHaveValue(
-      "kurzer dunkler Zopf"
-    );
+    expect(
+      screen.getByRole("textbox", {
+        name: "Eigene Eingabe für Rolle / Beruf"
+      })
+    ).toHaveValue("Torwache");
+    expect(
+      screen.getByRole("textbox", { name: "Eigene Eingabe für Haare" })
+    ).toHaveValue("kurzer dunkler Zopf");
     expect(
       screen.getByRole("status", { name: "Figurenhöhe" })
     ).toHaveTextContent("80 px");
@@ -2282,9 +2301,11 @@ describe("guided Wizard integration", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "Figur und Rolle" })
     ).toBeVisible();
-    expect(screen.getByRole("textbox", { name: "Rolle / Beruf" })).toHaveValue(
-      "blacksmith"
-    );
+    expect(
+      screen.getByRole("textbox", {
+        name: "Eigene Eingabe für Rolle / Beruf"
+      })
+    ).toHaveValue("blacksmith");
   });
 
   it("persists clearing inherited Character animations without restoring them on resume", async () => {

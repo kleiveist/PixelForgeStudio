@@ -17,6 +17,10 @@ export {
   isHumanoidCharacterSubtype,
   isNpcContextSubtype
 } from "./character.types";
+export {
+  CHARACTER_TEXT_PRESET_FIELD_IDS,
+  CHARACTER_TEXT_PRESETS_DE
+} from "./character.presets";
 export type {
   CharacterAge,
   CharacterAnimationActionId,
@@ -32,3 +36,4 @@ export type {
   CharacterSubtype,
   CharacterWealth
 } from "./character.types";
+export type { CharacterTextPresetField } from "./character.presets";
