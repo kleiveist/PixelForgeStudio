@@ -1,4 +1,4 @@
-# PixelForge Prompt Studio V2
+# PixelForge Studio
 
 <!-- PYGINDEX:README START -->
 ## Dokumentation
@@ -7,15 +7,18 @@
 - [Erledigt](docs/erledigt/index.md)
 
 ## Projektdateien
-- [AGENTS.md — PixelForge Prompt Studio V2](AGENTS.md)
+- [AGENTS.md — PixelForge Studio](AGENTS.md)
 - [Changelog](CHANGELOG.md)
 - [PixelForge Studio — Arbeitsplan](PLANS.md)
 <!-- PYGINDEX:README END -->
 
-PixelForge Prompt Studio ist eine lokale React-Anwendung zur strukturierten
-Erstellung konsistenter Pixelart-Prompts. Profile, Entwürfe und Einstellungen
-bleiben im Browser und können als JSON importiert oder exportiert werden; ein
-Backend ist nicht erforderlich.
+PixelForge Studio ist eine lokale React-Dachanwendung für Pixelart-Produktion.
+Das release-abgenommene **PixelForge Prompt Studio** erstellt konsistente
+Pixelart-Prompts; das vorbereitete **PixelForge Animation Studio** wird in den
+folgenden, noch offenen Phasen ergänzt. Profile, Entwürfe und Einstellungen
+bleiben im Browser; ein Backend ist nicht erforderlich.
+
+Repository: [kleiveist/PixelForgeStudio](https://github.com/kleiveist/PixelForgeStudio)
 
 ## Schnellstart
 

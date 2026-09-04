@@ -4,6 +4,10 @@
 
 # 01 — Produktnamen, Versionierung und Kompatibilität
 
+> **Umsetzungsstatus:** Der Repository- und Dachproduktname wurde mit Prompt 28
+> auf `kleiveist/PixelForgeStudio` beziehungsweise `PixelForge Studio`
+> umgestellt. Die folgenden Kompatibilitätsverträge bleiben weiterhin bindend.
+
 ## Kanonische Produktstruktur
 
 ```text

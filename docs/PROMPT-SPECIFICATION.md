@@ -6,6 +6,9 @@
 
 ## 1. Ziel
 
+Diese Spezifikation gilt für das **PixelForge Prompt Studio** als bestehendes
+Prompt-Produktionsmodul innerhalb von PixelForge Studio.
+
 Das Studio erzeugt wiederholbare Prompt-Pakete für eine zusammenhängende Pixelart-Asset-Bibliothek. Die Regeln sollen verhindern, dass Kamera, Figurenmaßstab, Richtung, Beleuchtung oder Pixelstruktur zwischen einzelnen Bildern unkontrolliert wechseln.
 
 ## 2. Verbindlicher Standard

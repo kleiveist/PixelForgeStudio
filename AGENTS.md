@@ -1,12 +1,12 @@
-# AGENTS.md — PixelForge Prompt Studio V2
+# AGENTS.md — PixelForge Studio
 
 ## Auftrag
 
-Dieses Repository enthält das release-abgenommene **PixelForge Prompt Studio
-V2**, seine verbindliche Architektur und erhaltene V1-Migrationsverträge. V2
-ist ein lokales Prompt-Produktionsstudio für konsistente moderne
-Pixelart-Assets mit Dashboard, Profilbibliothek, geführtem Wizard,
-Profilvererbung und spezialisierten Asset-Editoren.
+Dieses Repository enthält das Dachprodukt **PixelForge Studio**. Sein erstes
+release-abgenommenes Modul ist das **PixelForge Prompt Studio V2** mit
+Dashboard, Profilbibliothek, geführtem Wizard, Profilvererbung und
+spezialisierten Asset-Editoren. Das **PixelForge Animation Studio** ist als
+nachfolgende Promptserie vorbereitet, aber noch nicht implementiert.
 
 Vor funktionalen Änderungen lesen:
 
@@ -24,6 +24,16 @@ Der abgeschlossene Katalog der Prompts 00–27 liegt ausschließlich als
 historische Referenz unter `docs/erledigt/CODEX-V2-PROMPTS.md` und ist keine
 aktive Aufgabenliste. Die frühere V2-Umsetzungsanweisung und die
 V1-Migrationsbaseline liegen ebenfalls nur noch unter `docs/erledigt/`.
+
+## Naming- und Kompatibilitätsgrenze
+
+- Dachprodukt: `PixelForge Studio`
+- Prompt-Modul: `PixelForge Prompt Studio` / `Prompt Studio`
+- Animationsmodul: `PixelForge Animation Studio` / `Animation Studio`
+- npm-Paket: `pixelforge-studio`
+- Repository: `kleiveist/PixelForgeStudio`
+- Der persistierte Prompt-Identifier bleibt exakt `PixelForge Prompt Studio`.
+- Alle `pixelforge:v2:*`-Keys sowie Schema- und Formatversion 2 bleiben stabil.
 
 ## Verbindlicher Ziel-Stack
 

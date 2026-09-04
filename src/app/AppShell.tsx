@@ -151,7 +151,7 @@ export function AppShell({
   }, []);
 
   useEffect(() => {
-    document.title = `${activeDefinition.label} · ${BRAND.productName}`;
+    document.title = `${activeDefinition.label} · ${BRAND.modules.prompt.shortLabel} · ${BRAND.shortName}`;
     const viewChanged = previousViewRef.current !== activeView;
     const wizardSessionChanged =
       activeView === "wizard" &&
@@ -207,7 +207,7 @@ export function AppShell({
               </span>
               <span>
                 <strong>{BRAND.shortName}</strong>
-                <small>Prompt Studio</small>
+                <small>{BRAND.modules.prompt.shortLabel}</small>
               </span>
               <span className={styles.visuallyHidden}> – Startseite</span>
             </ViewLink>

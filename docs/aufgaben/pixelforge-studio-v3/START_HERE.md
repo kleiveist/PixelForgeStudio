@@ -13,15 +13,17 @@
 5. `docs/aufgaben/pixelforge-studio-v3/grundlagen/05_DATA_STORAGE_AND_FORMATS.md`
 6. `docs/aufgaben/pixelforge-studio-v3/grundlagen/07_TEST_AND_RELEASE_STRATEGY.md`
 
-## 2. Danach ausführen
+## 2. Aktueller Ausführungsstand
 
-Beginne mit:
+Prompt 28 ist abgeschlossen. Beginne erst nach einem neuen konkreten Auftrag
+mit:
 
 ```text
-docs/aufgaben/pixelforge-studio-v3/prompts/28_REPOSITORY_AND_PRODUCT_REBRAND.md
+docs/aufgaben/pixelforge-studio-v3/prompts/29_STUDIO_MODULE_ROUTING.md
 ```
 
-Führe anschließend genau einen Prompt nach dem anderen bis Prompt 51 aus.
+Führe anschließend weiterhin genau einen Prompt nach dem anderen bis Prompt 51
+aus.
 
 ## 3. Keine Abkürzung über einen Komplett-Prompt
 

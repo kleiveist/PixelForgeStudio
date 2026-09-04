@@ -4,6 +4,7 @@ import { jsonValuesEqual } from "../domain/json";
 import {
   ExportBundleSchema,
   ProfileLibrarySchema,
+  V2_SCHEMA_VERSION,
   type AppSettings,
   type AssetProfile,
   type BaseProfile,
@@ -179,7 +180,7 @@ export function parseExportBundleJson(json: string): ParsedExportBundleJson {
     return {
       status: "invalid",
       reason: "schemaValidation",
-      message: `Import does not match the ${BRAND.shortName} ${BRAND.versionLabel} export schema.`,
+      message: `Import does not match the ${BRAND.modules.prompt.shortLabel} V${V2_SCHEMA_VERSION} export schema.`,
       issues: toIssues(result.error)
     };
   }

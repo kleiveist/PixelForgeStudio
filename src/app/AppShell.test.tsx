@@ -77,6 +77,8 @@ describe("application shell navigation", () => {
     expect(within(primaryNavigation()).getAllByRole("link")).toHaveLength(6);
     expect(currentPrimaryLink()).toHaveAccessibleName("Dashboard");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByText("Prompt Studio")).toBeVisible();
+    expect(screen.getByText("PixelForge Studio")).toBeVisible();
     expect(screen.getByRole("main")).toHaveAttribute(
       "aria-labelledby",
       "dashboard-view-title"
@@ -104,7 +106,7 @@ describe("application shell navigation", () => {
         APP_VIEW_DEFINITIONS[view].label
       );
       expect(document.title).toBe(
-        `${APP_VIEW_DEFINITIONS[view].label} · PixelForge Prompt Studio`
+        `${APP_VIEW_DEFINITIONS[view].label} · Prompt Studio · PixelForge`
       );
     }
   );
@@ -163,7 +165,7 @@ describe("application shell navigation", () => {
     ).not.toBeInTheDocument();
     expect(currentPrimaryLink()).toBe(outputLink);
     expect(screen.getByRole("main")).toHaveFocus();
-    expect(document.title).toBe("Ausgabe · PixelForge Prompt Studio");
+    expect(document.title).toBe("Ausgabe · Prompt Studio · PixelForge");
     expect(navigation.pushedViews).toEqual(["output"]);
     expect(storage.mutations).toEqual([]);
 

@@ -16,8 +16,9 @@
 - [Templates](templates/index.md)
 <!-- PYGINDEX:INDEX END -->
 
-Dieses Paket erweitert das bestehende Repository `kleiveist/PixelartPromptStudio`
-zu **PixelForge Studio**. Die Dachanwendung besitzt zwei klar getrennte Module:
+Dieses Paket entwickelt das nun als `kleiveist/PixelForgeStudio` geführte
+Repository zu **PixelForge Studio** weiter. Die Dachanwendung besitzt zwei
+klar getrennte Module:
 
 - **PixelForge Prompt Studio** — die bestehende, release-abgenommene
   Prompt-Produktion.
@@ -27,6 +28,12 @@ zu **PixelForge Studio**. Die Dachanwendung besitzt zwei klar getrennte Module:
 
 Die ausführbaren Codex-Aufträge setzen die vorhandene Reihe nach Prompt 27 fort.
 Sie sind deshalb als **Prompt 28 bis Prompt 51** nummeriert.
+
+## Umsetzungsstand
+
+- Prompt 28: abgeschlossen
+- Prompt 29: nächster Auftrag, noch nicht begonnen
+- Prompts 30–51: noch nicht begonnen
 
 ## Empfohlener Zielname
 
@@ -52,7 +59,8 @@ kompatibel.
 2. Vom Repository-Root aus mit
    `(cd docs/aufgaben/pixelforge-studio-v3 && sha256sum -c CHECKSUMS.sha256)`
    die Integrität prüfen.
-3. Jeden Auftrag unter `docs/aufgaben/pixelforge-studio-v3/prompts/`
+3. Den in `PLANS.md` benannten Auftrag unter
+   `docs/aufgaben/pixelforge-studio-v3/prompts/`
    **einzeln und in numerischer Reihenfolge** ausführen.
 4. Nach jedem Auftrag `npm run verify` und `git diff --check` ausführen.
 5. Nach jedem abgeschlossenen Auftrag separat committen.

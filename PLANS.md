@@ -2,12 +2,43 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Dokumentation und offene Promptserie einsatzbereit ordnen (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 28 — Repository und Produkt umbenennen (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 28 — Repository und Produkt umbenennen (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 29 — modulbasierte Studio-Routen (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
-- **Vorbereitete Serie:** Prompts 28–51 unter
-  `docs/aufgaben/pixelforge-studio-v3/prompts/`; vollständig offen
+- **Aktive Serie:** Prompt 28 abgeschlossen; Prompts 29–51 offen unter
+  `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
+
+## Prompt 28 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `b708a3b`
+- Ausgangs-Remote: `https://github.com/kleiveist/PixelartPromptStudio.git`
+- GitHub CLI: als `kleiveist` angemeldet; Remote-Rename wird vor der lokalen
+  URL-Änderung gegen GitHub geprüft
+- Baseline: `npm run verify` erfolgreich mit 107 Testdateien und 614 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Abnahme: Dachmarke und beide Modulnamen zentral typisiert; npm-Paket und
+  sichtbare Produkttexte umbenannt; Prompt-Export-ID, Storage-Keys sowie
+  Schema-/Formatversion 2 unverändert; Altbundle-Regression grün
+- Grenze: keine Studio-Shell, keine neue Navigation und kein Prompt 29
+
+## Prompt 28 — Ergebnis
+
+1. Das private GitHub-Repository wurde mit bestätigtem `ADMIN`-Recht zu
+   `kleiveist/PixelForgeStudio` umbenannt; `origin` verwendet weiterhin HTTPS
+   und zeigt auf den neuen Namen.
+2. npm-Paket, HTML-Metadaten, README und sichtbare Dachmarke verwenden
+   `PixelForge Studio`; die Paketversion bleibt `2.0.0`.
+3. `BRAND` veröffentlicht Dachprodukt sowie Prompt- und Animationsmodul zentral
+   typisiert. Bestehende Prompt-Ausgaben verwenden weiterhin exakt
+   `PixelForge Prompt Studio`; die Animations-ID ist nur reserviert.
+4. Storage-Namespaces, Schema-/Formatversion 2, Promptdefaults und
+   Profilauflösung wurden nicht verändert. Alte ExportBundles bleiben lesbar.
+5. Gezielte Prüfung: 3 Testdateien und 37 Tests bestanden. Vollständige
+   Prüfung: 108 Testdateien und 617 Tests, Typecheck und Build bestanden;
+   `git diff --check` ist sauber.
+6. Prompt 29 wurde nicht begonnen. Die bestehende Prompt-Studio-App-Shell und
+   Navigation bleiben funktional unverändert.
 
 ## Plan — Dokumentationsordnung
 
@@ -48,8 +79,8 @@
 
 ## Übergabe
 
-- Prompt 28 oder spätere Phasen erst nach einem neuen konkreten Auftrag
-  beginnen.
+- Prompt 29 oder spätere Phasen erst nach einem neuen konkreten Auftrag
+  beginnen; Prompt 29 ist noch nicht begonnen.
 - Abgeschlossene Phasenkataloge und Nachweise bleiben unverändert als Historie
   unter `docs/erledigt/` erhalten.
 - Neue öffentliche Modulgrenzen werden weiterhin in `src/ARCHITECTURE.md`

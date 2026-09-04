@@ -1,9 +1,13 @@
 {
-  "name": "pixelforge-prompt-studio",
+  "name": "pixelforge-studio",
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Lokales Produktionsstudio für konsistente Pixelart-Prompts.",
+  "description": "Lokales Dachstudio für Pixelart-Prompt-Produktion und Pixelanimation.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kleiveist/PixelForgeStudio.git"
+  },
   "scripts": {
     "dev": "vite",
     "start": "vite --open",

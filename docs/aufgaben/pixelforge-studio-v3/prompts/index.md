@@ -33,3 +33,9 @@
 - [Prompt 50 — Prompt-zu-Animation-Übergabe und performanter Workerexport](50_PROMPT_ANIMATION_HANDOFF_AND_WORKERS.md)
 - [Prompt 51 — Accessibility-, Responsive-, Regressions- und Release-Abnahme V3](51_PIXELFORGE_STUDIO_V3_RELEASE.md)
 <!-- PYGINDEX:INDEX END -->
+
+## Umsetzungsstand
+
+- Prompt 28 ist abgeschlossen.
+- Prompt 29 ist der nächste Auftrag und wurde noch nicht begonnen.
+- Prompts 30–51 sind ebenfalls offen.

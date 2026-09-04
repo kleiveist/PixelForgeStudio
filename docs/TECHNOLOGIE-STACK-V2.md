@@ -6,8 +6,9 @@
 
 ## Status
 
-Dieses Dokument ist für Version 2 **verbindlich**. Die historische
-Vanilla-JavaScript-Anwendung diente ausschließlich als Legacy-Migrationsquelle
+Dieses Dokument ist die weiterhin **verbindliche Stack-Spezifikation des
+PixelForge-Prompt-Studio-Moduls V2** innerhalb von PixelForge Studio. Die
+historische Vanilla-JavaScript-Anwendung diente ausschließlich als Legacy-Migrationsquelle
 und wurde nach der belegten Prompt-27-Parität entfernt. Erhalten bleiben pure
 TypeScript-Kompatibilität und synthetische Fixtures. Neue V2-Oberflächen oder
 V2-Domänenfunktionen dürfen nicht als Vanilla-DOM-Anwendung umgesetzt werden.

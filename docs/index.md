@@ -2,7 +2,7 @@
 [Zur Projektübersicht](../README.md)
 <!-- PYGINDEX:NAVIGATION END -->
 
-# Dokumentationsübersicht
+# PixelForge Studio — Dokumentationsübersicht
 
 <!-- PYGINDEX:INDEX START -->
 ## Inhalt

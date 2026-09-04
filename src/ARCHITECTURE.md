@@ -1,11 +1,17 @@
-# V2 source architecture
+# PixelForge Studio source architecture
+
+Prompt 28 introduces the umbrella naming boundary without changing the
+runtime navigation or adding the Animation Studio shell. The executable UI
+remains the released Prompt Studio V2 until its later, separately scoped
+phases are implemented.
 
 - `app/`: Composition, persistente App Shell, View-Metadaten und semantische
   Haupt-/Schnellnavigation
 - `components/`: wiederverwendbare CSS-Module-Oberflächen, Theme-Control,
   View-Links und lokale SVG-Icons
-- `config/`: zentrale sichtbare `BRAND`-Konfiguration sowie bewusst stabiler,
-  davon getrennter Exportformat-Identifier
+- `config/`: zentrale, typisierte `BRAND`-Konfiguration für Dachprodukt,
+  Prompt-Modul und Animationsmodul sowie getrennte, bewusst stabile
+  Exportformat-Identifier
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
@@ -319,9 +325,14 @@ Settings/Draft write cannot be atomic with the profile graph across
 localStorage namespaces, so any partial follow-up failure is reported instead
 of hidden.
 
-`config/brand.ts` is the single source for visible product copy. The separate
-`EXPORT_APPLICATION_ID` remains stable because it is a persisted wire-format
-discriminator and must not change during a visual rebrand.
+`config/brand.ts` is the single source for the visible umbrella and module
+names. `BRAND.productName` identifies PixelForge Studio while
+`BRAND.modules.prompt` and `BRAND.modules.animation` provide their full and
+compact labels. `PROMPT_EXPORT_APPLICATION_ID` remains the persisted
+`"PixelForge Prompt Studio"` wire discriminator;
+`EXPORT_APPLICATION_ID` is its backward-compatible alias.
+`ANIMATION_EXPORT_APPLICATION_ID` is reserved for a future, separately
+versioned animation schema and is not consumed by Prompt Studio exports.
 
 `domain/theme/index.ts` is the framework-free theme API. It distinguishes the
 persisted `light | dark | system` preference from the resolved `light | dark`
@@ -783,3 +794,10 @@ provider reads, full workspace transfer rehydrates public provider boundaries,
 and the executable Legacy UI was removed only after the automated and browser
 parity evidence recorded in `docs/erledigt/V2-RELEASE-ACCEPTANCE.md`. Prompts 00 through
 27 are complete; PWA and Tauri remain unstarted optional projects.
+
+Prompt 28 rebrands the umbrella product and repository as PixelForge Studio,
+keeps the current Prompt Studio runtime intact, and establishes typed names
+for both modules. Package version 2.0.0, Prompt schema/format version 2,
+`pixelforge:v2:*` storage keys, and the existing Prompt export discriminator
+remain unchanged. Prompt 29 is the next unstarted phase and owns module-aware
+routing.

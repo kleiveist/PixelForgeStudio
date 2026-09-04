@@ -6,6 +6,9 @@
 
 ## 1. Zweck
 
+Dieses Dokument bleibt die verbindliche Fachspezifikation des
+**PixelForge-Prompt-Studio-Moduls V2** innerhalb von PixelForge Studio.
+
 Dieses Dokument legt fest, **welche Informationen das Studio abfragt**, **wann eine Frage erscheint**, **wie Profile kategorisiert werden** und **welche Werte global vererbt werden**.
 
 Der zentrale Grundsatz lautet:

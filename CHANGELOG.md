@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Dachprodukt und Repository zu **PixelForge Studio** umbenannt und das
+  npm-Paket auf `pixelforge-studio` umgestellt
+- Prompt Studio und Animation Studio als getrennte, zentral typisierte
+  Modulmarken ergänzt
+- bestehenden Prompt-Export-Identifier, Schema-/Formatversion 2 und
+  `pixelforge:v2:*`-Storage-Keys unverändert kompatibel gehalten
+
 ## 2.0.0 — 2026-09-03
 
 - vollständige Prompt-27-Release-Abnahme für Migration, Dashboard, Profile,

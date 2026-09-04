@@ -183,6 +183,20 @@ describe("V2-Zod-Verträge", () => {
     expect(bundle.assetProfiles).toHaveLength(1);
   });
 
+  it("akzeptiert den stabilen Prompt-Studio-Identifier nach dem Dach-Rebranding", () => {
+    const existingBundle = parseExportBundle(exportBundleInput);
+
+    expect(existingBundle.application).toBe("PixelForge Prompt Studio");
+    expect(existingBundle.schemaVersion).toBe(2);
+    expect(existingBundle.formatVersion).toBe(2);
+    expect(() =>
+      parseExportBundle({
+        ...exportBundleInput,
+        application: "PixelForge Studio"
+      })
+    ).toThrow();
+  });
+
   it("parst jede der neun kategorienabhängigen Antwortvarianten", () => {
     const categoryData = [
       {
