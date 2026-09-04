@@ -1,13 +1,16 @@
 # PixelForge Studio source architecture
 
-Prompt 30 adds the visible umbrella shell on top of the module-aware routing
-boundary. The released Prompt Studio remains the productive module; Animation
-Studio exposes only honest, accessible placeholder views until its project
-domain is introduced. Both modules share one route source, theme, skip target,
-title and focus boundary.
+Prompt 31 completes Phase A on top of the module-aware routing boundary. The
+productive Studio Home projects existing Prompt summaries and equal module
+entries without owning either domain. The released Prompt Studio remains the
+productive module; Animation Studio exposes honest, accessible empty and
+placeholder views until its project domain starts in Prompt 32. Both modules
+share one route source, settings source, theme, skip target, title and focus
+boundary.
 
 - `app/`: Composition, globale `StudioShell`, getrennte Prompt-/Animations-
-  Modulflächen, View-Metadaten und semantische Modulnavigation
+  Modulflächen, pure Home-Zusammenfassungsprojektion mit schmalem Controller,
+  View-Metadaten und semantische Modulnavigation
 - `components/`: wiederverwendbare CSS-Module-Oberflächen, globales Theme-
   Control, typisierte Studio-/Prompt-Links und lokale SVG-Icons
 - `config/`: zentrale, typisierte `BRAND`-Konfiguration für Dachprodukt,
@@ -59,8 +62,8 @@ title and focus boundary.
   `tileset-editor/`, `item-editor/` und `artwork-editor/` enthalten die neun
   spezialisierten Asset-Editoren; `review-output/` enthält Review, Prompt-
   Ausgaben und den kontrollierten Profilkonvertierungsworkflow; `settings/`
-  enthält den sichtbaren Migrationsstatus und den vollständigen lokalen
-  Workspace-JSON-Transfer
+  enthält getrennte Startziele, den sichtbaren Migrationsstatus und den
+  vollständigen lokalen Workspace-JSON-Transfer
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -69,8 +72,10 @@ title and focus boundary.
     Texture/Material, Nature/Tree, Building/Architecture, Tileset,
     Item/Equipment, and Artwork catalogs with strict category-specific values
   - `profiles.schema.ts`: base, category, and asset profile contracts
-  - `appSettings.schema.ts`, `wizardDraft.schema.ts`,
-    `exportBundle.schema.ts`: remaining persisted/imported V2 contracts
+  - `appSettings.schema.ts`: additive schema-V2-compatible roof, Prompt and
+    Animation start settings with defaults for older strict data;
+    `wizardDraft.schema.ts` and `exportBundle.schema.ts`: remaining
+    persisted/imported V2 contracts
   - `legacyV1.schema.ts`: defensive whitelist and normalization boundary for
     raw, autosave, preset, and export-shaped V1 input
   - `storage.schema.ts`: versioned collection envelopes, profile-graph
@@ -80,7 +85,8 @@ title and focus boundary.
   bootstrap that runs migration before provider hydration; public exports
   live in `services/index.ts`
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
-  complete validated app-settings envelope and effective theme state;
+  complete validated app-settings envelope, all three start decisions and
+  effective theme state;
   `profiles/` owns the validated profile-library UI state, filters, and
   mutation boundary; `navigation/` owns only the current canonical Studio
   route and backward-compatible Prompt-view projections;
@@ -365,8 +371,13 @@ the accessible `#main-content` skip target stays usable.
 `domain/navigation/appView.ts` is a deliberate transition boundary. Its
 `APP_VIEW_IDS`, `AppView`, guards, parser and serializer retain the previous
 Prompt-only API and use the canonical Prompt catalog as their single source.
-`AppSettings.startView` therefore remains schema-V2 compatible while new code
-can consume `StudioRoute` directly.
+`AppSettings.startView` therefore remains schema-V2 compatible and means only
+the Prompt start view. `AppSettingsSchema` adds `startStudio` (default `home`)
+and `animationStartView` (default `projects`) without changing schema version
+2. Zod supplies those values when older strict Settings or Export Bundles omit
+them. `store/settings/settingsState.ts` exposes pure resolution and immutable
+update helpers; the provider is the only UI mutation boundary for all three
+independent choices.
 
 `services/navigationAdapter.ts` is the only module that talks to browser
 History. `pushRoute()` is reserved for explicit transitions,
@@ -377,8 +388,9 @@ History state, and `subscribe()` observes `popstate`. Successful legacy
 survive and fragments are cleared from generated destinations.
 
 `store/navigation/index.ts` is the React-facing Studio-route boundary. Initial
-precedence is a valid canonical or legacy URL followed by the injected current
-Prompt fallback. The Context exposes `activeRoute`, `hrefForRoute()` and
+precedence is a valid canonical or legacy URL followed by the route returned
+from `resolveStudioStartRoute(settings)`. The Context exposes `activeRoute`,
+`hrefForRoute()` and
 `navigateTo()`. `activeView`, `hrefFor()` and `navigate()` remain deprecated
 Prompt compatibility aliases for existing consumers; the global shell no
 longer depends on them. The projection is derived and never a second state
@@ -391,7 +403,11 @@ title, route/session focus, module navigation selection and the single main
 landmark. `app/AppShell.tsx` now exports the productive Prompt module surface
 and its six-view navigation. `app/AnimationStudioShell.tsx` exports the four
 routed placeholder views and a controlled no-project Workspace; it owns no
-animation domain, persistence or canvas behavior.
+animation domain, persistence or canvas behavior. `StudioHomeController`
+combines the mounted profile provider with the injected draft read port and
+passes only a pure `StudioHomeData` summary to `StudioHomeView`. The view owns
+no storage access or domain writes; animation projects stay an explicit empty
+state until Prompt 35 provides their repository.
 
 `components/navigation/index.ts` exposes `StudioLink` as the semantic typed
 anchor for every `StudioRoute`. It preserves real hrefs and modifier/new-tab
@@ -443,7 +459,8 @@ reads this model through the narrow `DashboardStorage` port
 (`readProfileLibrary` + `readDraft`) and never accesses `localStorage`.
 Category, profile and draft starts are write-free; only an explicit base-profile
 selection delegates a validated AppSettings update to the existing Settings
-provider.
+provider. Its secondary Studio bridge links to Home and Animation without
+moving or replacing the nine-category entry grid.
 
 `features/profiles/profileLibraryData.ts` reuses that resolved presentation
 projection, searches the complete source tag set, combines category, Base and
@@ -831,4 +848,7 @@ remain unchanged.
 Prompt 29 completes the module-aware route, browser-adapter and provider
 boundaries. Legacy Prompt URLs remain valid and are canonically replaced;
 Home and Animation routes are typed and roundtrip-stable without a visible new
-shell. Prompt 30 is the next unstarted phase and owns that global Studio shell.
+shell. Prompt 30 adds the global shell and accessible module placeholders.
+Prompt 31 completes Phase A with the productive Home surface and additive
+start settings. Prompt 32 is the next unstarted phase and owns the first
+framework-free Animation domain; no Animation project persistence exists yet.

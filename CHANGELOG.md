@@ -17,6 +17,14 @@
 - bestehende sechs Prompt-Views in eine eigene Modulfläche übernommen und vier
   zugängliche Animation-Studio-Platzhalter samt kontrolliertem Workspace-
   Empty-State ergänzt
+- produktive Studio-Startseite mit gleichwertigen Modulkarten, fortsetzbarem
+  Prompt-Entwurf, letzten Prompt-Profilen und ehrlichem Animation-Empty-State
+  ergänzt
+- AppSettings V2 additiv um getrennte Dach-, Prompt- und Animationsstartziele
+  erweitert; ältere Settings und Export-Bundles werden über Zod-Defaults ohne
+  Schemaerhöhung weiter akzeptiert
+- Startziele in den Einstellungen persistierbar gemacht und das Prompt-
+  Dashboard um nachgeordnete Home-/Animation-Schnellaktionen ergänzt
 
 ## 2.0.0 — 2026-09-03
 

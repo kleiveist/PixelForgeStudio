@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ForgeMarkIcon } from "../../components/icons";
-import { ViewLink } from "../../components/navigation";
+import { StudioLink, ViewLink } from "../../components/navigation";
 import { Badge, Surface } from "../../components/ui";
 import { BRAND } from "../../config";
 import type { AssetCategory } from "../../domain/assets";
@@ -255,6 +255,31 @@ export function DashboardView({
           ))}
         </ul>
       </section>
+
+      <Surface
+        as="section"
+        className={styles.studioBridge}
+        tone="soft"
+        aria-labelledby="studio-bridge-title"
+      >
+        <div>
+          <p className={styles.eyebrow}>PixelForge Studio</p>
+          <h2 id="studio-bridge-title">Zwischen den Werkzeugen wechseln</h2>
+          <p>
+            Der Kategorieeinstieg bleibt hier im Mittelpunkt. Über die
+            Dachnavigation erreichst du zusätzlich die Studio-Übersicht und
+            den vorbereiteten Animationsbereich.
+          </p>
+        </div>
+        <nav className={styles.studioBridgeActions} aria-label="Weitere Studios">
+          <StudioLink route={{ studio: "home" }}>
+            Studio-Startseite
+          </StudioLink>
+          <StudioLink route={{ studio: "animation", view: "projects" }}>
+            Animation Studio ansehen →
+          </StudioLink>
+        </nav>
+      </Surface>
 
       <Surface
         as="section"

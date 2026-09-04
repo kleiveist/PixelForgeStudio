@@ -197,6 +197,40 @@ describe("V2-Zod-Verträge", () => {
     ).toThrow();
   });
 
+  it("ergänzt alte AppSettings V2 additiv und validiert neue Startziele", () => {
+    const legacySettings = parseAppSettings(appSettingsInput);
+    const legacyBundle = parseExportBundle(exportBundleInput);
+    const newSettings = parseAppSettings({
+      ...appSettingsInput,
+      startStudio: "animation",
+      startView: "output",
+      animationStartView: "rigs"
+    });
+    const newBundle = parseExportBundle({
+      ...exportBundleInput,
+      appSettings: newSettings
+    });
+
+    expect(legacySettings).toEqual({
+      ...appSettingsInput,
+      startStudio: "home",
+      animationStartView: "projects"
+    });
+    expect(legacyBundle.appSettings).toMatchObject({
+      startStudio: "home",
+      startView: "dashboard",
+      animationStartView: "projects"
+    });
+    expect(newBundle.appSettings).toMatchObject({
+      startStudio: "animation",
+      startView: "output",
+      animationStartView: "rigs"
+    });
+    expect(() =>
+      parseAppSettings({ ...appSettingsInput, startStudio: "unknown" })
+    ).toThrow();
+  });
+
   it("parst jede der neun kategorienabhängigen Antwortvarianten", () => {
     const categoryData = [
       {

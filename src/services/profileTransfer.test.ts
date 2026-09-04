@@ -101,6 +101,54 @@ describe("V2 profile JSON transfer", () => {
     expect(storage.mutations).toHaveLength(mutationsBeforeIdempotentImport);
   });
 
+  it("imports old Settings V2 defaults and exports new additive start fields", () => {
+    const library = createLibrary();
+    const canonicalBundle = createBundle(library);
+    const legacySettings = Object.fromEntries(
+      Object.entries(canonicalBundle.appSettings ?? {}).filter(
+        ([key]) => key !== "startStudio" && key !== "animationStartView"
+      )
+    );
+    const legacyJson = JSON.stringify({
+      ...canonicalBundle,
+      appSettings: legacySettings
+    });
+    const storage = new MemoryStorage();
+    const adapter = createV2StorageAdapter(storage);
+
+    const imported = importProfileBundle(adapter, legacyJson);
+    expect(imported).toMatchObject({
+      status: "imported",
+      workspaceData: {
+        appSettings: {
+          startStudio: "home",
+          startView: "dashboard",
+          animationStartView: "projects"
+        }
+      }
+    });
+
+    const newBundle = {
+      ...canonicalBundle,
+      appSettings: parseAppSettings({
+        ...canonicalBundle.appSettings,
+        startStudio: "animation",
+        startView: "review",
+        animationStartView: "library"
+      })
+    };
+    expect(parseExportBundleJson(serializeExportBundle(newBundle))).toMatchObject({
+      status: "valid",
+      bundle: {
+        appSettings: {
+          startStudio: "animation",
+          startView: "review",
+          animationStartView: "library"
+        }
+      }
+    });
+  });
+
   it("includes Base and Category dependencies in a single-asset export", () => {
     const library = createLibrary();
     const assetProfile = library.assetProfiles[0];

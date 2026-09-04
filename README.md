@@ -14,10 +14,12 @@
 
 PixelForge Studio ist eine lokale React-Dachanwendung für Pixelart-Produktion.
 Das release-abgenommene **PixelForge Prompt Studio** erstellt konsistente
-Pixelart-Prompts. Das **PixelForge Animation Studio** besitzt bereits seine
-zugängliche Modulfläche; Projekt-, Rig- und Renderingfunktionen folgen in den
-offenen Phasen. Profile, Entwürfe und Einstellungen bleiben im Browser; ein
-Backend ist nicht erforderlich.
+Pixelart-Prompts. Eine produktive Studio-Startseite bündelt den letzten
+Prompt-Entwurf, zuletzt verwendete Profile und den Einstieg in beide Module.
+Das **PixelForge Animation Studio** besitzt bereits seine zugängliche
+Modulfläche; Projekt-, Rig- und Renderingfunktionen folgen in den offenen
+Phasen. Profile, Entwürfe und Einstellungen bleiben im Browser; ein Backend
+ist nicht erforderlich.
 
 Repository: [kleiveist/PixelForgeStudio](https://github.com/kleiveist/PixelForgeStudio)
 
@@ -35,12 +37,14 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
 ## Oberfläche
 
 - Der Brandlink öffnet die Studio-Startseite.
+- Die Startseite bietet gleichwertige Einstiege in beide Module, vorhandene
+  Prompt-Zusammenfassungen und einen ehrlichen Animation-Empty-State.
 - Der globale Umschalter wechselt per URL zwischen Prompt Studio und Animation
   Studio; Theme, Skip-Link und Fokusführung gelten für beide Module.
 - Prompt Studio enthält Dashboard, Profile, Wizard, Prüfung, Ausgabe und
-  Einstellungen. Animation Studio zeigt bis zur jeweiligen Fachphase
-  kontrollierte Einstiege für Projekte, Workspace, Character Kits und
-  Rig-Vorlagen.
+  Einstellungen. Dort lassen sich Dach-, Prompt- und Animationsstart getrennt
+  festlegen. Animation Studio zeigt bis zur jeweiligen Fachphase kontrollierte
+  Einstiege für Projekte, Workspace, Character Kits und Rig-Vorlagen.
 
 ## Einstiegspunkte
 

@@ -15,16 +15,8 @@
 
 ## 2. Aktueller Ausführungsstand
 
-Prompts 28 bis 30 sind abgeschlossen. Beginne als Nächstes mit:
-
-```text
-docs/aufgaben/pixelforge-studio-v3/prompts/31_STUDIO_HOME_AND_START_SETTINGS.md
-```
-
-Prompt 31 wurde gemeinsam mit Prompt 30 konkret beauftragt, muss aber in einem
-eigenen Commit abgeschlossen werden. Für spätere Aufgaben beginne erst nach
-einem neuen konkreten Auftrag
-mit:
+Prompts 28 bis 31 und damit Phase A sind abgeschlossen. Beginne nach einem
+neuen konkreten Auftrag als Nächstes mit:
 
 ```text
 docs/aufgaben/pixelforge-studio-v3/prompts/32_ANIMATION_DOMAIN_FOUNDATION.md

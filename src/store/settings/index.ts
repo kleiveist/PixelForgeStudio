@@ -1,8 +1,12 @@
 export {
   createDefaultAppSettings,
+  resolveStudioStartRoute,
   selectResolvedTheme,
   settingsReducer,
   withActiveBaseProfile,
+  withAnimationStartView,
+  withPromptStartView,
+  withStartStudio,
   withThemePreference,
   type SettingsAction,
   type SettingsPersistence,

@@ -7,10 +7,10 @@
 ## Umsetzungsstand
 
 Die modulbasierte Route, ihre Browser-History-Grenze und der zugehörige
-Provider wurden mit Prompt 29 umgesetzt. Prompt 30 ergänzt die sichtbare
+Provider wurden mit Prompt 29 umgesetzt. Prompt 30 ergänzte die sichtbare
 globale Studio-Shell, die produktive Prompt-Modulfläche und die vier bewusst
-fachlogikfreien Animation-Platzhalter. Die produktive Home-Fläche folgt in
-Prompt 31.
+fachlogikfreien Animation-Platzhalter. Prompt 31 vervollständigte Phase A mit
+der produktiven Home-Fläche sowie kompatiblen, getrennten Startzielen.
 
 ## Leitprinzip
 
@@ -280,6 +280,11 @@ Eine pure Funktion erzeugt daraus die Startdestination:
 ```ts
 resolveStudioStartRoute(settings): StudioRoute
 ```
+
+Dieser Vertrag ist seit Prompt 31 umgesetzt. Die Settings-Oberfläche schreibt
+alle drei Entscheidungen ausschließlich über den SettingsProvider. Ein
+Workspace-Start erzeugt weder eine Projekt-ID noch öffnet er automatisch ein
+zuletzt verwendetes Projekt.
 
 ## Zustandsgrenzen
 

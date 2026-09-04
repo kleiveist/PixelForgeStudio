@@ -166,12 +166,17 @@ konkreten Fehler. Der injizierte Storage-Adapter bleibt über einen
 App-Lifecycle stabil. Spätere Import-/Restore-Flows müssen den Provider
 rehydrieren, statt parallel direkt in dieselben Namespaces zu schreiben.
 
-Die Top-Level-Navigation nutzt seit Prompt 08 bewusst keine Router-Abhängigkeit.
-Ein injizierbarer Adapter kapselt `history.pushState`, `history.replaceState`
-und `popstate`; der aktuelle View-State liegt in einem eigenen Context/Reducer.
-Die URL verwendet `?view=…`, damit Fragmentanker für Skip-Links und spätere
-In-Page-Ziele frei bleiben. `startView` ist nur der validierte Startfallback und
-wird beim normalen Ansichtswechsel nicht als „zuletzt besucht“ überschrieben.
+Die Top-Level-Navigation nutzt bewusst keine Router-Abhängigkeit. Ein
+injizierbarer Adapter kapselt `history.pushState`, `history.replaceState` und
+`popstate`; der aktuelle Route-State liegt in einem eigenen Context/Reducer.
+Kanonische URLs verwenden `?studio=…&view=…`, während alte `?view=…`-Prompt-
+Links weiter gelesen und ersetzt werden. Fragmentanker bleiben für Skip-Links
+und In-Page-Ziele frei. `startStudio` wählt Home, Prompt oder Animation;
+`startView` bleibt ausschließlich die Prompt-Startansicht und
+`animationStartView` die getrennte Animations-Startansicht. Fehlende neue
+Felder in alten Settings V2 oder Export-Bundles erhalten über Zod die Defaults
+`home` und `projects`. Keine dieser Einstellungen wird beim normalen
+Ansichtswechsel als „zuletzt besucht“ überschrieben.
 
 Seit Prompt 11 hält ein eigener `WizardSessionProvider` den aktiven validierten
 Draft, seine strukturelle Dirty-Baseline, einen nicht persistierten Rohwert-

@@ -117,6 +117,68 @@ afterEach(() => {
 });
 
 describe("settings workspace transfer", () => {
+  it("persists the three start decisions independently", async () => {
+    const user = userEvent.setup();
+    const library = createProfileLibraryFixture();
+    const rendered = renderSettings(populatedStorage(library));
+
+    await user.selectOptions(
+      screen.getByLabelText("Startbereich"),
+      "animation"
+    );
+    await user.selectOptions(
+      screen.getByLabelText("Prompt-Startansicht"),
+      "output"
+    );
+    await user.selectOptions(
+      screen.getByLabelText("Animations-Startansicht"),
+      "rigs"
+    );
+
+    expect(rendered.adapter.readSettings()).toMatchObject({
+      status: "valid",
+      value: {
+        schemaVersion: 2,
+        startStudio: "animation",
+        startView: "output",
+        animationStartView: "rigs",
+        updatedAt: now
+      }
+    });
+    expect(screen.getByLabelText("Startbereich")).toHaveValue("animation");
+    expect(screen.getByLabelText("Prompt-Startansicht")).toHaveValue("output");
+    expect(screen.getByLabelText("Animations-Startansicht")).toHaveValue("rigs");
+    expect(
+      screen.getByText("Die Animations-Startansicht wurde lokal gespeichert.")
+    ).toBeVisible();
+    expect(rendered.storage.mutations).toEqual([
+      { operation: "set", key: V2_STORAGE_KEYS.settings },
+      { operation: "set", key: V2_STORAGE_KEYS.settings },
+      { operation: "set", key: V2_STORAGE_KEYS.settings }
+    ]);
+  });
+
+  it("keeps a start decision for the session when persistence fails", async () => {
+    const user = userEvent.setup();
+    const library = createProfileLibraryFixture();
+    const storage = populatedStorage(library);
+    storage.failSetFor = V2_STORAGE_KEYS.settings;
+    const rendered = renderSettings(storage);
+
+    await user.selectOptions(screen.getByLabelText("Startbereich"), "prompt");
+
+    expect(screen.getByLabelText("Startbereich")).toHaveValue("prompt");
+    expect(
+      screen.getByText(
+        "Der Startbereich gilt für diese Sitzung; lokales Speichern ist nicht verfügbar."
+      )
+    ).toBeVisible();
+    expect(rendered.adapter.readSettings()).toMatchObject({
+      status: "valid",
+      value: { startStudio: "home" }
+    });
+  });
+
   it("exports profiles, settings, and the local draft as one validated JSON file", async () => {
     const user = userEvent.setup();
     const library = createProfileLibraryFixture();
@@ -137,7 +199,12 @@ describe("settings workspace transfer", () => {
     if (parsed.status !== "valid") throw new Error("Expected valid export.");
     expect(parsed.bundle.baseProfiles).toEqual(library.baseProfiles);
     expect(parsed.bundle.assetProfiles).toEqual(library.assetProfiles);
-    expect(parsed.bundle.appSettings).toMatchObject({ theme: "light" });
+    expect(parsed.bundle.appSettings).toMatchObject({
+      theme: "light",
+      startStudio: "home",
+      startView: "dashboard",
+      animationStartView: "projects"
+    });
     expect(parsed.bundle.wizardDrafts).toEqual([draft()]);
     expect(screen.getByText(/workspace mit 11 profil/i)).toBeVisible();
     expect(rendered.storage.mutations).toEqual([]);

@@ -5,12 +5,25 @@ import {
   type ChangeEvent
 } from "react";
 import { Badge, Surface } from "../../components/ui";
+import { STUDIO_MODULE_DEFINITIONS } from "../../config";
+import {
+  ANIMATION_STUDIO_VIEW_IDS,
+  PROMPT_STUDIO_VIEW_IDS,
+  STUDIO_IDS,
+  isAnimationStudioView,
+  isPromptStudioView,
+  isStudioId,
+  type AnimationStudioView,
+  type PromptStudioView,
+  type StudioId
+} from "../../domain/navigation";
 import type { ProfileLibrary } from "../../schemas";
 import {
   inspectProfileImport,
   type InspectedProfileImport,
   type LegacyV1StorageMigrationResult,
   type OutputWorkspaceAdapter,
+  type StorageMutationResult,
   type V2StorageAdapter
 } from "../../services";
 import { useProfileLibrary } from "../../store/profiles";
@@ -49,6 +62,54 @@ type TransferStatus =
   | Readonly<{ kind: "working"; message: string }>
   | Readonly<{ kind: "success"; message: string }>
   | Readonly<{ kind: "error"; message: string }>;
+
+type StartSettingsStatus = Readonly<{
+  kind: "saved" | "session" | "invalid";
+  message: string;
+}>;
+
+const startStudioLabels: Readonly<Record<StudioId, string>> = {
+  home: "Studio-Startseite",
+  prompt: STUDIO_MODULE_DEFINITIONS.prompt.shortLabel,
+  animation: STUDIO_MODULE_DEFINITIONS.animation.shortLabel
+};
+
+const promptStartViewLabels: Readonly<Record<PromptStudioView, string>> = {
+  dashboard: "Dashboard",
+  profiles: "Profile",
+  wizard: "Wizard",
+  review: "Prüfung",
+  output: "Ausgabe",
+  settings: "Einstellungen"
+};
+
+const animationStartViewLabels: Readonly<
+  Record<AnimationStudioView, string>
+> = {
+  projects: "Projekte",
+  workspace: "Workspace",
+  library: "Character Kits",
+  rigs: "Rig-Vorlagen"
+};
+
+function startSettingsStatus(
+  label: string,
+  result: StorageMutationResult
+): StartSettingsStatus {
+  if (result.status === "ok") {
+    return { kind: "saved", message: `${label} wurde lokal gespeichert.` };
+  }
+  if (result.status === "unavailable") {
+    return {
+      kind: "session",
+      message: `${label} gilt für diese Sitzung; lokales Speichern ist nicht verfügbar.`
+    };
+  }
+  return {
+    kind: "invalid",
+    message: `${label} konnte wegen ungültiger Einstellungen nicht gespeichert werden.`
+  };
+}
 
 interface PendingImport {
   readonly filename: string;
@@ -228,13 +289,22 @@ export function SettingsView({
   readFileText = readBrowserFileText,
   createBundleId
 }: SettingsViewProps) {
-  const { settings, restoreSettings } = useSettings();
+  const {
+    settings,
+    restoreSettings,
+    setAnimationStartView,
+    setPromptStartView,
+    setStartStudio
+  } = useSettings();
   const { libraryResult, importProfileBundle } = useProfileLibrary();
   const { requestResume } = useWizardSession();
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
   const [restoreImportedSettings, setRestoreImportedSettings] = useState(true);
   const [restoreImportedDraft, setRestoreImportedDraft] = useState(true);
   const [status, setStatus] = useState<TransferStatus>({ kind: "idle" });
+  const [startStatus, setStartStatus] = useState<StartSettingsStatus | null>(
+    null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
 
@@ -441,9 +511,103 @@ export function SettingsView({
         </dl>
       </Surface>
 
+      <section className={styles.section} aria-labelledby="start-settings-title">
+        <div className={styles.sectionHeading}>
+          <p className={styles.sectionIndex}>01 · Startziele</p>
+          <h2 id="start-settings-title">Wo soll PixelForge beginnen?</h2>
+          <p>
+            Dachziel und beide Modulansichten bleiben getrennt. Ein Wechsel
+            hier öffnet nichts automatisch und verändert keine Fachwerte.
+          </p>
+        </div>
+        <Surface className={styles.startSettings} tone="soft">
+          <div className={styles.startSettingsGrid}>
+            <label>
+              <span>Startbereich</span>
+              <select
+                value={settings.startStudio}
+                onChange={(event) => {
+                  if (!isStudioId(event.target.value)) return;
+                  setStartStatus(
+                    startSettingsStatus(
+                      "Der Startbereich",
+                      setStartStudio(event.target.value)
+                    )
+                  );
+                }}
+              >
+                {STUDIO_IDS.map((studio) => (
+                  <option key={studio} value={studio}>
+                    {startStudioLabels[studio]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Prompt-Startansicht</span>
+              <select
+                value={settings.startView}
+                onChange={(event) => {
+                  if (!isPromptStudioView(event.target.value)) return;
+                  setStartStatus(
+                    startSettingsStatus(
+                      "Die Prompt-Startansicht",
+                      setPromptStartView(event.target.value)
+                    )
+                  );
+                }}
+              >
+                {PROMPT_STUDIO_VIEW_IDS.map((view) => (
+                  <option key={view} value={view}>
+                    {promptStartViewLabels[view]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Animations-Startansicht</span>
+              <select
+                value={settings.animationStartView}
+                onChange={(event) => {
+                  if (!isAnimationStudioView(event.target.value)) return;
+                  setStartStatus(
+                    startSettingsStatus(
+                      "Die Animations-Startansicht",
+                      setAnimationStartView(event.target.value)
+                    )
+                  );
+                }}
+              >
+                {ANIMATION_STUDIO_VIEW_IDS.map((view) => (
+                  <option key={view} value={view}>
+                    {animationStartViewLabels[view]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className={styles.startSettingsHint}>
+            Ohne gültige Route startet das gewählte Modul in seiner hier
+            festgelegten Ansicht. Ein Workspace-Start öffnet kein Projekt
+            automatisch.
+          </p>
+          {startStatus ? (
+            <p
+              className={styles.startSettingsStatus}
+              data-state={startStatus.kind}
+              role={startStatus.kind === "invalid" ? "alert" : "status"}
+            >
+              {startStatus.message}
+            </p>
+          ) : null}
+        </Surface>
+      </section>
+
       <section className={styles.section} aria-labelledby="migration-title">
         <div className={styles.sectionHeading}>
-          <p className={styles.sectionIndex}>01 · Migration</p>
+          <p className={styles.sectionIndex}>02 · Migration</p>
           <h2 id="migration-title">V1 → V2</h2>
           <p>Beim Start werden vorhandene V1-Daten vor dem ersten V2-Lesezugriff geprüft, gesichert und idempotent migriert.</p>
         </div>
@@ -453,7 +617,7 @@ export function SettingsView({
       <div className={styles.transferGrid}>
         <Surface as="section" className={styles.transferPanel} tone="soft" aria-labelledby="export-title">
           <div className={styles.panelHeading}>
-            <span className={styles.sectionIndex}>02</span>
+            <span className={styles.sectionIndex}>03</span>
             <h2 id="export-title">Workspace exportieren</h2>
           </div>
           <p>
@@ -466,7 +630,7 @@ export function SettingsView({
 
         <Surface as="section" className={styles.transferPanel} tone="soft" aria-labelledby="import-title">
           <div className={styles.panelHeading}>
-            <span className={styles.sectionIndex}>03</span>
+            <span className={styles.sectionIndex}>04</span>
             <h2 id="import-title">Workspace importieren</h2>
           </div>
           <p>

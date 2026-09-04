@@ -4,6 +4,13 @@
 
 # 05 — Datenmodell, Speicherung und Dateiformate
 
+## Umsetzungsstand
+
+Die additive AppSettings-Erweiterung aus Abschnitt 10 ist seit Prompt 31 ohne
+Schemaversionserhöhung umgesetzt. Alte Settings- und ExportBundle-V2-Objekte
+ohne die neuen Felder bleiben über Zod-Defaults lesbar. Die Animationsschemas
+und ihre IndexedDB-Persistenz beginnen erst mit Prompts 33 und 34.
+
 ## 1. Formatgrenzen
 
 Bestehende Promptdaten und neue Animationsdaten sind getrennte Protokolle.
@@ -331,7 +338,9 @@ animationStartView: "projects" | "workspace" | "library" | "rigs";
 
 Alte Daten ohne neue Felder werden über Zod-Defaults gelesen. Neue Writes
 enthalten die Felder. Bestehende ExportBundle-Tests erhalten zusätzliche
-Fixtures für beide Formen.
+Fixtures für beide Formen. Die Implementierung und beide Import-/Export-
+Regressionen wurden in Prompt 31 abgeschlossen; `schemaVersion: 2` bleibt
+unverändert.
 
 ## 11. Projektbundle `.pfanim`
 

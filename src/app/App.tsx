@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   createBrowserOutputWorkspaceAdapter,
   type LegacyV1StorageMigrationResult,
@@ -7,7 +8,11 @@ import {
 import type { DashboardStorage } from "../features/dashboard/dashboardData";
 import type { WizardStorage } from "../features/wizard";
 import type { SettingsStorage } from "../store/settings";
-import { SettingsProvider, useSettings } from "../store/settings";
+import {
+  SettingsProvider,
+  resolveStudioStartRoute,
+  useSettings
+} from "../store/settings";
 import {
   ProfileLibraryProvider,
   type ProfileLibraryStorage
@@ -46,9 +51,18 @@ function NavigationRoot({
   createDraftId?: () => string;
 }>) {
   const { settings } = useSettings();
+  const fallbackRoute = useMemo(
+    () => resolveStudioStartRoute(settings),
+    [
+      settings.animationStartView,
+      settings.startStudio,
+      settings.startView
+    ]
+  );
 
   return (
     <NavigationProvider
+      fallbackRoute={fallbackRoute}
       fallbackView={settings.startView}
       navigationAdapter={navigationAdapter}
     >

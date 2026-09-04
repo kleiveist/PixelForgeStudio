@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { APP_VIEW_IDS } from "../domain/navigation";
+import {
+  ANIMATION_STUDIO_VIEW_IDS,
+  APP_VIEW_IDS,
+  STUDIO_IDS
+} from "../domain/navigation";
 import { THEME_PREFERENCES } from "../domain/theme";
 import {
   IsoDateTimeSchema,
@@ -14,7 +18,9 @@ export const AppSettingsSchema = z.strictObject({
   kind: z.literal("appSettings"),
   theme: ThemePreferenceSchema,
   locale: z.enum(["de", "en"]),
+  startStudio: z.enum(STUDIO_IDS).default("home"),
   startView: z.enum(APP_VIEW_IDS),
+  animationStartView: z.enum(ANIMATION_STUDIO_VIEW_IDS).default("projects"),
   activeBaseProfileId: StableIdSchema.nullable(),
   updatedAt: IsoDateTimeSchema
 });

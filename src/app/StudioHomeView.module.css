@@ -1,0 +1,233 @@
+.home {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-8);
+}
+
+.hero {
+  max-width: 62rem;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.hero h1,
+.hero p,
+.sectionHeading h2,
+.sectionHeading p,
+.emptyState p {
+  margin: 0;
+}
+
+.hero h1 {
+  font-size: clamp(2.5rem, 7vw, 5.8rem);
+  line-height: 0.94;
+  letter-spacing: -0.055em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.eyebrow,
+.moduleIndex {
+  color: var(--color-accent-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.intro {
+  max-width: 62ch;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  line-height: 1.65;
+}
+
+.moduleNavigation,
+.moduleGrid,
+.moduleGrid li {
+  min-width: 0;
+}
+
+.moduleGrid,
+.profileGrid {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  list-style: none;
+}
+
+.moduleGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.moduleGrid li,
+.profileGrid li {
+  display: flex;
+}
+
+.moduleCard {
+  width: 100%;
+  min-width: 0;
+  min-height: 16rem;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--space-5);
+  padding: clamp(var(--space-5), 4vw, var(--space-7));
+  color: var(--color-text);
+  text-decoration: none;
+  background:
+    linear-gradient(145deg, var(--color-accent-wash), transparent 58%),
+    var(--color-panel-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.moduleCard:hover {
+  border-color: var(--color-accent-line);
+  transform: translateY(-3px);
+}
+
+.moduleCopy {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.moduleCopy strong {
+  font-size: clamp(1.55rem, 3vw, 2.4rem);
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.moduleCopy span,
+.draftCard time,
+.draftCard > span:first-child > span,
+.emptyState p {
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.moduleAction,
+.inlineAction,
+.sectionHeading a,
+.emptyState a {
+  color: var(--color-accent-text);
+  font-weight: 800;
+}
+
+.section {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.sectionHeading {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-5);
+}
+
+.sectionHeading h2 {
+  flex: 1 1 60%;
+  font-size: clamp(1.5rem, 3vw, 2.3rem);
+  letter-spacing: -0.035em;
+}
+
+.sectionHeading p {
+  flex-basis: 100%;
+}
+
+.sectionHeading a {
+  min-height: var(--control-min-size);
+  display: inline-flex;
+  align-items: center;
+}
+
+.draftCard {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  background: var(--color-accent-wash);
+  border: 1px solid var(--color-accent-line);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.draftCard > span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.profileGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.profileGrid li > * {
+  width: 100%;
+}
+
+.emptyState {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.notice {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-muted);
+  background: var(--color-panel-soft);
+  border-left: 3px solid var(--color-line-strong);
+  line-height: 1.55;
+}
+
+.draftCard:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 900px) {
+  .profileGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .moduleGrid,
+  .profileGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .draftCard {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moduleCard {
+    transition: none;
+  }
+}

@@ -27,7 +27,7 @@ export interface NavigationContextValue {
   readonly activeRoute: StudioRoute;
   readonly hrefForRoute: (route: StudioRoute) => string;
   readonly navigateTo: (route: StudioRoute) => void;
-  /** @deprecated Prompt 30 will migrate the existing shell to `activeRoute`. */
+  /** @deprecated Compatibility projection for Prompt-only feature consumers. */
   readonly activeView: AppView;
   /** @deprecated Use `hrefForRoute` with a typed Prompt Studio route. */
   readonly hrefFor: (view: AppView) => string;
@@ -38,6 +38,7 @@ export interface NavigationContextValue {
 export interface NavigationProviderProps {
   readonly children: ReactNode;
   readonly fallbackView: AppView;
+  readonly fallbackRoute?: StudioRoute;
   readonly navigationAdapter: NavigationAdapter;
 }
 
@@ -46,11 +47,12 @@ const NavigationContext = createContext<NavigationContextValue | null>(null);
 export function NavigationProvider({
   children,
   fallbackView,
+  fallbackRoute: configuredFallbackRoute,
   navigationAdapter
 }: NavigationProviderProps) {
   const fallbackRoute = useMemo(
-    () => createPromptStudioRoute(fallbackView),
-    [fallbackView]
+    () => configuredFallbackRoute ?? createPromptStudioRoute(fallbackView),
+    [configuredFallbackRoute, fallbackView]
   );
   const [initialState] = useState(() =>
     createNavigationState(navigationAdapter.readRoute(), fallbackRoute)

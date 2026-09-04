@@ -26,7 +26,7 @@ import {
   PromptStudioShell
 } from "./AppShell";
 import styles from "./AppShell.module.css";
-import { StudioHomePlaceholder } from "./StudioHomePlaceholder";
+import { StudioHomeController } from "./StudioHomeController";
 import {
   studioRouteContextLabel,
   studioRouteHeadingId,
@@ -138,7 +138,10 @@ export function StudioShell({
           tabIndex={-1}
         >
           {activeRoute.studio === "home" ? (
-            <StudioHomePlaceholder />
+            <StudioHomeController
+              activeBaseProfileId={activeBaseProfileId}
+              storageAdapter={storageAdapter}
+            />
           ) : null}
           {activeRoute.studio === "prompt" ? (
             <PromptStudioShell

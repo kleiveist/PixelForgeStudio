@@ -8,9 +8,10 @@ import {
   type AnimationStudioView,
   type AppView,
   type NavigationRoute,
+  type StudioId,
   type StudioRoute
 } from "../domain/navigation";
-import { parseAppSettings } from "../schemas";
+import { parseAppSettings, parseWizardDraft } from "../schemas";
 import {
   V2_STORAGE_KEYS,
   createBrowserNavigationAdapter,
@@ -18,20 +19,29 @@ import {
 } from "../services";
 import { MemoryNavigation } from "../test/memoryNavigation";
 import { MemoryStorage } from "../test/memoryStorage";
+import { createProfileLibraryFixture } from "../test/profileLibraryFixtures";
 import { App } from "./App";
 import { APP_VIEW_DEFINITIONS } from "./appViewConfig";
 import { ANIMATION_STUDIO_VIEW_DEFINITIONS } from "./studioViewConfig";
 
 const updatedAt = "2026-09-02T21:00:00.000Z";
 
-function settingsJson(startView: AppView): string {
+function settingsJson(
+  startView: AppView,
+  overrides: Readonly<{
+    startStudio?: StudioId;
+    animationStartView?: AnimationStudioView;
+  }> = {}
+): string {
   return JSON.stringify(
     parseAppSettings({
       schemaVersion: 2,
       kind: "appSettings",
       theme: "light",
       locale: "de",
+      startStudio: overrides.startStudio ?? "prompt",
       startView,
+      animationStartView: overrides.animationStartView ?? "projects",
       activeBaseProfileId: null,
       updatedAt
     })
@@ -96,8 +106,12 @@ describe("application shell navigation", () => {
     expect(currentPrimaryLink()).toHaveAccessibleName("Dashboard");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByText("Prompt Studio")).toBeVisible();
-    expect(screen.getByText("PixelForge Studio")).toBeVisible();
-    expect(screen.getByRole("link", { name: /startseite/i })).toHaveAttribute(
+    expect(
+      within(screen.getByRole("contentinfo")).getByText("PixelForge Studio")
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "PixelForge Studio – Startseite" })
+    ).toHaveAttribute(
       "href",
       "?studio=home"
     );
@@ -258,6 +272,204 @@ describe("application shell navigation", () => {
     expect(currentPrimaryLink()).toHaveAccessibleName("Profile");
     expect(navigation.replacedViews).toEqual(["profiles"]);
     expect(storage.mutations).toEqual([]);
+  });
+
+  it.each([
+    {
+      label: "Home",
+      settings: { startStudio: "home" as const },
+      route: { studio: "home" } as const,
+      heading: "PixelForge Studio"
+    },
+    {
+      label: "Prompt",
+      settings: { startStudio: "prompt" as const },
+      route: { studio: "prompt", view: "profiles" } as const,
+      heading: "Produktionsprofile sicher organisieren."
+    },
+    {
+      label: "Animation",
+      settings: {
+        startStudio: "animation" as const,
+        animationStartView: "rigs" as const
+      },
+      route: { studio: "animation", view: "rigs" } as const,
+      heading: ANIMATION_STUDIO_VIEW_DEFINITIONS.rigs.title
+    }
+  ])(
+    "uses the configured $label destination when no route is present",
+    ({ settings, route, heading }) => {
+      const navigation = new MemoryNavigation();
+      const storage = new MemoryStorage({
+        [V2_STORAGE_KEYS.settings]: settingsJson("profiles", settings)
+      });
+
+      render(
+        <App
+          navigationAdapter={navigation}
+          storageAdapter={createV2StorageAdapter(storage)}
+        />
+      );
+
+      expect(screen.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+      expect(navigation.replacedRoutes).toEqual([route]);
+      expect(storage.mutations).toEqual([]);
+    }
+  );
+
+  it("normalizes old strict Settings V2 without writing during startup", () => {
+    const legacySettings = JSON.stringify({
+      schemaVersion: 2,
+      kind: "appSettings",
+      theme: "light",
+      locale: "de",
+      startView: "output",
+      activeBaseProfileId: null,
+      updatedAt
+    });
+    const storage = new MemoryStorage({
+      [V2_STORAGE_KEYS.settings]: legacySettings
+    });
+    const navigation = new MemoryNavigation();
+
+    render(
+      <App
+        navigationAdapter={navigation}
+        storageAdapter={createV2StorageAdapter(storage)}
+      />
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "PixelForge Studio" })
+    ).toBeVisible();
+    expect(navigation.replacedRoutes).toEqual([{ studio: "home" }]);
+    expect(storage.getItem(V2_STORAGE_KEYS.settings)).toBe(legacySettings);
+    expect(storage.mutations).toEqual([]);
+  });
+
+  it("renders productive Home summaries and opens configured module destinations", async () => {
+    const user = userEvent.setup();
+    const library = createProfileLibraryFixture();
+    const draft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_home_continue",
+      projectName: "Nebelwald",
+      route: "wizard/project",
+      currentStep: "project",
+      validation: { errors: [], warnings: [] },
+      savedAt: "2026-09-04T14:30:00.000Z"
+    });
+    const storage = new MemoryStorage({
+      [V2_STORAGE_KEYS.settings]: settingsJson("output", {
+        startStudio: "home",
+        animationStartView: "library"
+      })
+    });
+    const adapter = createV2StorageAdapter(storage);
+    expect(adapter.writeProfileLibrary(library)).toEqual({ status: "ok" });
+    expect(adapter.writeDraft(draft)).toEqual({ status: "ok" });
+    storage.mutations.splice(0);
+    const navigation = new MemoryNavigation({
+      status: "valid",
+      route: { studio: "home" }
+    });
+
+    render(<App navigationAdapter={navigation} storageAdapter={adapter} />);
+
+    const promptLink = screen.getByRole("link", {
+      name: "Prompt Studio öffnen"
+    });
+    const animationLink = screen.getByRole("link", {
+      name: "Animation Studio öffnen"
+    });
+    expect(promptLink).toHaveAttribute("href", "?studio=prompt&view=output");
+    expect(animationLink).toHaveAttribute(
+      "href",
+      "?studio=animation&view=library"
+    );
+    expect(
+      screen.getByRole("heading", { name: "Letzter Prompt-Entwurf" })
+    ).toBeVisible();
+    expect(screen.getByText("Nebelwald")).toBeVisible();
+    expect(
+      screen.getAllByRole("button", { name: /Profil .* im Wizard öffnen/i })
+    ).toHaveLength(3);
+    expect(
+      screen.getByText("Noch keine Animationsprojekte verfügbar")
+    ).toBeVisible();
+    expect(storage.mutations).toEqual([]);
+
+    animationLink.focus();
+    await user.keyboard("{Enter}");
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: ANIMATION_STUDIO_VIEW_DEFINITIONS.library.title
+      })
+    ).toBeVisible();
+    expect(screen.getByRole("main")).toHaveFocus();
+    expect(navigation.pushedRoutes).toEqual([
+      { studio: "animation", view: "library" }
+    ]);
+
+    await user.click(
+      screen.getByRole("link", { name: "PixelForge Studio – Startseite" })
+    );
+    const configuredPromptLink = screen.getByRole("link", {
+      name: "Prompt Studio öffnen"
+    });
+    configuredPromptLink.focus();
+    await user.keyboard("{Enter}");
+
+    expect(currentPrimaryLink()).toHaveAccessibleName("Ausgabe");
+    expect(screen.getByRole("main")).toHaveFocus();
+    expect(navigation.pushedRoutes).toEqual([
+      { studio: "animation", view: "library" },
+      { studio: "home" },
+      { studio: "prompt", view: "output" }
+    ]);
+  });
+
+  it("continues the summarized Home draft only after activation", async () => {
+    const user = userEvent.setup();
+    const draft = parseWizardDraft({
+      schemaVersion: 2,
+      kind: "wizardDraft",
+      draftId: "draft_home_resume",
+      projectName: "Hafenlaterne",
+      route: "wizard/project",
+      currentStep: "project",
+      validation: { errors: [], warnings: [] },
+      savedAt: "2026-09-04T15:00:00.000Z"
+    });
+    const storage = new MemoryStorage({
+      [V2_STORAGE_KEYS.settings]: settingsJson("dashboard", {
+        startStudio: "home"
+      }),
+      [V2_STORAGE_KEYS.draft]: JSON.stringify(draft)
+    });
+    const navigation = new MemoryNavigation({
+      status: "valid",
+      route: { studio: "home" }
+    });
+    render(
+      <App
+        navigationAdapter={navigation}
+        storageAdapter={createV2StorageAdapter(storage)}
+      />
+    );
+
+    expect(navigation.pushedRoutes).toEqual([]);
+    await user.click(
+      screen.getByRole("button", { name: /Hafenlaterne.*Entwurf fortsetzen/i })
+    );
+
+    expect(navigation.pushedRoutes).toEqual([
+      { studio: "prompt", view: "wizard" }
+    ]);
+    expect(await screen.findByDisplayValue("Hafenlaterne")).toBeVisible();
   });
 
   it("prioritizes a valid URL route over the stored start view", () => {
@@ -429,7 +641,7 @@ describe("application shell navigation", () => {
     expect(pushState).not.toHaveBeenCalled();
   });
 
-  it("falls back to Dashboard when persisted settings are corrupt", () => {
+  it("falls back to Home when persisted settings are corrupt", () => {
     const corruptSettings = '{"startView":"somewhere"}';
     const storage = new MemoryStorage({
       [V2_STORAGE_KEYS.settings]: corruptSettings
@@ -443,8 +655,10 @@ describe("application shell navigation", () => {
       />
     );
 
-    expect(currentPrimaryLink()).toHaveAccessibleName("Dashboard");
-    expect(navigation.replacedViews).toEqual(["dashboard"]);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "PixelForge Studio" })
+    ).toBeVisible();
+    expect(navigation.replacedRoutes).toEqual([{ studio: "home" }]);
     expect(storage.getItem(V2_STORAGE_KEYS.settings)).toBe(corruptSettings);
     expect(storage.mutations).toEqual([]);
   });
@@ -473,7 +687,9 @@ describe("application shell navigation", () => {
     expect(navigation.pushedViews).toEqual([]);
     expect(navigation.replacedViews).toEqual([]);
 
-    await user.click(screen.getByRole("link", { name: /startseite/i }));
+    await user.click(
+      screen.getByRole("link", { name: "PixelForge Studio – Startseite" })
+    );
     expect(
       screen.getByRole("heading", { level: 1, name: "PixelForge Studio" })
     ).toBeVisible();

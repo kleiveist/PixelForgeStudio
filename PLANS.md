@@ -2,11 +2,11 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 30 — globale Studio-Shell (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 31 — Studio-Startseite und Startziele (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 31 — Studio-Startseite und Startziele (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 32 — Animationsdomain-Grundlage (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
-- **Aktive Serie:** Prompts 28–30 abgeschlossen;
-  Prompts 31–51 offen unter
+- **Aktive Serie:** Phase A mit Prompts 28–31 abgeschlossen; Prompts 32–51
+  offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 
@@ -119,6 +119,47 @@
    `git diff --check` ist sauber. PyGitIndex meldet 63 unveränderte
    Markdown-Dateien, und alle 43 Paketchecksummen sind gültig.
 
+## Prompt 31 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `f5510ce`
+- Baseline: `npm run verify` erfolgreich mit 112 Testdateien und 669 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Abnahme: additive AppSettings-V2-Defaults und pure Startziel-Helfer; drei
+  getrennt persistierbare Startentscheidungen; produktive Studio-Home mit zwei
+  gleichwertigen Modulkarten, vorhandenen Prompt-Zusammenfassungen und echtem
+  Animation-Empty-State; Dashboard-Schnellaktionen und alte/neue Bundle-
+  Kompatibilität
+- Grenze: keine Schemaversion 3, keine Animationsdomain oder IndexedDB, keine
+  automatische Projektöffnung und kein Prompt 32
+
+## Prompt 31 — Ergebnis
+
+1. `AppSettings` V2 besitzt additive Zod-Defaults für `startStudio: home` und
+   `animationStartView: projects`; `startView` bleibt unverändert die Prompt-
+   Startansicht. Alte strikte Settings und Export-Bundles werden ohne Write und
+   ohne Schemaversionserhöhung normalisiert.
+2. Pure Helfer lösen die Startdestination auf und ändern Dach-, Prompt- oder
+   Animationsstart unabhängig. Der SettingsProvider bleibt die einzige
+   UI-Mutationsgrenze; die drei Entscheidungen sind sichtbar persistierbar und
+   melden nicht verfügbare beziehungsweise ungültige Writes explizit.
+3. Die produktive Studio-Startseite bietet zwei gleichwertige Modulkarten,
+   einen optional fortsetzbaren Prompt-Entwurf und letzte Prompt-Profile über
+   bestehende Provider/Ports. Animation-Projekte bleiben bis Prompt 35 ein
+   ehrlicher Empty State; Home schreibt keine Domainwerte.
+4. Das Prompt-Dashboard behält den vollständigen Neun-Kategorien-Einstieg im
+   Vordergrund und ergänzt darunter tastaturbedienbare Schnellaktionen zu Home
+   und Animation.
+5. Alte und neue Settings-/ExportBundle-Formen, jede Startdestination,
+   Persistenzfehler, Home-Zusammenfassungen, Empty States, Tastatur und Fokus
+   sind durch Domain-, Schema-, Transfer- und React-Tests abgedeckt.
+6. Gezielte Prüfung: 8 Testdateien und 98 Tests bestanden. Vollständige
+   Prüfung: 113 Testdateien und 684 Tests, Typecheck und Produktionsbuild
+   bestanden; einzige Ausgabe ist die bekannte Vite-Warnung zum über 500 kB
+   großen Hauptchunk. `git diff --check` ist sauber. PyGitIndex meldet 63
+   unveränderte Markdown-Dateien, alle 43 Paketchecksummen sind gültig.
+7. Phase A ist abgeschlossen. Prompt 32 ist als nächste Aufgabe dokumentiert,
+   aber nicht begonnen; Animationsdomain, -schemas und IndexedDB bleiben offen.
+
 ## Plan — Dokumentationsordnung
 
 1. Aktive Leitdokumente von abgeschlossenen V2- und V1-Unterlagen trennen.
@@ -158,8 +199,8 @@
 
 ## Übergabe
 
-- Prompt 31 ist der nächste ausdrücklich beauftragte Einzelauftrag und darf
-  erst nach dem separaten Prompt-30-Commit beginnen.
+- Prompt 32 ist der nächste Einzelauftrag und beginnt erst nach einem neuen
+  konkreten Auftrag.
 - Abgeschlossene Phasenkataloge und Nachweise bleiben unverändert als Historie
   unter `docs/erledigt/` erhalten.
 - Neue öffentliche Modulgrenzen werden weiterhin in `src/ARCHITECTURE.md`

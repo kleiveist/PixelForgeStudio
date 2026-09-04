@@ -8,8 +8,9 @@
 
 Die globale Shell, der URL-basierte Modulumschalter, alle sechs bestehenden
 Prompt-Views und die vier kontrollierten Animation-Platzhalter wurden mit
-Prompt 30 umgesetzt. Die in Abschnitt 2 beschriebene produktive Startseite
-folgt in Prompt 31.
+Prompt 30 umgesetzt. Prompt 31 ergänzte die in Abschnitt 2 beschriebene
+produktive Startseite, getrennte Startziele und nachgeordnete Dashboard-
+Schnellaktionen. Phase A ist damit abgeschlossen.
 
 ## 1. Globale Studio-Shell
 
@@ -69,7 +70,8 @@ Darunter:
 
 - letzter Prompt-Entwurf, falls vorhanden
 - zuletzt verwendete Profile
-- letzte Animationsprojekte
+- bis Prompt 35 einen echten Animation-Projekt-Empty-State, danach letzte
+  Animationsprojekte
 - verständliche Empty States
 - keine automatische Navigation allein aufgrund vorhandener Daten
 

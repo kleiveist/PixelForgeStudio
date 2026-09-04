@@ -218,7 +218,9 @@ describe("PixelForge visual foundation", () => {
         kind: "appSettings",
         theme: "dark",
         locale: "en",
+        startStudio: "home",
         startView: "profiles",
+        animationStartView: "projects",
         activeBaseProfileId: "base_world_32",
         updatedAt: "2026-09-02T20:00:00.000Z"
       }

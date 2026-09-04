@@ -57,7 +57,8 @@ export const PROMPT_STUDIO_VIEW_DEFINITIONS: Readonly<
     eyebrow: "Einstellungen & Datentransfer",
     description:
       "Darstellung und Workspace-Daten bleiben lokal, kontrollierbar und als validiertes V2-JSON übertragbar.",
-    nextStep: "V1-Migrationsstatus sowie vollständiger JSON-Export und -Import sind aktiv."
+    nextStep:
+      "Getrennte Studio-Startziele, V1-Migrationsstatus sowie vollständiger JSON-Export und -Import sind aktiv."
   }
 };
 

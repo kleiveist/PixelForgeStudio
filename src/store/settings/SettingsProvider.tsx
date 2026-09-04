@@ -11,6 +11,11 @@ import {
   type ReactNode
 } from "react";
 import {
+  type AnimationStudioView,
+  type PromptStudioView,
+  type StudioId
+} from "../../domain/navigation";
+import {
   DARK_THEME_MEDIA_QUERY,
   type ResolvedTheme,
   type ThemePreference
@@ -25,6 +30,9 @@ import {
   selectResolvedTheme,
   settingsReducer,
   withActiveBaseProfile,
+  withAnimationStartView,
+  withPromptStartView,
+  withStartStudio,
   withThemePreference,
   type SettingsPersistence,
   type SettingsState
@@ -36,6 +44,13 @@ export interface SettingsContextValue {
   readonly resolvedTheme: ResolvedTheme;
   readonly persistence: SettingsPersistence;
   readonly setThemePreference: (theme: ThemePreference) => void;
+  readonly setStartStudio: (studio: StudioId) => StorageMutationResult;
+  readonly setPromptStartView: (
+    view: PromptStudioView
+  ) => StorageMutationResult;
+  readonly setAnimationStartView: (
+    view: AnimationStudioView
+  ) => StorageMutationResult;
   readonly setActiveBaseProfile: (
     profileId: StableId | null
   ) => StorageMutationResult;
@@ -226,6 +241,49 @@ export function SettingsProvider({
     [now, storageAdapter]
   );
 
+  const commitSettings = useCallback(
+    (nextSettings: AppSettings): StorageMutationResult => {
+      const result = storageAdapter.writeSettings(nextSettings);
+      if (result.status === "invalid") return result;
+
+      settingsRef.current = nextSettings;
+      dispatch({ type: "settingsChanged", settings: nextSettings });
+      return result;
+    },
+    [storageAdapter]
+  );
+
+  const setStartStudio = useCallback(
+    (studio: StudioId): StorageMutationResult => {
+      const currentSettings = settingsRef.current;
+      if (studio === currentSettings.startStudio) return { status: "ok" };
+      return commitSettings(withStartStudio(currentSettings, studio, now()));
+    },
+    [commitSettings, now]
+  );
+
+  const setPromptStartView = useCallback(
+    (view: PromptStudioView): StorageMutationResult => {
+      const currentSettings = settingsRef.current;
+      if (view === currentSettings.startView) return { status: "ok" };
+      return commitSettings(
+        withPromptStartView(currentSettings, view, now())
+      );
+    },
+    [commitSettings, now]
+  );
+
+  const setAnimationStartView = useCallback(
+    (view: AnimationStudioView): StorageMutationResult => {
+      const currentSettings = settingsRef.current;
+      if (view === currentSettings.animationStartView) return { status: "ok" };
+      return commitSettings(
+        withAnimationStartView(currentSettings, view, now())
+      );
+    },
+    [commitSettings, now]
+  );
+
   const restoreSettings = useCallback(
     (settings: AppSettings): StorageMutationResult => {
       const result = storageAdapter.writeSettings(settings);
@@ -246,12 +304,18 @@ export function SettingsProvider({
       persistence: state.persistence,
       restoreSettings,
       setActiveBaseProfile,
+      setAnimationStartView,
+      setPromptStartView,
+      setStartStudio,
       setThemePreference
     }),
     [
       resolvedTheme,
       restoreSettings,
       setActiveBaseProfile,
+      setAnimationStartView,
+      setPromptStartView,
+      setStartStudio,
       setThemePreference,
       state.persistence,
       state.settings

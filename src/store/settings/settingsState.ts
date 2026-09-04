@@ -1,5 +1,11 @@
 import type { ResolvedTheme, ThemePreference } from "../../domain/theme";
 import { resolveThemePreference } from "../../domain/theme";
+import type {
+  AnimationStudioView,
+  PromptStudioView,
+  StudioId,
+  StudioRoute
+} from "../../domain/navigation";
 import {
   parseAppSettings,
   type AppSettings,
@@ -34,10 +40,46 @@ export function createDefaultAppSettings(updatedAt: string): AppSettings {
     kind: "appSettings",
     theme: "system",
     locale: "de",
+    startStudio: "home",
     startView: "dashboard",
+    animationStartView: "projects",
     activeBaseProfileId: null,
     updatedAt
   });
+}
+
+export function resolveStudioStartRoute(settings: AppSettings): StudioRoute {
+  if (settings.startStudio === "home") return { studio: "home" };
+  if (settings.startStudio === "prompt") {
+    return { studio: "prompt", view: settings.startView };
+  }
+  return settings.animationStartView === "workspace"
+    ? { studio: "animation", view: "workspace" }
+    : { studio: "animation", view: settings.animationStartView };
+}
+
+export function withStartStudio(
+  settings: AppSettings,
+  startStudio: StudioId,
+  updatedAt: string
+): AppSettings {
+  return parseAppSettings({ ...settings, startStudio, updatedAt });
+}
+
+export function withPromptStartView(
+  settings: AppSettings,
+  startView: PromptStudioView,
+  updatedAt: string
+): AppSettings {
+  return parseAppSettings({ ...settings, startView, updatedAt });
+}
+
+export function withAnimationStartView(
+  settings: AppSettings,
+  animationStartView: AnimationStudioView,
+  updatedAt: string
+): AppSettings {
+  return parseAppSettings({ ...settings, animationStartView, updatedAt });
 }
 
 export function withThemePreference(

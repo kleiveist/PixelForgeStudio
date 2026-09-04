@@ -6,7 +6,9 @@ Dieses Repository enthält das Dachprodukt **PixelForge Studio**. Sein erstes
 release-abgenommenes Modul ist das **PixelForge Prompt Studio V2** mit
 Dashboard, Profilbibliothek, geführtem Wizard, Profilvererbung und
 spezialisierten Asset-Editoren. Das **PixelForge Animation Studio** ist als
-nachfolgende Promptserie vorbereitet, aber noch nicht implementiert.
+zugängliches Modul mit vier kontrollierten Einstiegen vorbereitet; seine
+Fachdomain beginnt mit Prompt 32. Die Rebranding- und Studio-Shell-Phase A
+(Prompts 28–31) ist abgeschlossen.
 
 Vor funktionalen Änderungen lesen:
 
@@ -15,7 +17,7 @@ Vor funktionalen Änderungen lesen:
 3. `docs/PROMPT-SPECIFICATION.md`
 4. `PLANS.md` und die dort benannte aktive Prompt-Unterlage
 
-Für die vorbereitete, noch nicht begonnene Serie 28–51 zusätzlich zuerst
+Für die aktive Serie 28–51 zusätzlich zuerst
 `docs/aufgaben/pixelforge-studio-v3/START_HERE.md` und anschließend
 genau die beauftragte Einzeldatei unter
 `docs/aufgaben/pixelforge-studio-v3/prompts/` lesen.
@@ -34,6 +36,9 @@ V1-Migrationsbaseline liegen ebenfalls nur noch unter `docs/erledigt/`.
 - Repository: `kleiveist/PixelForgeStudio`
 - Der persistierte Prompt-Identifier bleibt exakt `PixelForge Prompt Studio`.
 - Alle `pixelforge:v2:*`-Keys sowie Schema- und Formatversion 2 bleiben stabil.
+- `AppSettings.startView` bleibt die Prompt-Startansicht; die additiven Felder
+  `startStudio` und `animationStartView` besitzen Zod-Defaults, damit alte
+  Settings und Export-Bundles ohne Schemaerhöhung lesbar bleiben.
 
 ## Verbindlicher Ziel-Stack
 
