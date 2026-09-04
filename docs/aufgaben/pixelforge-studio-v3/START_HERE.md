@@ -15,11 +15,11 @@
 
 ## 2. Aktueller Ausführungsstand
 
-Prompt 28 ist abgeschlossen. Beginne erst nach einem neuen konkreten Auftrag
+Prompts 28 und 29 sind abgeschlossen. Beginne erst nach einem neuen konkreten Auftrag
 mit:
 
 ```text
-docs/aufgaben/pixelforge-studio-v3/prompts/29_STUDIO_MODULE_ROUTING.md
+docs/aufgaben/pixelforge-studio-v3/prompts/30_UMBRELLA_STUDIO_SHELL.md
 ```
 
 Führe anschließend weiterhin genau einen Prompt nach dem anderen bis Prompt 51

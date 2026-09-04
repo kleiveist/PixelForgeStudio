@@ -4,6 +4,12 @@
 
 # 02 — Zielarchitektur von PixelForge Studio
 
+## Umsetzungsstand
+
+Die modulbasierte Route, ihre Browser-History-Grenze und der zugehörige
+Provider wurden mit Prompt 29 umgesetzt. Die sichtbare globale Studio-Shell
+bleibt bis Prompt 30 bewusst ausstehend.
+
 ## Leitprinzip
 
 PixelForge Studio ist **eine Anwendung mit zwei Modulen**, nicht zwei
@@ -225,7 +231,11 @@ export type StudioRoute =
     }>
   | Readonly<{
       studio: "animation";
-      view: AnimationStudioView;
+      view: Exclude<AnimationStudioView, "workspace">;
+    }>
+  | Readonly<{
+      studio: "animation";
+      view: "workspace";
       projectId?: StableId;
     }>;
 ```

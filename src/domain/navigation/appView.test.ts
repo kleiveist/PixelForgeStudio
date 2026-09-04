@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   APP_VIEW_IDS,
+  PROMPT_STUDIO_VIEW_IDS,
   createAppViewSearch,
   isAppView,
   parseAppViewSearch
@@ -16,6 +17,7 @@ describe("app view routes", () => {
       "output",
       "settings"
     ]);
+    expect(APP_VIEW_IDS).toBe(PROMPT_STUDIO_VIEW_IDS);
     expect(APP_VIEW_IDS.every(isAppView)).toBe(true);
     expect(isAppView("Dashboard")).toBe(false);
     expect(isAppView(null)).toBe(false);

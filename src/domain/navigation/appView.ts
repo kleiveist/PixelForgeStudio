@@ -1,27 +1,33 @@
-export const APP_VIEW_IDS = [
-  "dashboard",
-  "profiles",
-  "wizard",
-  "review",
-  "output",
-  "settings"
-] as const;
+import {
+  PROMPT_STUDIO_VIEW_IDS,
+  VIEW_QUERY_PARAMETER,
+  isPromptStudioView,
+  type PromptStudioView
+} from "./studioRoute";
 
-export const APP_VIEW_QUERY_PARAMETER = "view";
+/** @deprecated Use `PROMPT_STUDIO_VIEW_IDS`. */
+export const APP_VIEW_IDS = PROMPT_STUDIO_VIEW_IDS;
 
-export type AppView = (typeof APP_VIEW_IDS)[number];
+/** @deprecated Use `VIEW_QUERY_PARAMETER`. */
+export const APP_VIEW_QUERY_PARAMETER = VIEW_QUERY_PARAMETER;
+
+/** @deprecated Use `PromptStudioView`. */
+export type AppView = PromptStudioView;
 
 export type NavigationRoute =
   | Readonly<{ status: "valid"; view: AppView }>
   | Readonly<{ status: "missing" }>
   | Readonly<{ status: "invalid"; value: string }>;
 
-const appViewIds = new Set<string>(APP_VIEW_IDS);
-
+/** @deprecated Use `isPromptStudioView`. */
 export function isAppView(value: unknown): value is AppView {
-  return typeof value === "string" && appViewIds.has(value);
+  return isPromptStudioView(value);
 }
 
+/**
+ * @deprecated Use `parseStudioRouteSearch`. This compatibility parser retains
+ * the original `?view=` result shape for existing consumers.
+ */
 export function parseAppViewSearch(search: string): NavigationRoute {
   const parameters = new URLSearchParams(search);
   if (!parameters.has(APP_VIEW_QUERY_PARAMETER)) {
@@ -37,6 +43,10 @@ export function parseAppViewSearch(search: string): NavigationRoute {
   return { status: "valid", view: value };
 }
 
+/**
+ * @deprecated Use `serializeStudioRoute`. This compatibility serializer keeps
+ * the original query shape until consumers migrate to `StudioRoute`.
+ */
 export function createAppViewSearch(
   view: AppView,
   currentSearch = ""

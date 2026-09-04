@@ -8,6 +8,10 @@
   Modulmarken ergänzt
 - bestehenden Prompt-Export-Identifier, Schema-/Formatversion 2 und
   `pixelforge:v2:*`-Storage-Keys unverändert kompatibel gehalten
+- typisierte, roundtrip-stabile Studio-Routen für Home, Prompt Studio und
+  Animation Studio ohne zusätzliche Router-Abhängigkeit eingeführt
+- bestehende `?view=`-Links per `replaceState` kanonisiert sowie kontrollierte
+  Parameter, StableId-Projekte und Browser-Zurück/Vorwärts abgesichert
 
 ## 2.0.0 — 2026-09-03
 

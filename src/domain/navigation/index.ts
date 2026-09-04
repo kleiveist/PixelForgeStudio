@@ -7,3 +7,30 @@ export {
   type AppView,
   type NavigationRoute
 } from "./appView";
+export {
+  ANIMATION_STUDIO_VIEW_IDS,
+  PROJECT_QUERY_PARAMETER,
+  PROMPT_STUDIO_VIEW_IDS,
+  STUDIO_IDS,
+  STUDIO_QUERY_PARAMETER,
+  STUDIO_ROUTE_QUERY_PARAMETERS,
+  VIEW_QUERY_PARAMETER,
+  createPromptStudioRoute,
+  isAnimationStudioView,
+  isPromptStudioView,
+  isStudioId,
+  parseStudioRouteSearch,
+  promptStudioViewOf,
+  serializeStudioRoute,
+  studioRoutesEqual,
+  type AnimationStudioRoute,
+  type AnimationStudioView,
+  type PromptStudioRoute,
+  type PromptStudioView,
+  type StudioId,
+  type StudioRoute,
+  type StudioRouteInvalidReason,
+  type StudioRouteParseResult,
+  type StudioRouteQueryParameter,
+  type StudioRouteSerializationOptions
+} from "./studioRoute";

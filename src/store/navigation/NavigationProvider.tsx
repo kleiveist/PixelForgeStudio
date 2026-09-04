@@ -9,17 +9,29 @@ import {
   useState,
   type ReactNode
 } from "react";
-import type { AppView } from "../../domain/navigation";
+import {
+  createPromptStudioRoute,
+  studioRoutesEqual,
+  type AppView,
+  type StudioRoute
+} from "../../domain/navigation";
 import type { NavigationAdapter } from "../../services";
 import {
   createNavigationState,
   navigationReducer,
-  resolveInitialView
+  resolveInitialRoute,
+  resolvePromptStudioView
 } from "./navigationState";
 
 export interface NavigationContextValue {
+  readonly activeRoute: StudioRoute;
+  readonly hrefForRoute: (route: StudioRoute) => string;
+  readonly navigateTo: (route: StudioRoute) => void;
+  /** @deprecated Prompt 30 will migrate the existing shell to `activeRoute`. */
   readonly activeView: AppView;
+  /** @deprecated Use `hrefForRoute` with a typed Prompt Studio route. */
   readonly hrefFor: (view: AppView) => string;
+  /** @deprecated Use `navigateTo` with a typed Prompt Studio route. */
   readonly navigate: (view: AppView) => void;
 }
 
@@ -36,50 +48,72 @@ export function NavigationProvider({
   fallbackView,
   navigationAdapter
 }: NavigationProviderProps) {
+  const fallbackRoute = useMemo(
+    () => createPromptStudioRoute(fallbackView),
+    [fallbackView]
+  );
   const [initialState] = useState(() =>
-    createNavigationState(navigationAdapter.readRoute(), fallbackView)
+    createNavigationState(navigationAdapter.readRoute(), fallbackRoute)
   );
   const [state, dispatch] = useReducer(navigationReducer, initialState);
-  const activeViewRef = useRef(state.activeView);
+  const activeRouteRef = useRef(state.activeRoute);
 
-  activeViewRef.current = state.activeView;
+  activeRouteRef.current = state.activeRoute;
 
   useEffect(() => {
     const synchronizeWithLocation = () => {
-      const route = navigationAdapter.readRoute();
-      const view = resolveInitialView(route, fallbackView);
+      const result = navigationAdapter.readRoute();
+      const route = resolveInitialRoute(result, fallbackRoute);
 
-      if (route.status !== "valid") {
-        navigationAdapter.replaceView(view);
+      if (result.status !== "valid") {
+        navigationAdapter.replaceRoute(route);
       }
 
-      activeViewRef.current = view;
-      dispatch({ type: "viewChanged", view });
+      activeRouteRef.current = route;
+      dispatch({ type: "routeChanged", route });
     };
 
     const unsubscribe = navigationAdapter.subscribe(synchronizeWithLocation);
     synchronizeWithLocation();
     return unsubscribe;
-  }, [fallbackView, navigationAdapter]);
+  }, [fallbackRoute, navigationAdapter]);
 
-  const hrefFor = useCallback(
-    (view: AppView) => navigationAdapter.hrefFor(view),
+  const hrefForRoute = useCallback(
+    (route: StudioRoute) => navigationAdapter.hrefForRoute(route),
     [navigationAdapter]
   );
 
-  const navigate = useCallback(
-    (view: AppView) => {
-      if (view === activeViewRef.current) return;
-      navigationAdapter.pushView(view);
-      activeViewRef.current = view;
-      dispatch({ type: "viewChanged", view });
+  const navigateTo = useCallback(
+    (route: StudioRoute) => {
+      if (studioRoutesEqual(route, activeRouteRef.current)) return;
+      navigationAdapter.pushRoute(route);
+      activeRouteRef.current = route;
+      dispatch({ type: "routeChanged", route });
     },
     [navigationAdapter]
   );
 
+  const hrefFor = useCallback(
+    (view: AppView) => hrefForRoute(createPromptStudioRoute(view)),
+    [hrefForRoute]
+  );
+
+  const navigate = useCallback(
+    (view: AppView) => navigateTo(createPromptStudioRoute(view)),
+    [navigateTo]
+  );
+
+  const activeView = resolvePromptStudioView(state.activeRoute, fallbackView);
   const value = useMemo<NavigationContextValue>(
-    () => ({ activeView: state.activeView, hrefFor, navigate }),
-    [hrefFor, navigate, state.activeView]
+    () => ({
+      activeRoute: state.activeRoute,
+      activeView,
+      hrefFor,
+      hrefForRoute,
+      navigate,
+      navigateTo
+    }),
+    [activeView, hrefFor, hrefForRoute, navigate, navigateTo, state.activeRoute]
   );
 
   return (

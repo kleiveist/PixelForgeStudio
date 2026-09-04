@@ -7,7 +7,9 @@ export {
 export {
   createNavigationState,
   navigationReducer,
+  resolveInitialRoute,
   resolveInitialView,
+  resolvePromptStudioView,
   type NavigationAction,
   type NavigationState
 } from "./navigationState";

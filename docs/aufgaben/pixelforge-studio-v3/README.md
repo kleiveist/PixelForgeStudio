@@ -32,8 +32,9 @@ Sie sind deshalb als **Prompt 28 bis Prompt 51** nummeriert.
 ## Umsetzungsstand
 
 - Prompt 28: abgeschlossen
-- Prompt 29: nächster Auftrag, noch nicht begonnen
-- Prompts 30–51: noch nicht begonnen
+- Prompt 29: abgeschlossen
+- Prompt 30: nächster Auftrag, noch nicht begonnen
+- Prompts 31–51: noch nicht begonnen
 
 ## Empfohlener Zielname
 

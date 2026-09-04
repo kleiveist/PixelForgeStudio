@@ -1,9 +1,9 @@
 # PixelForge Studio source architecture
 
-Prompt 28 introduces the umbrella naming boundary without changing the
-runtime navigation or adding the Animation Studio shell. The executable UI
-remains the released Prompt Studio V2 until its later, separately scoped
-phases are implemented.
+Prompt 29 introduces the module-aware route boundary without adding the
+visible Animation Studio shell. The executable UI remains the released Prompt
+Studio V2; its existing components consume temporary Prompt-view projections
+while the provider already owns the complete canonical Studio route.
 
 - `app/`: Composition, persistente App Shell, View-Metadaten und semantische
   Haupt-/Schnellnavigation
@@ -45,8 +45,9 @@ phases are implemented.
     transformation and source fingerprinting
   - `theme/`: pure preference-to-effective-theme resolution without browser
     or React dependencies
-  - `navigation/`: six stable top-level view IDs plus pure query parsing and
-    canonical serialization
+  - `navigation/`: typed Home, Prompt Studio and Animation Studio routes,
+    pure query parsing/canonical serialization, and compatibility aliases for
+    the six stable Prompt views
   - `legacy-v1/`: namespaced compatibility port of the V1 defaults, state
     whitelist, prompt builder, validation, and frame/canvas metrics
 - `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
@@ -80,7 +81,8 @@ phases are implemented.
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
   complete validated app-settings envelope and effective theme state;
   `profiles/` owns the validated profile-library UI state, filters, and
-  mutation boundary; `navigation/` owns only the current top-level view;
+  mutation boundary; `navigation/` owns only the current canonical Studio
+  route and its temporary Prompt-view projection;
   `wizard/` owns Startintent, aktiven validierten Draft, Dirty-Baseline und
   Persistenzstatus, während React Hook Form Eigentümer der aktuellen
   Formularwerte bleibt
@@ -349,29 +351,43 @@ through the migration-first workspace bootstrap at the composition root.
 keyboard-operable radio group. All component colors, spacing, focus rings,
 control sizes, radii, shadows, and motion timings come from `styles/tokens.css`.
 
-`domain/navigation/index.ts` is the public, framework-free view contract. The
-same `APP_VIEW_IDS` tuple validates `AppSettings.startView`, preventing schema
-and UI routes from drifting. Routing uses a query parameter (`?view=…`) rather
-than the fragment so the accessible `#main-content` skip target remains usable.
+`domain/navigation/studioRoute.ts` is the public, framework-free roof-routing
+contract. Readonly catalogs define `home | prompt | animation`, all six Prompt
+views, and the four prepared Animation views. `StudioRoute` permits a validated
+`StableId` project only on the Animation workspace. The pure parser distinguishes
+canonical, legacy, missing and structured invalid results; controlled duplicate
+parameters are rejected. The serializer emits `studio`, `view`, then optional
+`project`, preserves foreign parameters, and rejects duplicate controlled input
+unless a caller explicitly requests repair. Fragments remain outside routing so
+the accessible `#main-content` skip target stays usable.
+
+`domain/navigation/appView.ts` is a deliberate transition boundary. Its
+`APP_VIEW_IDS`, `AppView`, guards, parser and serializer retain the previous
+Prompt-only API and use the canonical Prompt catalog as their single source.
+`AppSettings.startView` therefore remains schema-V2 compatible while new code
+can consume `StudioRoute` directly.
 
 `services/navigationAdapter.ts` is the only module that talks to browser
-History for top-level navigation. `pushView()` is reserved for an explicit
-user transition, `replaceView()` canonicalizes a missing or invalid route, and
-`subscribe()` observes `popstate` without creating another entry. Link hrefs
-preserve unrelated query parameters and remove obsolete fragments.
+History. `pushRoute()` is reserved for explicit transitions,
+`replaceRoute()` canonicalizes legacy, missing or invalid URLs while preserving
+History state, and `subscribe()` observes `popstate`. Successful legacy
+`?view=<PromptStudioView>` reads are rewritten to
+`?studio=prompt&view=<PromptStudioView>` with `replaceState`; foreign parameters
+survive and fragments are cleared from generated destinations.
 
-`store/navigation/index.ts` is the React-facing navigation boundary. Initial
-precedence is a valid URL view followed by the already validated
-`settings.startView`; the Settings default supplies `dashboard` when persisted
-settings are absent or invalid. Navigation never persists the current view or
-changes `updatedAt`. `main.tsx` creates one browser adapter, while tests inject
-`MemoryNavigation` and can inspect pushes, replacements and live subscribers.
+`store/navigation/index.ts` is the React-facing Studio-route boundary. Initial
+precedence is a valid canonical or legacy URL followed by the injected current
+Prompt fallback. The Context exposes `activeRoute`, `hrefForRoute()` and
+`navigateTo()`; `activeView`, `hrefFor()` and `navigate()` are temporary Prompt
+aliases for the unchanged shell until Prompt 30. The projection is derived and
+never a second state source. `MemoryNavigation` records complete routes while
+retaining Prompt-view projections for existing feature tests.
 
-`components/navigation/index.ts` exposes `ViewLink`, the shared semantic anchor
-for shell and feature navigation. It preserves real hrefs plus modifier/new-tab
-behavior. Its optional `onNavigate` hook records a domain intent before the
-navigation context changes the active view; it must not be used for unrelated
-side effects.
+`components/navigation/index.ts` still exposes `ViewLink`, the shared semantic
+Prompt anchor used by the current shell. It preserves real hrefs plus
+modifier/new-tab behavior and now serializes its destinations as canonical
+Prompt Studio routes through the provider aliases. Its optional `onNavigate`
+hook records a domain intent before the route changes.
 
 `features/dashboard/dashboardCatalog.ts` is the UI metadata companion to the
 public asset taxonomy. Its record is exhaustive over `AssetCategory`, and its
@@ -799,5 +815,9 @@ Prompt 28 rebrands the umbrella product and repository as PixelForge Studio,
 keeps the current Prompt Studio runtime intact, and establishes typed names
 for both modules. Package version 2.0.0, Prompt schema/format version 2,
 `pixelforge:v2:*` storage keys, and the existing Prompt export discriminator
-remain unchanged. Prompt 29 is the next unstarted phase and owns module-aware
-routing.
+remain unchanged.
+
+Prompt 29 completes the module-aware route, browser-adapter and provider
+boundaries. Legacy Prompt URLs remain valid and are canonically replaced;
+Home and Animation routes are typed and roundtrip-stable without a visible new
+shell. Prompt 30 is the next unstarted phase and owns that global Studio shell.

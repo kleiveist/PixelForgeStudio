@@ -2,10 +2,10 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 28 — Repository und Produkt umbenennen (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 29 — modulbasierte Studio-Routen (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 29 — modulbasierte Studio-Routen (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 30 — globale Studio-Shell (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
-- **Aktive Serie:** Prompt 28 abgeschlossen; Prompts 29–51 offen unter
+- **Aktive Serie:** Prompts 28–29 abgeschlossen; Prompts 30–51 offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 
@@ -39,6 +39,50 @@
    `git diff --check` ist sauber.
 6. Prompt 29 wurde nicht begonnen. Die bestehende Prompt-Studio-App-Shell und
    Navigation bleiben funktional unverändert.
+
+## Prompt 29 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `2dc6b20`
+- Baseline: `npm run verify` erfolgreich mit 108 Testdateien und 617 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Bestehende URL: `?view=<PromptStudioView>` mit sechs stabilen Prompt-Views
+- Abnahme: typisierte Dachrouten für Home, Prompt Studio und Animation Studio;
+  strukturierter Parser, kanonischer Serializer, StableId-Projektparameter,
+  Browser-History und Übergangsaliase für die bestehende Prompt-Oberfläche
+- Grenze: keine sichtbare Studio-Shell, keine Animationsprojektlogik und kein
+  Prompt 30
+
+## Prompt 29 — URL-Matrix
+
+| Form | Ergebnis |
+|---|---|
+| `?studio=home` | kanonische Home-Route |
+| `?studio=prompt&view=<PromptStudioView>` | kanonische Prompt-Route |
+| `?studio=animation&view=<AnimationStudioView>` | kanonische Animationsroute |
+| `?studio=animation&view=workspace&project=<StableId>` | kanonischer Workspace mit Projekt |
+| `?view=<PromptStudioView>` | gültige Bestandsroute; wird mit `replaceState` kanonisiert |
+| ohne kontrollierte Routenparameter | injizierter Prompt-Fallback |
+| unbekannte, unvollständige oder doppelte kontrollierte Parameter | strukturiert ungültig; injizierter Fallback |
+
+## Prompt 29 — Ergebnis
+
+1. `StudioId`, beide Modulkataloge und die diskriminierte `StudioRoute` sind
+   readonly und öffentlich verfügbar; nur der Animation-Workspace darf eine
+   validierte `StableId` als Projekt führen.
+2. Der pure Parser unterscheidet kanonische, fehlende, gültige Legacy- und
+   strukturiert ungültige Routen. Der Serializer ist roundtrip-stabil, erhält
+   fremde Parameter und akzeptiert kontrollierte Dopplungen nicht still.
+3. Browseradapter und Navigation-Provider führen vollständige Studio-Routen.
+   Legacy-URLs und Fallbacks werden mit `replaceState` kanonisiert; explizite
+   Navigation verwendet `pushState`, und `popstate` hält URL und Context synchron.
+4. Die bestehende Prompt-Shell kompiliert über klar markierte Übergangsaliase
+   weiter. Ihre sechs Views, Settings-V2-Verträge, Storage-Keys, Promptdaten und
+   sichtbare Struktur wurden nicht verändert.
+5. Gezielte Prüfung: 6 Testdateien und 76 Tests bestanden. Vollständige Prüfung:
+   110 Testdateien und 658 Tests, Typecheck und Build bestanden;
+   `git diff --check` ist sauber.
+6. PyGitIndex ist aktuell und alle 43 Paketchecksummen sind gültig. Prompt 30
+   wurde nicht begonnen.
 
 ## Plan — Dokumentationsordnung
 
@@ -79,8 +123,8 @@
 
 ## Übergabe
 
-- Prompt 29 oder spätere Phasen erst nach einem neuen konkreten Auftrag
-  beginnen; Prompt 29 ist noch nicht begonnen.
+- Prompt 30 oder spätere Phasen erst nach einem neuen konkreten Auftrag
+  beginnen; Prompt 30 ist noch nicht begonnen.
 - Abgeschlossene Phasenkataloge und Nachweise bleiben unverändert als Historie
   unter `docs/erledigt/` erhalten.
 - Neue öffentliche Modulgrenzen werden weiterhin in `src/ARCHITECTURE.md`

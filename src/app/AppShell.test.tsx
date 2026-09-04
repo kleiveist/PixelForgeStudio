@@ -266,6 +266,34 @@ describe("application shell navigation", () => {
     expect(navigation.pushedViews).toEqual([]);
   });
 
+  it("repairs duplicate browser route parameters with the injected fallback", () => {
+    window.history.replaceState(
+      { source: "invalid" },
+      "",
+      "/studio/?studio=prompt&studio=animation&view=dashboard&mode=compact"
+    );
+    const storage = new MemoryStorage({
+      [V2_STORAGE_KEYS.settings]: settingsJson("settings")
+    });
+    const pushState = vi.spyOn(window.history, "pushState");
+    const replaceState = vi.spyOn(window.history, "replaceState");
+
+    render(
+      <App
+        navigationAdapter={createBrowserNavigationAdapter(window)}
+        storageAdapter={createV2StorageAdapter(storage)}
+      />
+    );
+
+    expect(currentPrimaryLink()).toHaveAccessibleName("Einstellungen");
+    expect(window.location.search).toBe(
+      "?studio=prompt&view=settings&mode=compact"
+    );
+    expect(window.history.state).toEqual({ source: "invalid" });
+    expect(replaceState).toHaveBeenCalledTimes(1);
+    expect(pushState).not.toHaveBeenCalled();
+  });
+
   it("falls back to Dashboard when persisted settings are corrupt", () => {
     const corruptSettings = '{"startView":"somewhere"}';
     const storage = new MemoryStorage({
@@ -305,7 +333,7 @@ describe("application shell navigation", () => {
     expect(window.location.hash).toBe("#main-content");
     expect(navigation.readRoute()).toEqual({
       status: "valid",
-      view: "output"
+      route: { studio: "prompt", view: "output" }
     });
     expect(navigation.pushedViews).toEqual([]);
     expect(navigation.replacedViews).toEqual([]);
@@ -339,13 +367,18 @@ describe("application shell navigation", () => {
     expect(navigation.pushedViews).toEqual(["wizard"]);
   });
 
-  it("tracks real browser back and forward traversal without extra pushes", async () => {
-    window.history.replaceState(null, "", "/studio/?view=dashboard");
+  it("canonicalizes a legacy route and tracks browser traversal without extra pushes", async () => {
+    window.history.replaceState(
+      { source: "legacy" },
+      "",
+      "/studio/?view=dashboard&mode=compact"
+    );
     const user = userEvent.setup();
     const storage = new MemoryStorage({
       [V2_STORAGE_KEYS.settings]: settingsJson("dashboard")
     });
     const pushState = vi.spyOn(window.history, "pushState");
+    const replaceState = vi.spyOn(window.history, "replaceState");
 
     render(
       <App
@@ -354,37 +387,57 @@ describe("application shell navigation", () => {
       />
     );
 
+    expect(window.location.search).toBe(
+      "?studio=prompt&view=dashboard&mode=compact"
+    );
+    expect(window.history.state).toEqual({ source: "legacy" });
+    expect(replaceState).toHaveBeenCalledTimes(1);
+    expect(pushState).not.toHaveBeenCalled();
+
     await user.click(
       within(primaryNavigation()).getByRole("link", { name: "Profile" })
     );
     await user.click(
       within(primaryNavigation()).getByRole("link", { name: "Wizard" })
     );
-    expect(window.location.search).toBe("?view=wizard");
+    expect(window.location.search).toBe(
+      "?studio=prompt&view=wizard&mode=compact"
+    );
     expect(pushState).toHaveBeenCalledTimes(2);
 
     act(() => window.history.back());
     await waitFor(() =>
       expect(currentPrimaryLink()).toHaveAccessibleName("Profile")
     );
-    expect(window.location.search).toBe("?view=profiles");
+    expect(window.location.search).toBe(
+      "?studio=prompt&view=profiles&mode=compact"
+    );
 
     act(() => window.history.back());
     await waitFor(() =>
       expect(currentPrimaryLink()).toHaveAccessibleName("Dashboard")
     );
-    expect(window.location.search).toBe("?view=dashboard");
+    expect(window.location.search).toBe(
+      "?studio=prompt&view=dashboard&mode=compact"
+    );
 
     act(() => window.history.forward());
     await waitFor(() =>
       expect(currentPrimaryLink()).toHaveAccessibleName("Profile")
     );
-    expect(window.location.search).toBe("?view=profiles");
+    expect(window.location.search).toBe(
+      "?studio=prompt&view=profiles&mode=compact"
+    );
     expect(pushState).toHaveBeenCalledTimes(2);
+    expect(replaceState).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the active browser route and view instance on same-view navigation", async () => {
-    window.history.replaceState(null, "", "/studio/?view=dashboard");
+    window.history.replaceState(
+      null,
+      "",
+      "/studio/?studio=prompt&view=dashboard"
+    );
     const user = userEvent.setup();
     const navigation = createBrowserNavigationAdapter(window);
     const storage = new MemoryStorage({
@@ -406,7 +459,7 @@ describe("application shell navigation", () => {
       within(primaryNavigation()).getByRole("link", { name: "Dashboard" })
     );
 
-    expect(window.location.search).toBe("?view=dashboard");
+    expect(window.location.search).toBe("?studio=prompt&view=dashboard");
     expect(screen.getByRole("heading", { level: 1 })).toBe(heading);
     expect(pushState).not.toHaveBeenCalled();
     expect(replaceState).not.toHaveBeenCalled();
