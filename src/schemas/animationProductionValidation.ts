@@ -1,6 +1,5 @@
 import {
   REQUIRED_PART_SLOT_IDS,
-  REQUIRED_SLOT_JOINT_BINDINGS,
   getRequiredAuthoredDirections,
   isRequiredPartSlot,
   type Direction,
@@ -21,13 +20,13 @@ export type AnimationProductionIssue =
       direction: Direction;
     }>
   | Readonly<{
-      code: "missingDistalAnchor";
+      code: "anchorsPending";
       assetId: AnimationPartAsset["assetId"];
-      slot: RequiredPartSlot;
+      slot: PartSlot;
       direction: Direction;
     }>
   | Readonly<{
-      code: "anchorsPending";
+      code: "invalidAnchors";
       assetId: AnimationPartAsset["assetId"];
       slot: PartSlot;
       direction: Direction;
@@ -68,6 +67,15 @@ export function validateAnimationProjectProductionSources(
           direction: asset.direction
         })
       );
+    } else if (asset.anchorStatus === "invalidAnchors") {
+      issues.push(
+        Object.freeze({
+          code: "invalidAnchors",
+          assetId: asset.assetId,
+          slot: asset.slot,
+          direction: asset.direction
+        })
+      );
     }
   }
 
@@ -77,10 +85,6 @@ export function validateAnimationProjectProductionSources(
       requiredSources.set(sourceKey(asset.slot, asset.direction), asset);
     }
   }
-
-  const bindingBySlot = new Map(
-    REQUIRED_SLOT_JOINT_BINDINGS.map((binding) => [binding.slotId, binding])
-  );
 
   for (const direction of getRequiredAuthoredDirections(
     project.directionSourceMode
@@ -96,21 +100,6 @@ export function validateAnimationProjectProductionSources(
           })
         );
         continue;
-      }
-
-      if (
-        asset.anchorStatus === "ready" &&
-        bindingBySlot.get(slot)?.sourceAnchorRequirement === "twoPoint" &&
-        asset.anchors?.distal === undefined
-      ) {
-        issues.push(
-          Object.freeze({
-            code: "missingDistalAnchor",
-            assetId: asset.assetId,
-            slot,
-            direction
-          })
-        );
       }
     }
   }

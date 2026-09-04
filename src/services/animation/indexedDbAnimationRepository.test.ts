@@ -268,6 +268,59 @@ describe("IndexedDbAnimationRepository", () => {
     await repository.close();
   });
 
+  it("persists configured anchors and project delta without rewriting the source blob", async () => {
+    const repository = new IndexedDbAnimationRepository(createFactory());
+    const draft = createAnimationPartAssetInput({
+      anchorStatus: "anchorsPending",
+      anchors: undefined
+    });
+    const project = createAnimationProjectInput({ parts: [{ assetId: draft.assetId }] });
+    const blob = pngBlob("immutable source pixels");
+    await repository.writePartAsset(draft, blob);
+    await repository.createProject(project);
+
+    const configured = {
+      ...draft,
+      anchorStatus: "ready" as const,
+      anchors: { proximal: { x: 16, y: 30 } },
+      updatedAt: LATER_TIMESTAMP
+    };
+    const updatedProject = {
+      ...project,
+      parts: [
+        {
+          assetId: draft.assetId,
+          transformDelta: {
+            offsetX: 1,
+            offsetY: 2,
+            rotationDelta: 0.2,
+            scaleMultiplier: 0.9
+          }
+        }
+      ],
+      updatedAt: LATER_TIMESTAMP
+    };
+    expect(
+      await repository.writePartSetupToProject({
+        project: updatedProject,
+        partAsset: configured
+      })
+    ).toMatchObject({ status: "ok" });
+    expect(await repository.readPartAsset(draft.assetId)).toMatchObject({
+      status: "ok",
+      value: { anchorStatus: "ready", anchors: configured.anchors }
+    });
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { parts: [{ transformDelta: updatedProject.parts[0]?.transformDelta }] }
+    });
+    expect(await repository.readBlob(draft.blobId)).toMatchObject({
+      status: "ok",
+      value: { size: blob.size, type: "image/png" }
+    });
+    await repository.close();
+  });
+
   it("keeps shared binaries on project deletion and removes only explicit garbage", async () => {
     const repository = new IndexedDbAnimationRepository(createFactory());
     const part = createAnimationPartAssetInput();

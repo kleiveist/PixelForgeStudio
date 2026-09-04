@@ -554,6 +554,21 @@ Rig-Compatibility-Key importieren weder React noch Zod oder Browser-APIs. Der
 Workspace liest diese Produktionsdaten über ein SVG-Anzeigeprojektionsmodell;
 SVG und CSS sind keine zweite Quelle für Jointkoordinaten.
 
+Prompt 39 ergänzt `domain/animation/anchorPlacement.ts` als pure Grenze für
+slotabhängige Originalanker, die einmalige Trim-Umrechnung und die
+reproduzierbare uniforme Bone-Matrix. Fast-Null-Quellvektoren liefern
+strukturierte Fehler; automatische Scale-Werte außerhalb 0,5–2,0 bleiben
+unverändert und erzeugen eine sichtbare Warnung. Der Anzeigeadapter im
+Ankereditor nutzt diese Matrix nur für eine Live-CSS-Vorschau und nimmt den
+deterministischen Rasterrenderer aus Prompt 40 nicht vorweg.
+
+Projektweite Partkorrekturen liegen separat als streng validiertes
+`transformDelta` auf der Projektzuweisung (Offset ±32 px, Rotation ±π/2,
+uniformer Multiplikator 0,5–1,5). Der Provider hält Blobdaten weiterhin nicht
+im globalen State: Er liest das Original kurzfristig für die View und schreibt
+fertige beziehungsweise fortsetzbare Source-Anker zusammen mit dem Projekt in
+einer Memory-/IndexedDB-Transaktion, ohne das Blob neu zu speichern.
+
 ## Styling
 
 - `src/styles/tokens.css`: globale semantische Design-Tokens

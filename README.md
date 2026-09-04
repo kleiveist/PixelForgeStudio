@@ -19,8 +19,9 @@ Prompt-Entwurf, zuletzt verwendete Profile, zuletzt bearbeitete
 Animationsprojekte und den Einstieg in beide Module. Das **PixelForge
 Animation Studio** verwaltet lokale Projekte vollständig, importiert
 validierte PNG-Körperteile und zeigt das versionierte Humanoid-80-Rig in fünf
-eigenen Neutralposen; Ankerplatzierung und Rendering folgen in den offenen
-Phasen. Profile, Entwürfe,
+eigenen Neutralposen. Originalbildanker, reproduzierbare Bone-Platzierung,
+Live-Vorschau und projektweite Feinjustierung sind produktiv; der finale
+Pixelrenderer folgt in der nächsten Phase. Profile, Entwürfe,
 Einstellungen und Animationsprojekte bleiben im Browser; ein Backend ist nicht
 erforderlich.
 
@@ -49,10 +50,12 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   festlegen. Animation Studio kann Projekte anlegen, suchen, öffnen,
   umbenennen, duplizieren und bestätigt löschen. Der lokale IndexedDB-
   Speicher arbeitet über Autosave; der Workspace prüft PNGs, zeigt Alpha-Trim
-  und Richtungs-Coverage und speichert bestätigte Parts mit ausstehenden
-  Ankern. Das Built-in-Rig `humanoid-80-v1` zeigt Bones, Joints, Groundline und
-  Pflichtslotbindungen als SVG; Character Kits und Partplatzierung bleiben bis
-  zu ihren jeweiligen Fachphasen klar markiert.
+  und Richtungs-Coverage. Im Viewport lassen sich proximale/distale
+  Originalanker per Pointer oder Zahlenfeld setzen, korrigieren, zurücksetzen
+  und mit einer Live-Bone-Vorschau prüfen. Das Built-in-Rig
+  `humanoid-80-v1` zeigt Bones, Joints, Groundline und Pflichtslotbindungen als
+  SVG; Character Kits und der finale Rasterrenderer bleiben klar als spätere
+  Fachphasen markiert.
 
 ## Einstiegspunkte
 

@@ -108,6 +108,8 @@ Sicherheits- oder Integritätsgrenze.
 
 Der Workspace projiziert Bones, Joints, Pflichtslotlabels und Groundline über
 ein SVG direkt aus der ausgewählten `DirectionRig`. Zoom und Pan verändern nur
-die Darstellung. Das Overlay setzt keine Source-Anker, platziert keine PNGs
-und mutiert die Built-in-Daten nicht. Ankerbearbeitung und reproduzierbare
-Partplatzierung folgen in Prompt 39.
+die Darstellung. Das Overlay mutiert die Built-in-Daten nicht. Der getrennte
+[Anker- und Placement-Workflow](ANIMATION-ANCHORS-AND-PLACEMENT.md) setzt
+Source-Anker ausschließlich in Originalkoordinaten und projiziert gültige
+Parts reproduzierbar an die jeweils aktive DirectionRig. Der finale
+Pixelrenderer bleibt Prompt 40 vorbehalten.

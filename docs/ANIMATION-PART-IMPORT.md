@@ -42,6 +42,11 @@ Pivot- oder Befestigungspunkte: Ein neues PartAsset erhält sichtbar den Status
 `anchorsPending` und blockiert die Produktionsreife, bis eine spätere
 Ankerbearbeitung abgeschlossen ist.
 
+Der anschließende [Anker- und Placement-Workflow](ANIMATION-ANCHORS-AND-PLACEMENT.md)
+arbeitet weiterhin auf dem unveränderten Originalbild, speichert
+Originalkoordinaten und setzt einen Part erst nach slotabhängiger Prüfung auf
+`ready`.
+
 Ist Slot und Richtung schon belegt, ersetzt der Import nur die Zuordnung im
 aktuellen Projekt. Das bisherige PartAsset und sein Bild werden nicht gelöscht,
 weil andere Projekte oder Character Kits sie weiterhin referenzieren können.

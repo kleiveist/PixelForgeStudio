@@ -197,7 +197,7 @@ describe("AnimationWorkspaceLifecycleView", () => {
       value: { type: "image/png" }
     });
     await waitFor(() =>
-      expect(document.querySelector('td[data-coverage="anchorPending"]')).toHaveTextContent(
+      expect(document.querySelector('td[data-coverage="anchorsPending"]')).toHaveTextContent(
         "Anker offen"
       )
     );

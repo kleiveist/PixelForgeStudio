@@ -14,6 +14,7 @@ import {
 import {
   createAnimationProjectSummary,
   PersistAnimationPartImportInputSchema,
+  PersistAnimationPartSetupInputSchema,
   sortAnimationProjects,
   sortAnimationProjectSummaries,
   sortCharacterKits,
@@ -26,7 +27,8 @@ import {
   type AnimationRepositoryQueryResult,
   type AnimationRepositoryReadResult,
   type AnimationRepositoryValueMutationResult,
-  type PersistedAnimationPartImport
+  type PersistedAnimationPartImport,
+  type PersistedAnimationPartSetup
 } from "./animationRepository";
 import {
   createDuplicatedProject,
@@ -790,6 +792,105 @@ export class IndexedDbAnimationRepository implements AnimationRepository {
           ...(command.value.replacedAssetId
             ? { replacedAssetId: command.value.replacedAssetId }
             : {})
+        })
+      };
+    } catch (error) {
+      if (transaction) abortQuietly(transaction);
+      await Promise.allSettled(
+        completion ? [...pendingRequests, completion] : pendingRequests
+      );
+      return repositoryTransactionFailed(error);
+    }
+  }
+
+  public async writePartSetupToProject(
+    input: unknown
+  ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationPartSetup>> {
+    const command = parseRepositoryValue(
+      PersistAnimationPartSetupInputSchema,
+      input,
+      "The part setup was not written because its metadata is invalid."
+    );
+    if (!command.success) return command.result;
+    const database = await this.databaseOrUnavailable();
+    if (database.status !== "ok") return database;
+
+    let transaction: IDBTransaction | undefined;
+    let completion: Promise<void> | undefined;
+    const pendingRequests: Promise<unknown>[] = [];
+    try {
+      transaction = database.value.transaction(
+        [
+          ANIMATION_DATABASE_STORES.projects,
+          ANIMATION_DATABASE_STORES.partAssets
+        ],
+        "readwrite"
+      );
+      completion = transactionDone(transaction);
+      const projects = transaction.objectStore(ANIMATION_DATABASE_STORES.projects);
+      const parts = transaction.objectStore(ANIMATION_DATABASE_STORES.partAssets);
+      const [currentProjectRow, currentPartRow] = await Promise.all([
+        requestValue<unknown>(projects.get(command.value.project.projectId)),
+        requestValue<unknown>(parts.get(command.value.partAsset.assetId))
+      ]);
+      if (currentProjectRow === undefined) {
+        await completion;
+        return repositoryNotFound("project", command.value.project.projectId);
+      }
+      if (currentPartRow === undefined) {
+        await completion;
+        return repositoryNotFound("partAsset", command.value.partAsset.assetId);
+      }
+      const currentProject = parseRepositoryValue(
+        AnimationProjectSchema,
+        currentProjectRow,
+        "Stored project metadata is invalid; the part setup was cancelled."
+      );
+      const currentPart = parseRepositoryValue(
+        AnimationPartAssetSchema,
+        currentPartRow,
+        "Stored PartAsset metadata is invalid; the part setup was cancelled."
+      );
+      if (!currentProject.success) {
+        abortQuietly(transaction);
+        await completion.catch(() => undefined);
+        return currentProject.result;
+      }
+      if (!currentPart.success) {
+        abortQuietly(transaction);
+        await completion.catch(() => undefined);
+        return currentPart.result;
+      }
+      const unchangedIdentity =
+        currentPart.value.blobId === command.value.partAsset.blobId &&
+        currentPart.value.slot === command.value.partAsset.slot &&
+        currentPart.value.direction === command.value.partAsset.direction &&
+        currentPart.value.createdAt === command.value.partAsset.createdAt &&
+        JSON.stringify(currentPart.value.sourceSize) ===
+          JSON.stringify(command.value.partAsset.sourceSize) &&
+        JSON.stringify(currentPart.value.trimRect) ===
+          JSON.stringify(command.value.partAsset.trimRect);
+      const sameAssignments =
+        currentProject.value.parts.length === command.value.project.parts.length &&
+        currentProject.value.parts.every(
+          ({ assetId }, index) =>
+            assetId === command.value.project.parts[index]?.assetId
+        );
+      if (!unchangedIdentity || !sameAssignments) {
+        abortQuietly(transaction);
+        await completion.catch(() => undefined);
+        return repositoryConflict("project", currentProject.value.projectId);
+      }
+
+      const projectWrite = requestValue(projects.put(command.value.project));
+      const partWrite = requestValue(parts.put(command.value.partAsset));
+      pendingRequests.push(projectWrite, partWrite);
+      await Promise.all([projectWrite, partWrite, completion]);
+      return {
+        status: "ok",
+        value: Object.freeze({
+          project: command.value.project,
+          partAsset: command.value.partAsset
         })
       };
     } catch (error) {

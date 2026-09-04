@@ -7,10 +7,10 @@ import {
 import type { AnimationPartAsset, AnimationProject } from "../../schemas";
 
 export type PartCoverageStatus =
-  | "authoredSource"
+  | "ready"
   | "missing"
-  | "optional"
-  | "anchorPending";
+  | "anchorsPending"
+  | "invalidAnchors";
 
 export interface PartCoverageCell {
   readonly slot: PartSlot;
@@ -51,11 +51,11 @@ export function createPartCoverageMatrix(
       const asset = findPartAssetForSource(assets, slot.id, direction);
       const status: PartCoverageStatus = asset
         ? asset.anchorStatus === "anchorsPending"
-          ? "anchorPending"
-          : "authoredSource"
-        : slot.required
-          ? "missing"
-          : "optional";
+          ? "anchorsPending"
+          : asset.anchorStatus === "invalidAnchors"
+            ? "invalidAnchors"
+            : "ready"
+        : "missing";
       return Object.freeze({ slot: slot.id, direction, status, asset });
     });
     return Object.freeze({

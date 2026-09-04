@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Surface } from "../../components/ui";
 import type { AnimationPartAsset, StableId } from "../../schemas";
 import type { PartImportCommitDefinition } from "../animation-part-import";
+import type { AnchorEditorCommitDefinition } from "../animation-anchor-editor";
 import { useAnimationProject } from "../../store/animation";
 import { useNavigation } from "../../store/navigation";
 import { AnimationWorkspace } from "../animation-workspace";
@@ -20,8 +21,10 @@ export function AnimationWorkspaceLifecycleView({
     activeProject,
     activeProjectId,
     canSaveProject,
+    configurePartAsset,
     imageDecoder,
     importPartAsset,
+    loadPartImageBlob,
     loadPartAssets,
     openProject,
     rawProjectError,
@@ -102,6 +105,20 @@ export function AnimationWorkspaceLifecycleView({
 
   const commitPartImport = async (definition: PartImportCommitDefinition) => {
     const result = await importPartAsset(definition);
+    return result.status === "ok"
+      ? { status: "ok" as const, partAsset: result.value.partAsset }
+      : { status: "error" as const, message: result.message };
+  };
+
+  const loadPartBlob = async (blobId: StableId) => {
+    const result = await loadPartImageBlob(blobId);
+    return result.status === "ok"
+      ? { status: "ok" as const, blob: result.value }
+      : { status: "error" as const, message: result.message };
+  };
+
+  const commitPartSetup = async (definition: AnchorEditorCommitDefinition) => {
+    const result = await configurePartAsset(definition);
     return result.status === "ok"
       ? { status: "ok" as const, partAsset: result.value.partAsset }
       : { status: "error" as const, message: result.message };
@@ -195,6 +212,8 @@ export function AnimationWorkspaceLifecycleView({
       partAssetsLoading={partSources.status === "loading"}
       imageDecoder={imageDecoder}
       onImportPart={commitPartImport}
+      onLoadPartBlob={loadPartBlob}
+      onConfigurePart={commitPartSetup}
     />
   );
 }

@@ -2,15 +2,48 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 38 — Humanoid-80-Rig-Vorlage (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 39 — Ankereditor und automatische Partplatzierung
-  (beauftragt, noch nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 39 — Ankereditor und automatische
+  Partplatzierung (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 40 — deterministischer Pixelrenderer (nicht
+  begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
-- **Aktive Serie:** Phase A mit Prompts 28–31 und Phase B mit Prompts 32–35
-  abgeschlossen; Phase C mit Prompts 36–37 abgeschlossen, Prompt 38 in
-  Arbeit und Prompt 39 beauftragt; Prompts 40–51 bleiben offen unter
+- **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
+  Phase C mit Prompts 36–39 abgeschlossen; Prompts 40–51 bleiben offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
+
+## Prompt 39 — Ausgangsstand und Ergebnis
+
+- Ausgangs-HEAD: `f257235`; Prompt 38 war isoliert mit 144 Testdateien und
+  882 Tests, Strict-Typecheck und Build abgeschlossen.
+- `validateSourceAnchors()`, `resolveEffectiveAnchor()`,
+  `resolveBonePlacement()` und `applyTransformDelta()` bilden eine pure
+  Placement-Domain. Zweipunkt-Parts richten Quell- und Zielvektor mit
+  uniformem Scale aus; Kopf, Torso und Becken verwenden proximalen Anker und
+  die versionierte Defaultorientierung ihrer Slotbindung.
+- Originalkoordinaten bleiben die einzige persistierte Ankerwahrheit. Trim
+  wird genau einmal umgerechnet; Fast-Null-Vektoren bis 0,001 px enden
+  strukturiert. Automatische Scale-Werte außerhalb 0,5–2,0 werden sichtbar
+  gewarnt und nicht begrenzt.
+- Der Viewport bietet Original-PNG, ganzzahligen Zoom, Button-/Tastatur-Pan,
+  proximalen/distalen/optionalen Pivot-Anker, Zahlenfelder, Pointer-Snap,
+  Reset und eine richtungsreaktive CSS-Matrix-Live-Vorschau über einen
+  schmalen Anzeigeadapter. Der Rasterrenderer aus Prompt 40 wurde nicht
+  vorgezogen.
+- Projektweite Korrekturen liegen getrennt auf der Partzuweisung: Offset
+  ±32 px, Rotation ±π/2 und uniformer Multiplikator 0,5–1,5. Ein absoluter
+  Auto-Transform wird nicht persistiert.
+- `writePartSetupToProject()` schreibt PartAsset-Anker/-Status und Projekt-
+  Delta atomar in Memory und IndexedDB, ohne das Originalblob neu zu schreiben.
+  Der Provider übernimmt ausschließlich validierte erfolgreiche Ergebnisse.
+- Coverage und Produktionsprüfung unterscheiden `ready`, `anchorsPending`,
+  `invalidAnchors` und `missing`; ein Limb ohne Distalanker bleibt ein
+  fortsetzbarer, aber nicht produktionsbereiter Entwurf.
+- Domain-, Schema-, Adapter-, Repository-, Provider-, UI-, Resume-, Reset-,
+  Pointer-, Rig-/Richtungs- und Coverage-Tests decken die Kriterien ab.
+  Der isolierte `npm run verify` bestand mit 147 Testdateien und 903 Tests,
+  Strict-Typecheck und Produktionsbuild. Phase C ist mit Prompts 36–39
+  abgeschlossen; Prompt 40 bleibt unbegonnen.
 
 ## Prompt 38 — Ausgangsstand und Abnahme
 

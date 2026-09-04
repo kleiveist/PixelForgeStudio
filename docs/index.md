@@ -8,6 +8,7 @@
 ## Inhalt
 
 ### Seiten
+- [Animation Studio — Anker und automatische Partplatzierung](ANIMATION-ANCHORS-AND-PLACEMENT.md)
 - [Animation Studio — Metadatenformat V1](ANIMATION-FORMAT-V1.md)
 - [Animation Studio — PNG-Teile importieren](ANIMATION-PART-IMPORT.md)
 - [Animation Studio — Built-in-Rig `humanoid-80-v1`](ANIMATION-RIG-HUMANOID-80.md)

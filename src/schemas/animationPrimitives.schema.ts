@@ -71,7 +71,11 @@ export const AnimationJointIdSchema = z.enum(JOINT_IDS);
 export const AnimationMirrorPolicySchema = z.enum(MIRROR_POLICIES);
 export const AnimationRigTemplateIdSchema = z.enum(RIG_TEMPLATE_IDS);
 export const AnimationActionIdSchema = z.enum(ANIMATION_ACTION_IDS);
-export const AnimationAnchorStatusSchema = z.enum(["anchorsPending", "ready"]);
+export const AnimationAnchorStatusSchema = z.enum([
+  "anchorsPending",
+  "invalidAnchors",
+  "ready"
+]);
 
 export const AnimationPointSchema = z
   .strictObject({
@@ -152,6 +156,33 @@ export const AnimationTransformDeltaSchema = z
   })
   .readonly();
 
+export const MAX_PROJECT_PART_OFFSET = 32;
+export const MAX_PROJECT_PART_ROTATION_DELTA = Math.PI / 2;
+export const MIN_PROJECT_PART_SCALE_MULTIPLIER = 0.5;
+export const MAX_PROJECT_PART_SCALE_MULTIPLIER = 1.5;
+
+/** Narrow project-wide correction; frame overrides deliberately keep their own contract. */
+export const AnimationProjectPartDeltaSchema = z
+  .strictObject({
+    offsetX: FinitePixelCoordinateSchema.min(-MAX_PROJECT_PART_OFFSET).max(
+      MAX_PROJECT_PART_OFFSET
+    ),
+    offsetY: FinitePixelCoordinateSchema.min(-MAX_PROJECT_PART_OFFSET).max(
+      MAX_PROJECT_PART_OFFSET
+    ),
+    rotationDelta: z
+      .number()
+      .finite()
+      .min(-MAX_PROJECT_PART_ROTATION_DELTA)
+      .max(MAX_PROJECT_PART_ROTATION_DELTA),
+    scaleMultiplier: z
+      .number()
+      .finite()
+      .min(MIN_PROJECT_PART_SCALE_MULTIPLIER)
+      .max(MAX_PROJECT_PART_SCALE_MULTIPLIER)
+  })
+  .readonly();
+
 export type ValidatedAnimationPoint = z.infer<typeof AnimationPointSchema>;
 export type ValidatedAnimationSize = z.infer<typeof AnimationSizeSchema>;
 export type ValidatedAnimationTrimRect = z.infer<
@@ -168,4 +199,7 @@ export type ValidatedAnimationAnchorStatus = z.infer<
 >;
 export type ValidatedAnimationTransformDelta = z.infer<
   typeof AnimationTransformDeltaSchema
+>;
+export type ValidatedAnimationProjectPartDelta = z.infer<
+  typeof AnimationProjectPartDeltaSchema
 >;

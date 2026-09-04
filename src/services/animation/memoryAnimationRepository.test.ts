@@ -230,6 +230,82 @@ describe("MemoryAnimationRepository", () => {
     expect(await repository.readBlob(oldPart.blobId)).toEqual({ status: "ok", value: oldBlob });
   });
 
+  it("atomically persists source anchors and a separate project-wide delta", async () => {
+    let failSetup = false;
+    const repository = new MemoryAnimationRepository({
+      beforeCommit(operation) {
+        if (operation === "writePartSetupToProject" && failSetup) {
+          throw new Error("simulated setup failure");
+        }
+      }
+    });
+    const draft = createAnimationPartAssetInput({
+      anchorStatus: "anchorsPending",
+      anchors: undefined
+    });
+    const project = createAnimationProjectInput({
+      parts: [{ assetId: draft.assetId }]
+    });
+    const blob = pngBlob("unchanged source pixels");
+    await repository.writePartAsset(draft, blob);
+    await repository.createProject(project);
+
+    const configured = {
+      ...draft,
+      anchorStatus: "ready" as const,
+      anchors: { proximal: { x: 16, y: 30 } },
+      updatedAt: LATER_TIMESTAMP
+    };
+    const updatedProject = {
+      ...project,
+      parts: [
+        {
+          assetId: draft.assetId,
+          transformDelta: {
+            offsetX: 2,
+            offsetY: -1,
+            rotationDelta: 0.1,
+            scaleMultiplier: 1.1
+          }
+        }
+      ],
+      updatedAt: LATER_TIMESTAMP
+    };
+
+    failSetup = true;
+    expect(
+      await repository.writePartSetupToProject({
+        project: updatedProject,
+        partAsset: configured
+      })
+    ).toMatchObject({ status: "failed" });
+    expect(await repository.readPartAsset(draft.assetId)).toMatchObject({
+      status: "ok",
+      value: { anchorStatus: "anchorsPending", anchors: undefined }
+    });
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { parts: [{ assetId: draft.assetId }] }
+    });
+
+    failSetup = false;
+    expect(
+      await repository.writePartSetupToProject({
+        project: updatedProject,
+        partAsset: configured
+      })
+    ).toMatchObject({ status: "ok", value: { partAsset: { anchorStatus: "ready" } } });
+    expect(await repository.readPartAsset(draft.assetId)).toMatchObject({
+      status: "ok",
+      value: { anchors: configured.anchors }
+    });
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { parts: [{ transformDelta: updatedProject.parts[0]?.transformDelta }] }
+    });
+    expect(await repository.readBlob(draft.blobId)).toEqual({ status: "ok", value: blob });
+  });
+
   it("duplicates only project metadata and retains immutable shared references", async () => {
     const repository = new MemoryAnimationRepository();
     const source = createAnimationProjectInput();

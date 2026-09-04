@@ -11,6 +11,7 @@ export {
 export {
   DuplicateAnimationProjectInputSchema,
   PersistAnimationPartImportInputSchema,
+  PersistAnimationPartSetupInputSchema,
   createAnimationProjectSummary,
   sortAnimationProjectSummaries,
   sortAnimationProjects,
@@ -33,7 +34,9 @@ export {
   type AnimationRepositoryValueMutationResult,
   type DuplicateAnimationProjectInput,
   type PersistAnimationPartImportInput,
-  type PersistedAnimationPartImport
+  type PersistAnimationPartSetupInput,
+  type PersistedAnimationPartImport,
+  type PersistedAnimationPartSetup
 } from "./animationRepository";
 export {
   analyzeAnimationBinaryReferences,

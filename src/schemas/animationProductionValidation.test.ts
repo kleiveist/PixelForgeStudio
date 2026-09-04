@@ -82,7 +82,7 @@ describe("animation production source validation", () => {
     expect(issues).toEqual([]);
   });
 
-  it("reports a missing distal anchor only through production readiness", () => {
+  it("keeps a saved incomplete limb out of production readiness", () => {
     const assets = requiredAssetsForDirections(["south"]);
     const armIndex = assets.findIndex(
       (asset) => asset.slot === "arm.left.upper"
@@ -97,6 +97,7 @@ describe("animation production source validation", () => {
         label: arm.label,
         slot: arm.slot,
         direction: arm.direction,
+        anchorStatus: "invalidAnchors",
         anchors: { proximal: arm.anchors!.proximal }
       })
     );
@@ -110,7 +111,7 @@ describe("animation production source validation", () => {
 
     expect(issues).toEqual([
       {
-        code: "missingDistalAnchor",
+        code: "invalidAnchors",
         assetId: arm.assetId,
         slot: "arm.left.upper",
         direction: "south"

@@ -22,6 +22,8 @@ export {
   type CreateAnimationProjectDefinition,
   type DeletedAnimationProject,
   type AnimationPartAssetResolution,
+  type ConfigureAnimationPartDefinition,
+  type ConfiguredAnimationPart,
   type ImportAnimationPartDefinition,
   type ImportedAnimationPart
 } from "./AnimationProjectProvider";

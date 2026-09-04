@@ -95,6 +95,63 @@ describe("AnimationProjectSchema", () => {
     expect("previewBlobId" in parsed).toBe(false);
   });
 
+  it("stores narrow project part deltas separately on assignments", () => {
+    const parsed = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [
+          {
+            assetId: "part_head_south_001",
+            transformDelta: {
+              offsetX: 3,
+              offsetY: -2,
+              rotationDelta: 0.2,
+              scaleMultiplier: 1.1
+            }
+          }
+        ]
+      })
+    );
+    expect(parsed.parts[0]?.transformDelta).toEqual({
+      offsetX: 3,
+      offsetY: -2,
+      rotationDelta: 0.2,
+      scaleMultiplier: 1.1
+    });
+
+    expect(
+      AnimationProjectSchema.safeParse(
+        createAnimationProjectInput({
+          parts: [
+            {
+              assetId: "part_head_south_001",
+              transformDelta: {
+                offsetX: 33,
+                offsetY: 0,
+                rotationDelta: 0,
+                scaleMultiplier: 1
+              }
+            }
+          ]
+        })
+      ).success
+    ).toBe(false);
+  });
+
+  it.each([
+    ["offset", { offsetX: -33, offsetY: 0, rotationDelta: 0, scaleMultiplier: 1 }],
+    ["rotation", { offsetX: 0, offsetY: 0, rotationDelta: Math.PI, scaleMultiplier: 1 }],
+    ["small scale", { offsetX: 0, offsetY: 0, rotationDelta: 0, scaleMultiplier: 0.49 }],
+    ["large scale", { offsetX: 0, offsetY: 0, rotationDelta: 0, scaleMultiplier: 1.51 }]
+  ])("rejects an out-of-range project part %s delta", (_label, transformDelta) => {
+    expect(
+      AnimationProjectSchema.safeParse(
+        createAnimationProjectInput({
+          parts: [{ assetId: "part_head_south_001", transformDelta }]
+        })
+      ).success
+    ).toBe(false);
+  });
+
   it.each([
     ["schema version", { schemaVersion: 2 }],
     ["kind", { kind: "promptProject" }],

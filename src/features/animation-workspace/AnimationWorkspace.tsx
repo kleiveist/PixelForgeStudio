@@ -19,6 +19,12 @@ import {
   type PartImportCommitDefinition,
   type PartImportCommitResult
 } from "../animation-part-import";
+import {
+  AnchorEditor,
+  type AnchorEditorCommitDefinition,
+  type AnchorEditorCommitResult,
+  type PartBlobLoadResult
+} from "../animation-anchor-editor";
 import type {
   AnimationClip,
   AnimationPartAsset,
@@ -73,6 +79,10 @@ export interface AnimationWorkspaceProps {
   readonly onImportPart?: (
     definition: PartImportCommitDefinition
   ) => Promise<PartImportCommitResult>;
+  readonly onLoadPartBlob?: (blobId: StableId) => Promise<PartBlobLoadResult>;
+  readonly onConfigurePart?: (
+    definition: AnchorEditorCommitDefinition
+  ) => Promise<AnchorEditorCommitResult>;
 }
 
 const SAVE_STATUS_COPY: Readonly<Record<WorkspaceSaveStatus, string>> =
@@ -375,10 +385,10 @@ function PartInventory({
     : null;
   const coverage = createPartCoverageMatrix(project, partAssets);
   const coverageLabels = {
-    authoredSource: "Quelle",
+    ready: "Bereit",
     missing: "Fehlt",
-    optional: "Optional",
-    anchorPending: "Anker offen"
+    anchorsPending: "Anker offen",
+    invalidAnchors: "Anker ungültig"
   } as const;
   return (
     <Surface
@@ -456,7 +466,9 @@ function PartInventory({
                 const occupancyLabel = source
                   ? source.anchorStatus === "anchorsPending"
                     ? "Anker ausstehend"
-                    : "Quelle vorhanden"
+                    : source.anchorStatus === "invalidAnchors"
+                      ? "Anker ungültig"
+                      : "Produktionsbereit"
                   : slot.required
                     ? "Fehlt"
                     : "Optional";
@@ -522,6 +534,11 @@ interface RigViewportProps {
   readonly activeClip: AnimationClip | null;
   readonly unresolvedReferenceCount: number;
   readonly loadedPartCount: number;
+  readonly selectedPart: AnimationPartAsset | null;
+  readonly onLoadPartBlob: (blobId: StableId) => Promise<PartBlobLoadResult>;
+  readonly onConfigurePart: (
+    definition: AnchorEditorCommitDefinition
+  ) => Promise<AnchorEditorCommitResult>;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
 }
@@ -532,6 +549,9 @@ function RigViewport({
   activeClip,
   unresolvedReferenceCount,
   loadedPartCount,
+  selectedPart,
+  onLoadPartBlob,
+  onConfigurePart,
   dispatch,
   layout
 }: RigViewportProps) {
@@ -546,6 +566,9 @@ function RigViewport({
     transform: `translate(${state.pan.x}px, ${state.pan.y}px)`,
     "--workspace-pixel-size": `${state.zoom}px`
   } as CSSProperties;
+  const selectedAssignment = selectedPart
+    ? project.parts.find(({ assetId }) => assetId === selectedPart.assetId)
+    : undefined;
 
   const handleViewportKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;
@@ -658,7 +681,7 @@ function RigViewport({
             ? `${loadedPartCount} Part-${loadedPartCount === 1 ? "Quelle ist" : "Quellen sind"} dem Projekt zugewiesen; die Renderpipeline folgt in ihrer eigenen Phase.`
             : "Dem Projekt sind noch keine PartAssets zugewiesen; es wird kein Dummybild erzeugt."}{" "}
         {rigTemplate
-          ? ` Das SVG-Overlay liest die versionierte Neutralpose direkt aus ${rigTemplate.id}; es platziert noch keine Partbilder.`
+          ? ` Das SVG-Overlay liest die versionierte Neutralpose direkt aus ${rigTemplate.id}; der Ankereditor zeigt gültige ausgewählte Parts über seinen getrennten Anzeigeadapter.`
           : " Für die Projektreferenz ist keine Built-in-Rigvorlage verfügbar."}
       </p>
 
@@ -739,6 +762,20 @@ function RigViewport({
             : "nicht verfügbar"}
         </li>
       </ul>
+      {rigTemplate && selectedPart ? (
+        <AnchorEditor
+          asset={selectedPart}
+          template={rigTemplate}
+          direction={state.direction}
+          transformDelta={selectedAssignment?.transformDelta}
+          loadBlob={onLoadPartBlob}
+          onCommit={onConfigurePart}
+        />
+      ) : (
+        <p className={styles.emptyDetail} role="note">
+          Wähle einen belegten Slot, um dessen Originalanker im Viewport zu bearbeiten.
+        </p>
+      )}
     </Surface>
   );
 }
@@ -766,6 +803,10 @@ function Inspector({
   const selectedPart = state.selectedSlot
     ? findPartAssetForSource(partAssets, state.selectedSlot, state.direction)
     : null;
+  const selectedPartDelta = selectedPart
+    ? project.parts.find(({ assetId }) => assetId === selectedPart.assetId)
+        ?.transformDelta
+    : undefined;
   const contexts: readonly Readonly<{
     id: WorkspaceInspectorContext;
     label: string;
@@ -836,12 +877,12 @@ function Inspector({
                 <div><dt>Belegung</dt><dd>{selectedPart ? "Quelle vorhanden" : unresolvedReferenceCount > 0 ? "Teilweise nicht aufgelöst" : "Frei"}</dd></div>
                 <div><dt>Part</dt><dd>{selectedPart?.label ?? "Noch nicht geladen"}</dd></div>
                 <div><dt>Originalgröße / Trim</dt><dd>{selectedPart ? `${selectedPart.sourceSize.width} × ${selectedPart.sourceSize.height} px / X ${selectedPart.trimRect.x}, Y ${selectedPart.trimRect.y}, ${selectedPart.trimRect.width} × ${selectedPart.trimRect.height} px` : "Noch nicht verfügbar"}</dd></div>
-                <div><dt>Anker / Pivot</dt><dd>{selectedPart?.anchorStatus === "anchorsPending" ? "Ausstehend – Produktion gesperrt" : selectedPart?.anchors ? `${selectedPart.anchors.proximal.x} / ${selectedPart.anchors.proximal.y}` : "Noch nicht verfügbar"}</dd></div>
-                <div><dt>Skalierung / Offset / Layer</dt><dd>Noch nicht verfügbar</dd></div>
+                <div><dt>Anker / Pivot</dt><dd>{selectedPart?.anchorStatus === "anchorsPending" ? "Ausstehend – Produktion gesperrt" : selectedPart?.anchorStatus === "invalidAnchors" ? "Ungültig – Produktion gesperrt" : selectedPart?.anchors ? `${selectedPart.anchors.proximal.x} / ${selectedPart.anchors.proximal.y}` : "Noch nicht verfügbar"}</dd></div>
+                <div><dt>Projektweite Korrektur</dt><dd>{selectedPart ? selectedPartDelta ? `Offset ${selectedPartDelta.offsetX} / ${selectedPartDelta.offsetY}, Rotation ${selectedPartDelta.rotationDelta}, Scale ${selectedPartDelta.scaleMultiplier}` : "Identität" : "Noch nicht verfügbar"}</dd></div>
                 <div><dt>Spiegelregel</dt><dd>{selectedPart?.mirrorPolicy ?? "Noch nicht verfügbar"}</dd></div>
               </dl>
               <p className={styles.emptyDetail}>
-                Importierte Originalbilder bleiben unverändert gespeichert. Anker werden erst in der dafür vorgesehenen Bearbeitungsphase gesetzt.
+                Importierte Originalbilder bleiben unverändert gespeichert. Source-Anker und projektweite Korrektur werden im Viewport getrennt bearbeitet.
               </p>
             </>
           ) : (
@@ -980,6 +1021,14 @@ export function AnimationWorkspace({
   onImportPart = async () => ({
     status: "error",
     message: "Der Part-Import ist in dieser Ansicht nicht verbunden."
+  }),
+  onLoadPartBlob = async () => ({
+    status: "error",
+    message: "Das Originalbild ist in dieser Ansicht nicht verbunden."
+  }),
+  onConfigurePart = async () => ({
+    status: "error",
+    message: "Die Ankerpersistenz ist in dieser Ansicht nicht verbunden."
   })
 }: AnimationWorkspaceProps) {
   const [state, dispatch] = useReducer(
@@ -994,6 +1043,9 @@ export function AnimationWorkspace({
   const effectiveMissingPartAssetIds =
     missingPartAssetIds ?? project.parts.map(({ assetId }) => assetId);
   const unresolvedReferenceCount = effectiveMissingPartAssetIds.length;
+  const selectedPart = state.selectedSlot
+    ? findPartAssetForSource(partAssets, state.selectedSlot, state.direction)
+    : null;
 
   useEffect(() => {
     const panel = pendingPaneFocus.current;
@@ -1058,6 +1110,9 @@ export function AnimationWorkspace({
             activeClip={activeClip}
             unresolvedReferenceCount={unresolvedReferenceCount}
             loadedPartCount={partAssets.length}
+            selectedPart={selectedPart}
+            onLoadPartBlob={onLoadPartBlob}
+            onConfigurePart={onConfigurePart}
             dispatch={dispatch}
             layout={layout}
           />

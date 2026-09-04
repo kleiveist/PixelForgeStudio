@@ -9,6 +9,7 @@ import {
   AnimationJointIdSchema,
   AnimationNameSchema,
   AnimationPartSlotSchema,
+  AnimationProjectPartDeltaSchema,
   AnimationRigTemplateIdSchema,
   AnimationSchemaVersionSchema,
   AnimationTransformDeltaSchema,
@@ -22,7 +23,8 @@ import {
 
 export const ProjectPartAssignmentSchema = z
   .strictObject({
-    assetId: StableIdSchema
+    assetId: StableIdSchema,
+    transformDelta: AnimationProjectPartDeltaSchema.optional()
   })
   .readonly();
 

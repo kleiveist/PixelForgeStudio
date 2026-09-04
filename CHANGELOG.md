@@ -92,6 +92,15 @@
 - bisherige symbolische CSS-Rigzeichnung durch ein datengetriebenes SVG mit
   Bones, Joints, Groundline und Slotlabels ersetzt; westliche
   Quellgeometrien bleiben bis zur kontrollierten Spiegelphase explizit offen
+- pure, slotabhängige Originalanker-Validierung und reproduzierbare uniforme
+  Bone-Platzierung mit einmaliger Trim-Umrechnung, strukturiertem
+  Fast-Null-Fehler sowie sichtbarer Extrem-Scale-Warnung ergänzt
+- Ankerbearbeitungsmodus mit pixelgenauem Originalbild, Pointer-Snap,
+  Koordinatenfeldern, Zoom/Pan, Reset und richtungsreaktiver Live-Vorschau im
+  Animation Workspace umgesetzt
+- enge projektweite Part-Deltas getrennt von Rig und SourceAnchors sowie
+  PartAsset/Projekt-Setup atomar in Memory und IndexedDB persistiert; Coverage
+  auf `ready`, `anchorsPending`, `invalidAnchors` und `missing` geschärft
 
 ## 2.0.0 — 2026-09-03
 

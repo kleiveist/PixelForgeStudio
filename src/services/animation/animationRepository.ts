@@ -160,6 +160,42 @@ export interface PersistedAnimationPartImport {
   readonly replacedAssetId?: StableId;
 }
 
+export const PersistAnimationPartSetupInputSchema = z
+  .strictObject({
+    project: AnimationProjectSchema,
+    partAsset: AnimationPartAssetSchema
+  })
+  .superRefine((input, context) => {
+    if (
+      input.project.parts.filter(
+        ({ assetId }) => assetId === input.partAsset.assetId
+      ).length !== 1
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["project", "parts"],
+        message: "The updated project must reference the configured part exactly once."
+      });
+    }
+    if (input.partAsset.anchorStatus === "anchorsPending") {
+      context.addIssue({
+        code: "custom",
+        path: ["partAsset", "anchorStatus"],
+        message: "A configured part must contain saved source anchors."
+      });
+    }
+  })
+  .readonly();
+
+export type PersistAnimationPartSetupInput = z.infer<
+  typeof PersistAnimationPartSetupInputSchema
+>;
+
+export interface PersistedAnimationPartSetup {
+  readonly project: AnimationProject;
+  readonly partAsset: AnimationPartAsset;
+}
+
 export interface AnimationRepository {
   listProjects(): Promise<
     AnimationRepositoryQueryResult<readonly AnimationProject[]>
@@ -188,6 +224,9 @@ export interface AnimationRepository {
     input: unknown,
     blob: Blob
   ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationPartImport>>;
+  writePartSetupToProject(
+    input: unknown
+  ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationPartSetup>>;
   deletePartAsset(assetId: unknown): Promise<AnimationRepositoryMutationResult>;
 
   readBlob(blobId: unknown): Promise<AnimationRepositoryReadResult<Blob>>;

@@ -226,7 +226,11 @@ Der derzeit implementierte V3-Ausbaustand umfasst:
    Part-/Blob-/Projektzuweisung sowie
 9. die immutable Built-in-Rigvorlage `humanoid-80-v1` mit fünf eigenen
    Neutralposen, validierter Bone-/Slot-Hierarchie, stabilem Compatibility Key
-   und datengetriebenem SVG-Overlay.
+   und datengetriebenem SVG-Overlay sowie
+10. den Originalanker-Editor mit Ein-/Zweipunktvertrag, reproduzierbarer
+    uniformer Bone-Platzierung, getrennten projektweiten Deltas, atomarem
+    Resume und den Coverage-Zuständen `ready`, `anchorsPending`,
+    `invalidAnchors` und `missing`.
 
 Im Workspace liest das Rig-SVG Bones, Joints, Groundline und Pflichtslotlabels
 direkt aus den versionierten Produktionsdaten. Schachbrett, Raster,
@@ -236,10 +240,10 @@ die Anzeige; Projekt- und Exportkoordinaten bleiben unverändert. Nicht
 aufgelöste PartAsset-/Blob-Referenzen werden sichtbar als fehlende Quelle
 behandelt, ohne Dummybilder oder scheinpräzise Anker zu erzeugen.
 
-Die V3-Implementierung ist mit Prompt 38 noch nicht releasevollständig.
-Ankerplatzierung, deterministische
-Pixelkomposition, richtungsabhängige Layer, Walk-Generierung, Playback,
+Die V3-Implementierung ist mit Abschluss der Phase C (Prompts 36–39) noch nicht
+releasevollständig. Deterministische Pixelkomposition, richtungsabhängige
+Layer, Walk-Generierung, Playback,
 Korrektur-History, Character Kits, Sprite-Sheet-/Godot-Export und die explizite
-Prompt→Animation-Übergabe gehören zu den noch offenen Prompts 39–51. Der
+Prompt→Animation-Übergabe gehören zu den noch offenen Prompts 40–51. Der
 verbindliche Ausführungsstand und die Reihenfolge stehen unter
 `aufgaben/pixelforge-studio-v3/START_HERE.md` und in `../PLANS.md`.

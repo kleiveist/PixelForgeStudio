@@ -14,6 +14,7 @@ import {
 import {
   createAnimationProjectSummary,
   PersistAnimationPartImportInputSchema,
+  PersistAnimationPartSetupInputSchema,
   sortAnimationProjects,
   sortAnimationProjectSummaries,
   sortCharacterKits,
@@ -25,7 +26,8 @@ import {
   type AnimationRepositoryReadResult,
   type AnimationRepositoryValueMutationResult,
   type AnimationProjectSummary,
-  type PersistedAnimationPartImport
+  type PersistedAnimationPartImport,
+  type PersistedAnimationPartSetup
 } from "./animationRepository";
 import {
   createDuplicatedProject,
@@ -44,6 +46,7 @@ export type MemoryAnimationRepositoryOperation =
   | "duplicateProject"
   | "writePartAsset"
   | "writePartAssetToProject"
+  | "writePartSetupToProject"
   | "deletePartAsset"
   | "writeBlob"
   | "writePreview"
@@ -292,6 +295,61 @@ export class MemoryAnimationRepository implements AnimationRepository {
             ...(command.value.replacedAssetId
               ? { replacedAssetId: command.value.replacedAssetId }
               : {})
+          })
+        }
+      : committed;
+  }
+
+  public async writePartSetupToProject(
+    input: unknown
+  ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationPartSetup>> {
+    const command = parseRepositoryValue(
+      PersistAnimationPartSetupInputSchema,
+      input,
+      "The part setup was not written because its metadata is invalid."
+    );
+    if (!command.success) return command.result;
+    const currentProject = this.projects.get(command.value.project.projectId);
+    if (!currentProject) {
+      return repositoryNotFound("project", command.value.project.projectId);
+    }
+    const currentPart = this.partAssets.get(command.value.partAsset.assetId);
+    if (!currentPart) {
+      return repositoryNotFound("partAsset", command.value.partAsset.assetId);
+    }
+    const unchangedIdentity =
+      currentPart.blobId === command.value.partAsset.blobId &&
+      currentPart.slot === command.value.partAsset.slot &&
+      currentPart.direction === command.value.partAsset.direction &&
+      currentPart.createdAt === command.value.partAsset.createdAt &&
+      JSON.stringify(currentPart.sourceSize) ===
+        JSON.stringify(command.value.partAsset.sourceSize) &&
+      JSON.stringify(currentPart.trimRect) ===
+        JSON.stringify(command.value.partAsset.trimRect);
+    const sameAssignments =
+      currentProject.parts.length === command.value.project.parts.length &&
+      currentProject.parts.every(
+        ({ assetId }, index) =>
+          assetId === command.value.project.parts[index]?.assetId
+      );
+    if (!unchangedIdentity || !sameAssignments) {
+      return repositoryConflict("project", currentProject.projectId);
+    }
+
+    const nextProjects = new Map(this.projects);
+    const nextPartAssets = new Map(this.partAssets);
+    nextProjects.set(command.value.project.projectId, command.value.project);
+    nextPartAssets.set(command.value.partAsset.assetId, command.value.partAsset);
+    const committed = await this.commit("writePartSetupToProject", () => {
+      this.projects = nextProjects;
+      this.partAssets = nextPartAssets;
+    });
+    return committed.status === "ok"
+      ? {
+          status: "ok",
+          value: Object.freeze({
+            project: command.value.project,
+            partAsset: command.value.partAsset
           })
         }
       : committed;

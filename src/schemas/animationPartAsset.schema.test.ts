@@ -53,6 +53,21 @@ describe("AnimationPartAssetSchema", () => {
     ).toBe(false);
   });
 
+  it("persists invalid limb anchors for resume but never marks them ready", () => {
+    const invalidDraft = createAnimationPartAssetInput({
+      slot: "arm.left.upper",
+      anchorStatus: "invalidAnchors",
+      anchors: { proximal: { x: 8, y: 6 } }
+    });
+    expect(AnimationPartAssetSchema.safeParse(invalidDraft).success).toBe(true);
+    expect(
+      AnimationPartAssetSchema.safeParse({
+        ...invalidDraft,
+        anchorStatus: "ready"
+      }).success
+    ).toBe(false);
+  });
+
   it.each([
     ["schemaVersion", { schemaVersion: 2 }],
     ["kind", { kind: "partAsset" }],

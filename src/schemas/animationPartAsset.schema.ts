@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  HUMANOID_80_RIG_TEMPLATE,
+  findSlotBinding,
+  isRequiredPartSlot,
+  validateSourceAnchors
+} from "../domain/animation";
 import { IsoDateTimeSchema, StableIdSchema } from "./common.schema";
 import {
   AnimationDirectionSchema,
@@ -81,6 +87,37 @@ export const AnimationPartAssetSchema = z
         path: ["anchors"],
         message: "Anchor-pending part assets must not contain guessed anchors."
       });
+    }
+    if (asset.anchorStatus === "invalidAnchors" && !asset.anchors) {
+      context.addIssue({
+        code: "custom",
+        path: ["anchors"],
+        message: "Invalid-anchor drafts require saved source coordinates."
+      });
+    }
+
+    if (
+      asset.anchorStatus === "ready" &&
+      asset.anchors &&
+      isRequiredPartSlot(asset.slot)
+    ) {
+      const binding = findSlotBinding(HUMANOID_80_RIG_TEMPLATE, asset.slot);
+      if (binding) {
+        const validation = validateSourceAnchors(
+          binding,
+          asset.anchors,
+          asset.sourceSize
+        );
+        if (!validation.valid) {
+          for (const issue of validation.issues) {
+            context.addIssue({
+              code: "custom",
+              path: ["anchors", ...issue.path],
+              message: issue.message
+            });
+          }
+        }
+      }
     }
 
     if (!asset.anchors) return;

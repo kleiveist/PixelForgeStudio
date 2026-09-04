@@ -1,14 +1,13 @@
 # PixelForge Studio source architecture
 
-Prompt 38 adds the concrete immutable `humanoid-80-v1` production rig to the
-Animation Workspace. Five authored neutral directions, joint coordinates,
-hierarchical bones, required-slot bindings, motion-profile metadata,
-validation and the compatibility key remain framework-free Domain data. The
-SVG viewport only projects that data; it neither mutates the built-in rig nor
-places imported PNGs. New parts remain explicitly `anchorsPending`, while
-direction, clip, frame, slot, zoom, overlays, pan and responsive pane selection
-remain temporary local reducer state. Anchor editing, placement, rendering,
-playback and export remain explicit future boundaries.
+Prompt 39 completes Phase C with source-anchor editing and reproducible Part
+placement on the immutable `humanoid-80-v1` production rig. Original-space
+anchors, one-/two-point slot rules, effective trimmed coordinates, uniform
+Bone placement and delta composition remain pure Domain logic. The viewport
+loads an original Blob only into local presentation state and projects a live
+preview through a narrow display adapter; it persists neither the Blob nor an
+absolute automatic transform in React state. Rendering, playback and export
+remain explicit future boundaries.
 Both modules share one route source, settings source, theme, skip target,
 title and focus boundary.
 
@@ -25,8 +24,10 @@ title and focus boundary.
   - `animation/`: stable direction/source-mode contracts, complete Production-
     Humanoid slot metadata, the immutable five-pose `humanoid-80-v1` rig,
     validated joint/bone/slot hierarchy and compatibility key, versioned frame
-    defaults, pure vector/angle/affine-matrix helpers and deterministic RGBA
-    alpha-bound/crop operations without browser data
+    defaults, pure source-anchor validation, effective-coordinate and
+    reproducible placement/delta composition, vector/angle/affine-matrix
+    helpers and deterministic RGBA alpha-bound/crop operations without browser
+    data
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
   - `characters/`: Character/NPC option catalogs, subtype guards, canonical
@@ -80,7 +81,10 @@ title and focus boundary.
   pure temporäre State-Machine, responsive Paneelprojektion, Slotinventar,
   DOM-Viewport, datengetriebenes Rig-SVG, read-only Inspektor und Frameauswahl;
   `animation-part-import/` enthält die unbekannte Datei-/Decoder-Grenze,
-  Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion
+  Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion;
+  `animation-anchor-editor/` besitzt Originalbild-Eingabe, Zoom/Pan, zugängliche
+  Koordinatenfelder, Live-Placement-Anzeigeadapter und projektweite
+  Delta-Bedienung
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -446,9 +450,36 @@ input, shows filename, original size, trim, warnings, target slot/direction and
 explicit confirm/cancel actions. `useObjectUrl()` is the only preview URL owner
 and revokes on draft replacement, cancellation, unmount and therefore project
 switch. The coverage matrix projects every canonical slot over authored source
-directions as `authoredSource`, `missing`, `optional` or `anchorPending`.
+directions as `ready`, `anchorsPending`, `invalidAnchors` or `missing`.
 Confirmed imports receive injected IDs/timestamps and use
 `writePartAssetToProject()`; failed writes do not change provider state.
+
+`domain/animation/anchorPlacement.ts` is the Prompt-39 pure placement
+boundary. `validateSourceAnchors()` enforces the selected `SlotBinding`, source
+bounds and near-zero vector epsilon. `resolveEffectiveAnchor()` subtracts the
+trim origin exactly once. `resolveBonePlacement()` composes
+`T(parent) × R(targetAngle-sourceAngle) × S(targetLength/sourceLength) ×
+T(-effectiveProximal)` for two-point parts; single-point parts use the
+binding's versioned source orientation and scale 1. Scale outside 0.5–2 is
+returned as a visible warning without clamping. `applyTransformDelta()`
+recomposes from the immutable base placement, so no correction mutates its
+source truth.
+
+`features/animation-anchor-editor/index.ts` is the display and input boundary.
+It holds only the current draft, local Blob/Object URL, integer zoom and pan.
+Pointer positions snap to original whole pixels and the same coordinates are
+available through native number inputs. Its adapter resolves the active
+`DirectionRig` on every render, so direction or template changes recompute
+placement without rewriting anchors. The CSS-matrix crop preview is
+deliberately not the Prompt-40 raster renderer.
+
+Project-wide `transformDelta` lives on the Part assignment, separate from both
+the PartAsset's `SourceAnchors` and the Rig. Zod restricts offsets to ±32 px,
+rotation to ±π/2 and the uniform multiplier to 0.5–1.5. The provider validates
+slot-dependent readiness and `writePartSetupToProject()` atomically commits the
+PartAsset plus assignment in Memory/IndexedDB without touching its original
+Blob. `ready` is therefore possible only after valid required anchors;
+incomplete saved work resumes as `invalidAnchors`.
 
 The provider registers `beforeunload` only while a project is dirty. The
 navigation provider also asks the composition-injected guard before internal
@@ -1083,5 +1114,7 @@ Walk timeline. Prompt 37 adds validated PNG decoding and trimming,
 anchor-pending PartAssets, atomic Part/Blob/project assignment, transient
 preview URLs and authored-direction coverage. Prompt 38 adds the immutable
 five-pose `humanoid-80-v1` template, pure structured validation, deterministic
-Rig compatibility and its data-driven SVG overlay. Prompt 39 is the next
-separate task and owns source-anchor editing plus reproducible Part placement.
+Rig compatibility and its data-driven SVG overlay. Prompt 39 completes Phase C
+with original-space anchor editing, deterministic Part placement, separate
+project deltas, atomic resume persistence and live display-adapter previews.
+Prompt 40 is the next separate task and owns the deterministic pixel renderer.

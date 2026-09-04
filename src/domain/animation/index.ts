@@ -1,4 +1,25 @@
 export {
+  EXTREME_SCALE_WARNING_MAX,
+  EXTREME_SCALE_WARNING_MIN,
+  SOURCE_ANCHOR_ISSUE_CODES,
+  SOURCE_VECTOR_EPSILON,
+  applyTransformDelta,
+  resolveBonePlacement,
+  resolveEffectiveAnchor,
+  snapSourcePoint,
+  toSourceAnchors,
+  validateSourceAnchors,
+  type AdjustedBonePlacement,
+  type BonePlacement,
+  type BonePlacementResult,
+  type BonePlacementWarning,
+  type EditableSourceAnchors,
+  type ResolveBonePlacementInput,
+  type SourceAnchorIssue,
+  type SourceAnchorIssueCode,
+  type SourceAnchorValidationResult
+} from "./anchorPlacement";
+export {
   DEFAULT_ALPHA_THRESHOLD,
   cropRgba,
   findAlphaBounds,

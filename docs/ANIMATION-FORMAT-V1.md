@@ -44,8 +44,15 @@ PNG-Base64 oder Object URLs. Source-Anker beziehen sich auf das ungetrimmte
 Originalbild. Jeder Anker muss innerhalb von `sourceSize` liegen; `trimRect`
 muss vollständig darin enthalten sein. Bestehende Datensätze ohne
 `anchorStatus` werden kompatibel als `ready` gelesen. Ein neu importiertes
-PartAsset verwendet `anchorStatus: "anchorsPending"` ohne erfundene
-Ankerkoordinaten und bleibt dadurch sichtbar nicht produktionsreif.
+Ein neuer PartAsset verwendet `anchorStatus: "anchorsPending"` ohne erfundene
+Ankerkoordinaten und bleibt dadurch sichtbar nicht produktionsreif. Ein
+gespeicherter, noch unvollständiger Ankerentwurf ist `invalidAnchors`; nur die
+slotabhängig vollständige Ein- oder Zweipunktbelegung ist `ready`.
+
+Die Projektzuweisung darf eine enge projektweite `transformDelta`-Korrektur
+tragen. Sie bleibt getrennt vom PartAsset und enthält ausschließlich Offset,
+Rotationsdelta und einen uniformen Scale-Multiplikator. Die automatisch aus
+Rig und SourceAnchors berechnete Grundmatrix wird nicht persistiert.
 
 Binärdaten werden seit Prompt 34 getrennt in IndexedDB gespeichert. Prompt 37
 schreibt Original-PNG, PartAsset-Metadaten und die aktualisierte

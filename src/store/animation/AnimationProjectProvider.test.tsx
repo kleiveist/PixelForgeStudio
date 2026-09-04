@@ -446,4 +446,88 @@ describe("AnimationProjectProvider", () => {
     expect(await repository.readPartAsset("part_failed_import_001")).toMatchObject({ status: "notFound" });
     expect(await repository.readBlob("blob_failed_import_001")).toMatchObject({ status: "notFound" });
   });
+
+  it("loads the immutable source and resumes atomic anchor plus delta setup", async () => {
+    const repository = new MemoryAnimationRepository();
+    const draft = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        slot: "arm.left.upper",
+        anchorStatus: "anchorsPending",
+        anchors: undefined
+      })
+    );
+    const sourceBlob = new Blob(["source"], { type: "image/png" });
+    await repository.writePartAsset(draft, sourceBlob);
+    const project = await seedProject(repository, {
+      parts: [{ assetId: draft.assetId }]
+    });
+    renderProvider(repository, { now: () => NOW });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+
+    await act(async () => {
+      expect(await context.loadPartImageBlob(draft.blobId)).toEqual({
+        status: "ok",
+        value: sourceBlob
+      });
+      expect(
+        await context.configurePartAsset({
+          assetId: draft.assetId,
+          anchors: { proximal: { x: 8, y: 8 } },
+          transformDelta: {
+            offsetX: 2,
+            offsetY: -1,
+            rotationDelta: 0.1,
+            scaleMultiplier: 1.1
+          }
+        })
+      ).toMatchObject({
+        status: "ok",
+        value: { partAsset: { anchorStatus: "invalidAnchors" } }
+      });
+    });
+    expect(context.activeProject?.parts[0]?.transformDelta).toEqual({
+      offsetX: 2,
+      offsetY: -1,
+      rotationDelta: 0.1,
+      scaleMultiplier: 1.1
+    });
+
+    await act(async () => {
+      expect(
+        await context.configurePartAsset({
+          assetId: draft.assetId,
+          anchors: {
+            proximal: { x: 8, y: 8 },
+            distal: { x: 10, y: 30 }
+          },
+          transformDelta: {
+            offsetX: 2,
+            offsetY: -1,
+            rotationDelta: 0.1,
+            scaleMultiplier: 1.1
+          }
+        })
+      ).toMatchObject({
+        status: "ok",
+        value: { partAsset: { anchorStatus: "ready" } }
+      });
+    });
+    expect(await repository.readPartAsset(draft.assetId)).toMatchObject({
+      status: "ok",
+      value: {
+        anchorStatus: "ready",
+        anchors: {
+          proximal: { x: 8, y: 8 },
+          distal: { x: 10, y: 30 }
+        }
+      }
+    });
+    expect(await repository.readBlob(draft.blobId)).toEqual({
+      status: "ok",
+      value: sourceBlob
+    });
+  });
 });
