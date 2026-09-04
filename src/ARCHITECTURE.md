@@ -2,14 +2,16 @@
 
 Prompts 40 through 43 complete Phase D's deterministic pure TypeScript
 renderer, versioned draw-order contract, first reconstructable Walk clip and
-frame-accurate preview lifecycle.
+frame-accurate preview lifecycle. Prompts 44 and 45 start Phase E with
+controlled source/geometry mirroring and complete eight-direction generation.
 Inverse affine nearest-neighbor sampling, integer-rounded source-over,
 direction-specific near/far layering, eight explicit movement phases, clamped
 Two-Bone IK and pure elapsed-time playback projection are independent of React
-and Canvas. A complete ready South partset produces eight transient frames while
-the project stores only template ID, FPS, loop and later overrides. Timeline,
-manual playback and Onion Skin consume these values without becoming a second
-project source; export remains an explicit later boundary.
+and Canvas. A complete five- or eight-source partset produces 64 transient
+frames while the project stores only template ID, FPS, loop and later
+overrides. Timeline, manual playback, Onion Skin and the static eight-direction
+review consume these values without becoming a second project source; export
+remains an explicit later boundary.
 Both modules share one route source, settings source, theme, skip target,
 title and focus boundary.
 
@@ -84,10 +86,10 @@ title and focus boundary.
   `animation-workspace/` enthält die repository-freie Arbeitsoberfläche, ihre
   pure temporäre State-Machine, responsive Paneelprojektion, Slotinventar,
   DOM-Viewport, datengetriebenes Rig-SVG, richtungsgeordnet software-gerenderte
-  Neutralpose, transienten South-Walk-Generator, gesammelte
-  Produktionsblocker, Layer-/Clippingdiagnostik, Part-Layer-Delta, echte
-  Timeline-Thumbnails, injizierbares Playback, revisionsgebundenen Framecache
-  und exportneutrales Onion Skin;
+  Neutralpose, transienten 64-Frame-Richtungsgenerator, gesammelte
+  Produktionsblocker, Layer-/Clipping-/Höhendiagnostik, Part-Layer-Delta,
+  echte Timeline-Thumbnails, statische Achtfachprüfung, injizierbares
+  Playback, revisionsgebundenen Framecache und exportneutrales Onion Skin;
   `animation-part-import/` enthält die unbekannte Datei-/Decoder-Grenze,
   Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion;
   `animation-anchor-editor/` besitzt Originalbild-Eingabe, Zoom/Pan, zugängliche
@@ -442,14 +444,15 @@ integer display zoom, keyboard/button panning and text equivalents for every
 overlay. `RigOverlay` receives the resolved built-in template and projects its
 selected `DirectionRig` through a pure `createRigOverlayModel()` into SVG
 bones, joints, required-slot labels and groundline. It never copies production
-coordinates into JSX. West, north-west and south-west expose an explicit
-unavailable geometry state instead of inferred joints. The viewport remains a
-presentation rather than a rig-data source, and display zoom never changes
-project or export coordinates. The inspector exposes Project, Part and Frame
-read-only states without fake editable fields. The Timeline exposes the eight
-actual transient renderframes with click/range scrubbing and roving
-Arrow/Home/End selection. Its status announces frame, phase, direction, FPS,
-playback state, warnings and blockers.
+coordinates into JSX. `resolveDirectionRig()` returns the five authored poses
+or one of the three contractually mirrored western target geometries. The
+viewport remains a presentation rather than a rig-data source, and display
+zoom never changes project or export coordinates. The inspector exposes
+Project, Part and Frame read-only states without fake editable fields. The
+Timeline exposes the eight actual transient renderframes of the selected
+direction with click/range scrubbing and roving Arrow/Home/End selection. Its
+status announces frame, phase, direction, FPS, playback state, warnings and
+blockers.
 
 `useWorkspaceLayout()` maps browser width to desktop, medium and small DOM
 structures. Desktop renders inventory, viewport, inspector and timeline;
@@ -1177,8 +1180,10 @@ South pose solver and transient multi-frame renderer. Prompt 43 closes Phase D
 with real Timeline frames, deterministic playback, Scrubbing, Onion Skin and
 controlled preview resource lifecycles. Prompt 44 starts Phase E with
 direction coverage, controlled runtime mirroring and explicit asymmetric-part
-review. Prompt 45 remains the next separate task and owns full eight-direction
-Walk generation.
+review. Prompt 45 projects the shared Walk contract over all target rigs and
+adds fail-closed 64-frame generation, per-direction playback and static
+all-direction review. Prompt 46 remains the next separate task and owns
+non-destructive frame corrections and history.
 
 The draw-order domain in `domain/animation/layerOrder.ts` lists every required
 and optional slot for each target direction. It keeps anatomical side,
@@ -1192,21 +1197,26 @@ plus affected edges for clipping. Fully outside parts are errors.
 `domain/animation/walkClip.ts` owns `walk-humanoid-8-v1`: eight named phases,
 10 FPS default, loop semantics and explicit normalized stride, root-bob,
 root-sway, counter-arm and lift channels. `resolveClipFrame()` and
-`resolveHumanoidWalkPose()` never interpolate. `applyPoseToDirectionRig()`
-copies only the authored South rig, preserves the global root anchor, applies
-bounded one-pixel bob plus torso/head counter-motion, and keeps contact toes
-on the projected groundline. Its pure Two-Bone IK clamps unreachable targets
-to valid segment distance and reports that correction without non-finite
-joint coordinates.
+`resolveHumanoidWalkPose()` never interpolate. Each `DirectionMotionProfile`
+versions its projection class, normalized step and sway axes, stride,
+thigh/lower-leg/arm amplitudes, knee/foot lift and bend signs. Side profiles use
+18°/28°/14°, diagonals 14°/22°/11° and front/back 9°/18°/8°.
+`projectWalkChannels()` and `resolveDirectionalWalkPose()` turn the one shared
+clip into target-space deltas without changing camera or world light.
+`applyPoseToDirectionRig()` preserves the global root anchor, applies bounded
+bob and torso/head counter-motion, and keeps contact toes on the common
+groundline. Its pure Two-Bone IK clamps unreachable targets to valid segment
+distance and reports that correction without non-finite joint coordinates.
 
-`features/animation-workspace/southWalkRenderer.ts` is the composition
-boundary from validated project metadata, ready South PartAssets and decoded
-RGBA sources to eight transient `RenderedFrame` values. It collects missing
-parts, pending/invalid anchors, invalid limb geometry, preparation and renderer
-errors before exposing the clip as ready. Frames are never persisted; the
-project remains the source of template ID, FPS, loop and later overrides. The
-Workspace shows the aggregated readiness result. Only that valid active South
-clip enables playback; no invalid or placeholder frame can start it.
+`features/animation-workspace/directionalWalkRenderer.ts` is the pure
+composition boundary from validated project metadata, target rigs, coverage
+and decoded RGBA sources to the canonical 8 × 8 set. Preflight collects missing
+required parts, pending/invalid anchors, blocked mirrors/reviews, missing blobs,
+clip and rig errors. Postflight checks size, FootAnchor, visible silhouette,
+South-relative ±1 px height tolerance and clipping. One target failure returns
+no partial success. Frames are never persisted; the project remains the source
+of template ID, FPS, loop and later overrides. The earlier South-only generator
+remains the deliberately limited single-direction prototype path.
 
 `features/animation-workspace/animationPlayback.ts` owns the pure elapsed-time
 projection and the bounded revision-aware frame LRU. Its key contains project
@@ -1218,6 +1228,13 @@ the active project are pruned without touching unrelated entries.
 but clip FPS alone determines advancement; delayed ticks calculate their
 complete catch-up without iteration. The hook never auto-plays and cancels its
 single request on pause, invalidation, identity change and unmount.
+
+For five- and eight-source projects `useNeutralPoseFrame()` resolves all needed
+decoded sources once, generates or reconstructs exactly 64 cached frames, and
+projects the selected direction into the existing Timeline contract. The
+Workspace's “Alle Richtungen prüfen” surface reads one selected phase from each
+direction. It owns no scheduler, so eight previews never create eight playback
+loops and reduced-motion behavior stays at the single manual playback boundary.
 
 `features/animation-workspace/onionSkin.ts` projects only the previous and/or
 next cached frame reference. React displays those references in separate,

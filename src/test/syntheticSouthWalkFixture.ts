@@ -3,6 +3,7 @@ import {
   HUMANOID_WALK_CLIP_ID,
   REQUIRED_PART_SLOT_IDS,
   findSlotBinding,
+  type Direction,
   type RgbaImage
 } from "../domain/animation";
 import {
@@ -22,6 +23,20 @@ export interface SyntheticSouthWalkFixture {
   readonly assets: readonly AnimationPartAsset[];
   readonly decoded: readonly DecodedPartSource[];
 }
+
+export interface SyntheticEightDirectionWalkFixture {
+  readonly project: AnimationProject;
+  readonly assets: readonly AnimationPartAsset[];
+  readonly decoded: readonly DecodedPartSource[];
+}
+
+export const SYNTHETIC_AUTHORED_DIRECTIONS = Object.freeze([
+  "south",
+  "southEast",
+  "east",
+  "northEast",
+  "north"
+] as const satisfies readonly Direction[]);
 
 export function createSyntheticWalkPartImage(slotIndex: number): RgbaImage {
   const width = 5;
@@ -66,6 +81,64 @@ export function createSyntheticSouthWalkFixture(): SyntheticSouthWalkFixture {
       clips: [
         {
           clipId: "clip_walk_south_001",
+          templateId: HUMANOID_WALK_CLIP_ID,
+          action: "walk",
+          frameCount: 8,
+          fps: 10,
+          loop: true
+        }
+      ],
+      overrides: []
+    })
+  );
+  return Object.freeze({
+    project,
+    assets: Object.freeze(assets),
+    decoded: Object.freeze(
+      assets.map((asset, index) =>
+        Object.freeze({
+          assetId: asset.assetId,
+          image: createSyntheticWalkPartImage(index)
+        })
+      )
+    )
+  });
+}
+
+/** Complete five-source fixture; the three western targets are runtime mirrors. */
+export function createSyntheticEightDirectionWalkFixture(): SyntheticEightDirectionWalkFixture {
+  const assets = SYNTHETIC_AUTHORED_DIRECTIONS.flatMap(
+    (direction, directionIndex) =>
+      REQUIRED_PART_SLOT_IDS.map((slot, slotIndex) => {
+        const binding = findSlotBinding(HUMANOID_80_RIG_TEMPLATE, slot);
+        if (!binding) throw new Error(`Missing fixture binding for ${slot}.`);
+        return parseAnimationPartAsset(
+          createAnimationPartAssetInput({
+            assetId: `part_walk_${directionIndex}_${slotIndex}`,
+            blobId: `blob_walk_${directionIndex}_${slotIndex}`,
+            label: `Synthetic ${slot} ${direction}`,
+            slot,
+            direction,
+            sourceSize: { width: 5, height: 5 },
+            trimRect: { x: 0, y: 0, width: 5, height: 5 },
+            anchors: {
+              proximal: { x: 2, y: 0 },
+              ...(binding.sourceAnchorRequirement === "twoPoint"
+                ? { distal: { x: 2, y: 4 } }
+                : {})
+            }
+          })
+        );
+      })
+  );
+  const project = parseAnimationProject(
+    createAnimationProjectInput({
+      directionSourceMode: "fiveAuthoredPlusMirror",
+      mirrorPolicy: "allow",
+      parts: assets.map(({ assetId }) => ({ assetId })),
+      clips: [
+        {
+          clipId: "clip_walk_all_001",
           templateId: HUMANOID_WALK_CLIP_ID,
           action: "walk",
           frameCount: 8,

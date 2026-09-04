@@ -185,11 +185,10 @@ type ReadyWalkCycle = Extract<
 
 function isPlayableWalkCycle(
   activeClip: AnimationClip | null,
-  direction: AnimationWorkspaceState["direction"],
+  _direction: AnimationWorkspaceState["direction"],
   walkCycle: NeutralPoseFrameState["walkCycle"]
 ): walkCycle is ReadyWalkCycle {
   return (
-    direction === "south" &&
     activeClip?.templateId === HUMANOID_WALK_CLIP_ID &&
     activeClip.action === "walk" &&
     activeClip.frameCount === HUMANOID_WALK_FRAME_COUNT &&
@@ -200,7 +199,6 @@ function isPlayableWalkCycle(
 }
 
 function playbackAvailabilityMessage(
-  state: AnimationWorkspaceState,
   activeClip: AnimationClip | null,
   renderState: NeutralPoseFrameState,
   enabled: boolean,
@@ -212,16 +210,13 @@ function playbackAvailabilityMessage(
       : "Manuelle Wiedergabe ist bereit und startet nie automatisch.";
   }
   if (!activeClip) return "Wiedergabe benötigt einen Clip.";
-  if (state.direction !== "south") {
-    return "Generierte Vorschauframes sind derzeit nur für Süd verfügbar.";
-  }
   if (activeClip.templateId !== HUMANOID_WALK_CLIP_ID) {
     return `Wiedergabe benötigt den Clip ${HUMANOID_WALK_CLIP_ID}.`;
   }
   if (renderState.status === "loading") {
     return "Die Walk-Frames werden noch erzeugt.";
   }
-  return "Wiedergabe bleibt gesperrt, bis alle South-Produktionsvoraussetzungen erfüllt sind.";
+  return "Wiedergabe bleibt gesperrt, bis alle Produktionsvoraussetzungen der gewählten Richtung erfüllt sind.";
 }
 
 const LAYER_GROUP_LABELS: Readonly<Record<LayerGroup, string>> = Object.freeze({
@@ -882,6 +877,7 @@ function RigViewport({
   dispatch,
   layout
 }: RigViewportProps) {
+  const [showAllDirections, setShowAllDirections] = useState(false);
   const rigTemplate = getBuiltInRigTemplate(project.rigTemplateId);
   const hasDirectionRig = rigTemplate
     ? resolveRuntimeDirectionRig(rigTemplate, state.direction) !== null
@@ -1130,15 +1126,19 @@ function RigViewport({
         )}
       </div>
 
-      {state.direction === "south" && renderState.walkCycle ? (
+      {renderState.walkCycle ? (
         <div
           className={styles.walkProductionStatus}
           role={renderState.walkCycle.status === "invalid" ? "alert" : "status"}
         >
           <strong>
             {renderState.walkCycle.status === "ok"
-              ? "Automatischer South-Walk bereit"
-              : "Automatischer South-Walk gesperrt"}
+              ? project.directionSourceMode === "singleDirectionPrototype"
+                ? "Automatischer South-Walk bereit"
+                : "Vollständiger 8-Richtungs-Walk bereit"
+              : project.directionSourceMode === "singleDirectionPrototype"
+                ? "Automatischer South-Walk gesperrt"
+                : "Vollständiger 8-Richtungs-Walk gesperrt"}
           </strong>
           {renderState.walkCycle.status === "ok" ? (
             <span>
@@ -1146,7 +1146,13 @@ function RigViewport({
               flüchtig aus Rig, Parts und Clipvorlage erzeugt.
             </span>
           ) : (
-            <ul aria-label="Produktionsfehler des South-Walk-Clips">
+            <ul
+              aria-label={
+                project.directionSourceMode === "singleDirectionPrototype"
+                  ? "Produktionsfehler des South-Walk-Clips"
+                  : "Produktionsfehler des 8-Richtungs-Walk-Clips"
+              }
+            >
               {renderState.walkCycle.issues.map((walkIssue, index) => (
                 <li key={`${walkIssue.code}-${walkIssue.assetId ?? walkIssue.slot ?? "clip"}-${index}`}>
                   {walkIssue.message}
@@ -1154,6 +1160,62 @@ function RigViewport({
               ))}
             </ul>
           )}
+        </div>
+      ) : null}
+
+      {project.directionSourceMode !== "singleDirectionPrototype" ? (
+        <div className={styles.allDirectionsReview}>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            aria-expanded={showAllDirections}
+            aria-controls="all-directions-preview-grid"
+            disabled={renderState.directionWalkSet?.status !== "ok"}
+            onClick={() => setShowAllDirections((visible) => !visible)}
+          >
+            {showAllDirections
+              ? "Einzelrichtung prüfen"
+              : "Alle Richtungen prüfen"}
+          </button>
+          <span>
+            Statische Previewfelder folgen gemeinsam dem gewählten Timeline-Frame;
+            sie starten keine eigene Wiedergabe.
+          </span>
+          {showAllDirections && renderState.directionWalkSet?.status === "ok" ? (
+            <div
+              id="all-directions-preview-grid"
+              className={styles.allDirectionsGrid}
+              role="region"
+              aria-label="Alle acht Richtungen prüfen"
+            >
+              {renderState.directionWalkSet.directions.map((entry) => {
+                const preview =
+                  entry.frames[state.frameIndex] ?? entry.frames[0];
+                return preview ? (
+                  <button
+                    type="button"
+                    key={entry.direction}
+                    aria-pressed={state.direction === entry.direction}
+                    aria-label={`${DIRECTION_LABELS[entry.direction]} auswählen; statische Vorschau Frame ${preview.frameIndex + 1}`}
+                    onClick={() =>
+                      dispatch({
+                        type: "directionSelected",
+                        direction: entry.direction
+                      })
+                    }
+                  >
+                    <RenderedFrameCanvas
+                      frame={preview.frame}
+                      variant="thumbnail"
+                      ariaHidden
+                      testId={`all-direction-preview-${entry.direction}`}
+                    />
+                    <span>{DIRECTION_LABELS[entry.direction]}</span>
+                  </button>
+                ) : null;
+              })}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -1758,7 +1820,9 @@ function FrameTimeline({
             </div>
           ) : walkFrames ? (
             <p className={styles.timelineReady} role="status">
-              Alle acht South-Frames sind für die framegenaue Prüfung bereit.
+              {renderState.directionWalkSet === null
+                ? "Alle acht South-Frames sind für die framegenaue Prüfung bereit."
+                : `Alle acht Frames für ${DIRECTION_LABELS[state.direction]} sind für die framegenaue Prüfung bereit.`}
             </p>
           ) : null}
         </>
@@ -1846,7 +1910,6 @@ export function AnimationWorkspace({
     ...(playbackScheduler ? { scheduler: playbackScheduler } : {})
   });
   const playbackMessage = playbackAvailabilityMessage(
-    state,
     activeClip,
     renderState,
     playbackEnabled,

@@ -155,6 +155,20 @@
 - westliche Runtime-Pixel und Rigjoints ohne Blob- oder Metadatenduplikation
   gespiegelt; eigene Zielquellen behalten Vorrang und `eightAuthored` erhält
   keinen automatischen Quellenfallback
+- versionierte Richtungsbewegungsprofile mit projizierter Schrittachse,
+  Stride, Bein-/Armamplituden, Knie-/Fußhub, Root-Sway und Bend-Seite ergänzt
+- gemeinsamen Walk-Clip deterministisch über fünf authored und drei
+  kontrolliert gespiegelte Zielrigs projiziert und als kanonischen Satz aus
+  exakt 64 flüchtigen Renderframes erzeugt
+- vollständige Preflight-Blocker für Slots, Anker, Coverage, Mirror Reviews,
+  Rig, Clip und Blobquellen sowie Postflight-Diagnostik für Framegröße,
+  FootAnchor, Silhouettenhöhe, Clipping und endliche Posen eingeführt
+- Timeline und Playback für jede Richtung freigeschaltet und einen
+  tastaturbedienbaren statischen Achtfach-Prüfmodus ohne eigene
+  Wiedergabeuhren ergänzt
+- den begrenzten Renderframe-Cache für den vollständigen Satz über Projekt-ID,
+  Projektrevision, Clip, Richtung und Frame genutzt; Teilfehler liefern nie
+  einen vollständigen Produktionsstatus
 
 ## 2.0.0 — 2026-09-03
 

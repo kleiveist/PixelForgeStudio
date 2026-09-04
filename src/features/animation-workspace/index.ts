@@ -21,6 +21,16 @@ export {
   type SouthWalkGenerationResult
 } from "./southWalkRenderer";
 export {
+  DIRECTIONAL_WALK_DIAGNOSTIC_CODES,
+  generateDirectionalFrames,
+  generateEightDirectionWalkSet,
+  type DirectionalFrameGenerationResult,
+  type DirectionalRenderedFrame,
+  type DirectionalWalkDiagnostic,
+  type DirectionalWalkDiagnosticCode,
+  type EightDirectionWalkGenerationResult
+} from "./directionalWalkRenderer";
+export {
   RevisionBoundRenderedFrameCache,
   advancePlaybackClock,
   createBrowserAnimationFrameScheduler,

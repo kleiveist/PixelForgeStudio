@@ -113,6 +113,10 @@ export function mirrorDirectionRig(
         x: -source.motionProfile.stepAxis.x,
         y: source.motionProfile.stepAxis.y
       }),
+      rootSwayAxis: Object.freeze({
+        x: -source.motionProfile.rootSwayAxis.x,
+        y: source.motionProfile.rootSwayAxis.y
+      }),
       bendSign: Object.freeze({
         left: source.motionProfile.bendSign.left === 1 ? -1 : 1,
         right: source.motionProfile.bendSign.right === 1 ? -1 : 1
@@ -157,6 +161,14 @@ export function resolveRuntimeDirectionRig(
     sourceDirection,
     mirrored: true
   });
+}
+
+/** Public target-geometry resolver used by directional clip generation. */
+export function resolveDirectionRig(
+  template: RigTemplate,
+  targetDirection: Direction
+): DirectionRig | null {
+  return resolveRuntimeDirectionRig(template, targetDirection)?.rig ?? null;
 }
 
 /** Runtime-only RGBA projection. The input bytes and persisted blob stay untouched. */

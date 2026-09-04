@@ -2,20 +2,76 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 44 — Richtungsprojektion und kontrollierte
-  Spiegelung (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 45 — vollständige Acht-Richtungs-Walk-Generierung
+- **Aktuelle Aufgabe:** Prompt 45 — vollständige Acht-Richtungs-Walk-Generierung
+  (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 46 — Framekorrekturen und History
   (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
   Phase C mit Prompts 36–39 und Phase D mit Prompts 40–43 abgeschlossen;
-  Prompts 44–51 bleiben offen unter
+  Prompts 44–45 sind abgeschlossen; Prompts 46–51 bleiben offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 - **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 45 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `cb7c54d`; Prompt 44 löst alle acht Zielrichtungen, ihre
+  Quell-/Spiegelpolicy und flüchtige Neutralgeometrie auf. Der Walk-Generator
+  erzeugt weiterhin ausschließlich acht South-Frames.
+- Abnahme: fünf explizite und drei kontrolliert projizierte DirectionRigs sind
+  über eine pure öffentliche Auflösung verfügbar; jedes Rig besitzt
+  versionierte Schritt-, Lift-, Arm-, Sway- und Bendparameter.
+- Generator: gemeinsame normierte Clipkanäle werden richtungsabhängig
+  projiziert. Eine gültige Fünf- oder Acht-Quellproduktion ergibt exakt acht
+  Richtungen × acht Frames in kanonischer, nie alphabetischer Reihenfolge.
+- Vorprüfung: Pflichtslots, Anker, Coverage, Reviews, Rig/Clip und dekodierte
+  Blobquellen blockieren fail-closed. Ein Richtungsfehler darf keinen
+  vollständigen Status erzeugen.
+- Nachprüfung: Framegröße, FootAnchor, zuverlässige Silhouettenhöhe,
+  Pflichtparts, Clipping und endliche Geometrie werden strukturiert geprüft;
+  alle Frames bleiben flüchtig und deterministisch.
+- Workspace: jede Richtung zeigt ihren echten Walk; ein manueller
+  Acht-Richtungs-Prüfmodus zeigt acht kleine Vorschauen, ohne Previewwand-
+  Autoplay – insbesondere auch bei reduzierter Bewegung.
+- Cache: Projekt-ID/-Revision, Clip, Richtung und Frame bleiben die
+  vollständige Cacheadresse. Keine SpriteSheet-Datei oder Persistenz
+  abgeleiteter Frames wird in Prompt 45 vorgezogen.
+
+## Prompt 45 — Ergebnis
+
+1. `humanoid-80-v1` veröffentlicht fünf authored und drei kontrolliert
+   gespiegelte Zielrigs. Jedes Ziel besitzt ein versioniertes Bewegungsprofil
+   mit normierter Schritt-/Sway-Achse, Stride, Oberschenkel-, Unterschenkel-
+   und Armamplitude, Knie-/Fußhub sowie richtiger Bend-Seite.
+2. `projectWalkChannels()`, `resolveDirectionalWalkPose()` und
+   `applyPoseToDirectionRig()` projizieren die eine achtphasige Clipvorlage
+   über alle Richtungen. Seite verwendet 18°/28°/14°, Diagonale
+   14°/22°/11° und Front/Rücken 9°/18°/8°; Kontaktzehen bleiben auf der
+   gemeinsamen Groundline.
+3. `generateDirectionalFrames()` und `generateEightDirectionWalkSet()` prüfen
+   Clip, Rig, Required-Slots, Anker, Coverage, Reviews und dekodierte Quellen
+   vorab. Der vollständige Generator liefert ausschließlich die kanonischen
+   8 × 8 Frames oder einen leeren, gesammelten Fehlerstatus.
+4. Postflight prüft Framegröße, FootAnchor, sichtbare Silhouette,
+   South-relative Höhentoleranz, Clipping und finite Gelenkgeometrie. Fünf-
+   und Acht-Quellprojekte sowie Pixelreproduzierbarkeit sind getestet.
+5. Der Workspace lädt Quellen für den vollständigen Satz einmal, spielt jede
+   gewählte Richtung über dieselbe Timeline und bietet acht statische,
+   tastaturbedienbare Vergleichsfelder. Die Übersicht besitzt keine eigenen
+   Scheduler und startet nicht automatisch.
+6. Der vorhandene begrenzte LRU adressiert jeden Frame mit Projekt-ID,
+   Projektrevision, Clip, Richtung und Frameindex. Richtungswechsel verwenden
+   die 64 Cacheeinträge; neue Revisionen verwerfen nur veraltete Projektframes.
+7. Nutzerhilfe, README, Architektur und Changelog beschreiben Profilwerte,
+   64-Frame-Vertrag, Diagnostik und Cache. Prompt 46 bleibt als nächster
+   separater Auftrag unberührt.
+8. `npm run verify` bestand mit 161 Testdateien und 1009 Tests, Strict-
+   Typecheck und Produktionsbuild. Die einzige Buildausgabe bleibt die
+   bekannte Vite-Warnung zum über 500 kB großen Hauptchunk.
 
 ## Prompt 44 — Ausgangsstand und Abnahme
 

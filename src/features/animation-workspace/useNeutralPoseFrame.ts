@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  DIRECTION_IDS,
   HUMANOID_WALK_CLIP_ID,
   HUMANOID_WALK_FRAME_COUNT,
   getBuiltInRigTemplate,
   renderFrame,
   resolveProjectDirectionCoverage,
   type Direction,
+  type PartSlot,
   type RenderedFrame
 } from "../../domain/animation";
 import type {
@@ -22,11 +24,15 @@ import {
   type NeutralPosePreparationIssue
 } from "./neutralPoseRenderer";
 import {
-  generateSouthWalkFrames,
-  type SouthWalkGenerationDiagnostic,
-  type SouthWalkGenerationResult
+  generateSouthWalkFrames
 } from "./southWalkRenderer";
 import { RevisionBoundRenderedFrameCache } from "./animationPlayback";
+import {
+  generateEightDirectionWalkSet,
+  type DirectionalRenderedFrame,
+  type DirectionalWalkDiagnostic,
+  type EightDirectionWalkGenerationResult
+} from "./directionalWalkRenderer";
 
 export type WorkspacePartBlobLoadResult =
   | Readonly<{ status: "ok"; blob: Blob }>
@@ -36,23 +42,169 @@ export interface NeutralPoseFrameState {
   readonly status: "idle" | "loading" | "ready" | "unavailable" | "failed";
   readonly frame: RenderedFrame | null;
   readonly preparationIssues: readonly NeutralPosePreparationIssue[];
-  readonly walkCycle: SouthWalkGenerationResult | null;
+  readonly walkCycle: WorkspaceWalkCycleResult | null;
+  readonly directionWalkSet: EightDirectionWalkGenerationResult | null;
   readonly message: string | null;
 }
+
+export interface WorkspaceWalkDiagnostic {
+  readonly code: string;
+  readonly severity: "warning" | "error";
+  readonly message: string;
+  readonly direction?: Direction;
+  readonly frameIndex?: number;
+  readonly assetId?: StableId;
+  readonly slot?: PartSlot;
+}
+
+export type WorkspaceWalkCycleResult =
+  | Readonly<{
+      status: "ok";
+      frames: readonly RenderedFrame[];
+      diagnostics: readonly WorkspaceWalkDiagnostic[];
+    }>
+  | Readonly<{
+      status: "invalid";
+      frames: readonly [];
+      issues: readonly WorkspaceWalkDiagnostic[];
+    }>;
 
 const INITIAL_STATE: NeutralPoseFrameState = Object.freeze({
   status: "idle",
   frame: null,
   preparationIssues: Object.freeze([]),
   walkCycle: null,
+  directionWalkSet: null,
   message: null
 });
 
-interface CachedWalkMetadata {
-  readonly projectId: StableId;
-  readonly projectRevision: number;
-  readonly clipId: StableId;
-  readonly diagnostics: readonly SouthWalkGenerationDiagnostic[];
+type CachedWalkMetadata =
+  | Readonly<{
+      kind: "singleDirection";
+      projectId: StableId;
+      projectRevision: number;
+      clipId: StableId;
+      diagnostics: readonly WorkspaceWalkDiagnostic[];
+    }>
+  | Readonly<{
+      kind: "eightDirections";
+      projectId: StableId;
+      projectRevision: number;
+      clipId: StableId;
+      diagnostics: readonly DirectionalWalkDiagnostic[];
+    }>;
+
+function hasCachedIdentity(
+  metadata: CachedWalkMetadata | null,
+  project: AnimationProject,
+  projectRevision: number,
+  clipId: StableId,
+  kind: CachedWalkMetadata["kind"]
+): metadata is CachedWalkMetadata {
+  return Boolean(
+    metadata &&
+      metadata.kind === kind &&
+      metadata.projectId === project.projectId &&
+      metadata.projectRevision === projectRevision &&
+      metadata.clipId === clipId
+  );
+}
+
+function readCachedEightDirectionSet(
+  cache: RevisionBoundRenderedFrameCache,
+  metadata: CachedWalkMetadata | null,
+  project: AnimationProject,
+  projectRevision: number,
+  clipId: StableId
+): EightDirectionWalkGenerationResult | null {
+  if (
+    !hasCachedIdentity(
+      metadata,
+      project,
+      projectRevision,
+      clipId,
+      "eightDirections"
+    ) ||
+    metadata.kind !== "eightDirections"
+  ) {
+    return null;
+  }
+  const directions = DIRECTION_IDS.map((targetDirection) => {
+    const frames = Array.from(
+      { length: HUMANOID_WALK_FRAME_COUNT },
+      (_, frameIndex): DirectionalRenderedFrame | null => {
+        const frame = cache.get({
+          projectId: project.projectId,
+          projectRevision,
+          clipId,
+          direction: targetDirection,
+          frameIndex
+        });
+        return frame
+          ? Object.freeze({
+              direction: targetDirection,
+              frameIndex,
+              footAnchor: Object.freeze({ ...project.frameProfile.footAnchor }),
+              frame
+            })
+          : null;
+      }
+    );
+    return frames.every(
+      (candidate): candidate is DirectionalRenderedFrame => candidate !== null
+    )
+      ? Object.freeze({ direction: targetDirection, frames: Object.freeze(frames) })
+      : null;
+  });
+  if (directions.some((candidate) => candidate === null)) return null;
+  const complete = directions.filter(
+    (candidate): candidate is NonNullable<typeof candidate> => candidate !== null
+  );
+  return Object.freeze({
+    status: "ok",
+    directions: Object.freeze(complete),
+    frames: Object.freeze(complete.flatMap(({ frames }) => frames)),
+    diagnostics: metadata.diagnostics
+  });
+}
+
+function selectDirectionWalkCycle(
+  set: EightDirectionWalkGenerationResult,
+  direction: Direction
+): WorkspaceWalkCycleResult {
+  if (set.status === "invalid") {
+    return Object.freeze({
+      status: "invalid",
+      frames: Object.freeze([] as const),
+      issues: set.issues
+    });
+  }
+  const selected = set.directions.find(
+    (candidate) => candidate.direction === direction
+  );
+  if (!selected) {
+    return Object.freeze({
+      status: "invalid",
+      frames: Object.freeze([] as const),
+      issues: Object.freeze([
+        Object.freeze({
+          code: "missingDirectionRig",
+          severity: "error" as const,
+          message: `Für ${direction} wurden keine Vorschauframes erzeugt.`,
+          direction
+        })
+      ])
+    });
+  }
+  return Object.freeze({
+    status: "ok",
+    frames: Object.freeze(selected.frames.map(({ frame }) => frame)),
+    diagnostics: Object.freeze(
+      set.diagnostics.filter(
+        (entry) => entry.direction === undefined || entry.direction === direction
+      )
+    )
+  });
 }
 
 export function useNeutralPoseFrame(
@@ -106,6 +258,7 @@ export function useNeutralPoseFrame(
           frame: null,
           preparationIssues: Object.freeze([]),
           walkCycle: null,
+          directionWalkSet: null,
           message: "Für das Projekt ist keine Built-in-Rigvorlage verfügbar."
         })
       );
@@ -118,6 +271,7 @@ export function useNeutralPoseFrame(
           frame: null,
           preparationIssues: Object.freeze([]),
           walkCycle: null,
+          directionWalkSet: null,
           message: "Der RGBA-Decoder ist in dieser Ansicht nicht verbunden."
         })
       );
@@ -131,6 +285,7 @@ export function useNeutralPoseFrame(
         frame: null,
         preparationIssues: Object.freeze([]),
         walkCycle: null,
+        directionWalkSet: null,
         message: null
       })
     );
@@ -152,14 +307,15 @@ export function useNeutralPoseFrame(
       reviews: project.mirrorReviews
     });
     const targetAssetIds = new Set(
-      coverage.rows.flatMap((row) => {
-        const cell = row.cells.find(
-          (candidate) => candidate.targetDirection === direction
-        );
-        return cell?.sourceAsset && cell.sourceAsset.anchorStatus === "ready"
-          ? [cell.sourceAsset.assetId]
-          : [];
-      })
+      coverage.rows.flatMap((row) =>
+        row.cells.flatMap((cell) =>
+          (project.directionSourceMode !== "singleDirectionPrototype" ||
+            cell.targetDirection === direction) &&
+          cell.sourceAsset?.anchorStatus === "ready"
+            ? [cell.sourceAsset.assetId]
+            : []
+        )
+      )
     );
     const readyAssets = assignedAssets.filter((asset) =>
       targetAssetIds.has(asset.assetId)
@@ -197,13 +353,56 @@ export function useNeutralPoseFrame(
           decodedSources
         );
         const frame = renderFrame(project.frameProfile.frameSize, prepared.parts);
-        let walkCycle: SouthWalkGenerationResult | null = null;
-        if (direction === "south") {
-          const clip = project.clips.find(
-            (candidate) =>
-              candidate.clipId === clipId &&
-              candidate.templateId === HUMANOID_WALK_CLIP_ID
-          );
+        const clip = project.clips.find(
+          (candidate) =>
+            candidate.clipId === clipId &&
+            candidate.templateId === HUMANOID_WALK_CLIP_ID
+        );
+        let walkCycle: WorkspaceWalkCycleResult | null = null;
+        let directionWalkSet: EightDirectionWalkGenerationResult | null = null;
+        if (project.directionSourceMode !== "singleDirectionPrototype") {
+          const cachedSet =
+            clip && renderedFrameCacheRef.current
+              ? readCachedEightDirectionSet(
+                  renderedFrameCacheRef.current,
+                  cachedWalkMetadataRef.current,
+                  project,
+                  projectRevision,
+                  clip.clipId
+                )
+              : null;
+          directionWalkSet =
+            cachedSet ??
+            generateEightDirectionWalkSet(
+              project,
+              template,
+              partAssets,
+              decodedSources,
+              clipId
+            );
+          if (clip && !cachedSet && directionWalkSet.status === "ok") {
+            for (const entry of directionWalkSet.frames) {
+              renderedFrameCacheRef.current?.set(
+                {
+                  projectId: project.projectId,
+                  projectRevision,
+                  clipId: clip.clipId,
+                  direction: entry.direction,
+                  frameIndex: entry.frameIndex
+                },
+                entry.frame
+              );
+            }
+            cachedWalkMetadataRef.current = Object.freeze({
+              kind: "eightDirections",
+              projectId: project.projectId,
+              projectRevision,
+              clipId: clip.clipId,
+              diagnostics: directionWalkSet.diagnostics
+            });
+          }
+          walkCycle = selectDirectionWalkCycle(directionWalkSet, direction);
+        } else if (direction === "south") {
           const cachedFrames = clip
             ? Array.from({ length: HUMANOID_WALK_FRAME_COUNT }, (_, frameIndex) =>
                 renderedFrameCacheRef.current?.get({
@@ -220,9 +419,14 @@ export function useNeutralPoseFrame(
             clip &&
             cachedFrames.length === HUMANOID_WALK_FRAME_COUNT &&
             cachedFrames.every((candidate) => candidate !== null) &&
-            cachedMetadata?.projectId === project.projectId &&
-            cachedMetadata.projectRevision === projectRevision &&
-            cachedMetadata.clipId === clip.clipId
+            hasCachedIdentity(
+              cachedMetadata,
+              project,
+              projectRevision,
+              clip.clipId,
+              "singleDirection"
+            ) &&
+            cachedMetadata.kind === "singleDirection"
           ) {
             walkCycle = Object.freeze({
               status: "ok",
@@ -255,6 +459,7 @@ export function useNeutralPoseFrame(
                 );
               });
               cachedWalkMetadataRef.current = Object.freeze({
+                kind: "singleDirection",
                 projectId: project.projectId,
                 projectRevision,
                 clipId: clip.clipId,
@@ -269,6 +474,7 @@ export function useNeutralPoseFrame(
             frame,
             preparationIssues: prepared.issues,
             walkCycle,
+            directionWalkSet,
             message: null
           })
         );
@@ -281,6 +487,7 @@ export function useNeutralPoseFrame(
             frame: null,
             preparationIssues: Object.freeze([]),
             walkCycle: null,
+            directionWalkSet: null,
             message:
               error instanceof Error
                 ? error.message

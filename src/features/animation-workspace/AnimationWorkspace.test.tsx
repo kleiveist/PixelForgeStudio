@@ -7,6 +7,7 @@ import {
   createAnimationProjectInput
 } from "../../test/animationSchemaFixtures";
 import {
+  createSyntheticEightDirectionWalkFixture,
   createSyntheticSouthWalkFixture,
   createSyntheticWalkPartImage
 } from "../../test/syntheticSouthWalkFixture";
@@ -65,6 +66,35 @@ function renderReadyWalkWorkspace(scheduler = new WorkspacePlaybackScheduler()) 
     <AnimationWorkspace
       project={fixture.project}
       projectRevision={7}
+      playbackScheduler={scheduler}
+      canSave={false}
+      saveStatus="saved"
+      saveError={null}
+      sourceError={null}
+      onSave={vi.fn()}
+      partAssets={fixture.assets}
+      missingPartAssetIds={[]}
+      imageDecoder={decoder}
+      onLoadPartBlob={loadBlob}
+    />
+  );
+  return { ...rendered, fixture, scheduler, decoder, loadBlob };
+}
+
+function renderReadyEightDirectionWorkspace(
+  scheduler = new WorkspacePlaybackScheduler()
+) {
+  const fixture = createSyntheticEightDirectionWalkFixture();
+  const sourceImage = createSyntheticWalkPartImage(1);
+  const decoder = { decode: vi.fn(async () => sourceImage) };
+  const loadBlob = vi.fn(async () => ({
+    status: "ok" as const,
+    blob: new Blob(["synthetic"], { type: "image/png" })
+  }));
+  const rendered = render(
+    <AnimationWorkspace
+      project={fixture.project}
+      projectRevision={11}
       playbackScheduler={scheduler}
       canSave={false}
       saveStatus="saved"
@@ -243,7 +273,7 @@ describe("AnimationWorkspace", () => {
         />
       );
 
-      await waitFor(() => expect(decoder.decode).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(decoder.decode).toHaveBeenCalledTimes(2));
       await user.selectOptions(
         screen.getByRole("combobox", { name: "Richtung" }),
         "east"
@@ -507,6 +537,54 @@ describe("AnimationWorkspace", () => {
       "true"
     );
     expect(canvas.putImageData).toHaveBeenCalled();
+  });
+
+  it("reviews individual and all eight directions without auto-starting a preview wall", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    mockCanvasDisplay();
+    const { scheduler, decoder, loadBlob } =
+      renderReadyEightDirectionWorkspace();
+
+    expect(
+      await screen.findByText("Vollständiger 8-Richtungs-Walk bereit")
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Alle Richtungen prüfen" })).toBeEnabled();
+    expect(scheduler.callbacks.size).toBe(0);
+    expect(decoder.decode).toHaveBeenCalledTimes(75);
+    expect(loadBlob).toHaveBeenCalledTimes(75);
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Richtung" }),
+      "west"
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Alle Richtungen prüfen" })
+      ).toBeEnabled()
+    );
+    expect(screen.getByTestId("animation-project-frame")).toHaveAttribute(
+      "data-rig-direction",
+      "west"
+    );
+    expect(decoder.decode).toHaveBeenCalledTimes(75);
+    expect(loadBlob).toHaveBeenCalledTimes(75);
+
+    await user.click(
+      screen.getByRole("button", { name: "Alle Richtungen prüfen" })
+    );
+    expect(
+      screen.getByRole("region", { name: "Alle acht Richtungen prüfen" })
+    ).toBeVisible();
+    expect(
+      screen.getAllByTestId(/^all-direction-preview-/)
+    ).toHaveLength(8);
+    expect(
+      screen.getByRole("button", {
+        name: "West auswählen; statische Vorschau Frame 1"
+      })
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(scheduler.callbacks.size).toBe(0);
   });
 
   it("scrubs and layers preview-only Onion Skin modes without enabling export", async () => {

@@ -55,8 +55,16 @@ export interface DirectionMotionProfile {
   readonly version: 1;
   readonly projection: RigProjection;
   readonly nearSide: RigNearSide;
-  /** Normalized visible travel axis. Walk amplitudes remain a later contract. */
+  /** Normalized visible travel axis. */
   readonly stepAxis: Point;
+  readonly strideAmplitude: number;
+  readonly thighAmplitudeRadians: number;
+  readonly lowerLegAmplitudeRadians: number;
+  readonly kneeLift: number;
+  readonly footLift: number;
+  readonly armAmplitudeRadians: number;
+  readonly rootSwayAxis: Point;
+  readonly rootSwayAmplitude: number;
   readonly bendSign: Readonly<Record<"left" | "right", -1 | 1>>;
 }
 
@@ -169,16 +177,29 @@ function validateDirectionRigs(
     }
 
     const stepLength = vectorLength(directionRig.motionProfile.stepAxis);
+    const swayLength = vectorLength(directionRig.motionProfile.rootSwayAxis);
+    const amplitudes = [
+      directionRig.motionProfile.strideAmplitude,
+      directionRig.motionProfile.thighAmplitudeRadians,
+      directionRig.motionProfile.lowerLegAmplitudeRadians,
+      directionRig.motionProfile.kneeLift,
+      directionRig.motionProfile.footLift,
+      directionRig.motionProfile.armAmplitudeRadians,
+      directionRig.motionProfile.rootSwayAmplitude
+    ];
     if (
       directionRig.motionProfile.version !== 1 ||
       !Number.isFinite(stepLength) ||
-      Math.abs(stepLength - 1) > RIG_COORDINATE_EPSILON
+      Math.abs(stepLength - 1) > RIG_COORDINATE_EPSILON ||
+      !Number.isFinite(swayLength) ||
+      Math.abs(swayLength - 1) > RIG_COORDINATE_EPSILON ||
+      amplitudes.some((value) => !Number.isFinite(value) || value < 0)
     ) {
       addIssue(
         issues,
         "invalidMotionProfile",
         ["directions", directionIndex, "motionProfile"],
-        "Direction motion profile must use version 1 and a normalized step axis."
+        "Direction motion profile must use version 1, normalized step/sway axes, and finite non-negative amplitudes."
       );
     }
 

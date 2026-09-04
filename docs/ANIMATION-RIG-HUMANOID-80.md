@@ -56,8 +56,11 @@ vollständige Richtungsauflösung in Prompt 45.
 Diagonal- und Seitenposen verschieben die nahe und ferne Körperseite bewusst,
 anstatt die South-Pose nur umzubenennen. Das zugehörige
 `DirectionMotionProfile` beschreibt in Version 1 Projektionsklasse, sichtbare
-Schrittachse, nahe Seite und Biegerichtung. Walk-Amplituden oder Keyframes sind
-nicht Bestandteil dieser Neutralpose.
+Schritt-/Sway-Achse, nahe Seite, Biegerichtung sowie versionierte Stride-,
+Bein-, Lift- und Armamplituden. Keyframes bleiben im gemeinsamen
+`walk-humanoid-8-v1`-Clip; die Profile projizieren diese normierten Kanäle nur
+auf ihre Zielgeometrie. Die genauen Werte und der 64-Frame-Vertrag stehen unter
+[Acht-Richtungs-Walk](ANIMATION-EIGHT-DIRECTION-WALK.md).
 
 ## Bones und Pflichtslotbindungen
 
@@ -98,7 +101,7 @@ vertraglich relevanten Werte in fester Katalogreihenfolge. Der aktuelle Key
 lautet:
 
 ```text
-humanoid-80-v1__frame-128x128__char-80__foot-64-112__contracts-1-1-1__50ec24e4181a7082
+humanoid-80-v1__frame-128x128__char-80__foot-64-112__contracts-1-1-1__840c7385b8de44bc
 ```
 
 Der Fingerprint ist eine deterministische Gruppierungskennung und keine

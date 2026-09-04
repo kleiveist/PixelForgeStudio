@@ -1,6 +1,10 @@
 import type { Point } from "./animation.types";
 import { BONE_TOPOLOGY, JOINT_IDS, type JointId } from "./rigTopology";
-import type { DirectionRig, JointDefinition } from "./rigTemplate";
+import type {
+  DirectionMotionProfile,
+  DirectionRig,
+  JointDefinition
+} from "./rigTemplate";
 import { clamp, vectorLength } from "./vectors";
 
 export const HUMANOID_WALK_CLIP_VERSION = 1 as const;
@@ -179,6 +183,101 @@ export interface HumanoidWalkPose {
   readonly rootOffset: Point;
   readonly torsoCounterOffset: Point;
   readonly headCounterOffset: Point;
+}
+
+export interface ProjectedWalkChannels {
+  readonly leftStride: Point;
+  readonly rightStride: Point;
+  readonly leftThighRotation: number;
+  readonly rightThighRotation: number;
+  readonly leftLowerLegRotation: number;
+  readonly rightLowerLegRotation: number;
+  readonly leftArmRotation: number;
+  readonly rightArmRotation: number;
+  readonly leftKneeLift: number;
+  readonly rightKneeLift: number;
+  readonly leftFootLift: number;
+  readonly rightFootLift: number;
+  readonly rootSway: Point;
+  readonly rootBobY: number;
+}
+
+export interface DirectionalWalkPose extends HumanoidWalkPose {
+  readonly direction: DirectionRig["direction"];
+  readonly projected: ProjectedWalkChannels;
+}
+
+const NORMALIZED_ARM_CHANNEL_MAX = 0.75;
+
+export function projectWalkChannels(
+  frame: Pick<ResolvedHumanoidWalkFrame, "channels">,
+  profile: DirectionMotionProfile
+): ProjectedWalkChannels {
+  const { channels } = frame;
+  const stride = (value: number): Point => Object.freeze({
+    x: profile.stepAxis.x * value * profile.strideAmplitude,
+    y: profile.stepAxis.y * value * profile.strideAmplitude
+  });
+  const armRotation = (value: number): number =>
+    (value / NORMALIZED_ARM_CHANNEL_MAX) * profile.armAmplitudeRadians;
+  return Object.freeze({
+    leftStride: stride(channels.leftStride),
+    rightStride: stride(channels.rightStride),
+    leftThighRotation:
+      channels.leftStride * profile.thighAmplitudeRadians,
+    rightThighRotation:
+      channels.rightStride * profile.thighAmplitudeRadians,
+    leftLowerLegRotation:
+      -channels.leftStride * profile.lowerLegAmplitudeRadians,
+    rightLowerLegRotation:
+      -channels.rightStride * profile.lowerLegAmplitudeRadians,
+    leftArmRotation: armRotation(channels.leftArmSwing),
+    rightArmRotation: armRotation(channels.rightArmSwing),
+    leftKneeLift: channels.leftKneeLift * profile.kneeLift,
+    rightKneeLift: channels.rightKneeLift * profile.kneeLift,
+    leftFootLift: channels.leftFootLift * profile.footLift,
+    rightFootLift: channels.rightFootLift * profile.footLift,
+    rootSway: Object.freeze({
+      x:
+        profile.rootSwayAxis.x *
+        channels.rootSwayX *
+        profile.rootSwayAmplitude,
+      y:
+        profile.rootSwayAxis.y *
+        channels.rootSwayX *
+        profile.rootSwayAmplitude
+    }),
+    rootBobY: clamp(
+      channels.rootBobY,
+      -WALK_ROOT_BOB_LIMIT,
+      WALK_ROOT_BOB_LIMIT
+    )
+  });
+}
+
+export function resolveDirectionalWalkPose(
+  rig: DirectionRig,
+  frameIndex: number
+): DirectionalWalkPose {
+  const base = resolveHumanoidWalkPose(frameIndex);
+  const projected = projectWalkChannels(base, rig.motionProfile);
+  return Object.freeze({
+    ...base,
+    direction: rig.direction,
+    projected,
+    rootOffset: Object.freeze({
+      x: projected.rootSway.x,
+      y: projected.rootSway.y + projected.rootBobY
+    }),
+    torsoCounterOffset: Object.freeze({
+      x: -projected.rootSway.x * 0.5,
+      y: -projected.rootSway.y * 0.5 - projected.rootBobY * 0.4
+    }),
+    headCounterOffset: Object.freeze({
+      x: -projected.rootSway.x * 0.75,
+      y: -projected.rootSway.y * 0.75 - projected.rootBobY * 0.6
+    })
+  });
 }
 
 export function resolveHumanoidWalkPose(frameIndex: number): HumanoidWalkPose {
@@ -423,12 +522,11 @@ function applyArmSwing(
   source: DirectionRig,
   positions: Record<JointId, Point>,
   side: HumanoidSide,
-  normalizedSwing: number
+  rotationRadians: number
 ): void {
   const shoulderId = `shoulder.${side}` as JointId;
   const shoulder = positions[shoulderId];
   const sourceShoulder = source.joints[shoulderId].position;
-  const radians = normalizedSwing * ((8 * Math.PI) / 180);
   for (const jointId of [
     `elbow.${side}`,
     `wrist.${side}`,
@@ -440,7 +538,7 @@ function applyArmSwing(
         x: sourcePoint.x - sourceShoulder.x,
         y: sourcePoint.y - sourceShoulder.y
       },
-      radians
+      rotationRadians
     );
     positions[jointId] = Object.freeze({
       x: shoulder.x + rotated.x,
@@ -452,7 +550,7 @@ function applyArmSwing(
 function applyLegPose(
   source: DirectionRig,
   positions: Record<JointId, Point>,
-  pose: HumanoidWalkPose,
+  pose: DirectionalWalkPose,
   side: HumanoidSide,
   diagnostics: TwoBoneIkDiagnostic[]
 ): WalkPoseIssue | null {
@@ -474,23 +572,45 @@ function applyLegPose(
     sourceAnkle.y - sourceKnee.y
   );
   const stride =
-    side === "left" ? pose.channels.leftStride : pose.channels.rightStride;
+    side === "left" ? pose.projected.leftStride : pose.projected.rightStride;
   const kneeLift =
     side === "left"
-      ? pose.channels.leftKneeLift
-      : pose.channels.rightKneeLift;
+      ? pose.projected.leftKneeLift
+      : pose.projected.rightKneeLift;
   const footLift =
     side === "left"
-      ? pose.channels.leftFootLift
-      : pose.channels.rightFootLift;
-  const lift = Math.max(kneeLift * 2, footLift * 4);
+      ? pose.projected.leftFootLift
+      : pose.projected.rightFootLift;
+  const thighRotation =
+    side === "left"
+      ? pose.projected.leftThighRotation
+      : pose.projected.rightThighRotation;
+  const lowerLegRotation =
+    side === "left"
+      ? pose.projected.leftLowerLegRotation
+      : pose.projected.rightLowerLegRotation;
+  const lift = Math.max(kneeLift, footLift);
   const footVector = {
     x: sourceToe.x - sourceAnkle.x,
     y: sourceToe.y - sourceAnkle.y
   };
+  const articulatedUpper = rotateVector(
+    {
+      x: sourceKnee.x - sourceHip.x,
+      y: sourceKnee.y - sourceHip.y
+    },
+    thighRotation
+  );
+  const articulatedLower = rotateVector(
+    {
+      x: sourceAnkle.x - sourceKnee.x,
+      y: sourceAnkle.y - sourceKnee.y
+    },
+    thighRotation + lowerLegRotation
+  );
   const target = {
-    x: sourceAnkle.x + stride * 2,
-    y: sourceAnkle.y - lift
+    x: hip.x + articulatedUpper.x + articulatedLower.x + stride.x,
+    y: hip.y + articulatedUpper.y + articulatedLower.y + stride.y - lift
   };
   const solved = solveTwoBoneIk({
     root: hip,
@@ -535,17 +655,6 @@ export function applyPoseToDirectionRig(
   source: DirectionRig,
   pose: HumanoidWalkPose
 ): ApplyHumanoidWalkPoseResult {
-  if (source.direction !== "south") {
-    return Object.freeze({
-      status: "invalid",
-      issues: Object.freeze([
-        poseIssue(
-          "unsupportedDirection",
-          "walk-humanoid-8-v1 generates only the authored South direction."
-        )
-      ])
-    });
-  }
   const sourceValidation = validatePose(source);
   if (!sourceValidation.valid) {
     return Object.freeze({ status: "invalid", issues: sourceValidation.issues });
@@ -554,16 +663,17 @@ export function applyPoseToDirectionRig(
   const positions = Object.fromEntries(
     JOINT_IDS.map((id) => [id, source.joints[id].position])
   ) as Record<JointId, Point>;
-  const sway = pose.rootOffset.x;
-  const bob = clamp(pose.rootOffset.y, -WALK_ROOT_BOB_LIMIT, WALK_ROOT_BOB_LIMIT);
+  const directionalPose = resolveDirectionalWalkPose(source, pose.frameIndex);
+  const sway = directionalPose.projected.rootSway;
+  const bob = directionalPose.projected.rootBobY;
 
-  positions.pelvis = shifted(source.joints.pelvis.position, sway, bob);
-  positions["hip.left"] = shifted(source.joints["hip.left"].position, sway, bob);
-  positions["hip.right"] = shifted(source.joints["hip.right"].position, sway, bob);
+  positions.pelvis = shifted(source.joints.pelvis.position, sway.x, sway.y + bob);
+  positions["hip.left"] = shifted(source.joints["hip.left"].position, sway.x, sway.y + bob);
+  positions["hip.right"] = shifted(source.joints["hip.right"].position, sway.x, sway.y + bob);
   positions.chest = shifted(
     source.joints.chest.position,
-    sway + pose.torsoCounterOffset.x,
-    bob + pose.torsoCounterOffset.y
+    sway.x + directionalPose.torsoCounterOffset.x,
+    sway.y + bob + directionalPose.torsoCounterOffset.y
   );
   const chestDelta = {
     x: positions.chest.x - source.joints.chest.position.x,
@@ -581,21 +691,31 @@ export function applyPoseToDirectionRig(
   );
   positions.neck = shifted(
     source.joints.neck.position,
-    pose.torsoCounterOffset.x,
-    pose.torsoCounterOffset.y
+    directionalPose.torsoCounterOffset.x,
+    directionalPose.torsoCounterOffset.y
   );
   positions.head = shifted(
     source.joints.head.position,
-    pose.headCounterOffset.x,
-    pose.headCounterOffset.y
+    directionalPose.headCounterOffset.x,
+    directionalPose.headCounterOffset.y
   );
 
-  applyArmSwing(source, positions, "left", pose.channels.leftArmSwing);
-  applyArmSwing(source, positions, "right", pose.channels.rightArmSwing);
+  applyArmSwing(
+    source,
+    positions,
+    "left",
+    directionalPose.projected.leftArmRotation
+  );
+  applyArmSwing(
+    source,
+    positions,
+    "right",
+    directionalPose.projected.rightArmRotation
+  );
   const diagnostics: TwoBoneIkDiagnostic[] = [];
   const legIssues = [
-    applyLegPose(source, positions, pose, "left", diagnostics),
-    applyLegPose(source, positions, pose, "right", diagnostics)
+    applyLegPose(source, positions, directionalPose, "left", diagnostics),
+    applyLegPose(source, positions, directionalPose, "right", diagnostics)
   ].filter((issue): issue is WalkPoseIssue => issue !== null);
   if (legIssues.length > 0) {
     return Object.freeze({
@@ -616,7 +736,7 @@ export function applyPoseToDirectionRig(
   const contactIssues: WalkPoseIssue[] = [];
   for (const side of ["left", "right"] as const) {
     if (
-      pose.contact[side] &&
+      directionalPose.contact[side] &&
       Math.abs(
         rig.joints[`toe.${side}`].position.y - source.joints.root.position.y
       ) > TWO_BONE_IK_EPSILON

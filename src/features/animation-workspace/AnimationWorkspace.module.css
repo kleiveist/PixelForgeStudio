@@ -768,6 +768,50 @@
   border-color: var(--color-danger-text);
 }
 
+.allDirectionsReview {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  background: var(--color-panel-soft);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.allDirectionsGrid {
+  min-width: 0;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(5.5rem, 1fr));
+  gap: var(--space-2);
+}
+
+.allDirectionsGrid button {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 800;
+  background: var(--color-control);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-sm);
+}
+
+.allDirectionsGrid button:hover {
+  background: var(--color-control-hover);
+}
+
+.allDirectionsGrid button[aria-pressed="true"] {
+  border-color: var(--color-accent-strong);
+  box-shadow: 0 0 0 1px var(--color-accent-strong);
+}
+
 .panControls {
   justify-content: center;
 }
@@ -1075,6 +1119,15 @@
   .viewportStage {
     min-height: 23rem;
     padding: var(--space-4);
+  }
+
+  .allDirectionsReview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .allDirectionsGrid {
+    grid-column: 1;
+    grid-template-columns: repeat(2, minmax(5rem, 1fr));
   }
 
   .panControls button {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { HUMANOID_80_RIG_TEMPLATE } from "./humanoidRig80";
+import { DIRECTION_IDS } from "./directions";
+import { resolveDirectionRig } from "./directionProjection";
 import { JOINT_IDS } from "./rigTopology";
 import {
   HUMANOID_WALK_CHANNELS,
@@ -11,6 +13,7 @@ import {
   WALK_ROOT_BOB_LIMIT,
   applyPoseToDirectionRig,
   resolveClipFrame,
+  resolveDirectionalWalkPose,
   resolveHumanoidWalkPose,
   solveTwoBoneIk,
   validatePose
@@ -114,6 +117,34 @@ describe("walk-humanoid-8-v1", () => {
     expect(results[0]!.joints["hand.left"].position.x).not.toBe(
       results[4]!.joints["hand.left"].position.x
     );
+  });
+
+  it("projects stride, lift, sway, and contact safely over every target rig", () => {
+    for (const direction of DIRECTION_IDS) {
+      const rig = resolveDirectionRig(HUMANOID_80_RIG_TEMPLATE, direction);
+      expect(rig).not.toBeNull();
+      if (!rig) continue;
+      for (let frameIndex = 0; frameIndex < HUMANOID_WALK_FRAME_COUNT; frameIndex += 1) {
+        const directional = resolveDirectionalWalkPose(rig, frameIndex);
+        const applied = applyPoseToDirectionRig(rig, directional);
+        expect(applied.status).toBe("ok");
+        if (applied.status !== "ok") continue;
+        for (const point of Object.values(applied.rig.joints)) {
+          expectFinitePoint(point.position);
+        }
+        for (const side of ["left", "right"] as const) {
+          if (!directional.contact[side]) continue;
+          expect(applied.rig.joints[`toe.${side}`].position.y).toBeCloseTo(
+            rig.joints.root.position.y
+          );
+        }
+        const projectedStride = directional.projected.leftStride;
+        const crossAxis =
+          projectedStride.x * -rig.motionProfile.stepAxis.y +
+          projectedStride.y * rig.motionProfile.stepAxis.x;
+        expect(crossAxis).toBeCloseTo(0);
+      }
+    }
   });
 
   it("keeps frame zero and four in counterphase within the humanoid height tolerance", () => {

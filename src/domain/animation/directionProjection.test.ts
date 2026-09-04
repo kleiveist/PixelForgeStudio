@@ -89,6 +89,12 @@ describe("direction mirroring projection", () => {
       128 - originalWrist.x
     );
     expect(west.motionProfile.stepAxis.x).toBe(-east.motionProfile.stepAxis.x);
+    expect(west.motionProfile.rootSwayAxis.x).toBe(
+      -east.motionProfile.rootSwayAxis.x
+    );
+    expect(west.motionProfile.rootSwayAxis.y).toBe(
+      east.motionProfile.rootSwayAxis.y
+    );
     expect(west.motionProfile.nearSide).toBe("left");
     expect(east.joints["wrist.right"].position).toEqual(originalWrist);
     expect(getDirectionDrawOrder(west.direction)?.nearSide).toBe("left");

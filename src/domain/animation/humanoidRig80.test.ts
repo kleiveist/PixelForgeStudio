@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   BONE_IDS,
+  DIRECTION_IDS,
   HUMANOID_80_RIG_TEMPLATE,
   JOINT_IDS,
   REQUIRED_PART_SLOT_IDS,
   RIG_SOURCE_DIRECTION_IDS,
   createRigCompatibilityKey,
   findDirectionRig,
+  resolveDirectionRig,
   validateRigTemplate
 } from "./index";
 
@@ -61,6 +63,38 @@ describe("humanoid-80-v1 production template", () => {
     expect(findDirectionRig(HUMANOID_80_RIG_TEMPLATE, "west")).toBeNull();
   });
 
+  it("resolves all eight target rigs with versioned projection amplitudes", () => {
+    const targets = DIRECTION_IDS.map((direction) =>
+      resolveDirectionRig(HUMANOID_80_RIG_TEMPLATE, direction)
+    );
+
+    expect(targets.every((target) => target !== null)).toBe(true);
+    expect(targets.map((target) => target?.direction)).toEqual(DIRECTION_IDS);
+    for (const target of targets) {
+      if (!target) continue;
+      const expectedDegrees =
+        target.motionProfile.projection === "side"
+          ? [18, 28, 14]
+          : target.motionProfile.projection === "diagonal"
+            ? [14, 22, 11]
+            : [9, 18, 8];
+      expect(target.motionProfile.version).toBe(1);
+      expect(target.motionProfile.thighAmplitudeRadians).toBeCloseTo(
+        (expectedDegrees[0]! * Math.PI) / 180
+      );
+      expect(target.motionProfile.lowerLegAmplitudeRadians).toBeCloseTo(
+        (expectedDegrees[1]! * Math.PI) / 180
+      );
+      expect(target.motionProfile.armAmplitudeRadians).toBeCloseTo(
+        (expectedDegrees[2]! * Math.PI) / 180
+      );
+      expect(Math.hypot(
+        target.motionProfile.stepAxis.x,
+        target.motionProfile.stepAxis.y
+      )).toBeCloseTo(1);
+    }
+  });
+
   it("binds every required joint, bone, and production slot", () => {
     for (const direction of HUMANOID_80_RIG_TEMPLATE.directions) {
       expect(Object.keys(direction.joints)).toEqual(JOINT_IDS);
@@ -92,7 +126,7 @@ describe("humanoid-80-v1 production template", () => {
   it("creates a stable key and changes it for contract-relevant geometry", () => {
     const key = createRigCompatibilityKey(HUMANOID_80_RIG_TEMPLATE);
     expect(key).toBe(
-      "humanoid-80-v1__frame-128x128__char-80__foot-64-112__contracts-1-1-1__50ec24e4181a7082"
+      "humanoid-80-v1__frame-128x128__char-80__foot-64-112__contracts-1-1-1__840c7385b8de44bc"
     );
     expect(createRigCompatibilityKey(HUMANOID_80_RIG_TEMPLATE)).toBe(key);
 

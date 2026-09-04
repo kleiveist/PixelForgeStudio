@@ -42,13 +42,46 @@ function defineMotionProfile(
   projection: DirectionMotionProfile["projection"],
   nearSide: DirectionMotionProfile["nearSide"],
   stepAxis: Point,
+  rootSwayAxis: Point,
   bendSign: DirectionMotionProfile["bendSign"]
 ): DirectionMotionProfile {
+  const amplitudes =
+    projection === "side"
+      ? {
+          strideAmplitude: 4,
+          thighAmplitudeRadians: (18 * Math.PI) / 180,
+          lowerLegAmplitudeRadians: (28 * Math.PI) / 180,
+          kneeLift: 3,
+          footLift: 5,
+          armAmplitudeRadians: (14 * Math.PI) / 180,
+          rootSwayAmplitude: 1
+        }
+      : projection === "diagonal"
+        ? {
+            strideAmplitude: 3,
+            thighAmplitudeRadians: (14 * Math.PI) / 180,
+            lowerLegAmplitudeRadians: (22 * Math.PI) / 180,
+            kneeLift: 2.5,
+            footLift: 4.5,
+            armAmplitudeRadians: (11 * Math.PI) / 180,
+            rootSwayAmplitude: 1
+          }
+        : {
+            strideAmplitude: 2,
+            thighAmplitudeRadians: (9 * Math.PI) / 180,
+            lowerLegAmplitudeRadians: (18 * Math.PI) / 180,
+            kneeLift: 2,
+            footLift: 4,
+            armAmplitudeRadians: (8 * Math.PI) / 180,
+            rootSwayAmplitude: 1
+          };
   return Object.freeze({
     version: 1,
     projection,
     nearSide,
     stepAxis: Object.freeze(stepAxis),
+    rootSwayAxis: Object.freeze(rootSwayAxis),
+    ...amplitudes,
     bendSign: Object.freeze(bendSign)
   });
 }
@@ -98,6 +131,7 @@ export const HUMANOID_80_DIRECTION_RIGS: readonly DirectionRig[] =
         "front",
         "balanced",
         { x: 0, y: 1 },
+        { x: 1, y: 0 },
         { left: -1, right: 1 }
       )
     ),
@@ -130,6 +164,7 @@ export const HUMANOID_80_DIRECTION_RIGS: readonly DirectionRig[] =
         "diagonal",
         "right",
         { x: DIAGONAL_AXIS, y: DIAGONAL_AXIS },
+        { x: -DIAGONAL_AXIS, y: DIAGONAL_AXIS },
         { left: -1, right: 1 }
       )
     ),
@@ -162,6 +197,7 @@ export const HUMANOID_80_DIRECTION_RIGS: readonly DirectionRig[] =
         "side",
         "right",
         { x: 1, y: 0 },
+        { x: 0, y: 1 },
         { left: -1, right: 1 }
       )
     ),
@@ -194,6 +230,7 @@ export const HUMANOID_80_DIRECTION_RIGS: readonly DirectionRig[] =
         "diagonal",
         "left",
         { x: DIAGONAL_AXIS, y: -DIAGONAL_AXIS },
+        { x: DIAGONAL_AXIS, y: DIAGONAL_AXIS },
         { left: 1, right: -1 }
       )
     ),
@@ -226,6 +263,7 @@ export const HUMANOID_80_DIRECTION_RIGS: readonly DirectionRig[] =
         "back",
         "balanced",
         { x: 0, y: -1 },
+        { x: 1, y: 0 },
         { left: 1, right: -1 }
       )
     )
