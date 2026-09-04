@@ -87,12 +87,11 @@ function ActiveView({
     );
   }
 
-  if (view === "review" || view === "output") {
+  if (view === "output") {
     return (
       <ReviewOutputWorkspace
         outputAdapter={outputAdapter}
         storageAdapter={storageAdapter}
-        view={view}
         {...(now ? { now } : {})}
       />
     );

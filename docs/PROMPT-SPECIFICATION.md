@@ -155,7 +155,8 @@ fail-closed über Base→Category→Asset aufgelöst und anschließend ohne
 Promptlogik in React an `buildPromptPackages()` übergeben. Die Oberfläche
 stellt alle vier Ausgaben pro deutscher/englischer Sprache und wirksamer
 Stilvariante als tastaturbedienbare Tabs dar. Die aktive Fassung ist über
-einen injizierbaren Browser-Port kopierbar und als TXT exportierbar; der
+einen injizierbaren Browser-Port kopierbar und als strukturierte
+Markdown-Datei exportierbar; der
 geprüfte Profilstand wird über das bestehende V2-ExportBundle als JSON mit
 seinen Abhängigkeiten ausgegeben. Konflikte erzeugen bewusst keine
 Produktionsausgabe. Seit Prompt 25 können ausschließlich strukturierte
@@ -166,6 +167,10 @@ Neuanlage oder Wahl einer kompatiblen vorhandenen Basis ändern niemals die
 gesperrte Ausgangsfamilie oder deren bestehende Kinder. Erst ein erneut
 vollständig aufgelöster und persistierter Draft gelangt zurück in die Prompt-
 Erzeugung.
+
+Die frühere Top-Level-Route `review` ist kein eigener Bedienpfad mehr. Alte
+Links und gespeicherte Startansichten werden kompatibel auf den einzigen
+Ausgabe-Workspace unter `output` kanonisiert.
 
 Prompt 26 verändert Inhalt, Reihenfolge und Determinismus dieser vier
 Ausgaben nicht. Er härtet ausschließlich ihre Darstellung: Die Tabs behalten

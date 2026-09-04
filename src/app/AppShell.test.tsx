@@ -98,11 +98,14 @@ afterEach(() => {
 });
 
 describe("application shell navigation", () => {
-  it("renders six semantic destinations and canonicalizes a missing route", () => {
+  it("renders five semantic destinations and canonicalizes a missing route", () => {
     const navigation = new MemoryNavigation();
     renderStudio(navigation);
 
-    expect(within(primaryNavigation()).getAllByRole("link")).toHaveLength(6);
+    expect(within(primaryNavigation()).getAllByRole("link")).toHaveLength(5);
+    expect(
+      within(primaryNavigation()).queryByRole("link", { name: "Prüfung" })
+    ).not.toBeInTheDocument();
     expect(currentPrimaryLink()).toHaveAccessibleName("Dashboard");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByText("Prompt Studio")).toBeVisible();
@@ -625,15 +628,15 @@ describe("application shell navigation", () => {
     renderStudio(navigation);
 
     act(() => {
-      navigation.emitRoute({ status: "valid", view: "review" });
-    });
-    expect(currentPrimaryLink()).toHaveAccessibleName("Prüfung");
-    expect(screen.getByRole("main")).toHaveFocus();
-
-    act(() => {
       navigation.emitRoute({ status: "valid", view: "output" });
     });
     expect(currentPrimaryLink()).toHaveAccessibleName("Ausgabe");
+    expect(screen.getByRole("main")).toHaveFocus();
+
+    act(() => {
+      navigation.emitRoute({ status: "valid", view: "profiles" });
+    });
+    expect(currentPrimaryLink()).toHaveAccessibleName("Profile");
     expect(navigation.pushedViews).toEqual([]);
     expect(navigation.replacedViews).toEqual([]);
   });
@@ -760,6 +763,35 @@ describe("application shell navigation", () => {
       within(studioSwitcher()).getByRole("link", { name: "Prompt Studio" })
     ).toHaveAttribute("aria-current", "page");
     expect(window.location.search).toBe("?studio=prompt&view=wizard");
+    expect(replaceState).toHaveBeenCalledTimes(1);
+  });
+
+  it("redirects the removed review route to the single output workspace", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/studio/?studio=prompt&view=review"
+    );
+    const storage = new MemoryStorage({
+      [V2_STORAGE_KEYS.settings]: settingsJson("dashboard")
+    });
+    const replaceState = vi.spyOn(window.history, "replaceState");
+
+    render(
+      <App
+        navigationAdapter={createBrowserNavigationAdapter(window)}
+        storageAdapter={createV2StorageAdapter(storage)}
+      />
+    );
+
+    expect(currentPrimaryLink()).toHaveAccessibleName("Ausgabe");
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Prompt-Pakete produktionsbereit ausgeben."
+      })
+    ).toBeVisible();
+    expect(window.location.search).toBe("?studio=prompt&view=output");
     expect(replaceState).toHaveBeenCalledTimes(1);
   });
 

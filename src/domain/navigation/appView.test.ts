@@ -8,12 +8,11 @@ import {
 } from "./index";
 
 describe("app view routes", () => {
-  it("defines the six stable top-level views", () => {
+  it("defines the five stable top-level views", () => {
     expect(APP_VIEW_IDS).toEqual([
       "dashboard",
       "profiles",
       "wizard",
-      "review",
       "output",
       "settings"
     ]);
@@ -48,12 +47,19 @@ describe("app view routes", () => {
     });
   });
 
+  it("keeps old review links readable by resolving them to output", () => {
+    expect(parseAppViewSearch("?view=review")).toEqual({
+      status: "valid",
+      view: "output"
+    });
+  });
+
   it("preserves unrelated query parameters while canonicalizing the view", () => {
     expect(
       createAppViewSearch(
-        "review",
+        "output",
         "?project=winter-forest&view=dashboard&view=wizard&mode=compact"
       )
-    ).toBe("?project=winter-forest&view=review&mode=compact");
+    ).toBe("?project=winter-forest&view=output&mode=compact");
   });
 });

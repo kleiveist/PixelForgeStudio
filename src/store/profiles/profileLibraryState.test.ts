@@ -22,11 +22,12 @@ describe("profile library state", () => {
   it("updates every filter including grouping and resets them together", () => {
     const library = createProfileLibraryFixture();
     const baseProfileId = StableIdSchema.parse("base_world_96");
+    const profileId = StableIdSchema.parse("asset_wet_stone");
     let state = createProfileLibraryState({ status: "valid", value: library });
 
     state = profileLibraryReducer(state, {
-      type: "queryChanged",
-      query: "  Hofmagier  "
+      type: "profileChanged",
+      profileId
     });
     state = profileLibraryReducer(state, {
       type: "categoryChanged",
@@ -46,7 +47,7 @@ describe("profile library state", () => {
     });
 
     expect(state.filters).toEqual({
-      query: "  Hofmagier  ",
+      profileId,
       category: "character",
       baseProfileId,
       favoritesOnly: true,
@@ -84,6 +85,31 @@ describe("profile library state", () => {
       profileName: profile.name
     });
     expect(state.filters).toBe(initial.filters);
+  });
+
+  it("clears a selected profile after that exact profile is deleted", () => {
+    const library = createProfileLibraryFixture();
+    const profile = library.assetProfiles[0];
+    if (!profile) throw new Error("Expected an asset profile fixture.");
+    const selected = profileLibraryReducer(
+      createProfileLibraryState({ status: "valid", value: library }),
+      { type: "profileChanged", profileId: profile.id }
+    );
+    const withoutProfile = {
+      ...library,
+      assetProfiles: library.assetProfiles.filter(
+        (candidate) => candidate.id !== profile.id
+      )
+    };
+
+    const deleted = profileLibraryReducer(selected, {
+      type: "mutationSucceeded",
+      library: withoutProfile,
+      operation: "delete",
+      profile
+    });
+
+    expect(deleted.filters.profileId).toBeNull();
   });
 
   it("publishes a successful Base-profile mutation through the same graph state", () => {

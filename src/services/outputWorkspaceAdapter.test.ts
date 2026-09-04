@@ -43,13 +43,13 @@ describe("browser output workspace adapter", () => {
     );
 
     adapter.downloadTextFile({
-      filename: "prompt.txt",
-      contents: "Prompt content\n",
-      mimeType: "text/plain;charset=utf-8"
+      filename: "prompt.md",
+      contents: "# Prompt\n\nPrompt content\n",
+      mimeType: "text/markdown;charset=utf-8"
     });
 
     expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
-    expect(anchor).toHaveAttribute("download", "prompt.txt");
+    expect(anchor).toHaveAttribute("download", "prompt.md");
     expect(anchor).toHaveAttribute("href", "blob:prompt-output");
     expect(click).toHaveBeenCalledOnce();
     expect(document.body.contains(anchor)).toBe(false);
@@ -71,9 +71,9 @@ describe("browser output workspace adapter", () => {
     await expect(adapter.copyText("test")).rejects.toThrow("Clipboard API");
     expect(() =>
       adapter.downloadTextFile({
-        filename: "prompt.txt",
+        filename: "prompt.md",
         contents: "test",
-        mimeType: "text/plain;charset=utf-8"
+        mimeType: "text/markdown;charset=utf-8"
       })
     ).toThrow("download API");
   });

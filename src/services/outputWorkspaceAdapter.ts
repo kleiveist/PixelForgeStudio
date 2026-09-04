@@ -1,7 +1,9 @@
 export interface OutputTextFile {
   readonly filename: string;
   readonly contents: string;
-  readonly mimeType: "text/plain;charset=utf-8" | "application/json;charset=utf-8";
+  readonly mimeType:
+    | "text/markdown;charset=utf-8"
+    | "application/json;charset=utf-8";
 }
 
 export interface OutputWorkspaceAdapter {

@@ -24,7 +24,7 @@ export {
   REVIEW_OUTPUT_IDS,
   REVIEW_OUTPUT_LABELS,
   createProfileJsonFile,
-  createPromptTextFile,
+  createPromptMarkdownFile,
   createReviewBundleId,
   formatResolutionConflict,
   formatResolutionNotice,

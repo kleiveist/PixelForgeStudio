@@ -21,7 +21,7 @@ import {
   REVIEW_OUTPUT_IDS,
   REVIEW_OUTPUT_LABELS,
   createProfileJsonFile,
-  createPromptTextFile,
+  createPromptMarkdownFile,
   createReviewBundleId,
   formatResolutionNotice,
   prepareReviewOutput,
@@ -40,7 +40,6 @@ export type ReviewOutputDraftStorage = Pick<
 export interface ReviewOutputWorkspaceProps {
   readonly outputAdapter: OutputWorkspaceAdapter;
   readonly storageAdapter: ReviewOutputDraftStorage;
-  readonly view: "review" | "output";
   readonly now?: () => string;
 }
 
@@ -67,7 +66,7 @@ function WorkspaceState({
   if (preparation.status === "missingDraft") {
     return (
       <Surface as="section" className={styles.statePanel} tone="soft">
-        <strong>Noch kein Asset zur Prüfung</strong>
+        <strong>Noch kein Asset für die Ausgabe</strong>
         <p>
           Starte oder öffne zuerst einen Wizard-Entwurf. Danach werden hier
           Zusammenfassung und Prompt-Paket aufgebaut.
@@ -116,7 +115,7 @@ function LibraryState({
       </strong>
       <p>
         {status === "invalid"
-          ? "Die gespeicherten Daten bleiben unangetastet. Review, Ausgabe und Export sind bis zu einer gültigen Profilkette gesperrt."
+          ? "Die gespeicherten Daten bleiben unangetastet. Ausgabe und Export sind bis zu einer gültigen Profilkette gesperrt."
           : "Ohne die lokale Profilbibliothek kann der Entwurf nicht sicher aufgelöst werden."}
       </p>
     </Surface>
@@ -141,18 +140,18 @@ function DraftStorageState({
       <p>
         {status === "invalid"
           ? "Die Entwurfsdaten bleiben unangetastet. Öffne den Wizard, um kontrolliert einen neuen gültigen Stand zu erstellen."
-          : "Der Review Workspace kann ohne aktive Sitzung nicht auf den lokalen Entwurf zugreifen."}
+          : "Der Ausgabebereich kann ohne aktive Sitzung nicht auf den lokalen Entwurf zugreifen."}
       </p>
     </Surface>
   );
 }
 
-function actionErrorMessage(action: "copy" | "text" | "json"): string {
+function actionErrorMessage(action: "copy" | "markdown" | "json"): string {
   switch (action) {
     case "copy":
       return "Die aktive Ausgabe konnte nicht in die Zwischenablage kopiert werden.";
-    case "text":
-      return "Die TXT-Datei konnte nicht bereitgestellt werden.";
+    case "markdown":
+      return "Die Markdown-Datei konnte nicht bereitgestellt werden.";
     case "json":
       return "Das validierte Profilpaket konnte nicht als JSON exportiert werden.";
   }
@@ -161,10 +160,9 @@ function actionErrorMessage(action: "copy" | "text" | "json"): string {
 export function ReviewOutputWorkspace({
   outputAdapter,
   storageAdapter,
-  view,
   now = currentIsoTimestamp
 }: ReviewOutputWorkspaceProps) {
-  const definition = APP_VIEW_DEFINITIONS[view];
+  const definition = APP_VIEW_DEFINITIONS.output;
   const { navigate } = useNavigation();
   const { settings } = useSettings();
   const { libraryResult, saveAssetProfile } = useProfileLibrary();
@@ -184,8 +182,7 @@ export function ReviewOutputWorkspace({
     kind: "idle"
   });
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const reviewHeadingRef = useRef<HTMLHeadingElement>(null);
-  const outputHeadingRef = useRef<HTMLHeadingElement>(null);
+  const summaryHeadingRef = useRef<HTMLHeadingElement>(null);
   const [focusAfterConversion, setFocusAfterConversion] = useState(false);
   const [storedDraftResult] = useState(() => storageAdapter.readDraft());
 
@@ -230,13 +227,11 @@ export function ReviewOutputWorkspace({
 
   useEffect(() => {
     if (!focusAfterConversion || ready === null) return;
-    const target =
-      view === "review" ? reviewHeadingRef.current : outputHeadingRef.current;
-    target?.focus();
+    summaryHeadingRef.current?.focus();
     setFocusAfterConversion(false);
-  }, [focusAfterConversion, ready, view]);
+  }, [focusAfterConversion, ready]);
 
-  const setStatusError = (action: "copy" | "text" | "json") => {
+  const setStatusError = (action: "copy" | "markdown" | "json") => {
     setActionStatus({ kind: "error", message: actionErrorMessage(action) });
   };
 
@@ -259,14 +254,18 @@ export function ReviewOutputWorkspace({
     if (!ready || !activePackage) return;
     try {
       outputAdapter.downloadTextFile(
-        createPromptTextFile(ready.profile.name, activePackage, selectedOutput)
+        createPromptMarkdownFile(
+          ready.profile.name,
+          activePackage,
+          selectedOutput
+        )
       );
       setActionStatus({
         kind: "success",
-        message: `${REVIEW_OUTPUT_LABELS[selectedOutput]} wurde als TXT bereitgestellt.`
+        message: `${REVIEW_OUTPUT_LABELS[selectedOutput]} wurde als Markdown bereitgestellt.`
       });
     } catch {
-      setStatusError("text");
+      setStatusError("markdown");
     }
   };
 
@@ -356,16 +355,9 @@ export function ReviewOutputWorkspace({
         <div>
           <Badge tone="accent">Produktionsarbeitsfläche</Badge>
           <p className={styles.eyebrow}>{definition.eyebrow}</p>
-          <h1 id={`${view}-view-title`}>{definition.title}</h1>
+          <h1 id="output-view-title">{definition.title}</h1>
           <p className={styles.description}>{definition.description}</p>
         </div>
-        <button
-          className={styles.heroAction}
-          type="button"
-          onClick={() => navigate(view === "review" ? "output" : "review")}
-        >
-          {view === "review" ? "Ausgabe öffnen →" : "← Prüfung öffnen"}
-        </button>
       </header>
 
       {libraryResult.status === "invalid" ||
@@ -435,9 +427,9 @@ export function ReviewOutputWorkspace({
             >
               <div className={styles.sectionHeading}>
                 <div>
-                  <span className={styles.sectionIndex}>01 · Review</span>
+                  <span className={styles.sectionIndex}>01 · Zusammenfassung</span>
                   <h2
-                    ref={reviewHeadingRef}
+                    ref={summaryHeadingRef}
                     id="review-summary-title"
                     tabIndex={-1}
                   >
@@ -488,7 +480,6 @@ export function ReviewOutputWorkspace({
                 <div>
                   <span className={styles.sectionIndex}>02 · Output</span>
                   <h2
-                    ref={outputHeadingRef}
                     id="prompt-output-title"
                     tabIndex={-1}
                   >
@@ -588,7 +579,7 @@ export function ReviewOutputWorkspace({
                   Kopieren
                 </button>
                 <button type="button" onClick={exportActiveOutput}>
-                  TXT exportieren
+                  MD exportieren
                 </button>
               </div>
             </Surface>

@@ -78,7 +78,6 @@ const promptStartViewLabels: Readonly<Record<PromptStudioView, string>> = {
   dashboard: "Dashboard",
   profiles: "Profile",
   wizard: "Wizard",
-  review: "Prüfung",
   output: "Ausgabe",
   settings: "Einstellungen"
 };

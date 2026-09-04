@@ -36,11 +36,11 @@ export function parseAppViewSearch(search: string): NavigationRoute {
 
   const values = parameters.getAll(APP_VIEW_QUERY_PARAMETER);
   const value = values[0] ?? "";
-  if (values.length !== 1 || !isAppView(value)) {
+  if (values.length !== 1 || (value !== "review" && !isAppView(value))) {
     return { status: "invalid", value };
   }
 
-  return { status: "valid", view: value };
+  return { status: "valid", view: value === "review" ? "output" : value };
 }
 
 /**

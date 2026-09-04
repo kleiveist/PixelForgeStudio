@@ -199,6 +199,10 @@ describe("V2-Zod-Verträge", () => {
 
   it("ergänzt alte AppSettings V2 additiv und validiert neue Startziele", () => {
     const legacySettings = parseAppSettings(appSettingsInput);
+    const removedReviewSettings = parseAppSettings({
+      ...appSettingsInput,
+      startView: "review"
+    });
     const legacyBundle = parseExportBundle(exportBundleInput);
     const newSettings = parseAppSettings({
       ...appSettingsInput,
@@ -221,6 +225,7 @@ describe("V2-Zod-Verträge", () => {
       startView: "dashboard",
       animationStartView: "projects"
     });
+    expect(removedReviewSettings.startView).toBe("output");
     expect(newBundle.appSettings).toMatchObject({
       startStudio: "animation",
       startView: "output",

@@ -64,7 +64,7 @@ title and focus boundary.
     or React dependencies
   - `navigation/`: typed Home, Prompt Studio and Animation Studio routes,
     pure query parsing/canonical serialization, and compatibility aliases for
-    the six stable Prompt views
+    five canonical Prompt views plus the removed `review` route
   - `legacy-v1/`: namespaced compatibility port of the V1 defaults, state
     whitelist, prompt builder, validation, and frame/canvas metrics
 - `features/`: getrennte View-Flächen; `dashboard/` enthält das produktive
@@ -73,8 +73,8 @@ title and focus boundary.
   `character-editor/`, `moving-object-editor/`, `static-object-editor/`,
   `texture-editor/`, `nature-editor/`, `building-editor/` und
   `tileset-editor/`, `item-editor/` und `artwork-editor/` enthalten die neun
-  spezialisierten Asset-Editoren; `review-output/` enthält Review, Prompt-
-  Ausgaben und den kontrollierten Profilkonvertierungsworkflow; `settings/`
+  spezialisierten Asset-Editoren; `review-output/` enthält Prompt-Ausgaben,
+  Zusammenfassung und den kontrollierten Profilkonvertierungsworkflow; `settings/`
   enthält getrennte Startziele, den sichtbaren Migrationsstatus und den
   vollständigen lokalen Workspace-JSON-Transfer; `animation-projects/`
   enthält die validierte Projektanlage, pure Listenprojektion, CRUD-Ansicht,
@@ -1063,7 +1063,8 @@ a partial production prompt. Synthetic draft-snapshot key notices are hidden,
 while real Draft warnings, resolver notices, value sources, Base locks, and
 capabilities remain visible.
 
-`ReviewOutputWorkspace` serves both `review` and `output` shell routes. It
+`ReviewOutputWorkspace` serves the single canonical `output` shell route. Old
+`review` URLs and V2 `startView` values normalize compatibly to `output`. It
 provides package selectors for German/English and every effective style
 variant, plus ARIA tabs for `main`, `negative`, `technical`, and `combined`
 with Arrow/Home/End keyboard navigation. An active Session Draft wins; after
@@ -1072,10 +1073,16 @@ Unavailable or invalid Draft/library storage has an explicit recovery state.
 
 `services/outputWorkspaceAdapter.ts` is the browser effect boundary for
 Clipboard and Blob-backed file downloads. The App composition root injects
-it, so React tests substitute deterministic spies. TXT contains exactly the
-active output. JSON continues through `createProfileExportBundle()` and
+it, so React tests substitute deterministic spies. Markdown contains the
+active output plus its output title, language, and style metadata. JSON
+continues through `createProfileExportBundle()` and
 `ExportBundleSchema`, selects only the reviewed Asset plus its required Base/
 Category dependencies, and includes the portable Draft.
+
+`features/profiles/profileLibraryData.ts` projects a deterministic list of
+resolvable Asset-profile options. `ProfileLibraryView` filters by the selected
+stable profile ID instead of accepting arbitrary search text; the remaining
+category, Base-profile, favorite, and grouping filters stay composable.
 
 `domain/profiles.saveAssetProfile()` is the pure Prompt-24 library mutation.
 It creates clean metadata for a new reviewed Asset or updates an existing

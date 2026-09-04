@@ -76,7 +76,7 @@ export function ProfileLibraryView({
     libraryResult,
     filters,
     mutation,
-    setQuery,
+    setProfile,
     setCategory,
     setBaseProfile,
     setFavoritesOnly,
@@ -111,7 +111,7 @@ export function ProfileLibraryView({
   }, [pendingDelete, restoreDeleteFocus]);
 
   const hasActiveFilters =
-    filters.query.length > 0 ||
+    filters.profileId !== null ||
     filters.category !== null ||
     filters.baseProfileId !== null ||
     filters.favoritesOnly ||
@@ -194,12 +194,22 @@ export function ProfileLibraryView({
         <form className={styles.filters} role="search" onSubmit={preventSubmit}>
           <label className={styles.searchField}>
             <span>Profile durchsuchen</span>
-            <input
-              type="search"
-              value={filters.query}
-              placeholder="Name, Untertyp, Basis oder Tag"
-              onChange={(event) => setQuery(event.currentTarget.value)}
-            />
+            <select
+              value={filters.profileId ?? ""}
+              onChange={(event) => {
+                const profile = data.profileOptions.find(
+                  (candidate) => candidate.id === event.currentTarget.value
+                );
+                setProfile(profile?.id ?? null);
+              }}
+            >
+              <option value="">Alle Profile</option>
+              {data.profileOptions.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name} · {profile.categoryLabel} / {profile.subtypeLabel}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label>

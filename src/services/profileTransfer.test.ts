@@ -142,7 +142,7 @@ describe("V2 profile JSON transfer", () => {
       bundle: {
         appSettings: {
           startStudio: "animation",
-          startView: "review",
+          startView: "output",
           animationStartView: "library"
         }
       }

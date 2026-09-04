@@ -26,6 +26,13 @@ export interface ProfileLibraryBaseOption {
   readonly profileCount: number;
 }
 
+export interface ProfileLibraryProfileOption {
+  readonly id: StableId;
+  readonly name: string;
+  readonly categoryLabel: string;
+  readonly subtypeLabel: string;
+}
+
 export interface ProfileLibraryGroup {
   readonly id: string;
   readonly label: string;
@@ -38,25 +45,16 @@ export interface ProfileLibraryData {
   readonly totalProfileCount: number;
   readonly visibleProfileCount: number;
   readonly skippedProfileCount: number;
+  readonly profileOptions: readonly ProfileLibraryProfileOption[];
   readonly baseOptions: readonly ProfileLibraryBaseOption[];
   readonly groups: readonly ProfileLibraryGroup[];
 }
 
 interface ResolvedLibraryEntry {
-  readonly source: AssetProfile;
   readonly summary: DashboardProfileSummary;
 }
 
 const MAX_COMPATIBILITY_BASE_NAMES = 2;
-
-function normalizedSearchText(value: string): string {
-  return value
-    .normalize("NFKD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLocaleLowerCase("de-DE")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 function compareNames(
   left: Readonly<{ name: string; id: StableId }>,
@@ -86,37 +84,32 @@ function baseOptions(
     .sort(compareNames);
 }
 
-function matchesQuery(entry: ResolvedLibraryEntry, query: string): boolean {
-  if (query.length === 0) return true;
-
-  const searchableText = normalizedSearchText(
-    [
-      entry.summary.name,
-      entry.summary.categoryLabel,
-      entry.summary.subtypeLabel,
-      entry.summary.baseProfileName,
-      ...entry.summary.facts,
-      ...entry.source.tags
-    ].join(" ")
-  );
-  return searchableText.includes(query);
-}
-
 function visibleEntries(
   entries: readonly ResolvedLibraryEntry[],
   filters: ProfileLibraryFilters
 ): readonly ResolvedLibraryEntry[] {
-  const query = normalizedSearchText(filters.query);
-
   return entries.filter(
     (entry) =>
+      (filters.profileId === null || entry.summary.id === filters.profileId) &&
       (filters.category === null ||
         entry.summary.category === filters.category) &&
       (filters.baseProfileId === null ||
         entry.summary.baseProfileId === filters.baseProfileId) &&
-      (!filters.favoritesOnly || entry.summary.favorite) &&
-      matchesQuery(entry, query)
+      (!filters.favoritesOnly || entry.summary.favorite)
   );
+}
+
+function profileOptions(
+  entries: readonly ResolvedLibraryEntry[]
+): readonly ProfileLibraryProfileOption[] {
+  return entries
+    .map(({ summary }) => ({
+      id: summary.id,
+      name: summary.name,
+      categoryLabel: summary.categoryLabel,
+      subtypeLabel: summary.subtypeLabel
+    }))
+    .sort(compareNames);
 }
 
 function categoryGroups(
@@ -206,6 +199,7 @@ export function createProfileLibraryData(
       totalProfileCount: 0,
       visibleProfileCount: 0,
       skippedProfileCount: 0,
+      profileOptions: [],
       baseOptions: [],
       groups: []
     };
@@ -216,7 +210,6 @@ export function createProfileLibraryData(
       const summary = resolveProfileSummary(profile, result.value);
       return summary
         ? {
-            source: profile,
             summary: { ...summary, tags: profile.tags }
           }
         : null;
@@ -229,6 +222,7 @@ export function createProfileLibraryData(
     totalProfileCount: result.value.assetProfiles.length,
     visibleProfileCount: filteredEntries.length,
     skippedProfileCount: result.value.assetProfiles.length - entries.length,
+    profileOptions: profileOptions(entries),
     baseOptions: baseOptions(result.value.baseProfiles, result.value.assetProfiles),
     groups:
       filters.groupBy === "compatibility"

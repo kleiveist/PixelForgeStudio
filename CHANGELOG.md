@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- doppelte Prompt-Studio-Prüfungsansicht entfernt und historische `review`-
+  Links sowie AppSettings V2 kompatibel auf die einzige Ausgabe kanonisiert
+- Prompt-Downloads von TXT auf strukturierte Markdown-Dateien mit Titel,
+  Sprache und Stilmetadaten umgestellt
+- freie Profilsuche der Bibliothek durch eine deterministische Auswahl aller
+  auflösbaren Assetprofile ersetzt
 - alle kreativen Textfragen des geführten Asset-Wizards auf mehrere
   deutschsprachige Antwortvorgaben umgestellt; freie Texteingabe erscheint nur
   noch nach „Eigene Eingabe“, während bestehende Individualwerte kompatibel
@@ -21,7 +27,7 @@
   Parameter, StableId-Projekte und Browser-Zurück/Vorwärts abgesichert
 - globale Studio-Shell mit Home-Brandlink, URL-basiertem Modulumschalter,
   Theme, Skip-Link, sichtbarem Modulkontext und routeabhängigen Titeln ergänzt
-- bestehende sechs Prompt-Views in eine eigene Modulfläche übernommen und vier
+- bestehende Prompt-Views in eine eigene Modulfläche übernommen und vier
   zugängliche Animation-Studio-Platzhalter samt kontrolliertem Workspace-
   Empty-State ergänzt
 - produktive Studio-Startseite mit gleichwertigen Modulkarten, fortsetzbarem

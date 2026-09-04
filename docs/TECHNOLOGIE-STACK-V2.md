@@ -452,8 +452,8 @@ Capability-Gates begrenzen Richtungsregeln auf `directional` und halten
 Animation separat. Kamera, Bodenanker und Weltlicht bleiben im Richtungsset
 konstant; freie Artworks erhalten keine Weltgeometrie-, Figurenmaßstabs- oder
 Animationsregeln. Die technische Tileset-Ausgabe verwendet die bestehende
-pure Atlasmetrik. Prompt 24 ergänzt als React-basierte Review-/Output-
-Oberfläche die sichtbare Produktionsintegration; Prompts 00 bis 24 sind damit
+pure Atlasmetrik. Prompt 24 ergänzt als React-basierte Ausgabe-Oberfläche die
+sichtbare Produktionsintegration; Prompts 00 bis 24 sind damit
 abgeschlossen.
 
 Seit Prompt 24 liest `src/features/review-output/` ausschließlich einen
@@ -465,12 +465,19 @@ React-Ansicht zeigt Quellen und Locks, Konflikt-/Validierungshinweise,
 Sprach-/Stilpakete sowie vier tastaturbedienbare Output-Tabs.
 
 `src/services/outputWorkspaceAdapter.ts` kapselt Clipboard und lokale Blob-
-Downloads als injizierbaren Port. TXT exportiert die aktive Ausgabe; JSON
+Downloads als injizierbaren Port. Markdown exportiert die aktive Ausgabe mit
+Ausgabetitel und Paketmetadaten; JSON
 verwendet weiterhin `ExportBundleSchema` samt benötigten Base-/Category-
 Abhängigkeiten und Draft. Das pure `saveAssetProfile()` erzeugt neue
 Assetprofile oder aktualisiert geladene Quellen unter ihrer stabilen ID;
 Provider und Storage-Adapter validieren den vollständigen Graphen vor jedem
 Write.
+
+Die Prompt-Shell besitzt nur noch die kanonische Route `output`. Historische
+`review`-URLs und AppSettings V2 werden ohne Schemaerhöhung gelesen und auf
+`output` normalisiert. In der Profilbibliothek ist „Profile durchsuchen“ eine
+Auswahl der tatsächlich auflösbaren Assetprofile; es gibt dort keine freie
+Suchtexteingabe mehr.
 
 Prompt 25 erweitert den fail-closed Konfliktzustand um eine kontrollierte
 Konvertierung, ohne die Schichtengrenzen zu verändern. Die pure

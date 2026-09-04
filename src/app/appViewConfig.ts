@@ -35,21 +35,13 @@ export const PROMPT_STUDIO_VIEW_DEFINITIONS: Readonly<
       "Die wiederaufnehmbare Wizard Engine validiert jeden Schritt und sichert gültige Änderungen lokal.",
     nextStep: "Kategorie, Untertyp, Basisprofil und passende Fachschritte sind vollständig aktiv."
   },
-  review: {
-    label: "Prüfung",
-    title: "Konfigurationen sicher prüfen.",
-    eyebrow: "Review",
-    description:
-      "Geerbte Werte, eigene Angaben, Locks und Konflikte werden vor der Ausgabe nachvollziehbar zusammengeführt.",
-    nextStep: "Zusammenfassung und Konfliktprüfung sind mit dem aktiven Wizard-Entwurf verbunden."
-  },
   output: {
     label: "Ausgabe",
     title: "Prompt-Pakete produktionsbereit ausgeben.",
     eyebrow: "Output Workspace",
     description:
       "Hauptprompt, Negativprompt, technische Spezifikation und kombinierte Ausgabe bekommen hier ihren festen Platz.",
-    nextStep: "Sprach- und Stilpakete lassen sich kopieren, als TXT oder zusammen mit dem Profil als JSON exportieren."
+    nextStep: "Sprach- und Stilpakete lassen sich kopieren, als Markdown oder zusammen mit dem Profil als JSON exportieren."
   },
   settings: {
     label: "Einstellungen",

@@ -68,9 +68,9 @@ describe("navigation state", () => {
     expect(
       navigationReducer(state, {
         type: "routeChanged",
-        route: { studio: "prompt", view: "review" }
+        route: { studio: "prompt", view: "output" }
       })
-    ).toEqual({ activeRoute: { studio: "prompt", view: "review" } });
+    ).toEqual({ activeRoute: { studio: "prompt", view: "output" } });
   });
 
   it("projects a temporary Prompt view alias without changing the roof route", () => {

@@ -14,7 +14,7 @@ import { createWizardDraftFromAssetProfile } from "../wizard";
 import {
   REVIEW_OUTPUT_IDS,
   createProfileJsonFile,
-  createPromptTextFile,
+  createPromptMarkdownFile,
   createReviewBundleId,
   prepareReviewOutput
 } from "./reviewOutputData";
@@ -155,7 +155,7 @@ describe("review/output preparation", () => {
     expect(conflict).not.toHaveProperty("packages");
   });
 
-  it("creates portable TXT and validated dependency-complete JSON files", () => {
+  it("creates portable Markdown and validated dependency-complete JSON files", () => {
     const { library, draft } = profileDraft();
     const { sourceAssetProfileId: ignoredSource, ...portableDraftInput } = draft;
     void ignoredSource;
@@ -165,16 +165,28 @@ describe("review/output preparation", () => {
     const promptPackage = result.packages[0];
     if (!promptPackage) throw new Error("Expected one prompt package.");
 
-    const textFile = createPromptTextFile(
+    const markdownFile = createPromptMarkdownFile(
       result.profile.name,
       promptPackage,
       "technical"
     );
-    expect(textFile).toMatchObject({
-      filename: "dorfschmied-mit-lederschurze-classic-de-technical.txt",
-      mimeType: "text/plain;charset=utf-8"
+    expect(markdownFile).toMatchObject({
+      filename: "dorfschmied-mit-lederschurze-classic-de-technical.md",
+      mimeType: "text/markdown;charset=utf-8"
     });
-    expect(textFile.contents).toContain("32 × 32");
+    expect(markdownFile.contents).toContain("# Technische Spezifikation");
+    expect(markdownFile.contents).toContain("**Sprache:** Deutsch");
+    expect(markdownFile.contents).toContain("```text");
+    expect(markdownFile.contents).toContain("32 × 32");
+
+    const fencedMarkdownFile = createPromptMarkdownFile(
+      result.profile.name,
+      { ...promptPackage, technical: "Technik mit ``` im Inhalt" },
+      "technical"
+    );
+    expect(fencedMarkdownFile.contents).toContain(
+      "````text\nTechnik mit ``` im Inhalt\n````"
+    );
 
     const exportedAt = "2026-09-03T23:00:00.000Z";
     const jsonFile = createProfileJsonFile({

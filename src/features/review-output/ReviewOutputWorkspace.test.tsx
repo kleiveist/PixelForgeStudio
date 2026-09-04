@@ -137,7 +137,7 @@ function renderCharacterHeightConflict() {
     status: "ok"
   });
   memory.mutations.splice(0);
-  const navigation = new MemoryNavigation({ status: "valid", view: "review" });
+  const navigation = new MemoryNavigation({ status: "valid", view: "output" });
   const rendered = render(
     <App
       navigationAdapter={navigation}
@@ -259,12 +259,12 @@ describe("ReviewOutputWorkspace", () => {
       "Negativprompt wurde kopiert."
     );
 
-    await user.click(screen.getByRole("button", { name: "TXT exportieren" }));
+    await user.click(screen.getByRole("button", { name: "MD exportieren" }));
     expect(rendered.output.downloadTextFile).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        filename: expect.stringMatching(/-negative\.txt$/),
+        filename: expect.stringMatching(/-negative\.md$/),
         contents: expect.stringContaining("- "),
-        mimeType: "text/plain;charset=utf-8"
+        mimeType: "text/markdown;charset=utf-8"
       })
     );
 
@@ -330,7 +330,7 @@ describe("ReviewOutputWorkspace", () => {
 
     const navigation = new MemoryNavigation({
       status: "valid",
-      view: "review"
+      view: "output"
     });
     render(
       <App

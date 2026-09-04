@@ -25,7 +25,6 @@ describe("studio route domain", () => {
       "dashboard",
       "profiles",
       "wizard",
-      "review",
       "output",
       "settings"
     ]);
@@ -49,6 +48,16 @@ describe("studio route domain", () => {
       expect(parseStudioRouteSearch(`?view=${view}`)).toEqual({
         status: "legacy",
         route: { studio: "prompt", view }
+      });
+    }
+  );
+
+  it.each(["?view=review", "?studio=prompt&view=review"])(
+    "canonicalizes the removed review route to output: %s",
+    (search) => {
+      expect(parseStudioRouteSearch(search)).toEqual({
+        status: "legacy",
+        route: { studio: "prompt", view: "output" }
       });
     }
   );
@@ -208,17 +217,17 @@ describe("studio route domain", () => {
   it("preserves foreign parameters while replacing controlled parameters canonically", () => {
     expect(
       serializeStudioRoute(
-        { studio: "prompt", view: "review" },
+        { studio: "prompt", view: "output" },
         "?studio=animation&view=workspace&project=old_project&mode=compact&tag=a&tag=b"
       )
-    ).toBe("?studio=prompt&view=review&mode=compact&tag=a&tag=b");
+    ).toBe("?studio=prompt&view=output&mode=compact&tag=a&tag=b");
     expect(
       parseStudioRouteSearch(
-        "?studio=prompt&view=review&mode=compact&tag=a&tag=b"
+        "?studio=prompt&view=output&mode=compact&tag=a&tag=b"
       )
     ).toEqual({
       status: "valid",
-      route: { studio: "prompt", view: "review" }
+      route: { studio: "prompt", view: "output" }
     });
   });
 

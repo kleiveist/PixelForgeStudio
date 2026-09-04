@@ -10,10 +10,11 @@ export const PROMPT_STUDIO_VIEW_IDS = Object.freeze([
   "dashboard",
   "profiles",
   "wizard",
-  "review",
   "output",
   "settings"
 ] as const);
+
+const LEGACY_REVIEW_VIEW = "review";
 
 export const ANIMATION_STUDIO_VIEW_IDS = Object.freeze([
   "projects",
@@ -170,7 +171,7 @@ export function parseStudioRouteSearch(
         value: projectValue
       };
     }
-    if (!isPromptStudioView(viewValue)) {
+    if (viewValue !== LEGACY_REVIEW_VIEW && !isPromptStudioView(viewValue)) {
       return {
         status: "invalid",
         reason: "unknownView",
@@ -188,7 +189,9 @@ export function parseStudioRouteSearch(
     }
     return {
       status: "legacy",
-      route: createPromptStudioRoute(viewValue)
+      route: createPromptStudioRoute(
+        viewValue === LEGACY_REVIEW_VIEW ? "output" : viewValue
+      )
     };
   }
 
@@ -230,7 +233,7 @@ export function parseStudioRouteSearch(
   }
 
   if (studioValue === "prompt") {
-    if (!isPromptStudioView(viewValue)) {
+    if (viewValue !== LEGACY_REVIEW_VIEW && !isPromptStudioView(viewValue)) {
       return {
         status: "invalid",
         reason: "unknownView",
@@ -247,8 +250,10 @@ export function parseStudioRouteSearch(
       };
     }
     return {
-      status: "valid",
-      route: createPromptStudioRoute(viewValue)
+      status: viewValue === LEGACY_REVIEW_VIEW ? "legacy" : "valid",
+      route: createPromptStudioRoute(
+        viewValue === LEGACY_REVIEW_VIEW ? "output" : viewValue
+      )
     };
   }
 

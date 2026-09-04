@@ -43,32 +43,30 @@ function profileSummary(data: ProfileLibraryData, id: string) {
 }
 
 describe("profile library data", () => {
-  it("searches every source tag with whitespace, case, and diacritics normalized", () => {
+  it("offers every resolvable profile as a deterministic ready-made option", () => {
     const library = createProfileLibraryFixture();
     const result = createProfileLibraryData(
       validLibrary(library),
-      filters({ query: "  GEHÉIMFUND  " })
+      filters({ profileId: StableIdSchema.parse("asset_smith_80") })
     );
 
     expect(result.visibleProfileCount).toBe(1);
     expect(visibleIds(result)).toEqual(["asset_smith_80"]);
-    const smith = profileSummary(result, "asset_smith_80");
-    expect(smith.tags).toEqual([
-      "Dorf",
-      "Handwerk",
-      "Leder",
-      "Metall",
-      "Geheimfund"
-    ]);
-
-    const nameWithoutDiacritic = createProfileLibraryData(
-      validLibrary(library),
-      filters({ query: "lederschurze" })
+    expect(result.profileOptions).toHaveLength(6);
+    expect(result.profileOptions.map((option) => option.name)).toEqual(
+      [...result.profileOptions.map((option) => option.name)].sort((left, right) =>
+        left.localeCompare(right, "de", { sensitivity: "base" })
+      )
     );
-    expect(visibleIds(nameWithoutDiacritic)).toEqual(["asset_smith_80"]);
+    expect(result.profileOptions).toContainEqual({
+      id: "asset_smith_80",
+      name: "Dorfschmied mit Lederschürze",
+      categoryLabel: "Charakter / Figur",
+      subtypeLabel: "NPC"
+    });
   });
 
-  it("combines query, category, base, and favorite filters with AND semantics", () => {
+  it("combines profile, category, base, and favorite filters with AND semantics", () => {
     const library = createProfileLibraryFixture();
     const base96 = library.baseProfiles.find(
       (profile) => profile.id === "base_world_96"
@@ -81,7 +79,7 @@ describe("profile library data", () => {
     const match = createProfileLibraryData(
       validLibrary(library),
       filters({
-        query: "material",
+        profileId: StableIdSchema.parse("asset_wet_stone"),
         category: "texture",
         baseProfileId: base96.id,
         favoritesOnly: true
@@ -94,7 +92,7 @@ describe("profile library data", () => {
     const noMatch = createProfileLibraryData(
       validLibrary(library),
       filters({
-        query: "material",
+        profileId: StableIdSchema.parse("asset_wet_stone"),
         category: "texture",
         baseProfileId: base80.id,
         favoritesOnly: true

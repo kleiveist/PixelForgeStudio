@@ -112,7 +112,6 @@
   font-weight: 700;
 }
 
-.filters input[type="search"],
 .filters select {
   width: 100%;
   min-width: 0;
@@ -126,7 +125,6 @@
   box-shadow: var(--shadow-inset);
 }
 
-.filters input[type="search"]:focus-visible,
 .filters select:focus-visible,
 .checkboxField:focus-within {
   outline: var(--focus-ring-width) solid var(--color-focus);

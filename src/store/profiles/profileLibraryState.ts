@@ -8,7 +8,7 @@ import type {
 import type { StorageReadResult } from "../../services";
 
 export interface ProfileLibraryFilters {
-  readonly query: string;
+  readonly profileId: StableId | null;
   readonly category: AssetCategory | null;
   readonly baseProfileId: StableId | null;
   readonly favoritesOnly: boolean;
@@ -50,7 +50,7 @@ export interface ProfileLibraryState {
 }
 
 export type ProfileLibraryAction =
-  | Readonly<{ type: "queryChanged"; query: string }>
+  | Readonly<{ type: "profileChanged"; profileId: StableId | null }>
   | Readonly<{ type: "categoryChanged"; category: AssetCategory | null }>
   | Readonly<{ type: "baseProfileChanged"; baseProfileId: StableId | null }>
   | Readonly<{ type: "favoritesChanged"; favoritesOnly: boolean }>
@@ -74,7 +74,7 @@ export type ProfileLibraryAction =
 
 export const DEFAULT_PROFILE_LIBRARY_FILTERS: ProfileLibraryFilters =
   Object.freeze({
-    query: "",
+    profileId: null,
     category: null,
     baseProfileId: null,
     favoritesOnly: false,
@@ -96,8 +96,11 @@ export function profileLibraryReducer(
   action: ProfileLibraryAction
 ): ProfileLibraryState {
   switch (action.type) {
-    case "queryChanged":
-      return { ...state, filters: { ...state.filters, query: action.query } };
+    case "profileChanged":
+      return {
+        ...state,
+        filters: { ...state.filters, profileId: action.profileId }
+      };
     case "categoryChanged":
       return {
         ...state,
@@ -126,6 +129,11 @@ export function profileLibraryReducer(
       return {
         ...state,
         libraryResult: { status: "valid", value: action.library },
+        filters:
+          action.operation === "delete" &&
+          state.filters.profileId === action.profile.id
+            ? { ...state.filters, profileId: null }
+            : state.filters,
         mutation: {
           status: "saved",
           operation: action.operation,
@@ -139,6 +147,13 @@ export function profileLibraryReducer(
       return {
         ...state,
         libraryResult: { status: "valid", value: action.library },
+        filters:
+          state.filters.profileId === null ||
+          action.library.assetProfiles.some(
+            (profile) => profile.id === state.filters.profileId
+          )
+          ? state.filters
+          : { ...state.filters, profileId: null },
         mutation: { status: "ready" }
       };
     case "mutationDismissed":

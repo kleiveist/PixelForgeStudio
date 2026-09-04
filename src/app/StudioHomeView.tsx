@@ -130,7 +130,7 @@ export function StudioHomeView({
               <span className={styles.moduleCopy}>
                 <strong>{BRAND.modules.prompt.shortLabel}</strong>
                 <span>
-                  Pixelart-Produktion mit Profilen, Wizard, Prüfung und vier
+                  Pixelart-Produktion mit Profilen, Wizard, Ausgabe und vier
                   Prompt-Ausgaben.
                 </span>
               </span>

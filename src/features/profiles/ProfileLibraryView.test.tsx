@@ -125,15 +125,30 @@ describe("profile library user flows", () => {
         { name: "Alle Basisprofile" }
       )
     ).toHaveValue("");
+    const profileSelect = screen.getByRole("combobox", {
+      name: "Profile durchsuchen"
+    });
+    expect(within(profileSelect).getAllByRole("option")).toHaveLength(7);
+    expect(
+      within(profileSelect).getByRole("option", { name: "Alle Profile" })
+    ).toHaveValue("");
+    expect(
+      within(profileSelect).getByRole("option", {
+        name: "Nasser grauer Stein · Textur / Material / Stein"
+      })
+    ).toHaveValue("asset_wet_stone");
+    expect(
+      screen.queryByRole("searchbox", { name: "Profile durchsuchen" })
+    ).not.toBeInTheDocument();
   });
 
-  it("combines search, category, base-profile, and favorite filters", async () => {
+  it("combines selected profile, category, base-profile, and favorite filters", async () => {
     const user = userEvent.setup();
     renderPopulated();
 
-    await user.type(
-      screen.getByRole("searchbox", { name: "Profile durchsuchen" }),
-      "Dungeon"
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Profile durchsuchen" }),
+      "asset_wet_stone"
     );
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Kategorie" }),
@@ -217,9 +232,9 @@ describe("profile library user flows", () => {
       storage: populatedStorage()
     });
 
-    await user.type(
-      screen.getByRole("searchbox", { name: "Profile durchsuchen" }),
-      "Dungeon"
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Profile durchsuchen" }),
+      "asset_wet_stone"
     );
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Kategorie" }),
@@ -240,8 +255,8 @@ describe("profile library user flows", () => {
     });
 
     expect(
-      screen.getByRole("searchbox", { name: "Profile durchsuchen" })
-    ).toHaveValue("Dungeon");
+      screen.getByRole("combobox", { name: "Profile durchsuchen" })
+    ).toHaveValue("asset_wet_stone");
     expect(screen.getByRole("combobox", { name: "Kategorie" })).toHaveValue(
       "texture"
     );

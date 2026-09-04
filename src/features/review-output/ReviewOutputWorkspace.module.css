@@ -66,7 +66,6 @@
   margin-top: var(--space-4) !important;
 }
 
-.heroAction,
 .statePanel button,
 .profileActions button,
 .outputActions button,
@@ -86,7 +85,6 @@
   cursor: pointer;
 }
 
-.heroAction,
 .profileActions button:first-child,
 .outputActions button:first-child {
   flex: 0 0 auto;
@@ -96,7 +94,6 @@
   box-shadow: var(--shadow-control);
 }
 
-.heroAction:hover,
 .profileActions button:first-child:hover,
 .outputActions button:first-child:hover {
   background: var(--color-accent-strong);
@@ -109,7 +106,6 @@
   background: var(--color-control-hover);
 }
 
-.heroAction:focus-visible,
 .statePanel button:focus-visible,
 .profileActions button:focus-visible,
 .outputActions button:focus-visible,
@@ -370,10 +366,6 @@
   .outputHeading {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .heroAction {
-    width: 100%;
   }
 
   .sectionHeading > div {

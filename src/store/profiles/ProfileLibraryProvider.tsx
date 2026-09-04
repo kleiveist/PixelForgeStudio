@@ -71,7 +71,7 @@ export interface ProfileLibraryContextValue {
   readonly libraryResult: ReturnType<ProfileLibraryStorage["readProfileLibrary"]>;
   readonly filters: ProfileLibraryFilters;
   readonly mutation: ProfileMutationNotice;
-  readonly setQuery: (query: string) => void;
+  readonly setProfile: (profileId: StableId | null) => void;
   readonly setCategory: (category: AssetCategory | null) => void;
   readonly setBaseProfile: (baseProfileId: StableId | null) => void;
   readonly setFavoritesOnly: (favoritesOnly: boolean) => void;
@@ -645,7 +645,8 @@ export function ProfileLibraryProvider({
       libraryResult: state.libraryResult,
       filters: state.filters,
       mutation: state.mutation,
-      setQuery: (query) => dispatch({ type: "queryChanged", query }),
+      setProfile: (profileId) =>
+        dispatch({ type: "profileChanged", profileId }),
       setCategory: (category) =>
         dispatch({ type: "categoryChanged", category }),
       setBaseProfile: (baseProfileId) =>

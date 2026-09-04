@@ -15,6 +15,11 @@
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+- **Zusätzliche Ausgabe-/Bibliothekskorrektur:** doppelte Prüfungsroute auf
+  Ausgabe kanonisiert, TXT durch Markdown ersetzt und freie Profilsuche auf
+  eine Auswahl gültiger Assetprofile umgestellt; Prompt 41 bleibt davon
+  unberührt. `npm run verify` bestand mit 153 Testdateien und 957 Tests;
+  `git diff --check` ist sauber
 
 ## Prompt 41 — Ausgangsstand und Abnahme
 

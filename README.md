@@ -46,8 +46,9 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   Prompt-Zusammenfassungen und echte zuletzt bearbeitete Animationsprojekte.
 - Der globale Umschalter wechselt per URL zwischen Prompt Studio und Animation
   Studio; Theme, Skip-Link und Fokusführung gelten für beide Module.
-- Prompt Studio enthält Dashboard, Profile, Wizard, Prüfung, Ausgabe und
-  Einstellungen. Dort lassen sich Dach-, Prompt- und Animationsstart getrennt
+- Prompt Studio enthält Dashboard, Profile, Wizard, Ausgabe und Einstellungen.
+  Frühere Prüfungs-Links werden kompatibel auf die Ausgabe weitergeführt. Dort
+  lassen sich Dach-, Prompt- und Animationsstart getrennt
   festlegen. Animation Studio kann Projekte anlegen, suchen, öffnen,
   umbenennen, duplizieren und bestätigt löschen. Der lokale IndexedDB-
   Speicher arbeitet über Autosave; der Workspace prüft PNGs, zeigt Alpha-Trim

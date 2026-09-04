@@ -245,9 +245,11 @@ Artwork-Fakten.
 
 Prompts 00 bis 26 sind abgeschlossen. Die Prompt Engine 2.0 erzeugt Material-,
 Setting-, Haupt-, Negativ-, Technik- und kombinierte Textblöcke als pure
-Domain-Ausgabe. Der Review-/Output-Workspace löst aktive oder gespeicherte
+Domain-Ausgabe. Der Ausgabe-Workspace löst aktive oder gespeicherte
 Drafts fail-closed auf, zeigt Profilquellen, Locks und Warnungen und stellt
-Sprach-/Stilpakete samt Copy-, TXT-, JSON- und Profilspeicheraktionen bereit.
+Sprach-/Stilpakete samt Copy-, Markdown-, JSON- und Profilspeicheraktionen
+bereit. Die frühere Top-Level-Prüfungsroute wird auf diese einzige Ausgabe
+kanonisiert.
 Ein strukturierter Lock-Konflikt kann nach sichtbarer Wirkungsprüfung in eine
 eigenständige Basisfamilie oder ein kompatibles vorhandenes Basisprofil
 konvertiert werden; bestehende Eltern und Kinder werden nicht umgehängt. Der
@@ -1241,8 +1243,9 @@ Basisprofil
   entfernt `categoryProfileId` sowie `sourceAssetProfileId`. Dadurch bleibt
   die Konfiguration portabel, während gespeicherte Category-/Assetprofile und
   alle bestehenden `baseProfileId`-Referenzen unangetastet bleiben.
-- Copy und TXT verwenden den aktiven Ausgabeblock über einen injizierbaren
-  Browser-Port. JSON verwendet das bestehende validierte ExportBundle mit
+- Copy und Markdown verwenden den aktiven Ausgabeblock über einen
+  injizierbaren Browser-Port. JSON verwendet das bestehende validierte
+  ExportBundle mit
   erforderlichen Base-/Category-Abhängigkeiten und Draft.
 - Ein geprüfter neuer Draft wird als neues Assetprofil gespeichert; ein aus
   der Bibliothek geladener Draft aktualisiert dessen stabile ID und Metadaten.
@@ -1265,7 +1268,7 @@ Basisprofil
   ExportBundle. Imports prüfen den gesamten Graph vor Writes, bestätigen
   abweichende IDs explizit und rehydrieren die betroffenen Provider.
 - Die Release-Abnahme belegt alle neun Editoren, Direction-Gating, vier
-  Ausgaben, JSON/TXT, Themes und Keyboard/Responsive. Erst danach wurde die
+  Ausgaben, JSON/Markdown, Themes und Keyboard/Responsive. Erst danach wurde die
   ausführbare Legacy-UI entfernt; Details stehen in
   `erledigt/V2-RELEASE-ACCEPTANCE.md`.
 

@@ -462,15 +462,32 @@ function filenameSlug(value: string): string {
   return slug || "pixelforge-prompt";
 }
 
-export function createPromptTextFile(
+export function createPromptMarkdownFile(
   profileName: string,
   promptPackage: PromptPackage,
   outputId: ReviewOutputId
 ): OutputTextFile {
+  const prompt = promptPackageText(promptPackage, outputId);
+  const longestBacktickRun = Math.max(
+    0,
+    ...(prompt.match(/`+/g) ?? []).map((run) => run.length)
+  );
+  const codeFence = "`".repeat(Math.max(3, longestBacktickRun + 1));
+
   return Object.freeze({
-    filename: `${filenameSlug(profileName)}-${promptPackage.styleProfile}-${promptPackage.language}-${outputId}.txt`,
-    contents: `${promptPackageText(promptPackage, outputId)}\n`,
-    mimeType: "text/plain;charset=utf-8"
+    filename: `${filenameSlug(profileName)}-${promptPackage.styleProfile}-${promptPackage.language}-${outputId}.md`,
+    contents: [
+      `# ${REVIEW_OUTPUT_LABELS[outputId]}`,
+      "",
+      `**Sprache:** ${promptPackage.languageLabel}  `,
+      `**Stilvariante:** ${promptPackage.styleProfileLabel}`,
+      "",
+      `${codeFence}text`,
+      prompt,
+      codeFence,
+      ""
+    ].join("\n"),
+    mimeType: "text/markdown;charset=utf-8"
   });
 }
 
