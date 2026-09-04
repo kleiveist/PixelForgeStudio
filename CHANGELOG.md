@@ -41,6 +41,16 @@
 - Cross-Field-Prüfungen für Source-Anker, Trim-Bounds, eindeutige Part-/Clip-
   IDs, Walk-Frames, Frame-Overrides und vollständige Bundle-Referenzen sowie
   eine getrennte Produktionsquellenprüfung ergänzt
+- asynchronen, injizierbaren `AnimationRepository`-Port mit strukturierten
+  Read-, Query-, Mutation-, Konflikt-, Schema- und Browserfehlerresultaten
+  sowie vollständigem Memoryadapter ergänzt
+- native IndexedDB-Datenbank `pixelforge-studio` Version 1 mit getrennten
+  Projekt-, Part-, Bildblob-, Character-Kit- und Preview-Stores, geforderten
+  Indizes und additiv dokumentiertem Upgradepfad eingeführt; bestehender
+  Prompt-V2-localStorage bleibt unverändert
+- atomare Part-/Blob-Writes, copy-on-write Projektduplikation über geteilte
+  unveränderliche Referenzen, schmale sortierte Projektzusammenfassungen und
+  fail-closed Garbage Collection über pure Binärreferenzanalyse abgesichert
 
 ## 2.0.0 — 2026-09-03
 

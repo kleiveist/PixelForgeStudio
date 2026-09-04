@@ -2,13 +2,62 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 33 — Animationsprojekt-Schemas (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 34 — IndexedDB-Repository (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 34 — IndexedDB-Repository (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 35 — Animationsprojekt-Lifecycle (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31 abgeschlossen; Phase B mit
-  Prompts 32–33 abgeschlossen, Prompts 34–51 offen unter
+  Prompts 32–34 abgeschlossen, Prompts 35–51 offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
+
+## Prompt 34 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `e32f47e`
+- Baseline: Prompt 33 abgeschlossen mit 124 Testdateien und 782 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Abnahme: öffentlicher asynchroner `AnimationRepository`-Port mit
+  strukturierten Ergebnissen; austauschbare Memory- und native IndexedDB-
+  Adapter; validierte Projekt-/Part-/Kit-Metadaten; atomare Part-/Blob-Writes;
+  Copy-on-write-Projektduplikation; pure Referenzanalyse und explizite sichere
+  Garbage Collection; schmale sortierte Projektzusammenfassungen
+- Datenbankvertrag: `pixelforge-studio`, Version 1, getrennte Stores für
+  Projekte, Part-Metadaten, Bildblobs, Character Kits und Previews sowie
+  additive Upgrade-Schritte
+- Grenze: keine React-UI oder Provider, kein globales Repository-Singleton,
+  keine Base64-/JSON-Binärspeicherung, keine Änderung am Prompt-V2-
+  localStorage und kein Prompt 35
+
+## Prompt 34 — Ergebnis
+
+1. Der öffentliche asynchrone `AnimationRepository`-Port unterscheidet valide
+   Reads/Queries/Writes, Schemafehler, fehlende Datensätze, ID-Konflikte,
+   fehlende beziehungsweise nicht öffnende IndexedDB und
+   Transaktionsfehler. Projektzusammenfassungen bleiben ein schmales,
+   deterministisch nach `updatedAt` und ID sortiertes Read-Model.
+2. `MemoryAnimationRepository` und `IndexedDbAnimationRepository` decken
+   Projekt-, PartAsset-, Bildblob-, Preview- und Character-Kit-Operationen
+   über denselben Vertrag ab. Metadaten werden vor jedem Write mit den
+   Prompt-33-Schemas validiert; Prompt-V2-localStorage und seine sechs Keys
+   wurden nicht verändert.
+3. Die native Datenbank `pixelforge-studio` Version 1 besitzt fünf getrennte
+   Key-Path-Stores sowie Indizes für Projekt-/Kit-`updatedAt`, Part-Slot und
+   Part-Richtung. Die Browserfactory liefert ohne oder bei nicht öffnender
+   IndexedDB `unavailable`; keine globale Verbindung wird geteilt.
+4. PartAsset und Bildblob werden in einer gemeinsamen Transaktion geschrieben.
+   Ein absichtlich ausgelöster DataClone-/Transaktionsfehler belegt den
+   Rollback auf die alten Metadaten und den alten Blob. Projektduplikate
+   erhalten eine neue Projekt-ID und neue Zeitstempel, teilen aber
+   unveränderliche Part-/Blob-/Previewreferenzen ohne Binärkopie.
+5. Projekt-, Part- und Kit-Löschungen kaskadieren nicht. Eine pure
+   Referenzanalyse steuert die einzige explizite Garbage Collection; sie
+   entfernt nur nicht referenzierte Bild-/Previewdatensätze und bricht bei
+   ungültigen gespeicherten Metadaten vor jeder Löschung ab.
+6. Gezielte Prüfung: 2 neue Testdateien mit 17 Tests bestanden. Vollständige
+   Prüfung: `npm run verify` bestand mit 126 Testdateien und 799 Tests sowie
+   erfolgreichem Typecheck und Produktionsbuild; einzige Ausgabe bleibt die
+   bekannte Vite-Warnung zum über 500 kB großen Hauptchunk.
+7. `git diff --check` ist sauber. Prompt 35 wurde nicht begonnen; Lifecycle-
+   Provider und UI bleiben die nächste getrennte Aufgabe.
 
 ## Prompt 28 — Ausgangsstand und Abnahme
 

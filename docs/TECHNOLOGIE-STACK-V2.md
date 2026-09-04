@@ -24,8 +24,8 @@ V2-Domänenfunktionen dürfen nicht als Vanilla-DOM-Anwendung umgesetzt werden.
 | Formulare | React Hook Form | verbindlich für Wizard- und Editorformulare |
 | Schema-/Datenvalidierung | Zod | verbindlich an Daten- und Importgrenzen |
 | Globaler Zustand | React Context + `useReducer` | Startlösung; keine zusätzliche State-Bibliothek ohne nachgewiesenen Bedarf |
-| Lokale Speicherung | `localStorage` + JSON-Import/-Export | verbindlich |
-| Größere lokale Daten | IndexedDB | nicht in V2-Basis; nur spätere Erweiterung |
+| Prompt-Studio-Speicherung | `localStorage` + JSON-Import/-Export | verbindlich; bestehende `pixelforge:v2:*`-Verträge bleiben unverändert |
+| Animationsspeicherung | native IndexedDB | verbindlich für Projekt-/Part-/Kit-Metadaten sowie Bild- und Preview-Blobs |
 | Styling | CSS Modules + globale CSS Custom Properties | verbindlich |
 | Icons | eigene lokale SVG-React-Komponenten | verbindlich |
 | Unit-/Integrationstests | Vitest + React Testing Library | verbindlich |
@@ -514,6 +514,34 @@ nur gemeinsam über `writeProfileLibrary()` verändert werden, damit
 Referenzen, Locks und Compatibility Keys als Gesamtgraph gültig bleiben.
 Adapter-Reads liefern `valid`, `empty`, `invalid` oder `unavailable` statt
 Storage- und Parsefehler bis in React durchzuwerfen.
+
+Animationsdaten verwenden davon getrennt den asynchronen, injizierbaren
+`AnimationRepository`-Port unter `src/services/animation/`. Die native
+IndexedDB-Datenbank heißt `pixelforge-studio`, steht in Version 1 und besitzt
+die Stores `animationProjects`, `animationPartAssets`,
+`animationImageBlobs`, `animationCharacterKits` und `animationPreviews`.
+Projekt-, Part- und Kit-Metadaten werden vor jedem Write mit ihren
+Animation-V1-Zod-Schemas validiert. Bilddaten bleiben echte `Blob`-Werte in
+getrennten Stores; sie werden weder als Base64 noch in `localStorage` oder
+JSON-Metadaten abgelegt.
+
+Der Browseradapter kapselt Open-, Upgrade-, Request- und Transaktionsfehler
+vollständig und liefert dieselben diskriminierten Resultate wie der
+vollständige Memoryadapter. Neue Part-Metadaten und ihr Bildblob werden in
+einer gemeinsamen Transaktion geschrieben. Projektlöschung kaskadiert nicht
+in geteilte Binärdaten; ausschließlich die explizite Garbage Collection darf
+nach einer puren Referenzanalyse tatsächlich unreferenzierte Bild- und
+Preview-Datensätze entfernen. Sie bricht bei schema-ungültigen Metadaten ohne
+Löschung ab.
+
+IndexedDB-Upgrades bleiben additiv: Für jede künftige Datenbankversion wird
+nach Erhöhung der Versionskonstante ein neuer, monotoner
+`if (oldVersion < n)`-Schritt an `upgradeAnimationDatabase()` angehängt.
+Bestehende Stores und Indizes werden in normalen Upgrades nicht gelöscht;
+Metadatenmigrationen müssen innerhalb der Upgrade-Transaktion validieren und
+fail-closed abbrechen. `fake-indexeddb` ist ausschließlich eine schmale
+Dev-Abhängigkeit für isolierte Adapter-, Store-, Index- und Rollbacktests;
+Produktivcode verwendet nur die native Browser-API.
 
 ## Styling
 

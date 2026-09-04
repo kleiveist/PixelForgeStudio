@@ -1,12 +1,13 @@
 # PixelForge Studio source architecture
 
-Prompt 33 extends Phase B with strict, independent Animation metadata schemas
-on top of the public domain from Prompt 32. The productive Studio Home
+Prompt 34 extends Phase B with an injectable asynchronous Animation repository
+on top of the public domain and strict metadata schemas from Prompts 32–33.
+The productive Studio Home
 continues to project existing Prompt summaries and equal module entries
-without owning either domain. Animation persistence and rendering remain
-honest placeholders, while domain values and schema-valid metadata now have
-one source of truth each. Both modules share one route source, settings source,
-theme, skip target, title and focus boundary.
+without owning either domain. Animation UI/provider integration and rendering
+remain honest placeholders, while the persistence boundary, domain values and
+schema-valid metadata now each have one source of truth. Both modules share
+one route source, settings source, theme, skip target, title and focus boundary.
 
 - `app/`: Composition, globale `StudioShell`, getrennte Prompt-/Animations-
   Modulflächen, pure Home-Zusammenfassungsprojektion mit schmalem Controller,
@@ -88,10 +89,12 @@ theme, skip target, title and focus boundary.
     raw, autosave, preset, and export-shaped V1 input
   - `storage.schema.ts`: versioned collection envelopes, profile-graph
     integrity, migration backup, and completion-marker contracts
-- `services/`: injectable storage, navigation and output ports, JSON profile
-  transfer, V1 storage migration orchestration, and the browser workspace
-  bootstrap that runs migration before provider hydration; public exports
-  live in `services/index.ts`
+- `services/`: injectable storage, navigation, output and Animation repository
+  ports, JSON profile transfer, V1 storage migration orchestration, and the
+  browser workspace bootstrap that runs migration before provider hydration;
+  `animation/` owns the native IndexedDB and full Memory adapters, pure binary
+  reference analysis and the browser factory; public exports live in
+  `services/index.ts`
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
   complete validated app-settings envelope, all three start decisions and
   effective theme state;
@@ -313,6 +316,43 @@ atomicity. `ProfileLibraryProvider` is the sole in-app profile mutation owner
 and assumes its adapter identity remains stable for the app lifecycle. Its
 public import action re-reads and replaces provider state after a successful
 validated graph write; cross-tab synchronization is outside V2 scope.
+
+`services/animation/index.ts` is the public asynchronous persistence boundary
+for Animation Studio. `AnimationRepository` returns discriminated read,
+query, mutation and value-mutation results: schema failures are `invalid`,
+missing records and collisions remain explicit, absent/open-failed IndexedDB
+is `unavailable`, and transaction failures are `failed`. No React component,
+provider or domain module handles `IDBRequest` or opens the database directly.
+The Memory and IndexedDB adapters implement the same project, PartAsset,
+binary, preview, Character Kit and garbage-collection contract.
+
+The browser adapter owns database `pixelforge-studio` version 1 with these
+stable key-path stores and secondary indexes:
+
+```text
+animationProjects.projectId       → updatedAt
+animationPartAssets.assetId       → slot, direction
+animationImageBlobs.blobId
+animationCharacterKits.kitId      → updatedAt
+animationPreviews.previewId
+```
+
+Every metadata write passes through the Prompt-33 Zod schemas. A PartAsset and
+its referenced image Blob enter both stores in one readwrite transaction.
+Project duplication creates only new project identity/timestamps and shares
+immutable PartAsset, image and preview IDs as a copy-on-write boundary; it
+never copies PNG bytes. Project, PartAsset and Kit deletion never cascades
+into binary stores. `analyzeAnimationBinaryReferences()` is the pure
+reference authority, while `collectGarbage()` is the sole explicit binary
+deletion operation and aborts before mutation when any stored metadata is
+invalid. Future database versions append monotonic `oldVersion < n` upgrade
+blocks and retain existing stores and indexes during ordinary upgrades.
+
+`createBrowserAnimationRepository()` is the only global browser-capability
+check. It returns `unavailable` when IndexedDB is absent or cannot be opened,
+and it creates no shared singleton. Tests inject either an isolated native-API
+facsimile or `MemoryAnimationRepository`; the Prompt-V2 localStorage adapter
+and its six namespaces are unchanged.
 
 `services/v1Migration.ts` reads both V1 keys independently, writes their exact
 raw strings to a `prepared` backup before parsing, transforms valid sources,
@@ -800,7 +840,8 @@ remain in original-image coordinates.
 `validateAnimationProjectProductionSources()` is deliberately separate from
 schema parsing: an incomplete draft remains storable, while missing required
 slot/direction sources and two-point anchors are explicit production issues.
-IndexedDB and atomic writes begin only with Prompt 34.
+IndexedDB persistence and atomic writes are implemented by Prompt 34 through
+the repository boundary above; schemas remain independent of storage APIs.
 
 `domain/prompt-engine/index.ts` is the framework-free public boundary for
 Prompt 23. `buildPromptPackages()` accepts only an already validated
@@ -909,5 +950,7 @@ shell. Prompt 30 adds the global shell and accessible module placeholders.
 Prompt 31 completes Phase A with the productive Home surface and additive
 start settings. Prompt 32 starts Phase B with the public, tested Animation rig
 foundation. Prompt 33 adds the independent strict Animation metadata and
-bundle-graph schemas. Prompt 34 is the next unstarted task and owns the
-IndexedDB repository; no Animation project persistence exists yet.
+bundle-graph schemas. Prompt 34 adds the native IndexedDB/Memory repository
+boundary, atomic Part-/Blob-Writes, shared-reference duplication and explicit
+binary garbage collection. Prompt 35 is the next unstarted task and owns the
+Animation project lifecycle UI/provider integration.
