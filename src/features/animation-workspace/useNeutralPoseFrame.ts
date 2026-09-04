@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  HUMANOID_WALK_CLIP_ID,
+  HUMANOID_WALK_FRAME_COUNT,
   getBuiltInRigTemplate,
   renderFrame,
   type Direction,
@@ -20,8 +22,10 @@ import {
 } from "./neutralPoseRenderer";
 import {
   generateSouthWalkFrames,
+  type SouthWalkGenerationDiagnostic,
   type SouthWalkGenerationResult
 } from "./southWalkRenderer";
+import { RevisionBoundRenderedFrameCache } from "./animationPlayback";
 
 export type WorkspacePartBlobLoadResult =
   | Readonly<{ status: "ok"; blob: Blob }>
@@ -43,27 +47,56 @@ const INITIAL_STATE: NeutralPoseFrameState = Object.freeze({
   message: null
 });
 
+interface CachedWalkMetadata {
+  readonly projectId: StableId;
+  readonly projectRevision: number;
+  readonly clipId: StableId;
+  readonly diagnostics: readonly SouthWalkGenerationDiagnostic[];
+}
+
 export function useNeutralPoseFrame(
   project: AnimationProject,
+  projectRevision: number,
+  clipId: StableId | null,
   direction: Direction,
   partAssets: readonly AnimationPartAsset[],
   decoder: ImageDecoder | null,
   loadBlob: (blobId: StableId) => Promise<WorkspacePartBlobLoadResult>
 ): NeutralPoseFrameState {
   const cacheRef = useRef<RevisionBoundDecodedSourceCache | null>(null);
+  const renderedFrameCacheRef = useRef<RevisionBoundRenderedFrameCache | null>(
+    null
+  );
+  const cachedWalkMetadataRef = useRef<CachedWalkMetadata | null>(null);
   if (!cacheRef.current) {
     cacheRef.current = new RevisionBoundDecodedSourceCache();
+  }
+  if (!renderedFrameCacheRef.current) {
+    renderedFrameCacheRef.current = new RevisionBoundRenderedFrameCache();
   }
   const [state, setState] = useState<NeutralPoseFrameState>(INITIAL_STATE);
 
   useEffect(
     () => () => {
       cacheRef.current?.clear();
+      renderedFrameCacheRef.current?.clear();
+      cachedWalkMetadataRef.current = null;
     },
     []
   );
 
   useEffect(() => {
+    renderedFrameCacheRef.current?.pruneProjectRevisions(
+      project.projectId,
+      projectRevision
+    );
+    if (
+      cachedWalkMetadataRef.current &&
+      (cachedWalkMetadataRef.current.projectId !== project.projectId ||
+        cachedWalkMetadataRef.current.projectRevision !== projectRevision)
+    ) {
+      cachedWalkMetadataRef.current = null;
+    }
     const template = getBuiltInRigTemplate(project.rigTemplateId);
     if (!template) {
       setState(
@@ -140,15 +173,72 @@ export function useNeutralPoseFrame(
           decodedSources
         );
         const frame = renderFrame(project.frameProfile.frameSize, prepared.parts);
-        const walkCycle =
-          direction === "south"
-            ? generateSouthWalkFrames(
-                project,
-                template,
-                partAssets,
-                decodedSources
+        let walkCycle: SouthWalkGenerationResult | null = null;
+        if (direction === "south") {
+          const clip = project.clips.find(
+            (candidate) =>
+              candidate.clipId === clipId &&
+              candidate.templateId === HUMANOID_WALK_CLIP_ID
+          );
+          const cachedFrames = clip
+            ? Array.from({ length: HUMANOID_WALK_FRAME_COUNT }, (_, frameIndex) =>
+                renderedFrameCacheRef.current?.get({
+                  projectId: project.projectId,
+                  projectRevision,
+                  clipId: clip.clipId,
+                  direction,
+                  frameIndex
+                }) ?? null
               )
-            : null;
+            : [];
+          const cachedMetadata = cachedWalkMetadataRef.current;
+          if (
+            clip &&
+            cachedFrames.length === HUMANOID_WALK_FRAME_COUNT &&
+            cachedFrames.every((candidate) => candidate !== null) &&
+            cachedMetadata?.projectId === project.projectId &&
+            cachedMetadata.projectRevision === projectRevision &&
+            cachedMetadata.clipId === clip.clipId
+          ) {
+            walkCycle = Object.freeze({
+              status: "ok",
+              frames: Object.freeze(
+                cachedFrames.filter(
+                  (candidate): candidate is RenderedFrame => candidate !== null
+                )
+              ),
+              diagnostics: cachedMetadata.diagnostics
+            });
+          } else {
+            walkCycle = generateSouthWalkFrames(
+              project,
+              template,
+              partAssets,
+              decodedSources,
+              clipId
+            );
+            if (clip && walkCycle.status === "ok") {
+              walkCycle.frames.forEach((walkFrame, frameIndex) => {
+                renderedFrameCacheRef.current?.set(
+                  {
+                    projectId: project.projectId,
+                    projectRevision,
+                    clipId: clip.clipId,
+                    direction,
+                    frameIndex
+                  },
+                  walkFrame
+                );
+              });
+              cachedWalkMetadataRef.current = Object.freeze({
+                projectId: project.projectId,
+                projectRevision,
+                clipId: clip.clipId,
+                diagnostics: walkCycle.diagnostics
+              });
+            }
+          }
+        }
         setState(
           Object.freeze({
             status: "ready",
@@ -178,7 +268,7 @@ export function useNeutralPoseFrame(
     return () => {
       cancelled = true;
     };
-  }, [decoder, direction, loadBlob, partAssets, project]);
+  }, [clipId, decoder, direction, loadBlob, partAssets, project, projectRevision]);
 
   return state;
 }

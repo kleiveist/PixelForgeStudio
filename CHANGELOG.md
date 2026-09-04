@@ -136,6 +136,16 @@
 - vollständige ready South-Partsets zu acht flüchtigen reproduzierbaren
   Renderframes zusammengesetzt und fehlende Parts, offene Anker, ungültige
   Bones sowie Renderfehler gesammelt im Workspace ausgewiesen
+- echte South-Walk-Renderframes als zugänglich benannte Timeline-Thumbnails
+  und jeweils gewählten Frame im Pixel-Viewport sichtbar gemacht
+- testbaren `requestAnimationFrame`-Scheduler mit Projekt-FPS, deterministisch
+  zeitbasiertem Catch-up, Play, Pause, Stopp, Loop und Einzelschritten ergänzt
+- Pointer-, Range- und vollständiges Roving-Keyboard-Scrubbing sowie optionales
+  exportneutrales Onion Skin für vorherigen, nächsten oder beide Frames
+  eingeführt
+- flüchtigen, hart begrenzten Renderframe-LRU-Cache an Projekt-ID/-Revision,
+  Clip, Richtung und Frame gebunden und zielgenaue Invalidierung sowie
+  Scheduler-Cleanup bei Kontextwechsel und Unmount abgesichert
 
 ## 2.0.0 — 2026-09-03
 

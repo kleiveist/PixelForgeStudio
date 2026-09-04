@@ -1,13 +1,15 @@
 # PixelForge Studio source architecture
 
-Prompts 40 through 42 establish Phase D's deterministic pure TypeScript
-renderer, versioned draw-order contract and first reconstructable Walk clip.
+Prompts 40 through 43 complete Phase D's deterministic pure TypeScript
+renderer, versioned draw-order contract, first reconstructable Walk clip and
+frame-accurate preview lifecycle.
 Inverse affine nearest-neighbor sampling, integer-rounded source-over,
-direction-specific near/far layering, eight explicit movement phases and
-clamped Two-Bone IK are independent of React and Canvas. A complete ready
-South partset produces eight transient frames while the project stores only
-template ID, FPS, loop and later overrides. Playback and export remain
-explicit later boundaries.
+direction-specific near/far layering, eight explicit movement phases, clamped
+Two-Bone IK and pure elapsed-time playback projection are independent of React
+and Canvas. A complete ready South partset produces eight transient frames while
+the project stores only template ID, FPS, loop and later overrides. Timeline,
+manual playback and Onion Skin consume these values without becoming a second
+project source; export remains an explicit later boundary.
 Both modules share one route source, settings source, theme, skip target,
 title and focus boundary.
 
@@ -83,8 +85,9 @@ title and focus boundary.
   pure temporäre State-Machine, responsive Paneelprojektion, Slotinventar,
   DOM-Viewport, datengetriebenes Rig-SVG, richtungsgeordnet software-gerenderte
   Neutralpose, transienten South-Walk-Generator, gesammelte
-  Produktionsblocker, Layer-/Clippingdiagnostik, Part-Layer-Delta und
-  Frameauswahl;
+  Produktionsblocker, Layer-/Clippingdiagnostik, Part-Layer-Delta, echte
+  Timeline-Thumbnails, injizierbares Playback, revisionsgebundenen Framecache
+  und exportneutrales Onion Skin;
   `animation-part-import/` enthält die unbekannte Datei-/Decoder-Grenze,
   Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion;
   `animation-anchor-editor/` besitzt Originalbild-Eingabe, Zoom/Pan, zugängliche
@@ -420,14 +423,14 @@ IndexedDB directly. Workspace routes retain the stable project ID. Missing IDs
 remain on an explained non-looping error surface, while no-ID, Character Kit,
 import, rig and editor surfaces stay explicit placeholders for later prompts.
 
-`features/animation-workspace/index.ts` is the public Prompt-36 presentation
+`features/animation-workspace/index.ts` is the public Animation Workspace
 boundary. `AnimationWorkspaceLifecycleView` is the only adapter from
 `AnimationProjectProvider` into that boundary and passes a validated project,
 save status, errors and an explicit save command. Workspace children never
 read IndexedDB or the repository. `animationWorkspaceReducer()` owns only
 ephemeral direction, clip, frame, slot, inspector context, integer zoom,
-overlay, pan and pane selection; the lifecycle component keys it by project ID
-so switching projects cannot leak an editor selection.
+overlay, pan, Onion-Skin preview and pane selection; the lifecycle component
+keys it by project ID so switching projects cannot leak an editor selection.
 
 `WORKSPACE_SLOT_GROUPS` projects the canonical 39-slot domain catalog without
 duplicating slot truth. Existing project assignments contain only PartAsset
@@ -443,8 +446,10 @@ coordinates into JSX. West, north-west and south-west expose an explicit
 unavailable geometry state instead of inferred joints. The viewport remains a
 presentation rather than a rig-data source, and display zoom never changes
 project or export coordinates. The inspector exposes Project, Part and Frame
-read-only states without fake editable fields; the Timeline exposes the
-validated clip's frame slots and roving keyboard selection without playback.
+read-only states without fake editable fields. The Timeline exposes the eight
+actual transient renderframes with click/range scrubbing and roving
+Arrow/Home/End selection. Its status announces frame, phase, direction, FPS,
+playback state, warnings and blockers.
 
 `useWorkspaceLayout()` maps browser width to desktop, medium and small DOM
 structures. Desktop renders inventory, viewport, inspector and timeline;
@@ -1168,8 +1173,10 @@ source cache and display-only Workspace canvas. Prompt 41 adds versioned
 draw-orders for all eight directions, explicit visual near sides, validated
 optional attachments, bounded project layer deltas and visible edge-aware
 clipping diagnostics. Prompt 42 adds the versioned eight-frame Walk clip,
-South pose solver and transient multi-frame renderer. Prompt 43 is the next
-separate task and owns timeline preview, playback and Onion Skin.
+South pose solver and transient multi-frame renderer. Prompt 43 closes Phase D
+with real Timeline frames, deterministic playback, Scrubbing, Onion Skin and
+controlled preview resource lifecycles. Prompt 44 is the next separate task
+and owns direction projection and controlled mirroring.
 
 The draw-order domain in `domain/animation/layerOrder.ts` lists every required
 and optional slot for each target direction. It keeps anatomical side,
@@ -1196,5 +1203,22 @@ RGBA sources to eight transient `RenderedFrame` values. It collects missing
 parts, pending/invalid anchors, invalid limb geometry, preparation and renderer
 errors before exposing the clip as ready. Frames are never persisted; the
 project remains the source of template ID, FPS, loop and later overrides. The
-Workspace shows the aggregated readiness result but does not play it until
-Prompt 43.
+Workspace shows the aggregated readiness result. Only that valid active South
+clip enables playback; no invalid or placeholder frame can start it.
+
+`features/animation-workspace/animationPlayback.ts` owns the pure elapsed-time
+projection and the bounded revision-aware frame LRU. Its key contains project
+ID, project revision, clip ID, direction and frame index. Filtered invalidation
+can target a project, clip, direction or individual frame; stale revisions of
+the active project are pruned without touching unrelated entries.
+`useAnimationPlayback()` adapts this contract to an injected
+`AnimationFrameScheduler`. Browser composition uses `requestAnimationFrame`,
+but clip FPS alone determines advancement; delayed ticks calculate their
+complete catch-up without iteration. The hook never auto-plays and cancels its
+single request on pause, invalidation, identity change and unmount.
+
+`features/animation-workspace/onionSkin.ts` projects only the previous and/or
+next cached frame reference. React displays those references in separate,
+aria-hidden Canvas layers with bounded opacity. It never composites into or
+copies the selected `RenderedFrame`, so persisted metadata and future export
+pixels remain unchanged.

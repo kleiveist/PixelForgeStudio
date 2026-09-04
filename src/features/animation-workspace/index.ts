@@ -21,6 +21,31 @@ export {
   type SouthWalkGenerationResult
 } from "./southWalkRenderer";
 export {
+  RevisionBoundRenderedFrameCache,
+  advancePlaybackClock,
+  createBrowserAnimationFrameScheduler,
+  type AnimationFrameScheduler,
+  type PlaybackClockResult,
+  type PlaybackClockState,
+  type RenderedFrameCacheFilter,
+  type RenderedFrameCacheKey
+} from "./animationPlayback";
+export {
+  DEFAULT_ONION_SKIN_OPACITY,
+  MAX_ONION_SKIN_OPACITY,
+  MIN_ONION_SKIN_OPACITY,
+  ONION_SKIN_MODES,
+  clampOnionSkinOpacity,
+  resolveOnionSkinLayers,
+  type OnionSkinLayer,
+  type OnionSkinMode
+} from "./onionSkin";
+export {
+  useAnimationPlayback,
+  type AnimationPlaybackController,
+  type AnimationPlaybackOptions
+} from "./useAnimationPlayback";
+export {
   DIRECTION_LABELS,
   OVERLAY_LABELS,
   PANEL_LABELS,

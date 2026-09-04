@@ -15,12 +15,14 @@
 
 ## 2. Aktueller Ausführungsstand
 
-Prompts 28 bis 33 sind abgeschlossen; Phase A ist vollständig und Phase B
-besitzt Domain- sowie strikte Schema-V1-Grundverträge. Beginne nach einem
-neuen konkreten Auftrag als Nächstes mit:
+Prompts 28 bis 43 und damit die Phasen A bis D sind abgeschlossen. Das
+Animation Studio besitzt nun seine Grundlagen, Projektpersistenz, den
+South-Rig-/Part-Workflow sowie den deterministischen acht Frames langen
+Walk-Laufzyklus mit Timeline. Beginne nach einem neuen konkreten Auftrag als
+Nächstes mit:
 
 ```text
-docs/aufgaben/pixelforge-studio-v3/prompts/34_INDEXEDDB_ANIMATION_REPOSITORY.md
+docs/aufgaben/pixelforge-studio-v3/prompts/44_DIRECTION_MIRRORING_AND_COVERAGE.md
 ```
 
 Führe anschließend weiterhin genau einen Prompt nach dem anderen bis Prompt 51

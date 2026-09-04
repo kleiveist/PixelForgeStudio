@@ -64,6 +64,7 @@ acht flüchtige `RenderedFrame`-Objekte in der richtungsspezifischen Draw-Order.
 Sie werden nicht als PNG oder Projektmetadaten gespeichert. Tempo, Template-ID
 und spätere Overrides bleiben die persistierte Quelle der Wahrheit.
 
-Timeline-Wiedergabe, Scrubbing und Onion Skin folgen in Prompt 43. Andere
-Richtungen, Spiegelung und vollständige 8-Richtungs-Generierung folgen erst in
-den dafür vorgesehenen Prompts.
+Timeline-Wiedergabe, Scrubbing und Onion Skin sind mit Prompt 43 umgesetzt.
+Bedienung, Cache- und Lebenszyklusregeln stehen in
+`ANIMATION-TIMELINE-PLAYBACK.md`. Andere Richtungen, Spiegelung und vollständige
+8-Richtungs-Generierung folgen erst in den dafür vorgesehenen Prompts.

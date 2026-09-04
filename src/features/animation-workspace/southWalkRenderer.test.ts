@@ -1,96 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   HUMANOID_80_RIG_TEMPLATE,
-  HUMANOID_WALK_CLIP_ID,
-  REQUIRED_PART_SLOT_IDS,
-  findSlotBinding,
-  type RequiredPartSlot,
-  type RgbaImage
+  type RequiredPartSlot
 } from "../../domain/animation";
 import {
   parseAnimationPartAsset,
-  parseAnimationProject,
-  type AnimationPartAsset
+  parseAnimationProject
 } from "../../schemas";
-import {
-  createAnimationPartAssetInput,
-  createAnimationProjectInput
-} from "../../test/animationSchemaFixtures";
-import type { DecodedPartSource } from "./neutralPoseRenderer";
+import { createAnimationPartAssetInput } from "../../test/animationSchemaFixtures";
+import { createSyntheticSouthWalkFixture } from "../../test/syntheticSouthWalkFixture";
 import { generateSouthWalkFrames } from "./southWalkRenderer";
-
-interface SyntheticSouthFixture {
-  readonly project: ReturnType<typeof parseAnimationProject>;
-  readonly assets: readonly AnimationPartAsset[];
-  readonly decoded: readonly DecodedPartSource[];
-}
-
-function syntheticImage(slotIndex: number): RgbaImage {
-  const width = 5;
-  const height = 5;
-  const pixels = new Uint8ClampedArray(width * height * 4);
-  for (let pixel = 0; pixel < width * height; pixel += 1) {
-    const offset = pixel * 4;
-    pixels[offset] = (slotIndex * 37 + 40) % 256;
-    pixels[offset + 1] = (slotIndex * 61 + 80) % 256;
-    pixels[offset + 2] = (slotIndex * 83 + 120) % 256;
-    pixels[offset + 3] = 255;
-  }
-  return { width, height, pixels };
-}
-
-function createSyntheticSouthFixture(): SyntheticSouthFixture {
-  const assets = REQUIRED_PART_SLOT_IDS.map((slot, slotIndex) => {
-    const binding = findSlotBinding(HUMANOID_80_RIG_TEMPLATE, slot);
-    if (!binding) throw new Error(`Missing fixture binding for ${slot}.`);
-    return parseAnimationPartAsset(
-      createAnimationPartAssetInput({
-        assetId: `part_walk_south_${slotIndex}`,
-        blobId: `blob_walk_south_${slotIndex}`,
-        label: `Synthetic ${slot}`,
-        slot,
-        direction: "south",
-        sourceSize: { width: 5, height: 5 },
-        trimRect: { x: 0, y: 0, width: 5, height: 5 },
-        anchors: {
-          proximal: { x: 2, y: 0 },
-          ...(binding.sourceAnchorRequirement === "twoPoint"
-            ? { distal: { x: 2, y: 4 } }
-            : {})
-        }
-      })
-    );
-  });
-  const project = parseAnimationProject(
-    createAnimationProjectInput({
-      directionSourceMode: "singleDirectionPrototype",
-      parts: assets.map(({ assetId }) => ({ assetId })),
-      clips: [
-        {
-          clipId: "clip_walk_south_001",
-          templateId: HUMANOID_WALK_CLIP_ID,
-          action: "walk",
-          frameCount: 8,
-          fps: 10,
-          loop: true
-        }
-      ],
-      overrides: []
-    })
-  );
-  return {
-    project,
-    assets,
-    decoded: assets.map((asset, index) => ({
-      assetId: asset.assetId,
-      image: syntheticImage(index)
-    }))
-  };
-}
 
 describe("South walk frame generation", () => {
   it("renders eight deterministic frames from a neutral synthetic humanoid", () => {
-    const fixture = createSyntheticSouthFixture();
+    const fixture = createSyntheticSouthWalkFixture();
     const first = generateSouthWalkFrames(
       fixture.project,
       HUMANOID_80_RIG_TEMPLATE,
@@ -117,7 +40,7 @@ describe("South walk frame generation", () => {
   });
 
   it("collects every missing or unfinished required South source", () => {
-    const fixture = createSyntheticSouthFixture();
+    const fixture = createSyntheticSouthWalkFixture();
     const pendingSource = fixture.assets[0]!;
     const pending = parseAnimationPartAsset(
       createAnimationPartAssetInput({
@@ -159,7 +82,7 @@ describe("South walk frame generation", () => {
   });
 
   it("blocks generation when the canonical clip metadata is absent", () => {
-    const fixture = createSyntheticSouthFixture();
+    const fixture = createSyntheticSouthWalkFixture();
     const project = parseAnimationProject({
       ...fixture.project,
       clips: []
@@ -178,7 +101,7 @@ describe("South walk frame generation", () => {
   });
 
   it("turns invalid bone geometry and renderer failures into production errors", () => {
-    const fixture = createSyntheticSouthFixture();
+    const fixture = createSyntheticSouthWalkFixture();
     const south = HUMANOID_80_RIG_TEMPLATE.directions.find(
       ({ direction }) => direction === "south"
     )!;

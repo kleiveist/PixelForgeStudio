@@ -36,6 +36,8 @@ describe("animation workspace model", () => {
       direction: "south",
       clipId: "clip_walk_001",
       frameIndex: 0,
+      onionSkinMode: "off",
+      onionSkinOpacity: 0.25,
       selectedSlot: null,
       activePanel: "viewport",
       activeSidePanel: "parts",
@@ -89,8 +91,16 @@ describe("animation workspace model", () => {
       deltaX: 8,
       deltaY: -32
     });
+    const onionMode = animationWorkspaceReducer(panned, {
+      type: "onionSkinModeSelected",
+      mode: "both"
+    });
+    const onionOpacity = animationWorkspaceReducer(onionMode, {
+      type: "onionSkinOpacitySelected",
+      opacity: 9
+    });
 
-    expect(panned).toMatchObject({
+    expect(onionOpacity).toMatchObject({
       direction: "east",
       frameIndex: 7,
       selectedSlot: "head",
@@ -98,9 +108,11 @@ describe("animation workspace model", () => {
       activeSidePanel: "inspector",
       inspectorContext: "part",
       zoom: 8,
-      pan: { x: 8, y: -32 }
+      pan: { x: 8, y: -32 },
+      onionSkinMode: "both",
+      onionSkinOpacity: 0.6
     });
-    expect(panned.overlays.grid).toBe(false);
+    expect(onionOpacity.overlays.grid).toBe(false);
     expect(project.parts).toEqual([{ assetId: "part_head_south_001" }]);
   });
 

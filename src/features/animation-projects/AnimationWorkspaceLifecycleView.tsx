@@ -20,6 +20,7 @@ export function AnimationWorkspaceLifecycleView({
     activeLoadStatus,
     activeProject,
     activeProjectId,
+    activeProjectRevision,
     canSaveProject,
     configurePartAsset,
     imageDecoder,
@@ -212,6 +213,7 @@ export function AnimationWorkspaceLifecycleView({
     <AnimationWorkspace
       key={activeProject.projectId}
       project={activeProject}
+      projectRevision={activeProjectRevision}
       canSave={canSaveProject}
       saveStatus={saveStatus}
       saveError={commandError ?? saveError}

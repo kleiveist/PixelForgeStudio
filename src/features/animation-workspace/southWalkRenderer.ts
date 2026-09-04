@@ -110,12 +110,15 @@ export function generateSouthWalkFrames(
   project: AnimationProject,
   template: RigTemplate,
   partAssets: readonly AnimationPartAsset[],
-  decodedSources: readonly DecodedPartSource[]
+  decodedSources: readonly DecodedPartSource[],
+  targetClipId: StableId | null = null
 ): SouthWalkGenerationResult {
   const issues: SouthWalkGenerationDiagnostic[] = [];
-  const clip = project.clips.find(
-    (candidate) => candidate.templateId === HUMANOID_WALK_CLIP_ID
-  );
+  const clip = targetClipId
+    ? project.clips.find((candidate) => candidate.clipId === targetClipId)
+    : project.clips.find(
+        (candidate) => candidate.templateId === HUMANOID_WALK_CLIP_ID
+      );
   if (!clip) {
     issues.push(
       diagnostic(
@@ -125,6 +128,7 @@ export function generateSouthWalkFrames(
       )
     );
   } else if (
+    clip.templateId !== HUMANOID_WALK_CLIP_ID ||
     clip.action !== "walk" ||
     clip.frameCount !== HUMANOID_WALK_FRAME_COUNT ||
     !clip.loop

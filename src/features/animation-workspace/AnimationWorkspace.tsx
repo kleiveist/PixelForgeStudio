@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useReducer,
@@ -9,6 +10,9 @@ import {
 } from "react";
 import { Badge, Surface } from "../../components/ui";
 import {
+  HUMANOID_WALK_CLIP_ID,
+  HUMANOID_WALK_FRAME_COUNT,
+  HUMANOID_WALK_PHASES,
   MAX_PROJECT_LAYER_OFFSET,
   MIN_PROJECT_LAYER_OFFSET,
   getBuiltInRigTemplate,
@@ -19,7 +23,8 @@ import {
   type FrameEdge,
   type LayerGroup,
   type PartSlot,
-  type RenderDiagnostic
+  type RenderDiagnostic,
+  type RenderedFrame
 } from "../../domain/animation";
 import {
   PartImportPanel,
@@ -65,8 +70,23 @@ import {
 import styles from "./AnimationWorkspace.module.css";
 import { RenderedFrameCanvas } from "./RenderedFrameCanvas";
 import { RigOverlay } from "./RigOverlay";
-import { useNeutralPoseFrame } from "./useNeutralPoseFrame";
+import {
+  useNeutralPoseFrame,
+  type NeutralPoseFrameState
+} from "./useNeutralPoseFrame";
 import { useWorkspaceLayout } from "./useWorkspaceLayout";
+import type { AnimationFrameScheduler } from "./animationPlayback";
+import {
+  MAX_ONION_SKIN_OPACITY,
+  MIN_ONION_SKIN_OPACITY,
+  ONION_SKIN_MODES,
+  resolveOnionSkinLayers,
+  type OnionSkinMode
+} from "./onionSkin";
+import {
+  useAnimationPlayback,
+  type AnimationPlaybackController
+} from "./useAnimationPlayback";
 
 export type WorkspaceSaveStatus =
   | "idle"
@@ -85,6 +105,8 @@ export interface AnimationWorkspaceProps {
   readonly saveStatus: WorkspaceSaveStatus;
   readonly saveError: string | null;
   readonly sourceError: string | null;
+  readonly projectRevision?: number;
+  readonly playbackScheduler?: AnimationFrameScheduler;
   readonly onSave: () => void;
   readonly partAssets?: readonly AnimationPartAsset[];
   readonly missingPartAssetIds?: readonly StableId[];
@@ -102,6 +124,82 @@ export interface AnimationWorkspaceProps {
     assetId: StableId,
     layerOffset: number
   ) => Promise<PartLayerOffsetCommitResult>;
+}
+
+const DISCONNECTED_PART_IMPORT: NonNullable<
+  AnimationWorkspaceProps["onImportPart"]
+> = async () => ({
+  status: "error",
+  message: "Der Part-Import ist in dieser Ansicht nicht verbunden."
+});
+
+const EMPTY_PART_ASSETS: readonly AnimationPartAsset[] = Object.freeze([]);
+
+const DISCONNECTED_PART_BLOB_LOADER: NonNullable<
+  AnimationWorkspaceProps["onLoadPartBlob"]
+> = async () => ({
+  status: "error",
+  message: "Das Originalbild ist in dieser Ansicht nicht verbunden."
+});
+
+const DISCONNECTED_PART_CONFIGURATION: NonNullable<
+  AnimationWorkspaceProps["onConfigurePart"]
+> = async () => ({
+  status: "error",
+  message: "Die Ankerpersistenz ist in dieser Ansicht nicht verbunden."
+});
+
+const DISCONNECTED_LAYER_CONFIGURATION: NonNullable<
+  AnimationWorkspaceProps["onSetPartLayerOffset"]
+> = async () => ({
+  status: "error",
+  message: "Die Layerpersistenz ist in dieser Ansicht nicht verbunden."
+});
+
+type ReadyWalkCycle = Extract<
+  NonNullable<NeutralPoseFrameState["walkCycle"]>,
+  Readonly<{ status: "ok" }>
+>;
+
+function isPlayableWalkCycle(
+  activeClip: AnimationClip | null,
+  direction: AnimationWorkspaceState["direction"],
+  walkCycle: NeutralPoseFrameState["walkCycle"]
+): walkCycle is ReadyWalkCycle {
+  return (
+    direction === "south" &&
+    activeClip?.templateId === HUMANOID_WALK_CLIP_ID &&
+    activeClip.action === "walk" &&
+    activeClip.frameCount === HUMANOID_WALK_FRAME_COUNT &&
+    activeClip.loop &&
+    walkCycle?.status === "ok" &&
+    walkCycle.frames.length === activeClip.frameCount
+  );
+}
+
+function playbackAvailabilityMessage(
+  state: AnimationWorkspaceState,
+  activeClip: AnimationClip | null,
+  renderState: NeutralPoseFrameState,
+  enabled: boolean,
+  reducedMotion: boolean
+): string {
+  if (enabled) {
+    return reducedMotion
+      ? "Manuelle Wiedergabe ist bereit; reduzierte Bewegung verhindert jeden automatischen Start."
+      : "Manuelle Wiedergabe ist bereit und startet nie automatisch.";
+  }
+  if (!activeClip) return "Wiedergabe benötigt einen Clip.";
+  if (state.direction !== "south") {
+    return "Generierte Vorschauframes sind derzeit nur für Süd verfügbar.";
+  }
+  if (activeClip.templateId !== HUMANOID_WALK_CLIP_ID) {
+    return `Wiedergabe benötigt den Clip ${HUMANOID_WALK_CLIP_ID}.`;
+  }
+  if (renderState.status === "loading") {
+    return "Die Walk-Frames werden noch erzeugt.";
+  }
+  return "Wiedergabe bleibt gesperrt, bis alle South-Produktionsvoraussetzungen erfüllt sind.";
 }
 
 const LAYER_GROUP_LABELS: Readonly<Record<LayerGroup, string>> = Object.freeze({
@@ -183,6 +281,9 @@ interface ToolbarProps {
   readonly sourceError: string | null;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly onSave: () => void;
+  readonly playback: AnimationPlaybackController;
+  readonly playbackEnabled: boolean;
+  readonly playbackMessage: string;
 }
 
 function WorkspaceToolbar({
@@ -193,7 +294,10 @@ function WorkspaceToolbar({
   saveError,
   sourceError,
   dispatch,
-  onSave
+  onSave,
+  playback,
+  playbackEnabled,
+  playbackMessage
 }: ToolbarProps) {
   const directionOptions = useMemo(
     () => getWorkspaceDirectionOptions(project),
@@ -282,28 +386,71 @@ function WorkspaceToolbar({
       </div>
 
       <div className={styles.futureActions}>
-        <button
-          className={styles.secondaryButton}
-          type="button"
-          disabled
-          aria-describedby="animation-playback-unavailable"
-        >
-          Play / Pause
-        </button>
-        <span id="animation-playback-unavailable" className={styles.actionReason}>
-          Wiedergabe wird mit der echten Timeline aktiviert.
-        </span>
-        <button
-          className={styles.secondaryButton}
-          type="button"
-          disabled
-          aria-describedby="animation-export-unavailable"
-        >
-          Exportieren
-        </button>
-        <span id="animation-export-unavailable" className={styles.actionReason}>
-          Export bleibt bis zur Renderpipeline gesperrt.
-        </span>
+        <div className={styles.playbackControlGroup}>
+          <span className={styles.toolbarLabel}>Wiedergabe</span>
+          <div
+            className={styles.playbackButtons}
+            role="group"
+            aria-label="Walk-Wiedergabe steuern"
+          >
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={!playbackEnabled}
+              aria-label="Vorheriger Frame"
+              onClick={playback.previous}
+            >
+              ←
+            </button>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={!playbackEnabled}
+              aria-describedby="animation-playback-availability"
+              onClick={playback.isPlaying ? playback.pause : playback.play}
+            >
+              {playback.isPlaying ? "Pause" : "Abspielen"}
+            </button>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={!playbackEnabled}
+              aria-label="Stoppen und zu Frame 1"
+              onClick={playback.stop}
+            >
+              Stopp
+            </button>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={!playbackEnabled}
+              aria-label="Nächster Frame"
+              onClick={playback.next}
+            >
+              →
+            </button>
+          </div>
+          <span
+            id="animation-playback-availability"
+            className={styles.actionReason}
+          >
+            {playbackMessage}
+          </span>
+        </div>
+        <div className={styles.exportControlGroup}>
+          <span className={styles.toolbarLabel}>Ausgabe</span>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            disabled
+            aria-describedby="animation-export-unavailable"
+          >
+            Exportieren
+          </button>
+          <span id="animation-export-unavailable" className={styles.actionReason}>
+            Export bleibt bis zur Renderpipeline gesperrt.
+          </span>
+        </div>
       </div>
 
       {saveError ? (
@@ -581,9 +728,9 @@ interface RigViewportProps {
   readonly activeClip: AnimationClip | null;
   readonly unresolvedReferenceCount: number;
   readonly loadedPartCount: number;
-  readonly partAssets: readonly AnimationPartAsset[];
   readonly selectedPart: AnimationPartAsset | null;
-  readonly imageDecoder: ImageDecoder | null;
+  readonly renderState: NeutralPoseFrameState;
+  readonly walkFrames: readonly RenderedFrame[] | null;
   readonly onLoadPartBlob: (blobId: StableId) => Promise<PartBlobLoadResult>;
   readonly onConfigurePart: (
     definition: AnchorEditorCommitDefinition
@@ -598,9 +745,9 @@ function RigViewport({
   activeClip,
   unresolvedReferenceCount,
   loadedPartCount,
-  partAssets,
   selectedPart,
-  imageDecoder,
+  renderState,
+  walkFrames,
   onLoadPartBlob,
   onConfigurePart,
   dispatch,
@@ -620,17 +767,20 @@ function RigViewport({
   const selectedAssignment = selectedPart
     ? project.parts.find(({ assetId }) => assetId === selectedPart.assetId)
     : undefined;
-  const neutralPose = useNeutralPoseFrame(
-    project,
-    state.direction,
-    partAssets,
-    imageDecoder,
-    onLoadPartBlob
-  );
-  const renderedPartCount = neutralPose.frame?.renderedPartIds.length ?? 0;
+  const currentFrame = walkFrames?.[state.frameIndex] ?? renderState.frame;
+  const onionLayers =
+    walkFrames && activeClip
+      ? resolveOnionSkinLayers(
+          walkFrames,
+          state.frameIndex,
+          activeClip.loop,
+          state.onionSkinMode
+        )
+      : Object.freeze([]);
+  const renderedPartCount = currentFrame?.renderedPartIds.length ?? 0;
   const renderDiagnosticCount =
-    (neutralPose.frame?.diagnostics.length ?? 0) +
-    neutralPose.preparationIssues.length;
+    (currentFrame?.diagnostics.length ?? 0) +
+    renderState.preparationIssues.length;
 
   const handleViewportKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;
@@ -731,20 +881,22 @@ function RigViewport({
 
       <p className={styles.viewportSourceState} role="status">
         <strong>
-          {neutralPose.status === "loading"
+          {renderState.status === "loading"
             ? "Partquellen werden gerendert"
-            : neutralPose.status === "failed"
+            : renderState.status === "failed"
               ? "Renderquelle nicht verfügbar"
               : unresolvedReferenceCount > 0 && loadedPartCount === 0
                 ? "Keine renderbaren Bilddaten"
               : renderedPartCount > 0
-                ? "Neutralpose deterministisch gerendert"
+                ? walkFrames
+                  ? "Walk-Frame deterministisch gerendert"
+                  : "Neutralpose deterministisch gerendert"
                 : loadedPartCount > 0
                   ? "Noch kein renderbereiter Part"
                   : "Viewport wartet auf Teile"}
         </strong>{" "}
-        {neutralPose.status === "failed"
-          ? neutralPose.message
+        {renderState.status === "failed"
+          ? renderState.message
           : renderedPartCount > 0
             ? `${renderedPartCount} Part-${renderedPartCount === 1 ? "Quelle wurde" : "Quellen wurden"} per inverser affiner Nearest-Neighbor-Abtastung zusammengesetzt.`
             : loadedPartCount > 0
@@ -778,8 +930,31 @@ function RigViewport({
           data-footline={state.overlays.footline}
           data-rig-direction={state.direction}
         >
-          {neutralPose.frame && renderedPartCount > 0 ? (
-            <RenderedFrameCanvas frame={neutralPose.frame} />
+          {onionLayers.map((layer) => (
+            <span
+              key={layer.kind}
+              className={styles.onionLayer}
+              style={{ opacity: state.onionSkinOpacity }}
+              data-onion-layer={layer.kind}
+              data-onion-frame={layer.frameIndex + 1}
+            >
+              <RenderedFrameCanvas
+                frame={layer.frame}
+                variant="onion"
+                ariaHidden
+                testId={`onion-${layer.kind}-frame`}
+              />
+            </span>
+          ))}
+          {currentFrame && renderedPartCount > 0 ? (
+            <RenderedFrameCanvas
+              frame={currentFrame}
+              {...(walkFrames
+                ? {
+                    ariaLabel: `Aktueller Walk-Frame ${state.frameIndex + 1} von ${walkFrames.length}: ${HUMANOID_WALK_PHASES[state.frameIndex]?.label ?? "Unbekannte Phase"}`
+                  }
+                : {})}
+            />
           ) : null}
           {state.overlays.grid ? <span className={styles.gridOverlay} /> : null}
           {state.overlays.boundingBoxes ? <span className={styles.boundsOverlay} /> : null}
@@ -792,9 +967,9 @@ function RigViewport({
             />
           ) : null}
           <span className={styles.viewportPlaceholder}>
-            {neutralPose.status === "loading"
+            {renderState.status === "loading"
               ? "Renderer lädt"
-              : neutralPose.status === "failed"
+              : renderState.status === "failed"
                 ? "Renderfehler"
                 : renderedPartCount > 0
                   ? `${renderedPartCount} Part${renderedPartCount === 1 ? "" : "s"}`
@@ -813,12 +988,12 @@ function RigViewport({
           <span>Keine Rasterwarnungen für den aktuellen Frame.</span>
         ) : (
           <ul aria-label="Renderdiagnostik des aktuellen Frames">
-            {neutralPose.preparationIssues.map((issue, index) => (
+            {renderState.preparationIssues.map((issue, index) => (
               <li key={`prepare-${issue.assetId ?? "frame"}-${issue.code}-${index}`}>
                 {issue.code}: {issue.message}
               </li>
             ))}
-            {neutralPose.frame?.diagnostics.map((issue, index) => (
+            {currentFrame?.diagnostics.map((issue, index) => (
               <li key={`render-${issue.partId ?? "frame"}-${issue.code}-${index}`}>
                 {renderDiagnosticLabel(issue)}
               </li>
@@ -827,24 +1002,24 @@ function RigViewport({
         )}
       </div>
 
-      {state.direction === "south" && neutralPose.walkCycle ? (
+      {state.direction === "south" && renderState.walkCycle ? (
         <div
           className={styles.walkProductionStatus}
-          role={neutralPose.walkCycle.status === "invalid" ? "alert" : "status"}
+          role={renderState.walkCycle.status === "invalid" ? "alert" : "status"}
         >
           <strong>
-            {neutralPose.walkCycle.status === "ok"
+            {renderState.walkCycle.status === "ok"
               ? "Automatischer South-Walk bereit"
               : "Automatischer South-Walk gesperrt"}
           </strong>
-          {neutralPose.walkCycle.status === "ok" ? (
+          {renderState.walkCycle.status === "ok" ? (
             <span>
-              {neutralPose.walkCycle.frames.length} deterministische Frames wurden
+              {renderState.walkCycle.frames.length} deterministische Frames wurden
               flüchtig aus Rig, Parts und Clipvorlage erzeugt.
             </span>
           ) : (
             <ul aria-label="Produktionsfehler des South-Walk-Clips">
-              {neutralPose.walkCycle.issues.map((walkIssue, index) => (
+              {renderState.walkCycle.issues.map((walkIssue, index) => (
                 <li key={`${walkIssue.code}-${walkIssue.assetId ?? walkIssue.slot ?? "clip"}-${index}`}>
                   {walkIssue.message}
                 </li>
@@ -1178,13 +1353,33 @@ function Inspector({
 interface TimelineProps {
   readonly state: AnimationWorkspaceState;
   readonly activeClip: AnimationClip | null;
+  readonly renderState: NeutralPoseFrameState;
+  readonly walkFrames: readonly RenderedFrame[] | null;
+  readonly playback: AnimationPlaybackController;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
 }
 
-function FrameTimeline({ state, activeClip, dispatch, layout }: TimelineProps) {
+const ONION_SKIN_LABELS: Readonly<Record<OnionSkinMode, string>> =
+  Object.freeze({
+    off: "Aus",
+    previous: "Vorheriger Frame",
+    next: "Nächster Frame",
+    both: "Vorheriger und nächster Frame"
+  });
+
+function FrameTimeline({
+  state,
+  activeClip,
+  renderState,
+  walkFrames,
+  playback,
+  dispatch,
+  layout
+}: TimelineProps) {
   const selectFrame = (frameIndex: number, focus: boolean) => {
     if (!activeClip) return;
+    playback.pause();
     dispatch({
       type: "frameSelected",
       frameIndex,
@@ -1209,6 +1404,15 @@ function FrameTimeline({ state, activeClip, dispatch, layout }: TimelineProps) {
     event.preventDefault();
     selectFrame(nextFrame, true);
   };
+
+  const phase = HUMANOID_WALK_PHASES[state.frameIndex];
+  const visibleProductionIssues =
+    renderState.walkCycle?.status === "invalid"
+      ? renderState.walkCycle.issues
+      : renderState.walkCycle?.diagnostics.filter(
+          (issue) =>
+            issue.frameIndex === undefined || issue.frameIndex === state.frameIndex
+        ) ?? [];
 
   return (
     <Surface
@@ -1237,19 +1441,111 @@ function FrameTimeline({ state, activeClip, dispatch, layout }: TimelineProps) {
                 key={frameIndex}
                 type="button"
                 role="radio"
+                aria-label={`Frame ${frameIndex + 1}: ${HUMANOID_WALK_PHASES[frameIndex]?.label ?? "ohne Phasenname"}`}
                 aria-checked={state.frameIndex === frameIndex}
                 tabIndex={state.frameIndex === frameIndex ? 0 : -1}
                 onClick={() => selectFrame(frameIndex, false)}
                 onKeyDown={(event) => handleFrameKeyDown(event, frameIndex)}
               >
                 <span className={styles.frameNumber}>{frameIndex + 1}</span>
-                <span className={styles.framePlaceholder}>Frameplatz</span>
+                {walkFrames?.[frameIndex] ? (
+                  <RenderedFrameCanvas
+                    frame={walkFrames[frameIndex]}
+                    variant="thumbnail"
+                    ariaLabel={`Vorschaubild Frame ${frameIndex + 1}, ${HUMANOID_WALK_PHASES[frameIndex]?.label ?? "ohne Phasenname"}`}
+                    testId={`timeline-frame-${frameIndex + 1}`}
+                  />
+                ) : (
+                  <span className={styles.framePlaceholder}>Vorschau nicht verfügbar</span>
+                )}
+                <span className={styles.framePhase}>
+                  {HUMANOID_WALK_PHASES[frameIndex]?.label ?? "Ohne Phase"}
+                </span>
               </button>
             ))}
           </div>
+          <div className={styles.timelineControls}>
+            <label className={styles.scrubber} htmlFor="animation-frame-scrubber">
+              <span>Frame scrubben</span>
+              <input
+                id="animation-frame-scrubber"
+                type="range"
+                min={1}
+                max={activeClip.frameCount}
+                step={1}
+                value={state.frameIndex + 1}
+                onChange={(event) =>
+                  selectFrame(Number(event.currentTarget.value) - 1, false)
+                }
+              />
+              <output htmlFor="animation-frame-scrubber">
+                {state.frameIndex + 1}
+              </output>
+            </label>
+            <label className={styles.onionControl}>
+              <span>Onion Skin</span>
+              <select
+                value={state.onionSkinMode}
+                disabled={!walkFrames}
+                onChange={(event) => {
+                  const mode = event.currentTarget.value as OnionSkinMode;
+                  if (ONION_SKIN_MODES.some((candidate) => candidate === mode)) {
+                    dispatch({ type: "onionSkinModeSelected", mode });
+                  }
+                }}
+              >
+                {ONION_SKIN_MODES.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {ONION_SKIN_LABELS[mode]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={styles.onionOpacity}>
+              <span>Onion-Skin-Deckkraft</span>
+              <input
+                type="range"
+                min={MIN_ONION_SKIN_OPACITY}
+                max={MAX_ONION_SKIN_OPACITY}
+                step={0.05}
+                value={state.onionSkinOpacity}
+                disabled={!walkFrames || state.onionSkinMode === "off"}
+                onChange={(event) =>
+                  dispatch({
+                    type: "onionSkinOpacitySelected",
+                    opacity: Number(event.currentTarget.value)
+                  })
+                }
+              />
+              <output>{Math.round(state.onionSkinOpacity * 100)} %</output>
+            </label>
+          </div>
           <p className={styles.timelineStatus} role="status" aria-live="polite">
-            Frame {state.frameIndex + 1} von {activeClip.frameCount} · {DIRECTION_LABELS[state.direction]} · {activeClip.fps} Bilder pro Sekunde. Wiedergabe ist noch nicht aktiv.
+            Frame {state.frameIndex + 1} von {activeClip.frameCount} · Phase: {phase?.label ?? "nicht verfügbar"} · {DIRECTION_LABELS[state.direction]} · {activeClip.fps} FPS · {activeClip.loop ? "Loop aktiv" : "Einmalige Wiedergabe"} · {playback.isPlaying ? "Wiedergabe läuft" : "Wiedergabe pausiert"}.
           </p>
+          {visibleProductionIssues.length > 0 ? (
+            <div
+              className={styles.timelineIssues}
+              role={renderState.walkCycle?.status === "invalid" ? "alert" : "status"}
+            >
+              <strong>
+                {renderState.walkCycle?.status === "invalid"
+                  ? "Fehlende Produktionsvoraussetzungen"
+                  : "Renderwarnungen dieses Frames"}
+              </strong>
+              <ul>
+                {visibleProductionIssues.map((issue, index) => (
+                  <li key={`${issue.code}-${issue.frameIndex ?? "clip"}-${index}`}>
+                    {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : walkFrames ? (
+            <p className={styles.timelineReady} role="status">
+              Alle acht South-Frames sind für die framegenaue Prüfung bereit.
+            </p>
+          ) : null}
         </>
       ) : (
         <p className={styles.emptyDetail} role="status">
@@ -1262,32 +1558,22 @@ function FrameTimeline({ state, activeClip, dispatch, layout }: TimelineProps) {
 
 export function AnimationWorkspace({
   project,
+  projectRevision = 0,
+  playbackScheduler,
   canSave,
   saveStatus,
   saveError,
   sourceError,
   onSave,
-  partAssets = [],
+  partAssets = EMPTY_PART_ASSETS,
   missingPartAssetIds,
   partAssetLoadError = null,
   partAssetsLoading = false,
   imageDecoder = null,
-  onImportPart = async () => ({
-    status: "error",
-    message: "Der Part-Import ist in dieser Ansicht nicht verbunden."
-  }),
-  onLoadPartBlob = async () => ({
-    status: "error",
-    message: "Das Originalbild ist in dieser Ansicht nicht verbunden."
-  }),
-  onConfigurePart = async () => ({
-    status: "error",
-    message: "Die Ankerpersistenz ist in dieser Ansicht nicht verbunden."
-  }),
-  onSetPartLayerOffset = async () => ({
-    status: "error",
-    message: "Die Layerpersistenz ist in dieser Ansicht nicht verbunden."
-  })
+  onImportPart = DISCONNECTED_PART_IMPORT,
+  onLoadPartBlob = DISCONNECTED_PART_BLOB_LOADER,
+  onConfigurePart = DISCONNECTED_PART_CONFIGURATION,
+  onSetPartLayerOffset = DISCONNECTED_LAYER_CONFIGURATION
 }: AnimationWorkspaceProps) {
   const [state, dispatch] = useReducer(
     animationWorkspaceReducer,
@@ -1304,6 +1590,50 @@ export function AnimationWorkspace({
   const selectedPart = state.selectedSlot
     ? findPartAssetForSource(partAssets, state.selectedSlot, state.direction)
     : null;
+  const renderState = useNeutralPoseFrame(
+    project,
+    projectRevision,
+    activeClip?.clipId ?? null,
+    state.direction,
+    partAssets,
+    imageDecoder,
+    onLoadPartBlob
+  );
+  const playbackEnabled = isPlayableWalkCycle(
+    activeClip,
+    state.direction,
+    renderState.walkCycle
+  );
+  const walkFrames = playbackEnabled
+    ? renderState.walkCycle.frames
+    : null;
+  const selectPlaybackFrame = useCallback(
+    (frameIndex: number) => {
+      dispatch({
+        type: "frameSelected",
+        frameIndex,
+        frameCount: activeClip?.frameCount ?? 1
+      });
+    },
+    [activeClip?.frameCount]
+  );
+  const playback = useAnimationPlayback({
+    identity: `${project.projectId}:${projectRevision}:${activeClip?.clipId ?? "none"}:${state.direction}`,
+    enabled: playbackEnabled,
+    frameIndex: state.frameIndex,
+    frameCount: activeClip?.frameCount ?? 1,
+    fps: activeClip?.fps ?? 1,
+    loop: activeClip?.loop ?? false,
+    onFrameChange: selectPlaybackFrame,
+    ...(playbackScheduler ? { scheduler: playbackScheduler } : {})
+  });
+  const playbackMessage = playbackAvailabilityMessage(
+    state,
+    activeClip,
+    renderState,
+    playbackEnabled,
+    playback.reducedMotion
+  );
 
   useEffect(() => {
     const panel = pendingPaneFocus.current;
@@ -1337,6 +1667,9 @@ export function AnimationWorkspace({
         sourceError={sourceError}
         dispatch={dispatch}
         onSave={onSave}
+        playback={playback}
+        playbackEnabled={playbackEnabled}
+        playbackMessage={playbackMessage}
       />
       <PaneNavigation
         layout={layout}
@@ -1368,9 +1701,9 @@ export function AnimationWorkspace({
             activeClip={activeClip}
             unresolvedReferenceCount={unresolvedReferenceCount}
             loadedPartCount={partAssets.length}
-            partAssets={partAssets}
             selectedPart={selectedPart}
-            imageDecoder={imageDecoder}
+            renderState={renderState}
+            walkFrames={walkFrames}
             onLoadPartBlob={onLoadPartBlob}
             onConfigurePart={onConfigurePart}
             dispatch={dispatch}
@@ -1393,6 +1726,9 @@ export function AnimationWorkspace({
           <FrameTimeline
             state={state}
             activeClip={activeClip}
+            renderState={renderState}
+            walkFrames={walkFrames}
+            playback={playback}
             dispatch={dispatch}
             layout={layout}
           />

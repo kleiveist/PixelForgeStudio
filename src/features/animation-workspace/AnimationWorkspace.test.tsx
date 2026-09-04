@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseAnimationPartAsset, parseAnimationProject } from "../../schemas";
@@ -6,7 +6,79 @@ import {
   createAnimationPartAssetInput,
   createAnimationProjectInput
 } from "../../test/animationSchemaFixtures";
+import {
+  createSyntheticSouthWalkFixture,
+  createSyntheticWalkPartImage
+} from "../../test/syntheticSouthWalkFixture";
+import type { AnimationFrameScheduler } from "./animationPlayback";
 import { AnimationWorkspace } from "./AnimationWorkspace";
+
+class WorkspacePlaybackScheduler implements AnimationFrameScheduler {
+  currentTime = 0;
+  nextHandle = 1;
+  callbacks = new Map<number, (timestamp: number) => void>();
+  cancelled: number[] = [];
+
+  now = () => this.currentTime;
+  requestFrame = (callback: (timestamp: number) => void) => {
+    const handle = this.nextHandle;
+    this.nextHandle += 1;
+    this.callbacks.set(handle, callback);
+    return handle;
+  };
+  cancelFrame = (handle: number) => {
+    this.cancelled.push(handle);
+    this.callbacks.delete(handle);
+  };
+  tick(timestamp: number) {
+    this.currentTime = timestamp;
+    const pending = [...this.callbacks.values()];
+    this.callbacks.clear();
+    pending.forEach((callback) => callback(timestamp));
+  }
+}
+
+function mockCanvasDisplay() {
+  const putImageData = vi.fn();
+  const context = {
+    imageSmoothingEnabled: true,
+    createImageData: vi.fn((width: number, height: number) => ({
+      data: new Uint8ClampedArray(width * height * 4)
+    } as ImageData)),
+    putImageData
+  };
+  const getContext = vi
+    .spyOn(HTMLCanvasElement.prototype, "getContext")
+    .mockReturnValue(context as unknown as CanvasRenderingContext2D);
+  return { getContext, putImageData };
+}
+
+function renderReadyWalkWorkspace(scheduler = new WorkspacePlaybackScheduler()) {
+  const fixture = createSyntheticSouthWalkFixture();
+  const sourceImage = createSyntheticWalkPartImage(1);
+  const decoder = { decode: vi.fn(async () => sourceImage) };
+  const loadBlob = vi.fn(async () => ({
+    status: "ok" as const,
+    blob: new Blob(["synthetic"], { type: "image/png" })
+  }));
+  const rendered = render(
+    <AnimationWorkspace
+      project={fixture.project}
+      projectRevision={7}
+      playbackScheduler={scheduler}
+      canSave={false}
+      saveStatus="saved"
+      saveError={null}
+      sourceError={null}
+      onSave={vi.fn()}
+      partAssets={fixture.assets}
+      missingPartAssetIds={[]}
+      imageDecoder={decoder}
+      onLoadPartBlob={loadBlob}
+    />
+  );
+  return { ...rendered, fixture, scheduler, decoder, loadBlob };
+}
 
 function setViewportWidth(width: number) {
   Object.defineProperty(window, "innerWidth", {
@@ -365,6 +437,127 @@ describe("AnimationWorkspace", () => {
     ).toHaveLength(15);
   });
 
+  it("previews real frames and controls deterministic playback at project FPS", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    const canvas = mockCanvasDisplay();
+    const { scheduler, decoder, loadBlob } = renderReadyWalkWorkspace();
+
+    expect(
+      await screen.findByText(
+        "Alle acht South-Frames sind für die framegenaue Prüfung bereit."
+      )
+    ).toBeVisible();
+    expect(
+      screen.getAllByRole("img", { name: /Vorschaubild Frame/ })
+    ).toHaveLength(8);
+    expect(
+      screen.getByRole("img", {
+        name: "Aktueller Walk-Frame 1 von 8: Kontakt links"
+      })
+    ).toBeVisible();
+    expect(decoder.decode).toHaveBeenCalledTimes(15);
+    expect(loadBlob).toHaveBeenCalledTimes(15);
+
+    const play = screen.getByRole("button", { name: "Abspielen" });
+    expect(play).toBeEnabled();
+    expect(scheduler.callbacks.size).toBe(0);
+    await user.click(play);
+    expect(screen.getByRole("button", { name: "Pause" })).toBeEnabled();
+    expect(scheduler.callbacks.size).toBe(1);
+
+    act(() => scheduler.tick(99));
+    expect(
+      screen.getByRole("img", {
+        name: "Aktueller Walk-Frame 1 von 8: Kontakt links"
+      })
+    ).toBeVisible();
+    act(() => scheduler.tick(100));
+    expect(
+      screen.getByRole("img", {
+        name: "Aktueller Walk-Frame 2 von 8: Down links"
+      })
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Frame 2 von 8 · Phase: Down links · Süd · 10 FPS/)
+    ).toHaveTextContent("Loop aktiv");
+
+    act(() => scheduler.tick(550));
+    expect(
+      screen.getByRole("img", {
+        name: "Aktueller Walk-Frame 6 von 8: Down rechts"
+      })
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Pause" }));
+    expect(scheduler.callbacks.size).toBe(0);
+
+    await user.click(screen.getByRole("button", { name: "Nächster Frame" }));
+    expect(screen.getByRole("radio", { name: "Frame 7: Passing rechts" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+    await user.click(screen.getByRole("button", { name: "Vorheriger Frame" }));
+    expect(screen.getByRole("radio", { name: "Frame 6: Down rechts" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+    await user.click(screen.getByRole("button", { name: "Stoppen und zu Frame 1" }));
+    expect(screen.getByRole("radio", { name: "Frame 1: Kontakt links" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+    expect(canvas.putImageData).toHaveBeenCalled();
+  });
+
+  it("scrubs and layers preview-only Onion Skin modes without enabling export", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    mockCanvasDisplay();
+    renderReadyWalkWorkspace();
+    await screen.findByText(
+      "Alle acht South-Frames sind für die framegenaue Prüfung bereit."
+    );
+
+    const scrubber = screen.getByRole("slider", { name: /Frame scrubben/ });
+    fireEvent.change(scrubber, { target: { value: "4" } });
+    expect(screen.getByRole("radio", { name: "Frame 4: Up links" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+
+    const onionMode = screen.getByRole("combobox", { name: "Onion Skin" });
+    expect(onionMode).toHaveValue("off");
+    expect(screen.queryByTestId("onion-previous-frame")).not.toBeInTheDocument();
+    await user.selectOptions(onionMode, "previous");
+    expect(screen.getByTestId("onion-previous-frame")).toBeInTheDocument();
+    expect(screen.queryByTestId("onion-next-frame")).not.toBeInTheDocument();
+
+    await user.selectOptions(onionMode, "next");
+    expect(screen.queryByTestId("onion-previous-frame")).not.toBeInTheDocument();
+    expect(screen.getByTestId("onion-next-frame")).toBeInTheDocument();
+
+    await user.selectOptions(onionMode, "both");
+    expect(screen.getByTestId("onion-previous-frame")).toBeInTheDocument();
+    expect(screen.getByTestId("onion-next-frame")).toBeInTheDocument();
+    const opacity = screen.getByRole("slider", {
+      name: /Onion-Skin-Deckkraft/
+    });
+    fireEvent.change(opacity, { target: { value: "0.6" } });
+    expect(screen.getByTestId("onion-previous-frame").parentElement).toHaveStyle({
+      opacity: "0.6"
+    });
+
+    await user.selectOptions(onionMode, "off");
+    expect(screen.queryByTestId("onion-previous-frame")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("onion-next-frame")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Exportieren" })).toBeDisabled();
+    expect(
+      screen.getByRole("img", {
+        name: "Aktueller Walk-Frame 4 von 8: Up links"
+      })
+    ).toBeVisible();
+  });
+
   it("shows the complete loaded desktop workspace and honest unavailable actions", async () => {
     setViewportWidth(1440);
     const user = userEvent.setup();
@@ -403,11 +596,11 @@ describe("AnimationWorkspace", () => {
     });
     expect(headSlot).toHaveAttribute("aria-pressed", "false");
 
-    const playback = screen.getByRole("button", { name: "Play / Pause" });
+    const playback = screen.getByRole("button", { name: "Abspielen" });
     const exportButton = screen.getByRole("button", { name: "Exportieren" });
     const importInput = screen.getByLabelText("PNG-Datei auswählen");
     expect(playback).toBeDisabled();
-    expect(playback).toHaveAccessibleDescription(/echten Timeline/);
+    expect(playback).toHaveAccessibleDescription(/walk-humanoid-8-v1/);
     expect(exportButton).toBeDisabled();
     expect(exportButton).toHaveAccessibleDescription(/Renderpipeline/);
     expect(importInput).toBeDisabled();
@@ -437,14 +630,30 @@ describe("AnimationWorkspace", () => {
       "61"
     );
 
-    const thirdFrame = screen.getByRole("radio", { name: "3 Frameplatz" });
+    const thirdFrame = screen.getByRole("radio", {
+      name: "Frame 3: Passing links"
+    });
     await user.click(thirdFrame);
     expect(thirdFrame).toHaveAttribute("aria-checked", "true");
     thirdFrame.focus();
     await user.keyboard("{ArrowRight}");
-    const fourthFrame = screen.getByRole("radio", { name: "4 Frameplatz" });
+    const fourthFrame = screen.getByRole("radio", {
+      name: "Frame 4: Up links"
+    });
     expect(fourthFrame).toHaveAttribute("aria-checked", "true");
     expect(fourthFrame).toHaveFocus();
+    await user.keyboard("{End}");
+    const eighthFrame = screen.getByRole("radio", {
+      name: "Frame 8: Up rechts"
+    });
+    expect(eighthFrame).toHaveAttribute("aria-checked", "true");
+    expect(eighthFrame).toHaveFocus();
+    await user.keyboard("{Home}");
+    const firstFrame = screen.getByRole("radio", {
+      name: "Frame 1: Kontakt links"
+    });
+    expect(firstFrame).toHaveAttribute("aria-checked", "true");
+    expect(firstFrame).toHaveFocus();
 
     await user.click(screen.getByRole("button", { name: "8×" }));
     const frame = screen.getByTestId("animation-project-frame");
@@ -520,8 +729,8 @@ describe("AnimationWorkspace", () => {
       overrides: []
     });
 
-    await user.click(screen.getByRole("radio", { name: "8 Frameplatz" }));
-    expect(screen.getByRole("radio", { name: "8 Frameplatz" })).toHaveAttribute(
+    await user.click(screen.getByRole("radio", { name: "Frame 8: Up rechts" }));
+    expect(screen.getByRole("radio", { name: "Frame 8: Up rechts" })).toHaveAttribute(
       "aria-checked",
       "true"
     );
@@ -529,7 +738,7 @@ describe("AnimationWorkspace", () => {
     const clipSelect = screen.getByRole("combobox", { name: "Clip" });
     await user.selectOptions(clipSelect, "clip_walk_slow_001");
     expect(clipSelect).toHaveValue("clip_walk_slow_001");
-    expect(screen.getByRole("radio", { name: "1 Frameplatz" })).toHaveAttribute(
+    expect(screen.getByRole("radio", { name: "Frame 1: Kontakt links" })).toHaveAttribute(
       "aria-checked",
       "true"
     );
@@ -556,7 +765,7 @@ describe("AnimationWorkspace", () => {
     expect(within(inspector).getByText("Noch nicht geladen")).toBeVisible();
     expect(within(inspector).queryByRole("textbox")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("radio", { name: "8 Frameplatz" }));
+    await user.click(screen.getByRole("radio", { name: "Frame 8: Up rechts" }));
     expect(screen.getByRole("button", { name: "Frame" })).toHaveAttribute(
       "aria-pressed",
       "true"

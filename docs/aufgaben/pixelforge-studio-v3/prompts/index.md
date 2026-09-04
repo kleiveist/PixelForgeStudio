@@ -36,11 +36,6 @@
 
 ## Umsetzungsstand
 
-- Prompt 28 ist abgeschlossen.
-- Prompt 29 ist abgeschlossen.
-- Prompt 30 ist abgeschlossen.
-- Prompt 31 und damit Phase A sind abgeschlossen.
-- Prompt 32 ist abgeschlossen und hat Phase B begonnen.
-- Prompt 33 ist abgeschlossen.
-- Prompt 34 ist der nächste Auftrag und wurde noch nicht begonnen.
-- Prompts 35–51 sind ebenfalls offen.
+- Prompts 28–43 und damit die Phasen A bis D sind abgeschlossen.
+- Prompt 44 ist der nächste Auftrag und wurde noch nicht begonnen.
+- Prompts 45–51 sind ebenfalls offen.

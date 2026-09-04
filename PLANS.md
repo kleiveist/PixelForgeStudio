@@ -2,14 +2,15 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 42 — versionierter 8-Frame-Walk-Clip und
-  South-Generator (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 43 — Timeline, Playback und Onion Skin
-  (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 43 — Timeline, Playback und Onion Skin
+  (abgeschlossen; Phase D geschlossen)
+- **Nächste Aufgabe:** Prompt 44 — Richtungsprojektion und kontrollierte
+  Spiegelung (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
-  Phase C mit Prompts 36–39 abgeschlossen; Prompts 40 und 41 sind umgesetzt,
-  Prompts 42–51 bleiben offen unter `docs/aufgaben/pixelforge-studio-v3/prompts/`
+  Phase C mit Prompts 36–39 und Phase D mit Prompts 40–43 abgeschlossen;
+  Prompts 44–51 bleiben offen unter
+  `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 - **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
@@ -20,6 +21,71 @@
   eine Auswahl gültiger Assetprofile umgestellt; Prompt 41 bleibt davon
   unberührt. `npm run verify` bestand mit 153 Testdateien und 957 Tests;
   `git diff --check` ist sauber
+
+## Prompt 43 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `4a06fcd`; Prompt 42 erzeugt bei vollständigen South-
+  Pflichtquellen bereits acht deterministische, ausschließlich flüchtige
+  `RenderedFrame`-Werte, zeigt im Workspace aber nur die Neutralpose.
+- Abnahme: Timeline-Thumbnails und Viewport lesen die echten Frames des aktiv
+  gewählten kanonischen Clips; Frame, Phase, Projekt-FPS, Warnungen und
+  Produktionsblocker bleiben sichtbar.
+- Playback: injizierbarer `requestAnimationFrame`-Scheduler mit Play, Pause,
+  Stop auf Frame 0, Vor/Zurück und Loop. Die pure Zeitprojektion holt
+  verzögerte Ticks anhand verstrichener Zeit ohne Catch-up-Schleife auf.
+- Scrubbing: Pointer/Klick, Range-Eingabe sowie Pfeil links/rechts, Pos1 und
+  Ende. Controls bleiben bei einem nicht generierbaren Clip gesperrt.
+- Onion Skin: aus als Default, vorheriger/nächster/beide Frames und begrenzte
+  Deckkraft ausschließlich als Anzeigeadapter; aktuelle RGBA-Bytes werden
+  dabei nicht verändert.
+- Cache: begrenzter revisionsgebundener Framecache mit Schlüssel aus Projekt-
+  ID/-Revision, Clip-ID, Richtung und Frameindex sowie zielgenauer
+  Invalidierung für betroffene Projekte, Clips, Richtungen oder Frames.
+- Lebenszyklus: kein Auto-Play, auch nicht bei reduzierter Bewegung;
+  Projekt-/Clip-/Richtungswechsel und Unmount stoppen und bereinigen den
+  Scheduler.
+- Tests: pure Clock- und Cachefälle, 10 FPS, verzögerter Tick, Loop 7→0,
+  Play/Pause/Stop, Wechsel-/Unmount-Cleanup, Reduced Motion, Scrubbing,
+  Tastatur, Onion-Modi/Exportneutralität sowie zugängliche Namen und Status.
+- Grenze: keine weiteren Richtungen generieren, keine Framepersistenz, kein
+  PNG-/SpriteSheet-Export und keine Frame-Overrides aus späteren Prompts.
+
+## Prompt 43 — Ergebnis
+
+1. Die Timeline zeigt die acht tatsächlich erzeugten South-Walk-Frames mit
+   Framezahl, Phasenname und eigener Textalternative. Der große Pixel-Viewport
+   wechselt synchron auf den ausgewählten Renderframe.
+2. `advancePlaybackClock()` projiziert verstrichene Zeit in konstanter Laufzeit
+   auf Clipframes. 10 FPS, Restzeit, verzögerte Mehrfachschritte und Loop 7→0
+   hängen nicht von der Monitorfrequenz ab und verwenden keine Catch-up-
+   Schleife.
+3. `useAnimationPlayback()` adaptiert einen injizierbaren
+   `AnimationFrameScheduler`. Play, Pause, Stopp auf Frame 0 sowie Vor/Zurück
+   sind nur für den vollständig generierbaren aktiven South-Clip verfügbar;
+   Kontextwechsel und Unmount canceln den offenen Request.
+4. Klick/Pointer, direkter Radiobutton, Range-Scrubber sowie Pfeil
+   links/rechts, Pos1 und Ende wählen Frames. Der Live-Status nennt Frame,
+   Phase, Richtung, Projekt-FPS und Wiedergabezustand.
+5. Onion Skin startet aus, kann vorherigen, nächsten oder beide Nachbarframes
+   anzeigen und begrenzt die Deckkraft auf 10–60 Prozent. Separate
+   `aria-hidden`-Canvaslayer verändern weder aktiven Frame noch Exportbytes.
+6. Der LRU-Renderframecache ist auf 128 Einträge begrenzt und exakt an
+   Projekt-ID, Projektrevision, Clip-ID, Richtung und Frameindex gebunden.
+   Gefilterte Invalidierung trifft nur den bezeichneten Projekt-, Clip-,
+   Richtungs- oder Framebereich; alte Revisionen des aktiven Projekts werden
+   entfernt.
+7. Die echte Providerrevision erreicht nun den Workspace. Part-, Anker-, Rig-,
+   Clip- und Overrideänderungen können dadurch keinen Frame einer alten
+   Projektrevision wiederverwenden; Frames und Vorschauzustand bleiben
+   vollständig flüchtig.
+8. Nutzerhilfe, Animation-Accessibility, Walk-Dokumentation, Architektur,
+   Changelog und Promptpaket-Einstiege dokumentieren den Abschluss von Phase
+   D. PyGitIndex 2.1.0 meldet 72 aktuelle Markdownseiten, und alle
+   Paketchecksummen sind gültig.
+9. `npm run verify` bestand mit 158 Testdateien und 983 Tests, Strict-
+   Typecheck sowie Produktionsbuild. `npm run build` wurde zusätzlich einzeln
+   erfolgreich ausgeführt; einzig die bekannte Vite-Warnung zum über 500 kB
+   großen Hauptchunk bleibt. Prompt 44 wurde nicht vorgezogen.
 
 ## Prompt 42 — Ausgangsstand und Abnahme
 

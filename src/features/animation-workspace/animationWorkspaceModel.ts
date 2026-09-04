@@ -9,6 +9,11 @@ import {
   type PartSlotGroupDefinition
 } from "../../domain/animation";
 import type { AnimationClip, AnimationProject, StableId } from "../../schemas";
+import {
+  DEFAULT_ONION_SKIN_OPACITY,
+  clampOnionSkinOpacity,
+  type OnionSkinMode
+} from "./onionSkin";
 
 export const WORKSPACE_ZOOM_LEVELS = Object.freeze([
   1,
@@ -49,6 +54,8 @@ export interface AnimationWorkspaceState {
   readonly direction: Direction;
   readonly clipId: StableId | null;
   readonly frameIndex: number;
+  readonly onionSkinMode: OnionSkinMode;
+  readonly onionSkinOpacity: number;
   readonly selectedSlot: PartSlot | null;
   readonly activePanel: WorkspacePanel;
   readonly activeSidePanel: WorkspaceSidePanel;
@@ -70,6 +77,8 @@ export type AnimationWorkspaceAction =
       frameIndex: number;
       frameCount: number;
     }>
+  | Readonly<{ type: "onionSkinModeSelected"; mode: OnionSkinMode }>
+  | Readonly<{ type: "onionSkinOpacitySelected"; opacity: number }>
   | Readonly<{ type: "slotSelected"; slot: PartSlot }>
   | Readonly<{ type: "panelSelected"; panel: WorkspacePanel }>
   | Readonly<{ type: "sidePanelSelected"; panel: WorkspaceSidePanel }>
@@ -159,6 +168,8 @@ export function createAnimationWorkspaceState(
     direction,
     clipId: project.clips[0]?.clipId ?? null,
     frameIndex: 0,
+    onionSkinMode: "off",
+    onionSkinOpacity: DEFAULT_ONION_SKIN_OPACITY,
     selectedSlot: null,
     activePanel: "viewport",
     activeSidePanel: "parts",
@@ -188,6 +199,13 @@ export function animationWorkspaceReducer(
         ...state,
         frameIndex: clampFrameIndex(action.frameIndex, action.frameCount),
         inspectorContext: "frame"
+      });
+    case "onionSkinModeSelected":
+      return Object.freeze({ ...state, onionSkinMode: action.mode });
+    case "onionSkinOpacitySelected":
+      return Object.freeze({
+        ...state,
+        onionSkinOpacity: clampOnionSkinOpacity(action.opacity)
       });
     case "slotSelected":
       return Object.freeze({
