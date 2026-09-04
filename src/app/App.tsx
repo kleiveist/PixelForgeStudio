@@ -14,7 +14,7 @@ import {
 } from "../store/profiles";
 import { NavigationProvider } from "../store/navigation";
 import { WizardSessionProvider } from "../store/wizard";
-import { AppShell } from "./AppShell";
+import { StudioShell } from "./StudioShell";
 
 export interface AppProps {
   readonly navigationAdapter: NavigationAdapter;
@@ -53,7 +53,7 @@ function NavigationRoot({
       navigationAdapter={navigationAdapter}
     >
       <WizardSessionProvider>
-        <AppShell
+        <StudioShell
           activeBaseProfileId={settings.activeBaseProfileId}
           outputAdapter={outputAdapter}
           startupMigration={startupMigration}

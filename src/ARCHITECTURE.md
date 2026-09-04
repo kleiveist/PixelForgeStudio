@@ -1,17 +1,18 @@
 # PixelForge Studio source architecture
 
-Prompt 29 introduces the module-aware route boundary without adding the
-visible Animation Studio shell. The executable UI remains the released Prompt
-Studio V2; its existing components consume temporary Prompt-view projections
-while the provider already owns the complete canonical Studio route.
+Prompt 30 adds the visible umbrella shell on top of the module-aware routing
+boundary. The released Prompt Studio remains the productive module; Animation
+Studio exposes only honest, accessible placeholder views until its project
+domain is introduced. Both modules share one route source, theme, skip target,
+title and focus boundary.
 
-- `app/`: Composition, persistente App Shell, View-Metadaten und semantische
-  Haupt-/Schnellnavigation
-- `components/`: wiederverwendbare CSS-Module-Oberflächen, Theme-Control,
-  View-Links und lokale SVG-Icons
+- `app/`: Composition, globale `StudioShell`, getrennte Prompt-/Animations-
+  Modulflächen, View-Metadaten und semantische Modulnavigation
+- `components/`: wiederverwendbare CSS-Module-Oberflächen, globales Theme-
+  Control, typisierte Studio-/Prompt-Links und lokale SVG-Icons
 - `config/`: zentrale, typisierte `BRAND`-Konfiguration für Dachprodukt,
-  Prompt-Modul und Animationsmodul sowie getrennte, bewusst stabile
-  Exportformat-Identifier
+  Prompt-Modul und Animationsmodul, daraus abgeleitete Moduldefinitionen sowie
+  getrennte, bewusst stabile Exportformat-Identifier
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
@@ -82,7 +83,7 @@ while the provider already owns the complete canonical Studio route.
   complete validated app-settings envelope and effective theme state;
   `profiles/` owns the validated profile-library UI state, filters, and
   mutation boundary; `navigation/` owns only the current canonical Studio
-  route and its temporary Prompt-view projection;
+  route and backward-compatible Prompt-view projections;
   `wizard/` owns Startintent, aktiven validierten Draft, Dirty-Baseline und
   Persistenzstatus, während React Hook Form Eigentümer der aktuellen
   Formularwerte bleibt
@@ -378,16 +379,26 @@ survive and fragments are cleared from generated destinations.
 `store/navigation/index.ts` is the React-facing Studio-route boundary. Initial
 precedence is a valid canonical or legacy URL followed by the injected current
 Prompt fallback. The Context exposes `activeRoute`, `hrefForRoute()` and
-`navigateTo()`; `activeView`, `hrefFor()` and `navigate()` are temporary Prompt
-aliases for the unchanged shell until Prompt 30. The projection is derived and
-never a second state source. `MemoryNavigation` records complete routes while
-retaining Prompt-view projections for existing feature tests.
+`navigateTo()`. `activeView`, `hrefFor()` and `navigate()` remain deprecated
+Prompt compatibility aliases for existing consumers; the global shell no
+longer depends on them. The projection is derived and never a second state
+source. `MemoryNavigation` records complete routes while retaining Prompt-view
+projections for existing feature tests.
 
-`components/navigation/index.ts` still exposes `ViewLink`, the shared semantic
-Prompt anchor used by the current shell. It preserves real hrefs plus
-modifier/new-tab behavior and now serializes its destinations as canonical
-Prompt Studio routes through the provider aliases. Its optional `onNavigate`
-hook records a domain intent before the route changes.
+`app/StudioShell.tsx` owns only roof-level composition: brand-to-Home,
+`StudioSwitcher`, global theme, visible route context, skip link, document
+title, route/session focus, module navigation selection and the single main
+landmark. `app/AppShell.tsx` now exports the productive Prompt module surface
+and its six-view navigation. `app/AnimationStudioShell.tsx` exports the four
+routed placeholder views and a controlled no-project Workspace; it owns no
+animation domain, persistence or canvas behavior.
+
+`components/navigation/index.ts` exposes `StudioLink` as the semantic typed
+anchor for every `StudioRoute`. It preserves real hrefs and modifier/new-tab
+behavior while delegating transitions to the navigation provider.
+`StudioSwitcher` derives both module destinations and `aria-current` from the
+central module configuration. `ViewLink` is the narrower Prompt-view adapter;
+its optional `onNavigate` hook records a domain intent before the route changes.
 
 `features/dashboard/dashboardCatalog.ts` is the UI metadata companion to the
 public asset taxonomy. Its record is exhaustive over `AssetCategory`, and its

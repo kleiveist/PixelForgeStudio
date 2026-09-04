@@ -7,8 +7,10 @@
 ## Umsetzungsstand
 
 Die modulbasierte Route, ihre Browser-History-Grenze und der zugehörige
-Provider wurden mit Prompt 29 umgesetzt. Die sichtbare globale Studio-Shell
-bleibt bis Prompt 30 bewusst ausstehend.
+Provider wurden mit Prompt 29 umgesetzt. Prompt 30 ergänzt die sichtbare
+globale Studio-Shell, die produktive Prompt-Modulfläche und die vier bewusst
+fachlogikfreien Animation-Platzhalter. Die produktive Home-Fläche folgt in
+Prompt 31.
 
 ## Leitprinzip
 

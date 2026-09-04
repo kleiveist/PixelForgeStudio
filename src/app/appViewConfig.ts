@@ -8,7 +8,7 @@ export interface AppViewDefinition {
   readonly nextStep: string;
 }
 
-export const APP_VIEW_DEFINITIONS: Readonly<
+export const PROMPT_STUDIO_VIEW_DEFINITIONS: Readonly<
   Record<AppView, AppViewDefinition>
 > = {
   dashboard: {
@@ -60,3 +60,6 @@ export const APP_VIEW_DEFINITIONS: Readonly<
     nextStep: "V1-Migrationsstatus sowie vollständiger JSON-Export und -Import sind aktiv."
   }
 };
+
+/** @deprecated Use `PROMPT_STUDIO_VIEW_DEFINITIONS`. */
+export const APP_VIEW_DEFINITIONS = PROMPT_STUDIO_VIEW_DEFINITIONS;

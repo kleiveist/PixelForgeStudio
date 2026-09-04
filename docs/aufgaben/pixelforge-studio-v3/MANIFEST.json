@@ -87,13 +87,13 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 4090,
-      "sha256": "42b88357fed34fa42ea966c45d77933a9694301b84b25df69620c6efca60d848"
+      "bytes": 4117,
+      "sha256": "82f3219a32537c4602f6d716db0bec840d42eeb4e295efb41d688f2571cdbe3d"
     },
     {
       "path": "START_HERE.md",
-      "bytes": 1809,
-      "sha256": "18d50f989a73f1530f557799c7a9aa2a038bb7a77d713474d67c6ffc2db814b2"
+      "bytes": 2075,
+      "sha256": "4e5b8fd7233e2d60f46e5236c93573c45af360a1c73eda33db3e8027d2243ac5"
     },
     {
       "path": "grundlagen/00_REPOSITORY_BASELINE.md",
@@ -107,13 +107,13 @@
     },
     {
       "path": "grundlagen/02_TARGET_ARCHITECTURE.md",
-      "bytes": 10710,
-      "sha256": "f060d9c95e837e1e55f7390afcddd088e3b6d2ef9d927c30ec27ebe90e840c65"
+      "bytes": 10832,
+      "sha256": "c71fddce1c33a15b97b741efb0af1ea569f45e4208b7204417cf975a65a977b9"
     },
     {
       "path": "grundlagen/03_UI_INFORMATION_ARCHITECTURE.md",
-      "bytes": 10730,
-      "sha256": "0b5b04cc110152837445a14c924b3a948e5351edd1b0cd56986927e5c3356046"
+      "bytes": 10996,
+      "sha256": "21990197734f2f7e21958071b87200eff0574339b3042f1f465d406497b1c91a"
     },
     {
       "path": "grundlagen/04_ANIMATION_PRODUCTION_RULES.md",
@@ -272,8 +272,8 @@
     },
     {
       "path": "prompts/index.md",
-      "bytes": 2899,
-      "sha256": "b45fc3f72431c23d209547aefb67aef4b8ca6d81039f1644ff86e40a980fd482"
+      "bytes": 2930,
+      "sha256": "a280208717ad84d8a93cf66bfc279799c2bdd96363bd6d816ff887d48dd16313"
     },
     {
       "path": "templates/AGENTS-PIXELFORGE-STUDIO-ADDENDUM.md",

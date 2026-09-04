@@ -1,26 +1,12 @@
-import type { ComponentPropsWithoutRef, MouseEvent } from "react";
-import type { AppView } from "../../domain/navigation";
-import { useNavigation } from "../../store/navigation";
+import type { ComponentPropsWithoutRef } from "react";
+import { createPromptStudioRoute, type AppView } from "../../domain/navigation";
+import { StudioLink } from "./StudioLink";
 
 export interface ViewLinkProps
   extends Omit<ComponentPropsWithoutRef<"a">, "href"> {
   readonly indicateCurrent?: boolean;
   readonly onNavigate?: () => void;
   readonly view: AppView;
-}
-
-function shouldHandleInternally(event: MouseEvent<HTMLAnchorElement>): boolean {
-  const anchor = event.currentTarget;
-  return (
-    !event.defaultPrevented &&
-    event.button === 0 &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.shiftKey &&
-    !anchor.hasAttribute("download") &&
-    (!anchor.target || anchor.target === "_self")
-  );
 }
 
 export function ViewLink({
@@ -30,20 +16,13 @@ export function ViewLink({
   view,
   ...props
 }: ViewLinkProps) {
-  const { activeView, hrefFor, navigate } = useNavigation();
-
   return (
-    <a
+    <StudioLink
       {...props}
-      aria-current={indicateCurrent && activeView === view ? "page" : undefined}
-      href={hrefFor(view)}
-      onClick={(event) => {
-        onClick?.(event);
-        if (!shouldHandleInternally(event)) return;
-        event.preventDefault();
-        onNavigate?.();
-        navigate(view);
-      }}
+      indicateCurrent={indicateCurrent}
+      route={createPromptStudioRoute(view)}
+      {...(onClick ? { onClick } : {})}
+      {...(onNavigate ? { onNavigate } : {})}
     />
   );
 }

@@ -53,6 +53,7 @@
 
 .topbar {
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--space-6);
   padding-bottom: var(--space-5);
 }
@@ -102,6 +103,7 @@
 
 .headerTools {
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: var(--space-5);
 }
 

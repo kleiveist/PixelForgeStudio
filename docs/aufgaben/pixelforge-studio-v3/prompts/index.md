@@ -38,5 +38,6 @@
 
 - Prompt 28 ist abgeschlossen.
 - Prompt 29 ist abgeschlossen.
-- Prompt 30 ist der nächste Auftrag und wurde noch nicht begonnen.
-- Prompts 31–51 sind ebenfalls offen.
+- Prompt 30 ist abgeschlossen.
+- Prompt 31 ist der nächste Auftrag und wurde noch nicht begonnen.
+- Prompts 32–51 sind ebenfalls offen.

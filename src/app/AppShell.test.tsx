@@ -3,9 +3,12 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  ANIMATION_STUDIO_VIEW_IDS,
   APP_VIEW_IDS,
+  type AnimationStudioView,
   type AppView,
-  type NavigationRoute
+  type NavigationRoute,
+  type StudioRoute
 } from "../domain/navigation";
 import { parseAppSettings } from "../schemas";
 import {
@@ -17,6 +20,7 @@ import { MemoryNavigation } from "../test/memoryNavigation";
 import { MemoryStorage } from "../test/memoryStorage";
 import { App } from "./App";
 import { APP_VIEW_DEFINITIONS } from "./appViewConfig";
+import { ANIMATION_STUDIO_VIEW_DEFINITIONS } from "./studioViewConfig";
 
 const updatedAt = "2026-09-02T21:00:00.000Z";
 
@@ -56,6 +60,20 @@ function primaryNavigation() {
   return screen.getByRole("navigation", { name: "Hauptnavigation" });
 }
 
+function studioSwitcher() {
+  return screen.getByRole("navigation", { name: "Studio auswählen" });
+}
+
+function animationNavigation() {
+  return screen.getByRole("navigation", { name: "Animation Studio" });
+}
+
+function animationRoute(view: AnimationStudioView): StudioRoute {
+  return view === "workspace"
+    ? { studio: "animation", view: "workspace" }
+    : { studio: "animation", view };
+}
+
 function currentPrimaryLink(): HTMLElement {
   const currentLinks = within(primaryNavigation())
     .getAllByRole("link")
@@ -79,6 +97,18 @@ describe("application shell navigation", () => {
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByText("Prompt Studio")).toBeVisible();
     expect(screen.getByText("PixelForge Studio")).toBeVisible();
+    expect(screen.getByRole("link", { name: /startseite/i })).toHaveAttribute(
+      "href",
+      "?studio=home"
+    );
+    expect(
+      within(studioSwitcher()).getByRole("link", { name: "Prompt Studio" })
+    ).toHaveAttribute("aria-current", "page");
+    expect(
+      within(studioSwitcher()).getByRole("link", { name: "Animation Studio" })
+    ).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("main").closest("[data-studio-shell]"))
+      .toHaveAttribute("data-active-studio", "prompt");
     expect(screen.getByRole("main")).toHaveAttribute(
       "aria-labelledby",
       "dashboard-view-title"
@@ -110,6 +140,111 @@ describe("application shell navigation", () => {
       );
     }
   );
+
+  it.each(ANIMATION_STUDIO_VIEW_IDS)(
+    "renders the Animation Studio %s placeholder as a routed main view",
+    (view) => {
+      const navigation = new MemoryNavigation({
+        status: "valid",
+        route: animationRoute(view)
+      });
+      renderStudio(navigation);
+
+      const definition = ANIMATION_STUDIO_VIEW_DEFINITIONS[view];
+      expect(
+        screen.getByRole("heading", { level: 1, name: definition.title })
+      ).toBeVisible();
+      expect(screen.getByRole("main")).toHaveAttribute(
+        "aria-labelledby",
+        `animation-${view}-view-title`
+      );
+      expect(within(animationNavigation()).getAllByRole("link")).toHaveLength(4);
+      expect(
+        within(animationNavigation()).getByRole("link", {
+          name: definition.label
+        })
+      ).toHaveAttribute("aria-current", "page");
+      expect(
+        within(studioSwitcher()).getByRole("link", {
+          name: "Animation Studio"
+        })
+      ).toHaveAttribute("aria-current", "page");
+      expect(document.title).toBe(
+        `${definition.label} · Animation Studio · PixelForge`
+      );
+      expect(screen.getByRole("main").closest("[data-studio-shell]"))
+        .toHaveAttribute("data-active-studio", "animation");
+    }
+  );
+
+  it("switches modules through routed links and focuses the new main view", async () => {
+    const user = userEvent.setup();
+    const navigation = new MemoryNavigation({
+      status: "valid",
+      view: "dashboard"
+    });
+    renderStudio(navigation);
+
+    await user.click(
+      within(studioSwitcher()).getByRole("link", { name: "Animation Studio" })
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: ANIMATION_STUDIO_VIEW_DEFINITIONS.projects.title
+      })
+    ).toBeVisible();
+    expect(screen.getByRole("main")).toHaveFocus();
+    expect(navigation.pushedRoutes).toEqual([
+      { studio: "animation", view: "projects" }
+    ]);
+
+    await user.click(
+      within(studioSwitcher()).getByRole("link", { name: "Prompt Studio" })
+    );
+
+    expect(currentPrimaryLink()).toHaveAccessibleName("Dashboard");
+    expect(screen.getByRole("main")).toHaveFocus();
+    expect(navigation.pushedRoutes).toEqual([
+      { studio: "animation", view: "projects" },
+      { studio: "prompt", view: "dashboard" }
+    ]);
+  });
+
+  it("keeps global theme controls and the Wizard session across module changes", async () => {
+    const user = userEvent.setup();
+    const navigation = new MemoryNavigation({
+      status: "valid",
+      view: "wizard"
+    });
+    const { storage } = renderStudio(navigation);
+
+    const projectName = screen.getByRole("textbox", { name: /Projektname/i });
+    await user.type(projectName, "Wandernde Alchemistin");
+    await user.click(screen.getByRole("radio", { name: "Dunkel" }));
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+
+    await user.click(
+      within(studioSwitcher()).getByRole("link", { name: "Animation Studio" })
+    );
+    expect(screen.getByRole("radio", { name: "Dunkel" })).toBeChecked();
+
+    await user.click(
+      within(studioSwitcher()).getByRole("link", { name: "Prompt Studio" })
+    );
+    await user.click(
+      within(primaryNavigation()).getByRole("link", { name: "Wizard" })
+    );
+
+    expect(screen.getByRole("textbox", { name: /Projektname/i })).toHaveValue(
+      "Wandernde Alchemistin"
+    );
+    expect(screen.getByRole("radio", { name: "Dunkel" })).toBeChecked();
+    expect(storage.mutations).toEqual([
+      { operation: "set", key: V2_STORAGE_KEYS.settings }
+    ]);
+  });
 
   it("uses the stored start view when the URL has no view", () => {
     const navigation = new MemoryNavigation();
@@ -339,8 +474,39 @@ describe("application shell navigation", () => {
     expect(navigation.replacedViews).toEqual([]);
 
     await user.click(screen.getByRole("link", { name: /startseite/i }));
-    expect(currentPrimaryLink()).toHaveAccessibleName("Dashboard");
-    expect(navigation.pushedViews).toEqual(["dashboard"]);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "PixelForge Studio" })
+    ).toBeVisible();
+    expect(screen.getByRole("main")).toHaveAttribute(
+      "aria-labelledby",
+      "studio-home-title"
+    );
+    expect(screen.getByRole("main")).toHaveFocus();
+    expect(document.title).toBe("PixelForge Studio");
+    expect(navigation.pushedRoutes).toEqual([{ studio: "home" }]);
+    expect(navigation.pushedViews).toEqual([]);
+  });
+
+  it("canonicalizes an old Wizard query into the Prompt Studio", () => {
+    window.history.replaceState(null, "", "/studio/?view=wizard");
+    const storage = new MemoryStorage({
+      [V2_STORAGE_KEYS.settings]: settingsJson("dashboard")
+    });
+    const replaceState = vi.spyOn(window.history, "replaceState");
+
+    render(
+      <App
+        navigationAdapter={createBrowserNavigationAdapter(window)}
+        storageAdapter={createV2StorageAdapter(storage)}
+      />
+    );
+
+    expect(currentPrimaryLink()).toHaveAccessibleName("Wizard");
+    expect(
+      within(studioSwitcher()).getByRole("link", { name: "Prompt Studio" })
+    ).toHaveAttribute("aria-current", "page");
+    expect(window.location.search).toBe("?studio=prompt&view=wizard");
+    expect(replaceState).toHaveBeenCalledTimes(1);
   });
 
   it("keeps one traversal subscription in StrictMode and removes it on unmount", async () => {

@@ -1,9 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
-import { ForgeMarkIcon } from "../components/icons/ForgeMarkIcon";
+import { useCallback } from "react";
 import { ViewLink } from "../components/navigation";
-import { ThemeSwitcher } from "../components/theme";
-import { Badge } from "../components/ui";
-import { BRAND } from "../config";
 import { APP_VIEW_IDS, type AppView } from "../domain/navigation";
 import type { AssetCategory } from "../domain/assets";
 import { ReviewOutputWorkspace } from "../features/review-output";
@@ -112,24 +108,64 @@ function ActiveView({
   );
 }
 
-export interface AppShellProps {
+export interface PromptStudioShellProps {
   readonly activeBaseProfileId: StableId | null;
   readonly createDraftId?: () => string;
   readonly now?: () => string;
   readonly outputAdapter: OutputWorkspaceAdapter;
   readonly startupMigration: LegacyV1StorageMigrationResult;
   readonly storageAdapter: DashboardStorage & WizardStorage;
+  readonly view: AppView;
 }
 
-export function AppShell({
+export function PromptStudioNavigation() {
+  const { requestNewAsset } = useWizardSession();
+
+  return (
+    <div className={styles.navigationRow} data-module-navigation="prompt">
+      <nav className={styles.primaryNavigation} aria-label="Hauptnavigation">
+        <ul className={styles.navigationList}>
+          {APP_VIEW_IDS.map((view) => (
+            <li key={view}>
+              <ViewLink
+                className={styles.navigationLink}
+                indicateCurrent
+                view={view}
+              >
+                {APP_VIEW_DEFINITIONS[view].label}
+              </ViewLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <nav className={styles.quickNavigation} aria-label="Schnellaktionen">
+        <ViewLink className={styles.secondaryAction} view="profiles">
+          Profile öffnen
+        </ViewLink>
+        <ViewLink
+          className={styles.primaryAction}
+          view="wizard"
+          onNavigate={() => requestNewAsset(null)}
+        >
+          <span aria-hidden="true">+</span>
+          Neues Asset
+        </ViewLink>
+      </nav>
+    </div>
+  );
+}
+
+export function PromptStudioShell({
   activeBaseProfileId,
   createDraftId,
   now,
   outputAdapter,
   startupMigration,
-  storageAdapter
-}: AppShellProps) {
-  const { activeView, navigate } = useNavigation();
+  storageAdapter,
+  view
+}: PromptStudioShellProps) {
+  const { navigate } = useNavigation();
   const {
     requestNewAsset,
     requestProfile,
@@ -138,31 +174,6 @@ export function AppShell({
     sessionRevision
   } = useWizardSession();
   const { setActiveBaseProfile } = useSettings();
-  const activeDefinition = APP_VIEW_DEFINITIONS[activeView];
-  const mainRef = useRef<HTMLElement>(null);
-  const previousViewRef = useRef(activeView);
-  const previousWizardSessionRevisionRef = useRef(sessionRevision);
-
-  useEffect(() => {
-    const previousTitle = document.title;
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
-
-  useEffect(() => {
-    document.title = `${activeDefinition.label} · ${BRAND.modules.prompt.shortLabel} · ${BRAND.shortName}`;
-    const viewChanged = previousViewRef.current !== activeView;
-    const wizardSessionChanged =
-      activeView === "wizard" &&
-      previousWizardSessionRevisionRef.current !== sessionRevision;
-
-    if (viewChanged || wizardSessionChanged) {
-      mainRef.current?.focus();
-    }
-    previousViewRef.current = activeView;
-    previousWizardSessionRevisionRef.current = sessionRevision;
-  }, [activeDefinition.label, activeView, sessionRevision]);
 
   const startNewAsset = useCallback(
     (category: AssetCategory | null) => {
@@ -189,97 +200,20 @@ export function AppShell({
   );
 
   return (
-    <>
-      <a
-        className={styles.skipLink}
-        href="#main-content"
-        onClick={() => mainRef.current?.focus()}
-      >
-        Zum Inhalt springen
-      </a>
-
-      <div className={styles.shell}>
-        <header className={styles.header}>
-          <div className={styles.topbar}>
-            <ViewLink className={styles.brand} view="dashboard">
-              <span className={styles.mark} aria-hidden="true">
-                <ForgeMarkIcon />
-              </span>
-              <span>
-                <strong>{BRAND.shortName}</strong>
-                <small>{BRAND.modules.prompt.shortLabel}</small>
-              </span>
-              <span className={styles.visuallyHidden}> – Startseite</span>
-            </ViewLink>
-
-            <div className={styles.headerTools}>
-              <Badge tone="accent">{BRAND.versionLabel} · Workspace</Badge>
-              <ThemeSwitcher />
-            </div>
-          </div>
-
-          <div className={styles.navigationRow}>
-            <nav className={styles.primaryNavigation} aria-label="Hauptnavigation">
-              <ul className={styles.navigationList}>
-                {APP_VIEW_IDS.map((view) => (
-                  <li key={view}>
-                    <ViewLink
-                      className={styles.navigationLink}
-                      indicateCurrent
-                      view={view}
-                    >
-                      {APP_VIEW_DEFINITIONS[view].label}
-                    </ViewLink>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            <nav className={styles.quickNavigation} aria-label="Schnellaktionen">
-              <ViewLink className={styles.secondaryAction} view="profiles">
-                Profile öffnen
-              </ViewLink>
-              <ViewLink
-                className={styles.primaryAction}
-                view="wizard"
-                onNavigate={() => requestNewAsset(null)}
-              >
-                <span aria-hidden="true">+</span>
-                Neues Asset
-              </ViewLink>
-            </nav>
-          </div>
-        </header>
-
-        <main
-          ref={mainRef}
-          id="main-content"
-          className={styles.main}
-          aria-labelledby={`${activeView}-view-title`}
-          tabIndex={-1}
-        >
-          <ActiveView
-            activeBaseProfileId={activeBaseProfileId}
-            {...(createDraftId ? { createDraftId } : {})}
-            {...(now ? { now } : {})}
-            onOpenProfile={openProfile}
-            onProfileDeleted={clearProfileRequest}
-            onResumeDraft={resumeDraft}
-            onSelectBaseProfile={setActiveBaseProfile}
-            onStartNewAsset={startNewAsset}
-            outputAdapter={outputAdapter}
-            sessionRevision={sessionRevision}
-            startupMigration={startupMigration}
-            storageAdapter={storageAdapter}
-            view={activeView}
-          />
-        </main>
-
-        <footer className={styles.footer}>
-          <span>{BRAND.productName}</span>
-          <span>Local-first · Keine Cloud erforderlich</span>
-        </footer>
-      </div>
-    </>
+    <ActiveView
+      activeBaseProfileId={activeBaseProfileId}
+      {...(createDraftId ? { createDraftId } : {})}
+      {...(now ? { now } : {})}
+      onOpenProfile={openProfile}
+      onProfileDeleted={clearProfileRequest}
+      onResumeDraft={resumeDraft}
+      onSelectBaseProfile={setActiveBaseProfile}
+      onStartNewAsset={startNewAsset}
+      outputAdapter={outputAdapter}
+      sessionRevision={sessionRevision}
+      startupMigration={startupMigration}
+      storageAdapter={storageAdapter}
+      view={view}
+    />
   );
 }

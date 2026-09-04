@@ -2,10 +2,11 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 29 — modulbasierte Studio-Routen (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 30 — globale Studio-Shell (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 30 — globale Studio-Shell (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 31 — Studio-Startseite und Startziele (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
-- **Aktive Serie:** Prompts 28–29 abgeschlossen; Prompts 30–51 offen unter
+- **Aktive Serie:** Prompts 28–30 abgeschlossen;
+  Prompts 31–51 offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 
@@ -84,6 +85,40 @@
 6. PyGitIndex ist aktuell und alle 43 Paketchecksummen sind gültig. Prompt 30
    wurde nicht begonnen.
 
+## Prompt 30 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `11d44a7`
+- Baseline: `npm run verify` erfolgreich mit 110 Testdateien und 658 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Abnahme: globale Dach-Shell mit Home-Brandlink, semantischem Modulumschalter,
+  globalem Theme/Skip-Link und sichtbarem Modulkontext; unveränderte sechs
+  Prompt-Views; vier zugängliche Animation-Placeholder-Views
+- Grenze: keine Animationsdomain, kein IndexedDB/Canvas, keine produktive
+  Home-Datenfläche und kein Prompt 31
+
+## Prompt 30 — Ergebnis
+
+1. `StudioShell` besitzt den einzigen globalen Header, Brandlink, Skip-Link,
+   Theme-Umschalter, sichtbaren Modulkontext, Hauptbereich und Footer. Titel und
+   Fokus folgen vollständigen Studio-Routen sowie neuen Wizard-Sessions.
+2. `StudioSwitcher` ist eine echte Navigation aus zentralen Moduldefinitionen.
+   Beide Ziele haben kanonische URLs; nur das aktive Modul trägt
+   `aria-current="page"`.
+3. Die bestehende Prompt-Oberfläche bleibt mit allen sechs Views und ihren
+   Providern erhalten. Ein Modulwechsel verwirft weder Theme noch transienten
+   Wizard-Zustand.
+4. Animation Studio stellt Projekte, Workspace, Character Kits und
+   Rig-Vorlagen als vier eindeutige, zugängliche Platzhalter bereit. Der
+   Workspace ohne Projekt zeigt einen kontrollierten Empty State; Fachdomain,
+   IndexedDB und Canvas bleiben bewusst ausstehend.
+5. Alte `?view=`-URLs werden weiter ins Prompt Studio kanonisiert. Home,
+   Prompt- und Animationsansichten erhalten routeabhängige Titel, genau eine H1
+   und denselben fokussierbaren Hauptbereich.
+6. Gezielte Prüfung: 7 Testdateien und 58 Tests bestanden. Vollständige
+   Prüfung: 112 Testdateien und 669 Tests, Typecheck und Build bestanden;
+   `git diff --check` ist sauber. PyGitIndex meldet 63 unveränderte
+   Markdown-Dateien, und alle 43 Paketchecksummen sind gültig.
+
 ## Plan — Dokumentationsordnung
 
 1. Aktive Leitdokumente von abgeschlossenen V2- und V1-Unterlagen trennen.
@@ -123,8 +158,8 @@
 
 ## Übergabe
 
-- Prompt 30 oder spätere Phasen erst nach einem neuen konkreten Auftrag
-  beginnen; Prompt 30 ist noch nicht begonnen.
+- Prompt 31 ist der nächste ausdrücklich beauftragte Einzelauftrag und darf
+  erst nach dem separaten Prompt-30-Commit beginnen.
 - Abgeschlossene Phasenkataloge und Nachweise bleiben unverändert als Historie
   unter `docs/erledigt/` erhalten.
 - Neue öffentliche Modulgrenzen werden weiterhin in `src/ARCHITECTURE.md`

@@ -12,6 +12,11 @@
   Animation Studio ohne zusätzliche Router-Abhängigkeit eingeführt
 - bestehende `?view=`-Links per `replaceState` kanonisiert sowie kontrollierte
   Parameter, StableId-Projekte und Browser-Zurück/Vorwärts abgesichert
+- globale Studio-Shell mit Home-Brandlink, URL-basiertem Modulumschalter,
+  Theme, Skip-Link, sichtbarem Modulkontext und routeabhängigen Titeln ergänzt
+- bestehende sechs Prompt-Views in eine eigene Modulfläche übernommen und vier
+  zugängliche Animation-Studio-Platzhalter samt kontrolliertem Workspace-
+  Empty-State ergänzt
 
 ## 2.0.0 — 2026-09-03
 

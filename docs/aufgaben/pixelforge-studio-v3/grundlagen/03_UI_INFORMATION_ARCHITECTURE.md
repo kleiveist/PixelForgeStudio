@@ -4,6 +4,13 @@
 
 # 03 — Webseitenaufbau und Bedienkonzept
 
+## Umsetzungsstand
+
+Die globale Shell, der URL-basierte Modulumschalter, alle sechs bestehenden
+Prompt-Views und die vier kontrollierten Animation-Platzhalter wurden mit
+Prompt 30 umgesetzt. Die in Abschnitt 2 beschriebene produktive Startseite
+folgt in Prompt 31.
+
 ## 1. Globale Studio-Shell
 
 Die oberste Ebene gehört dem Dachprodukt und bleibt in beiden Modulen sichtbar.

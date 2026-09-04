@@ -1,0 +1,48 @@
+.view {
+  width: min(100%, 54rem);
+  margin: 0 auto;
+}
+
+.view h1,
+.view h2,
+.view p {
+  overflow-wrap: anywhere;
+}
+
+.view h1 {
+  max-width: 18ch;
+  margin: var(--space-2) 0 var(--space-4);
+  color: var(--color-text);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--color-accent-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.description {
+  max-width: 64ch;
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.placeholder {
+  margin-top: var(--space-6);
+  padding: clamp(var(--space-5), 4vw, var(--space-8));
+}
+
+.placeholder h2 {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+}
+
+.placeholder p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+}
