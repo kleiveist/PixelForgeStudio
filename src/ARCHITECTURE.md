@@ -1,14 +1,14 @@
 # PixelForge Studio source architecture
 
-Prompt 37 adds the validated PNG Part import boundary to the productive
-Animation Workspace. Files stay unknown until MIME, signature, byte,
-decodability, dimension and alpha-content checks pass. Original Blob, decoded
-RGBA, deterministic trim bounds and persisted metadata remain separate; new
-parts are explicitly `anchorsPending`. The loaded project and save state still
-come from the provider, while direction, clip, frame, slot, zoom, overlays,
-pan and responsive pane selection remain temporary local reducer state. The
-workspace deliberately renders no imported pixels yet; Character Kits, rig
-editing, placement, playback and export remain explicit future boundaries.
+Prompt 38 adds the concrete immutable `humanoid-80-v1` production rig to the
+Animation Workspace. Five authored neutral directions, joint coordinates,
+hierarchical bones, required-slot bindings, motion-profile metadata,
+validation and the compatibility key remain framework-free Domain data. The
+SVG viewport only projects that data; it neither mutates the built-in rig nor
+places imported PNGs. New parts remain explicitly `anchorsPending`, while
+direction, clip, frame, slot, zoom, overlays, pan and responsive pane selection
+remain temporary local reducer state. Anchor editing, placement, rendering,
+playback and export remain explicit future boundaries.
 Both modules share one route source, settings source, theme, skip target,
 title and focus boundary.
 
@@ -23,9 +23,10 @@ title and focus boundary.
   getrennte, bewusst stabile Exportformat-Identifier
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
   - `animation/`: stable direction/source-mode contracts, complete Production-
-    Humanoid slot metadata, joint/bone topology, versioned frame defaults,
-    pure vector/angle/affine-matrix helpers and deterministic RGBA alpha-bound/
-    crop operations without pose or browser data
+    Humanoid slot metadata, the immutable five-pose `humanoid-80-v1` rig,
+    validated joint/bone/slot hierarchy and compatibility key, versioned frame
+    defaults, pure vector/angle/affine-matrix helpers and deterministic RGBA
+    alpha-bound/crop operations without browser data
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
   - `characters/`: Character/NPC option catalogs, subtype guards, canonical
@@ -77,7 +78,7 @@ title and focus boundary.
   Dialoge und den kontrollierten Workspace-Lifecycle-State;
   `animation-workspace/` enthält die repository-freie Arbeitsoberfläche, ihre
   pure temporäre State-Machine, responsive Paneelprojektion, Slotinventar,
-  DOM-Viewport, read-only Inspektor und Frameauswahl;
+  DOM-Viewport, datengetriebenes Rig-SVG, read-only Inspektor und Frameauswahl;
   `animation-part-import/` enthält die unbekannte Datei-/Decoder-Grenze,
   Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
@@ -415,10 +416,15 @@ shows unresolved references as a distinct source state until the validated
 Prompt-37 import/read boundary supplies PartAsset and Blob data. The viewport
 is a DOM presentation of the fixed project frame with checker background,
 integer display zoom, keyboard/button panning and text equivalents for every
-overlay. It is never a rig-data source and display zoom never changes project
-or export coordinates. The inspector exposes Project, Part and Frame read-only
-states without fake editable fields; the Timeline exposes the validated clip's
-frame slots and roving keyboard selection without implementing playback.
+overlay. `RigOverlay` receives the resolved built-in template and projects its
+selected `DirectionRig` through a pure `createRigOverlayModel()` into SVG
+bones, joints, required-slot labels and groundline. It never copies production
+coordinates into JSX. West, north-west and south-west expose an explicit
+unavailable geometry state instead of inferred joints. The viewport remains a
+presentation rather than a rig-data source, and display zoom never changes
+project or export coordinates. The inspector exposes Project, Part and Frame
+read-only states without fake editable fields; the Timeline exposes the
+validated clip's frame slots and roving keyboard selection without playback.
 
 `useWorkspaceLayout()` maps browser width to desktop, medium and small DOM
 structures. Desktop renders inventory, viewport, inspector and timeline;
@@ -900,22 +906,34 @@ Base→Category→Asset resolver; Artwork type and game-specific technical value
 are never duplicated into `ArtworkAnswers`.
 
 `domain/animation/index.ts` is the framework-free public boundary introduced
-by Prompt 32. It owns the non-alphabetical eight-direction production order,
-the three explicit source modes and their authored-direction requirements,
-all 39 Production-Humanoid slots with stable groups, labels and required
-status, 21 joint IDs, 20 coordinate-free bone edges and the complete required-
-slot binding contract. Anatomical left/right slot IDs are never renamed by
-direction mirroring.
+by Prompt 32 and completed with concrete neutral Rig data in Prompt 38. It
+owns the non-alphabetical eight-direction production order, the three explicit
+source modes and their authored-direction requirements, all 39 Production-
+Humanoid slots with stable groups, labels and required status, 21 joint IDs,
+20 bones and the complete required-slot binding contract. Anatomical
+left/right slot IDs are never renamed by direction mirroring.
 
-The same boundary publishes readonly point, size, rectangle, source-anchor,
-frame and transform types; mirror, rig-template and animation-action IDs; and
-the immutable `humanoid-80-v1` standard (128 × 128 frame, 80 px character,
-foot anchor 64/112, contract version 1). Vector, radian-angle and affine 2D
-matrix helpers are deterministic pure functions. Matrix composition uses
-`T × R × S` order and therefore applies the right-most transform first.
-Production files in this directory import neither React nor Zod and reference
-no browser, persistence or Canvas API. Concrete joint coordinates, poses,
-rendering and UI remain later boundaries.
+`humanoidRig80.ts` is the immutable production-data module for
+`humanoid-80-v1`: a 128 × 128 frame, 80 px character, foot/root anchor 64/112,
+contract versions 1 and five independently authored `south`, `southEast`,
+`east`, `northEast` and `north` neutral poses. Every `DirectionRig` contains
+all joint definitions plus versioned projection/near-side/step-axis/bend
+metadata; it contains no clip keyframes. `BoneDefinition` records the
+acyclic parent-bone hierarchy and distinguishes structure, connector and limb
+bones. `SlotBinding` maps every required slot to its proximal and, for limbs,
+distal joint. The three single-point parts use the versioned source
+orientation −π/2. Western source geometry is deliberately absent until its
+controlled derivation phase.
+
+`validateRigTemplate()` returns structured code/path issues for invalid frame
+profiles, missing or out-of-frame joints, incomplete or cyclic bone graphs,
+zero-length limbs, invalid required-slot bindings and groundline violations.
+`createRigCompatibilityKey()` first validates and then fingerprints all
+contract-relevant fields in canonical catalog order. Vector, radian-angle and
+affine 2D matrix helpers remain deterministic pure functions; matrix
+composition uses `T × R × S` order and therefore applies the right-most
+transform first. Production files in this directory import neither React nor
+Zod and reference no browser, persistence, SVG or Canvas API.
 
 `schemas/index.ts` is also the public Animation metadata boundary since Prompt
 33. Project, PartAsset and CharacterKit use strict `schemaVersion: 1` objects;
@@ -1063,5 +1081,7 @@ responsive Animation Workspace shell, temporary selection reducer,
 domain-driven inventory, DOM viewport, contextual inspector and eight-frame
 Walk timeline. Prompt 37 adds validated PNG decoding and trimming,
 anchor-pending PartAssets, atomic Part/Blob/project assignment, transient
-preview URLs and authored-direction coverage. Prompt 38 is the next unstarted
-task and owns the concrete built-in `humanoid-80-v1` rig template.
+preview URLs and authored-direction coverage. Prompt 38 adds the immutable
+five-pose `humanoid-80-v1` template, pure structured validation, deterministic
+Rig compatibility and its data-driven SVG overlay. Prompt 39 is the next
+separate task and owns source-anchor editing plus reproducible Part placement.

@@ -5,6 +5,7 @@ import {
   ANIMATION_ACTION_IDS,
   DIRECTION_IDS,
   HUMANOID_80_FRAME_PROFILE,
+  HUMANOID_80_RIG_TEMPLATE,
   PART_SLOT_IDS,
   type AnimationActionId,
   type Direction,
@@ -13,6 +14,7 @@ import {
   type PartSlot,
   type Point,
   type Rect,
+  type RigTemplate,
   type RigTemplateId,
   type Size,
   type SourceAnchors,
@@ -41,6 +43,7 @@ describe("animation domain public boundary", () => {
     const slot: PartSlot = PART_SLOT_IDS[0];
     const mirrorPolicy: MirrorPolicy = "inherit";
     const rigTemplateId: RigTemplateId = "humanoid-80-v1";
+    const rigTemplate: RigTemplate = HUMANOID_80_RIG_TEMPLATE;
     const action: AnimationActionId = ANIMATION_ACTION_IDS[0];
 
     expect({
@@ -55,12 +58,14 @@ describe("animation domain public boundary", () => {
       slot,
       mirrorPolicy,
       rigTemplateId,
+      rigTemplate,
       action
     }).toMatchObject({
       direction: "south",
       slot: "head",
       mirrorPolicy: "inherit",
       rigTemplateId: "humanoid-80-v1",
+      rigTemplate: expect.objectContaining({ id: "humanoid-80-v1" }),
       action: "walk"
     });
   });

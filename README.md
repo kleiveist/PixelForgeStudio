@@ -17,9 +17,10 @@ Das release-abgenommene **PixelForge Prompt Studio** erstellt konsistente
 Pixelart-Prompts. Eine produktive Studio-Startseite bündelt den letzten
 Prompt-Entwurf, zuletzt verwendete Profile, zuletzt bearbeitete
 Animationsprojekte und den Einstieg in beide Module. Das **PixelForge
-Animation Studio** verwaltet lokale Projekte vollständig und importiert
-validierte PNG-Körperteile; konkrete Rigs, Platzierung und Rendering folgen in
-den offenen Phasen. Profile, Entwürfe,
+Animation Studio** verwaltet lokale Projekte vollständig, importiert
+validierte PNG-Körperteile und zeigt das versionierte Humanoid-80-Rig in fünf
+eigenen Neutralposen; Ankerplatzierung und Rendering folgen in den offenen
+Phasen. Profile, Entwürfe,
 Einstellungen und Animationsprojekte bleiben im Browser; ein Backend ist nicht
 erforderlich.
 
@@ -49,8 +50,9 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   umbenennen, duplizieren und bestätigt löschen. Der lokale IndexedDB-
   Speicher arbeitet über Autosave; der Workspace prüft PNGs, zeigt Alpha-Trim
   und Richtungs-Coverage und speichert bestätigte Parts mit ausstehenden
-  Ankern. Character Kits und konkrete Rig-Vorlagen bleiben bis zu ihren
-  jeweiligen Fachphasen klar markiert.
+  Ankern. Das Built-in-Rig `humanoid-80-v1` zeigt Bones, Joints, Groundline und
+  Pflichtslotbindungen als SVG; Character Kits und Partplatzierung bleiben bis
+  zu ihren jeweiligen Fachphasen klar markiert.
 
 ## Einstiegspunkte
 

@@ -547,6 +547,13 @@ fail-closed abbrechen. `fake-indexeddb` ist ausschließlich eine schmale
 Dev-Abhängigkeit für isolierte Adapter-, Store-, Index- und Rollbacktests;
 Produktivcode verwendet nur die native Browser-API.
 
+Die konkrete Built-in-Rigvorlage `humanoid-80-v1` bleibt davon getrennte pure
+TypeScript-Domain. Fünf eigene Neutralposen, hierarchische Bones,
+Pflichtslotbindungen, strukturierte Validierung und der deterministische
+Rig-Compatibility-Key importieren weder React noch Zod oder Browser-APIs. Der
+Workspace liest diese Produktionsdaten über ein SVG-Anzeigeprojektionsmodell;
+SVG und CSS sind keine zweite Quelle für Jointkoordinaten.
+
 ## Styling
 
 - `src/styles/tokens.css`: globale semantische Design-Tokens

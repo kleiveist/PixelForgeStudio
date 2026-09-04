@@ -540,9 +540,7 @@
 
 .gridOverlay,
 .boundsOverlay,
-.rigOverlay,
-.anchorOverlay,
-.footlineOverlay,
+.rigSvg,
 .viewportPlaceholder {
   position: absolute;
   pointer-events: none;
@@ -561,71 +559,48 @@
   border: 2px dashed var(--color-category-sky);
 }
 
-.rigOverlay {
-  inset: 18% 25% 12%;
-  color: var(--color-category-violet);
-}
-
-.rigOverlay > span {
-  position: absolute;
-  display: block;
-  background: currentColor;
-  border-radius: var(--radius-pill);
-}
-
-.rigSpine {
-  width: 3px;
-  height: 70%;
-  inset: 8% auto auto 50%;
-}
-
-.rigShoulders {
-  width: 74%;
-  height: 3px;
-  inset: 24% auto auto 13%;
-}
-
-.rigHips {
-  width: 46%;
-  height: 3px;
-  inset: 66% auto auto 27%;
-}
-
-.anchorOverlay {
+.rigSvg {
   inset: 0;
-}
-
-.anchorOverlay > span {
-  position: absolute;
-  width: 0.8rem;
-  aspect-ratio: 1;
-  background: var(--color-panel-raised);
-  border: 3px solid var(--color-category-gold);
-  border-radius: var(--radius-pill);
-}
-
-.anchorOverlay > span:nth-child(1) {
-  inset: 28% auto auto 50%;
-}
-
-.anchorOverlay > span:nth-child(2) {
-  inset: 52% auto auto 38%;
-}
-
-.anchorOverlay > span:nth-child(3) {
-  inset: auto auto 12.5% 50%;
-}
-
-.footlineOverlay {
   width: 100%;
-  height: 2px;
-  inset: var(--workspace-footline-position) 0 auto;
-  background: var(--color-danger-text);
+  height: 100%;
+  overflow: visible;
+}
+
+.rigBones line {
+  stroke: var(--color-category-violet);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.rigJoints circle {
+  fill: var(--color-panel-raised);
+  stroke: var(--color-category-gold);
+  stroke-width: 0.75;
+  vector-effect: non-scaling-stroke;
+}
+
+.rigSlotLabels text {
+  fill: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 2.35px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: var(--color-panel-raised);
+  stroke-width: 0.75px;
+  stroke-linejoin: round;
+}
+
+.rigGroundline {
+  stroke: var(--color-danger-text);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+  vector-effect: non-scaling-stroke;
 }
 
 .viewportPlaceholder {
   max-width: 12rem;
-  inset: 50% auto auto 50%;
+  inset: auto auto var(--space-2) 50%;
   padding: var(--space-2) var(--space-3);
   color: var(--color-text);
   font-family: var(--font-mono);
@@ -635,7 +610,7 @@
   background: var(--color-panel-raised);
   border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-sm);
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
 }
 
 .panControls {

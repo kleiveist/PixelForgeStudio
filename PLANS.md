@@ -2,14 +2,75 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 37 — PNG-Part-Import und Normalisierung (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 38 — Humanoid-80-Rig-Vorlage (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 38 — Humanoid-80-Rig-Vorlage (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 39 — Ankereditor und automatische Partplatzierung
+  (beauftragt, noch nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
-- **Aktive Serie:** Phase A mit Prompts 28–31 abgeschlossen; Phase B mit
-  Prompts 32–35 und Phase C mit Prompts 36–37 abgeschlossen sowie Prompts
-  38–51 offen unter
+- **Aktive Serie:** Phase A mit Prompts 28–31 und Phase B mit Prompts 32–35
+  abgeschlossen; Phase C mit Prompts 36–37 abgeschlossen, Prompt 38 in
+  Arbeit und Prompt 39 beauftragt; Prompts 40–51 bleiben offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
+
+## Prompt 38 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `fcaa893`
+- Baseline: Prompt 37 abgeschlossen mit 141 Testdateien und 866 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Domain: readonly `RigTemplate`, fünf eigenständige `DirectionRig`-Posen,
+  Joint-/Bone-/Slotdefinitionen und versionierte Bewegungsprofile für
+  `humanoid-80-v1` ohne React-, DOM- oder Storage-Abhängigkeit
+- Referenzdaten: 128 × 128 px Frame, 80 px Figurenhöhe, Fußanker 64/112,
+  Anchor-/Slot-Contract-Version 1 und vollständige South-Referenzkoordinaten
+- Validierung: strukturierte Issues mit Pfad für fehlende/out-of-frame Joints,
+  unbekannte Bone-Referenzen, Zyklen, Null-Limbs, unvollständige
+  Pflichtslotbindungen und Verletzungen der Groundline-Zone
+- Kompatibilität: deterministischer Key ausschließlich aus den relevanten
+  versionierten Templatewerten; keine UI-Zerlegung oder Custom-Rig-Mutation
+- Oberfläche: SVG-Overlay für Neutralpose, Bones, Joints, Groundline und
+  Slotlabels der gewählten Quellrichtung; keine Partplatzierung und keine
+  Freigabe westlicher Quellgeometrien vor Prompt 44
+- Prüfung: South-Koordinaten, fünf eigene Posen, vollständige Verträge,
+  Negativvarianten, stabiler Key sowie richtungsabhängiges Overlay mit
+  Typecheck, Tests, Build, `npm run verify` und `git diff --check`
+
+## Prompt 38 — Ergebnis
+
+1. `RigTemplate`, `DirectionRig`, `JointDefinition`, `BoneDefinition`,
+   `SlotBinding` und `DirectionMotionProfile` bilden einen readonly,
+   frameworkfreien Produktionsvertrag. `humanoid-80-v1` hält Framegröße,
+   Figurenhöhe und alle drei Contract-Versionen ausdrücklich getrennt.
+2. South, SouthEast, East, NorthEast und North besitzen jeweils eigene
+   vollständige Geometrien mit 21 Joints. Der South-Stand entspricht den
+   verbindlichen Referenzzentren; Hand- und Toe-Joints, kontrollierte
+   Nah-/Fernseitenüberdeckung sowie normalisierte Richtungsprofile ergänzen
+   die fünf neutralen Quellposen ohne Bewegungsschlüssel.
+3. 20 hierarchische Bones beschreiben Torso, Verbinder und Limbs. Alle 15
+   Pflichtslots sind genau einem proximalen und bei Limb-Parts einem distalen
+   Joint zugeordnet; Kopf, Torso und Becken besitzen eine versionierte
+   Einpunkt-Defaultorientierung. Die Built-in-Daten sind bis zu Punkten und
+   Profilunterobjekten eingefroren.
+4. `validateRigTemplate()` liefert strukturierte Code-/Pfad-Issues für
+   Frame-, Richtungs-, Joint-, Bone-, Hierarchie-, Null-Limb-, Slot- und
+   Groundline-Fehler. `createRigCompatibilityKey()` validiert zuerst und
+   fingerprintet danach alle relevanten Werte in fester Katalogreihenfolge;
+   der erwartete Key ist regressionsgetestet.
+5. Das bisher symbolische CSS-Rig wurde durch ein SVG aus einem puren
+   Overlaymodell ersetzt. Es zeigt für die aktive Quellrichtung echte Bones,
+   Joints, Groundline und 15 Pflichtslotlabels und folgt Richtungswechseln.
+   West, NorthWest und SouthWest bleiben ohne erfundene Geometrie ausdrücklich
+   als nicht freigegeben sichtbar.
+6. Nutzerhilfe, öffentliche Architekturgrenzen, Technologie-Stack,
+   V3-Spezifikation, README und Changelog dokumentieren Produktionsdaten,
+   Versionierung, South-Referenz, Validierung und UI-Grenze. PyGitIndex wurde
+   auf die neue Rigseite aktualisiert.
+7. Der isolierte Abnahmebaum aus Ausgangs-HEAD plus ausschließlich Prompt 38
+   bestand `npm run verify` mit 144 Testdateien und 882 Tests, Strict-Typecheck
+   und Produktionsbuild. `git diff --check` ist sauber; einzige Ausgabe bleibt
+   die bekannte Vite-Warnung zum Hauptchunk über 500 kB. Parallel vorhandene,
+   themenfremde Editorarbeiten blieben unangetastet und außerhalb des Commits.
+8. Prompt 39 wurde nicht vorgezogen und bleibt die nächste separat zu
+   implementierende und zu committende Aufgabe.
 
 ## Prompt 37 — Ausgangsstand und Abnahme
 

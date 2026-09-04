@@ -83,6 +83,15 @@
 - Originalblob, anchor-pending PartAsset und aktualisierte Projektzuweisung in
   einer gemeinsamen Memory-/IndexedDB-Transaktion abgesichert; ersetzte Parts
   bleiben unangetastet und Importfehler verändern weder Projekt noch Blobstore
+- unveränderliche Built-in-Rigvorlage `humanoid-80-v1` mit fünf eigenständigen
+  Neutralposen, 21 Joints, 20 hierarchischen Bones, 15 Pflichtslotbindungen und
+  versionierten Direction-Motion-Profilen als pure TypeScript-Domain ergänzt
+- strukturierte Rigvalidierung für Framegrenzen, Vollständigkeit,
+  Bone-Referenzen/-zyklen, Limb-Längen und Groundline sowie einen
+  deterministischen Rig-Compatibility-Key eingeführt
+- bisherige symbolische CSS-Rigzeichnung durch ein datengetriebenes SVG mit
+  Bones, Joints, Groundline und Slotlabels ersetzt; westliche
+  Quellgeometrien bleiben bis zur kontrollierten Spiegelphase explizit offen
 
 ## 2.0.0 — 2026-09-03
 

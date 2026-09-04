@@ -47,7 +47,7 @@ describe("AnimationWorkspace", () => {
     setViewportWidth(1440);
     const user = userEvent.setup();
     const onSave = vi.fn();
-    renderWorkspace({}, {
+    const { container } = renderWorkspace({}, {
       canSave: true,
       saveStatus: "dirty",
       onSave
@@ -62,6 +62,19 @@ describe("AnimationWorkspace", () => {
     expect(screen.getByRole("heading", { level: 3, name: "Körpermitte" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 3, name: "Freie Accessoires" })).toBeVisible();
     expect(screen.getByText(/part_head_south_001 konnte/)).toBeVisible();
+    const rigOverlay = screen.getByRole("img", {
+      name: "Süd: Neutralpose des humanoid-80-v1"
+    });
+    expect(rigOverlay).toHaveAttribute("data-rig-direction", "south");
+    expect(rigOverlay).toHaveAttribute("data-rig-available", "true");
+    expect(container.querySelectorAll("[data-bone-id]")).toHaveLength(20);
+    expect(container.querySelectorAll("[data-joint-id]")).toHaveLength(21);
+    expect(container.querySelectorAll("[data-slot-id]")).toHaveLength(15);
+    expect(container.querySelector('[data-joint-id="head"]')).toHaveAttribute(
+      "cx",
+      "64"
+    );
+    expect(screen.getByTestId("rig-groundline")).toHaveAttribute("y1", "112");
 
     const headSlot = screen.getByRole("button", {
       name: "Kopf; Erforderlich; Fehlt"
@@ -84,10 +97,23 @@ describe("AnimationWorkspace", () => {
   it("selects direction, frame, zoom, overlays and pan with pointer-independent controls", async () => {
     setViewportWidth(1440);
     const user = userEvent.setup();
-    renderWorkspace();
+    const { container } = renderWorkspace();
+
+    expect(container.querySelector('[data-joint-id="chest"]')).toHaveAttribute(
+      "cx",
+      "64"
+    );
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Richtung" }), "east");
     expect(screen.getByRole("combobox", { name: "Richtung" })).toHaveValue("east");
+    expect(screen.getByTestId("rig-overlay")).toHaveAttribute(
+      "data-rig-direction",
+      "east"
+    );
+    expect(container.querySelector('[data-joint-id="chest"]')).toHaveAttribute(
+      "cx",
+      "61"
+    );
 
     const thirdFrame = screen.getByRole("radio", { name: "3 Frameplatz" });
     await user.click(thirdFrame);
@@ -117,10 +143,34 @@ describe("AnimationWorkspace", () => {
     expect(frame).toHaveAttribute("data-grid", "false");
     expect(screen.getByText("Raster: aus")).toBeVisible();
 
+    const rigToggle = screen.getByRole("checkbox", { name: "Rig" });
+    await user.click(rigToggle);
+    expect(screen.queryByTestId("rig-neutral-pose")).not.toBeInTheDocument();
+    expect(screen.getByTestId("rig-groundline")).toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: "Zentrieren" }));
     expect(document.getElementById("animation-viewport-status")).toHaveTextContent(
       "Versatz X 0, Y 0"
     );
+  });
+
+  it("keeps western source geometry explicitly unavailable", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    const { container } = renderWorkspace();
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Richtung" }),
+      "west"
+    );
+
+    expect(
+      screen.getByRole("img", {
+        name: "West: keine freigegebene Rig-Quellgeometrie"
+      })
+    ).toHaveAttribute("data-rig-available", "false");
+    expect(container.querySelectorAll("[data-joint-id]")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-bone-id]")).toHaveLength(0);
   });
 
   it("switches between project clips and resets the frame selection", async () => {

@@ -7,7 +7,11 @@ import {
   type KeyboardEvent
 } from "react";
 import { Badge, Surface } from "../../components/ui";
-import { isDirection, type PartSlot } from "../../domain/animation";
+import {
+  getBuiltInRigTemplate,
+  isDirection,
+  type PartSlot
+} from "../../domain/animation";
 import {
   PartImportPanel,
   createPartCoverageMatrix,
@@ -44,6 +48,7 @@ import {
   type WorkspaceSidePanel
 } from "./animationWorkspaceModel";
 import styles from "./AnimationWorkspace.module.css";
+import { RigOverlay } from "./RigOverlay";
 import { useWorkspaceLayout } from "./useWorkspaceLayout";
 
 export type WorkspaceSaveStatus =
@@ -530,12 +535,16 @@ function RigViewport({
   dispatch,
   layout
 }: RigViewportProps) {
+  const rigTemplate = getBuiltInRigTemplate(project.rigTemplateId);
+  const hasDirectionRig =
+    rigTemplate?.directions.some(
+      (directionRig) => directionRig.direction === state.direction
+    ) ?? false;
   const frameStyle = {
     width: `${project.frameProfile.frameSize.width * state.zoom}px`,
     height: `${project.frameProfile.frameSize.height * state.zoom}px`,
     transform: `translate(${state.pan.x}px, ${state.pan.y}px)`,
-    "--workspace-pixel-size": `${state.zoom}px`,
-    "--workspace-footline-position": `${(project.frameProfile.footAnchor.y / project.frameProfile.frameSize.height) * 100}%`
+    "--workspace-pixel-size": `${state.zoom}px`
   } as CSSProperties;
 
   const handleViewportKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -648,7 +657,9 @@ function RigViewport({
           : loadedPartCount > 0
             ? `${loadedPartCount} Part-${loadedPartCount === 1 ? "Quelle ist" : "Quellen sind"} dem Projekt zugewiesen; die Renderpipeline folgt in ihrer eigenen Phase.`
             : "Dem Projekt sind noch keine PartAssets zugewiesen; es wird kein Dummybild erzeugt."}{" "}
-        Die Overlaygrafik markiert nur die vorbereiteten Bedienebenen und ist keine Quelle für Rigdaten.
+        {rigTemplate
+          ? ` Das SVG-Overlay liest die versionierte Neutralpose direkt aus ${rigTemplate.id}; es platziert noch keine Partbilder.`
+          : " Für die Projektreferenz ist keine Built-in-Rigvorlage verfügbar."}
       </p>
 
       <div
@@ -669,25 +680,18 @@ function RigViewport({
           data-anchors={state.overlays.anchors}
           data-bounding-boxes={state.overlays.boundingBoxes}
           data-footline={state.overlays.footline}
-          aria-hidden="true"
+          data-rig-direction={state.direction}
         >
           {state.overlays.grid ? <span className={styles.gridOverlay} /> : null}
           {state.overlays.boundingBoxes ? <span className={styles.boundsOverlay} /> : null}
-          {state.overlays.rig ? (
-            <span className={styles.rigOverlay}>
-              <span className={styles.rigSpine} />
-              <span className={styles.rigShoulders} />
-              <span className={styles.rigHips} />
-            </span>
+          {rigTemplate ? (
+            <RigOverlay
+              template={rigTemplate}
+              direction={state.direction}
+              showRig={state.overlays.rig}
+              showGroundline={state.overlays.footline}
+            />
           ) : null}
-          {state.overlays.anchors ? (
-            <span className={styles.anchorOverlay}>
-              <span />
-              <span />
-              <span />
-            </span>
-          ) : null}
-          {state.overlays.footline ? <span className={styles.footlineOverlay} /> : null}
           <span className={styles.viewportPlaceholder}>
             {unresolvedReferenceCount > 0
               ? "Bilddaten fehlen"
@@ -728,6 +732,12 @@ function RigViewport({
             {OVERLAY_LABELS[overlay]}: {state.overlays[overlay] ? "ein" : "aus"}
           </li>
         ))}
+        <li>Rigvorlage: {rigTemplate?.id ?? "nicht verfügbar"}</li>
+        <li>
+          Neutralpose: {rigTemplate && hasDirectionRig
+            ? DIRECTION_LABELS[state.direction]
+            : "nicht verfügbar"}
+        </li>
       </ul>
     </Surface>
   );

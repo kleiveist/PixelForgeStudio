@@ -3,6 +3,7 @@ export {
   type AnimationWorkspaceProps,
   type WorkspaceSaveStatus
 } from "./AnimationWorkspace";
+export { RigOverlay, type RigOverlayProps } from "./RigOverlay";
 export {
   DIRECTION_LABELS,
   OVERLAY_LABELS,
@@ -28,3 +29,10 @@ export {
   type WorkspaceSlotGroup,
   type WorkspaceZoom
 } from "./animationWorkspaceModel";
+export {
+  createRigOverlayModel,
+  type RigOverlayBone,
+  type RigOverlayJoint,
+  type RigOverlayModel,
+  type RigOverlaySlotLabel
+} from "./rigOverlayModel";
