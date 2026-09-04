@@ -1175,8 +1175,10 @@ optional attachments, bounded project layer deltas and visible edge-aware
 clipping diagnostics. Prompt 42 adds the versioned eight-frame Walk clip,
 South pose solver and transient multi-frame renderer. Prompt 43 closes Phase D
 with real Timeline frames, deterministic playback, Scrubbing, Onion Skin and
-controlled preview resource lifecycles. Prompt 44 is the next separate task
-and owns direction projection and controlled mirroring.
+controlled preview resource lifecycles. Prompt 44 starts Phase E with
+direction coverage, controlled runtime mirroring and explicit asymmetric-part
+review. Prompt 45 remains the next separate task and owns full eight-direction
+Walk generation.
 
 The draw-order domain in `domain/animation/layerOrder.ts` lists every required
 and optional slot for each target direction. It keeps anatomical side,
@@ -1222,3 +1224,29 @@ next cached frame reference. React displays those references in separate,
 aria-hidden Canvas layers with bounded opacity. It never composites into or
 copies the selected `RenderedFrame`, so persisted metadata and future export
 pixels remain unchanged.
+
+`domain/animation/directionProjection.ts` owns the three contractual mirror
+pairs. Source pixels, source anchors and trim rectangles use
+`sourceWidth - 1 - x`; joints use `2 * footAnchor.x - x` around the vertical
+root/foot axis. Runtime projection negates rotations and X deltas, preserves Y
+and uniform scale, keeps anatomical slot IDs intact and derives a transient
+target rig without adding coordinates to the authored template. The RGBA
+projection copies only transient decoded bytes; blobs and metadata are never
+rewritten for a mirror.
+
+`domain/animation/coverage.ts` is the framework-free policy and production
+readiness boundary. It resolves exact target sources before mirror fallbacks,
+combines Part → Project → Kit policy with a fail-closed fallback and returns
+one of seven textual statuses for every Slot × Direction cell. `eightAuthored`
+never falls back and `singleDirectionPrototype` can never report full
+eight-direction readiness. Unoccupied optional slots remain distinct from a
+missing source.
+
+Project schema V1 additively defaults its mirror policy to `allow`, stores an
+optional per-assignment override and records review decisions by source asset,
+source revision and mirrored target. Character Kit schema V1 has the same
+backward-compatible default. A source revision or policy change invalidates
+the effective review. The Workspace is the UI adapter: it presents all eight
+columns with symbol plus text, exposes policy controls and writes review
+metadata only from the explicit confirmation action. Coverage selects source
+pixels; the target-direction draw-order still decides visual near/far layers.

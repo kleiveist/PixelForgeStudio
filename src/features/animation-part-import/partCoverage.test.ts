@@ -7,7 +7,7 @@ import {
 import { createPartCoverageMatrix } from "./partCoverage";
 
 describe("part direction coverage", () => {
-  it("distinguishes ready, invalid, missing and anchor-pending sources", () => {
+  it("builds all eight columns and distinguishes source, anchor and optional states", () => {
     const ready = parseAnimationPartAsset(createAnimationPartAssetInput());
     const pending = parseAnimationPartAsset(
       createAnimationPartAssetInput({
@@ -28,11 +28,11 @@ describe("part direction coverage", () => {
     );
     const matrix = createPartCoverageMatrix(project, [ready, pending]);
 
-    expect(matrix.directions).toEqual(["south"]);
-    expect(matrix.rows.find(({ slot }) => slot === "head")?.cells[0]?.status).toBe("ready");
-    expect(matrix.rows.find(({ slot }) => slot === "torso")?.cells[0]?.status).toBe("anchorsPending");
-    expect(matrix.rows.find(({ slot }) => slot === "arm.left.upper")?.cells[0]?.status).toBe("missing");
-    expect(matrix.rows.find(({ slot }) => slot === "hair.back")?.cells[0]?.status).toBe("missing");
+    expect(matrix.directions).toHaveLength(8);
+    expect(matrix.rows.find(({ slot }) => slot === "head")?.cells[0]?.status).toBe("authoredSource");
+    expect(matrix.rows.find(({ slot }) => slot === "torso")?.cells[0]?.status).toBe("anchorsIncomplete");
+    expect(matrix.rows.find(({ slot }) => slot === "arm.left.upper")?.cells[0]?.status).toBe("missingSource");
+    expect(matrix.rows.find(({ slot }) => slot === "hair.back")?.cells[0]?.status).toBe("optionalUnused");
 
     const invalid = parseAnimationPartAsset(
       createAnimationPartAssetInput({
@@ -55,6 +55,6 @@ describe("part direction coverage", () => {
       createPartCoverageMatrix(invalidProject, [invalid]).rows.find(
         ({ slot }) => slot === "arm.left.upper"
       )?.cells[0]?.status
-    ).toBe("invalidAnchors");
+    ).toBe("anchorsIncomplete");
   });
 });

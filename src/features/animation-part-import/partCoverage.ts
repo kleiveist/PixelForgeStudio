@@ -1,21 +1,15 @@
 import {
-  PART_SLOT_DEFINITIONS,
-  getRequiredAuthoredDirections,
+  resolveProjectDirectionCoverage,
   type Direction,
+  type DirectionCoverageStatus,
+  type DirectionSourceResolution,
   type PartSlot
 } from "../../domain/animation";
 import type { AnimationPartAsset, AnimationProject } from "../../schemas";
 
-export type PartCoverageStatus =
-  | "ready"
-  | "missing"
-  | "anchorsPending"
-  | "invalidAnchors";
+export type PartCoverageStatus = DirectionCoverageStatus;
 
-export interface PartCoverageCell {
-  readonly slot: PartSlot;
-  readonly direction: Direction;
-  readonly status: PartCoverageStatus;
+export interface PartCoverageCell extends DirectionSourceResolution {
   readonly asset: AnimationPartAsset | null;
 }
 
@@ -29,6 +23,8 @@ export interface PartCoverageRow {
 export interface PartCoverageMatrix {
   readonly directions: readonly Direction[];
   readonly rows: readonly PartCoverageRow[];
+  readonly blockers: readonly PartCoverageCell[];
+  readonly readyForEightDirectionExport: boolean;
 }
 
 export function findPartAssetForSource(
@@ -45,25 +41,50 @@ export function createPartCoverageMatrix(
   project: AnimationProject,
   assets: readonly AnimationPartAsset[]
 ): PartCoverageMatrix {
-  const directions = getRequiredAuthoredDirections(project.directionSourceMode);
-  const rows = PART_SLOT_DEFINITIONS.map((slot) => {
-    const cells = directions.map((direction) => {
-      const asset = findPartAssetForSource(assets, slot.id, direction);
-      const status: PartCoverageStatus = asset
-        ? asset.anchorStatus === "anchorsPending"
-          ? "anchorsPending"
-          : asset.anchorStatus === "invalidAnchors"
-            ? "invalidAnchors"
-            : "ready"
-        : "missing";
-      return Object.freeze({ slot: slot.id, direction, status, asset });
+  const assignedIds = new Set(project.parts.map(({ assetId }) => assetId));
+  const assignedAssets = assets
+    .filter((asset) => assignedIds.has(asset.assetId))
+    .map((asset) => {
+      const assignment = project.parts.find(
+        ({ assetId }) => assetId === asset.assetId
+      );
+      return assignment?.mirrorPolicy
+        ? Object.freeze({ ...asset, mirrorPolicy: assignment.mirrorPolicy })
+        : asset;
     });
-    return Object.freeze({
-      slot: slot.id,
-      label: slot.label,
-      required: slot.required,
-      cells: Object.freeze(cells)
-    });
+  const resolved = resolveProjectDirectionCoverage({
+    mode: project.directionSourceMode,
+    assets: assignedAssets,
+    projectMirrorPolicy: project.mirrorPolicy,
+    reviews: project.mirrorReviews
   });
-  return Object.freeze({ directions, rows: Object.freeze(rows) });
+  const rows = resolved.rows.map((row) =>
+    Object.freeze({
+      ...row,
+      cells: Object.freeze(
+        row.cells.map((cell) =>
+          Object.freeze({
+            ...cell,
+            asset: cell.sourceAsset as AnimationPartAsset | null
+          })
+        )
+      )
+    })
+  );
+  const cellByKey = new Map(
+    rows.flatMap((row) =>
+      row.cells.map((cell) => [`${cell.slot}:${cell.targetDirection}`, cell] as const)
+    )
+  );
+  return Object.freeze({
+    directions: resolved.directions,
+    rows: Object.freeze(rows),
+    blockers: Object.freeze(
+      resolved.blockers.flatMap((blocker) => {
+        const cell = cellByKey.get(`${blocker.slot}:${blocker.targetDirection}`);
+        return cell ? [cell] : [];
+      })
+    ),
+    readyForEightDirectionExport: resolved.readyForEightDirectionExport
+  });
 }

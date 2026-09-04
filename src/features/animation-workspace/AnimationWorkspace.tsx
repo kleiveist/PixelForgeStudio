@@ -20,8 +20,10 @@ import {
   getDirectionDrawOrder,
   isDirection,
   resolveDirectionDrawOrder,
+  resolveRuntimeDirectionRig,
   type FrameEdge,
   type LayerGroup,
+  type MirrorPolicy,
   type PartSlot,
   type RenderDiagnostic,
   type RenderedFrame
@@ -30,6 +32,7 @@ import {
   PartImportPanel,
   createPartCoverageMatrix,
   findPartAssetForSource,
+  type PartCoverageCell,
   type PartImportCommitDefinition,
   type PartImportCommitResult
 } from "../animation-part-import";
@@ -99,6 +102,8 @@ export type PartLayerOffsetCommitResult =
   | Readonly<{ status: "ok" }>
   | Readonly<{ status: "error"; message: string }>;
 
+export type MirrorPolicyCommitResult = PartLayerOffsetCommitResult;
+
 export interface AnimationWorkspaceProps {
   readonly project: AnimationProject;
   readonly canSave: boolean;
@@ -124,6 +129,18 @@ export interface AnimationWorkspaceProps {
     assetId: StableId,
     layerOffset: number
   ) => Promise<PartLayerOffsetCommitResult>;
+  readonly onSetProjectMirrorPolicy?: (
+    mirrorPolicy: MirrorPolicy
+  ) => Promise<MirrorPolicyCommitResult>;
+  readonly onSetPartMirrorPolicy?: (
+    assetId: StableId,
+    mirrorPolicy: MirrorPolicy
+  ) => Promise<MirrorPolicyCommitResult>;
+  readonly onConfirmMirrorReview?: (
+    assetId: StableId,
+    sourceUpdatedAt: string,
+    targetDirection: AnimationWorkspaceState["direction"]
+  ) => Promise<MirrorPolicyCommitResult>;
 }
 
 const DISCONNECTED_PART_IMPORT: NonNullable<
@@ -154,6 +171,11 @@ const DISCONNECTED_LAYER_CONFIGURATION: NonNullable<
 > = async () => ({
   status: "error",
   message: "Die Layerpersistenz ist in dieser Ansicht nicht verbunden."
+});
+
+const DISCONNECTED_MIRROR_CONFIGURATION = async (): Promise<MirrorPolicyCommitResult> => ({
+  status: "error",
+  message: "Die Spiegelentscheidung ist in dieser Ansicht nicht verbunden."
 });
 
 type ReadyWalkCycle = Extract<
@@ -341,7 +363,11 @@ function WorkspaceToolbar({
         >
           {directionOptions.map((option) => (
             <option key={option.direction} value={option.direction}>
-              {option.label} · {option.source === "authored" ? "Quelle" : "gespiegelt"}
+              {option.label} · {option.source === "authored"
+                ? "Quelle"
+                : option.source === "mirrored"
+                  ? "gespiegelt"
+                  : "eigene Quelle erforderlich"}
             </option>
           ))}
         </select>
@@ -555,6 +581,9 @@ interface PartInventoryProps {
     definition: PartImportCommitDefinition
   ) => Promise<PartImportCommitResult>;
   readonly unresolvedReferenceCount: number;
+  readonly onConfirmMirrorReview: NonNullable<
+    AnimationWorkspaceProps["onConfirmMirrorReview"]
+  >;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
 }
@@ -570,20 +599,45 @@ function PartInventory({
   imageDecoder,
   onImportPart,
   unresolvedReferenceCount,
+  onConfirmMirrorReview,
   dispatch,
   layout
 }: PartInventoryProps) {
+  const [reviewCell, setReviewCell] = useState<PartCoverageCell | null>(null);
+  const [reviewPending, setReviewPending] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const reviewTriggerRef = useRef<HTMLButtonElement | null>(null);
   const selectedSlotDefinition = getPartSlotDefinition(selectedSlot);
   const existingPart = selectedSlot
     ? findPartAssetForSource(partAssets, selectedSlot, direction)
     : null;
   const coverage = createPartCoverageMatrix(project, partAssets);
   const coverageLabels = {
-    ready: "Bereit",
-    missing: "Fehlt",
-    anchorsPending: "Anker offen",
-    invalidAnchors: "Anker ungültig"
+    authoredSource: "● Eigene Quelle",
+    mirroredValid: "↔ Gültig gespiegelt",
+    mirroredNeedsReview: "△ Prüfung erforderlich",
+    mirrorForbidden: "⛔ Spiegelung verboten",
+    missingSource: "× Quelle fehlt",
+    optionalUnused: "– Optional ungenutzt",
+    anchorsIncomplete: "! Anker unvollständig"
   } as const;
+  const confirmReview = async () => {
+    if (!reviewCell?.asset) return;
+    setReviewPending(true);
+    setReviewError(null);
+    const result = await onConfirmMirrorReview(
+      reviewCell.asset.assetId,
+      reviewCell.asset.updatedAt,
+      reviewCell.targetDirection
+    );
+    setReviewPending(false);
+    if (result.status === "ok") {
+      reviewTriggerRef.current?.focus();
+      setReviewCell(null);
+    } else {
+      setReviewError(result.message);
+    }
+  };
   return (
     <Surface
       as="section"
@@ -693,6 +747,13 @@ function PartInventory({
 
       <details className={styles.coverage}>
         <summary>Richtungs-Coverage</summary>
+        <p role="status">
+          {project.directionSourceMode === "singleDirectionPrototype"
+            ? "Einrichtungsprototyp: nicht für einen produktionsfertigen 8-Richtungs-Export freigegeben."
+            : coverage.readyForEightDirectionExport
+              ? "Alle acht Richtungen sind für die Produktion aufgelöst."
+              : `${coverage.blockers.length} Produktionsblocker müssen vor dem 8-Richtungs-Export geklärt werden.`}
+        </p>
         <div className={styles.coverageScroller}>
           <table>
             <thead>
@@ -708,8 +769,24 @@ function PartInventory({
                 <tr key={row.slot}>
                   <th scope="row">{row.label}</th>
                   {row.cells.map((cell) => (
-                    <td key={cell.direction} data-coverage={cell.status}>
-                      {coverageLabels[cell.status]}
+                    <td
+                      key={cell.targetDirection}
+                      data-coverage={cell.status}
+                      title={cell.message}
+                    >
+                      <span>{coverageLabels[cell.status]}</span>
+                      {cell.status === "mirroredNeedsReview" ? (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            reviewTriggerRef.current = event.currentTarget;
+                            setReviewError(null);
+                            setReviewCell(cell);
+                          }}
+                        >
+                          Prüfen
+                        </button>
+                      ) : null}
                     </td>
                   ))}
                 </tr>
@@ -718,6 +795,58 @@ function PartInventory({
           </table>
         </div>
       </details>
+      {reviewCell?.asset ? (
+        <div
+          className={styles.reviewBackdrop}
+          role="presentation"
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !reviewPending) {
+              reviewTriggerRef.current?.focus();
+              setReviewCell(null);
+            }
+          }}
+        >
+          <section
+            className={styles.reviewDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mirror-review-title"
+            aria-describedby="mirror-review-description"
+          >
+            <span className={styles.eyebrow}>Explizite Produktionsprüfung</span>
+            <h3 id="mirror-review-title">Gespiegelte Quelle freigeben?</h3>
+            <p id="mirror-review-description">
+              {reviewCell.asset.label} wird von {DIRECTION_LABELS[reviewCell.sourceDirection ?? reviewCell.asset.direction]} nach {DIRECTION_LABELS[reviewCell.targetDirection]} gespiegelt. Prüfe das Ergebnis sichtbar; Schließen oder Abbrechen speichert keine Freigabe.
+            </p>
+            <ul>
+              <li>Waffe, Schild und einseitige Taschen bleiben logisch korrekt.</li>
+              <li>Narben, Schrift und Wappen erscheinen nicht seitenverkehrt.</li>
+              <li>Die feste Weltlichtseite bleibt trotz Spiegelung plausibel.</li>
+            </ul>
+            {reviewError ? <p role="alert">{reviewError}</p> : null}
+            <div className={styles.reviewActions}>
+              <button
+                type="button"
+                disabled={reviewPending}
+                onClick={() => {
+                  reviewTriggerRef.current?.focus();
+                  setReviewCell(null);
+                }}
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                autoFocus
+                disabled={reviewPending}
+                onClick={() => void confirmReview()}
+              >
+                {reviewPending ? "Speichert …" : "Spiegelung bestätigen"}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </Surface>
   );
 }
@@ -754,10 +883,9 @@ function RigViewport({
   layout
 }: RigViewportProps) {
   const rigTemplate = getBuiltInRigTemplate(project.rigTemplateId);
-  const hasDirectionRig =
-    rigTemplate?.directions.some(
-      (directionRig) => directionRig.direction === state.direction
-    ) ?? false;
+  const hasDirectionRig = rigTemplate
+    ? resolveRuntimeDirectionRig(rigTemplate, state.direction) !== null
+    : false;
   const frameStyle = {
     width: `${project.frameProfile.frameSize.width * state.zoom}px`,
     height: `${project.frameProfile.frameSize.height * state.zoom}px`,
@@ -1094,8 +1222,75 @@ interface InspectorProps {
     assetId: StableId,
     layerOffset: number
   ) => Promise<PartLayerOffsetCommitResult>;
+  readonly onSetProjectMirrorPolicy: NonNullable<
+    AnimationWorkspaceProps["onSetProjectMirrorPolicy"]
+  >;
+  readonly onSetPartMirrorPolicy: NonNullable<
+    AnimationWorkspaceProps["onSetPartMirrorPolicy"]
+  >;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
+}
+
+interface MirrorPolicyControlProps {
+  readonly id: string;
+  readonly label: string;
+  readonly value: MirrorPolicy;
+  readonly includeInherit: boolean;
+  readonly onCommit: (value: MirrorPolicy) => Promise<MirrorPolicyCommitResult>;
+}
+
+const MIRROR_POLICY_LABELS: Readonly<Record<MirrorPolicy, string>> =
+  Object.freeze({
+    inherit: "Projektstandard übernehmen",
+    allow: "Spiegelung erlauben",
+    forbid: "Spiegelung verbieten"
+  });
+
+function MirrorPolicyControl({
+  id,
+  label,
+  value,
+  includeInherit,
+  onCommit
+}: MirrorPolicyControlProps) {
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<Readonly<{
+    tone: "status" | "alert";
+    text: string;
+  }> | null>(null);
+  return (
+    <div className={styles.mirrorPolicyControl}>
+      <label htmlFor={id}>{label}</label>
+      <select
+        id={id}
+        value={value}
+        disabled={pending}
+        onChange={(event) => {
+          const next = event.currentTarget.value as MirrorPolicy;
+          setPending(true);
+          setMessage(null);
+          void onCommit(next).then((result) => {
+            setPending(false);
+            setMessage(
+              result.status === "ok"
+                ? { tone: "status", text: "Spiegelregel übernommen." }
+                : { tone: "alert", text: result.message }
+            );
+          });
+        }}
+      >
+        {(["inherit", "allow", "forbid"] as const)
+          .filter((policy) => includeInherit || policy !== "inherit")
+          .map((policy) => (
+            <option key={policy} value={policy}>
+              {MIRROR_POLICY_LABELS[policy]}
+            </option>
+          ))}
+      </select>
+      {message ? <span role={message.tone}>{message.text}</span> : null}
+    </div>
+  );
 }
 
 interface PartLayerOffsetControlProps {
@@ -1181,6 +1376,8 @@ function Inspector({
   unresolvedReferenceCount,
   partAssets,
   onSetPartLayerOffset,
+  onSetProjectMirrorPolicy,
+  onSetPartMirrorPolicy,
   dispatch,
   layout
 }: InspectorProps) {
@@ -1280,6 +1477,13 @@ function Inspector({
             <div><dt>Clip</dt><dd>{activeClip ? clipLabel(activeClip) : "Kein Clip"}</dd></div>
             <div><dt>Richtungsmodus</dt><dd>{project.directionSourceMode}</dd></div>
           </dl>
+          <MirrorPolicyControl
+            id="project-mirror-policy"
+            label="Projektstandard für Spiegelung"
+            value={project.mirrorPolicy}
+            includeInherit={false}
+            onCommit={onSetProjectMirrorPolicy}
+          />
         </div>
       ) : null}
 
@@ -1304,11 +1508,22 @@ function Inspector({
                 <div><dt>Spiegelregel</dt><dd>{selectedPart?.mirrorPolicy ?? "Noch nicht verfügbar"}</dd></div>
               </dl>
               {selectedPart ? (
-                <PartLayerOffsetControl
-                  assetId={selectedPart.assetId}
-                  layerOffset={selectedAssignment?.layerOffset ?? 0}
-                  onCommit={onSetPartLayerOffset}
-                />
+                <>
+                  <MirrorPolicyControl
+                    id={`part-mirror-policy-${selectedPart.assetId}`}
+                    label="Partoverride für Spiegelung"
+                    value={selectedAssignment?.mirrorPolicy ?? selectedPart.mirrorPolicy}
+                    includeInherit
+                    onCommit={(mirrorPolicy) =>
+                      onSetPartMirrorPolicy(selectedPart.assetId, mirrorPolicy)
+                    }
+                  />
+                  <PartLayerOffsetControl
+                    assetId={selectedPart.assetId}
+                    layerOffset={selectedAssignment?.layerOffset ?? 0}
+                    onCommit={onSetPartLayerOffset}
+                  />
+                </>
               ) : null}
               <p className={styles.emptyDetail}>
                 Importierte Originalbilder bleiben unverändert gespeichert. Source-Anker und projektweite Korrektur werden im Viewport getrennt bearbeitet.
@@ -1573,7 +1788,10 @@ export function AnimationWorkspace({
   onImportPart = DISCONNECTED_PART_IMPORT,
   onLoadPartBlob = DISCONNECTED_PART_BLOB_LOADER,
   onConfigurePart = DISCONNECTED_PART_CONFIGURATION,
-  onSetPartLayerOffset = DISCONNECTED_LAYER_CONFIGURATION
+  onSetPartLayerOffset = DISCONNECTED_LAYER_CONFIGURATION,
+  onSetProjectMirrorPolicy = DISCONNECTED_MIRROR_CONFIGURATION,
+  onSetPartMirrorPolicy = DISCONNECTED_MIRROR_CONFIGURATION,
+  onConfirmMirrorReview = DISCONNECTED_MIRROR_CONFIGURATION
 }: AnimationWorkspaceProps) {
   const [state, dispatch] = useReducer(
     animationWorkspaceReducer,
@@ -1690,6 +1908,7 @@ export function AnimationWorkspace({
             imageDecoder={imageDecoder}
             onImportPart={onImportPart}
             unresolvedReferenceCount={unresolvedReferenceCount}
+            onConfirmMirrorReview={onConfirmMirrorReview}
             dispatch={dispatch}
             layout={layout}
           />
@@ -1718,6 +1937,8 @@ export function AnimationWorkspace({
             unresolvedReferenceCount={unresolvedReferenceCount}
             partAssets={partAssets}
             onSetPartLayerOffset={onSetPartLayerOffset}
+            onSetProjectMirrorPolicy={onSetProjectMirrorPolicy}
+            onSetPartMirrorPolicy={onSetPartMirrorPolicy}
             dispatch={dispatch}
             layout={layout}
           />

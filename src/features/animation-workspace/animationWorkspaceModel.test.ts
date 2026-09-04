@@ -147,6 +147,13 @@ describe("animation workspace model", () => {
       ["west", "mirrored"],
       ["southWest", "mirrored"]
     ]);
+    const prototype = parseAnimationProject(createAnimationProjectInput({
+      directionSourceMode: "singleDirectionPrototype"
+    }));
+    expect(getWorkspaceDirectionOptions(prototype)[6]).toMatchObject({
+      direction: "west",
+      source: "required"
+    });
     expect(getWorkspaceLayout(1440)).toBe("desktop");
     expect(getWorkspaceLayout(900)).toBe("medium");
     expect(getWorkspaceLayout(360)).toBe("small");

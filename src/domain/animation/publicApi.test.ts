@@ -9,9 +9,13 @@ import {
   HUMANOID_WALK_CLIP,
   HUMANOID_WALK_CLIP_ID,
   PART_SLOT_IDS,
+  resolveDirectionSource,
+  resolveProjectDirectionCoverage,
   resolveHumanoidWalkPose,
   type AnimationActionId,
   type Direction,
+  type DirectionCoverageStatus,
+  type DirectionSourceResolution,
   type FrameProfile,
   type MirrorPolicy,
   type PartSlot,
@@ -48,6 +52,14 @@ describe("animation domain public boundary", () => {
     const rigTemplateId: RigTemplateId = "humanoid-80-v1";
     const rigTemplate: RigTemplate = HUMANOID_80_RIG_TEMPLATE;
     const action: AnimationActionId = ANIMATION_ACTION_IDS[0];
+    const coverageStatus: DirectionCoverageStatus = "authoredSource";
+    const sourceResolution: DirectionSourceResolution = resolveDirectionSource({
+      mode: "singleDirectionPrototype",
+      slot,
+      targetDirection: direction,
+      assets: [],
+      projectMirrorPolicy: "allow"
+    });
 
     expect({
       point,
@@ -62,7 +74,9 @@ describe("animation domain public boundary", () => {
       mirrorPolicy,
       rigTemplateId,
       rigTemplate,
-      action
+      action,
+      coverageStatus,
+      sourceResolution
     }).toMatchObject({
       direction: "south",
       slot: "head",
@@ -71,6 +85,10 @@ describe("animation domain public boundary", () => {
       rigTemplate: expect.objectContaining({ id: "humanoid-80-v1" }),
       action: "walk"
     });
+    expect(resolveProjectDirectionCoverage({
+      mode: "singleDirectionPrototype",
+      assets: []
+    }).directions).toHaveLength(8);
     expect(HUMANOID_WALK_CLIP.templateId).toBe(HUMANOID_WALK_CLIP_ID);
     expect(resolveHumanoidWalkPose(0).phase).toBe("contactLeft");
   });

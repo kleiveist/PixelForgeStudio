@@ -18,6 +18,7 @@ import {
   type Direction,
   type DirectionSourceMode,
   type FrameProfile,
+  type MirrorPolicy,
   type PartSlot,
   type Rect,
   type Size,
@@ -110,6 +111,12 @@ export interface ConfigureAnimationPartDefinition {
   readonly transformDelta: TransformDelta;
 }
 
+export interface ConfirmDirectionMirrorReviewDefinition {
+  readonly assetId: StableId;
+  readonly sourceUpdatedAt: string;
+  readonly targetDirection: Direction;
+}
+
 export interface ConfiguredAnimationPart {
   readonly project: AnimationProject;
   readonly partAsset: AnimationPartAsset;
@@ -132,6 +139,16 @@ export interface AnimationProjectContextValue extends AnimationProjectState {
   readonly updatePartLayerOffset: (
     assetId: StableId,
     layerOffset: number
+  ) => AnimationProjectCommandResult<AnimationProject>;
+  readonly updateProjectMirrorPolicy: (
+    mirrorPolicy: MirrorPolicy
+  ) => AnimationProjectCommandResult<AnimationProject>;
+  readonly updatePartMirrorPolicy: (
+    assetId: StableId,
+    mirrorPolicy: MirrorPolicy
+  ) => AnimationProjectCommandResult<AnimationProject>;
+  readonly confirmDirectionMirrorReview: (
+    definition: ConfirmDirectionMirrorReviewDefinition
   ) => AnimationProjectCommandResult<AnimationProject>;
   readonly saveActiveProject: () => Promise<
     AnimationProjectCommandResult<AnimationProject>
@@ -702,6 +719,116 @@ export function AnimationProjectProvider({
     [now, updateActiveProject]
   );
 
+  const updateProjectMirrorPolicy = useCallback(
+    (
+      mirrorPolicy: MirrorPolicy
+    ): AnimationProjectCommandResult<AnimationProject> => {
+      const current = stateRef.current.activeProject;
+      if (!current) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt zum Bearbeiten geöffnet."
+        };
+      }
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      return updateActiveProject({
+        ...current,
+        mirrorPolicy,
+        updatedAt: timestamp
+      });
+    },
+    [now, updateActiveProject]
+  );
+
+  const updatePartMirrorPolicy = useCallback(
+    (
+      assetId: StableId,
+      mirrorPolicy: MirrorPolicy
+    ): AnimationProjectCommandResult<AnimationProject> => {
+      const current = stateRef.current.activeProject;
+      if (!current) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt zum Bearbeiten geöffnet."
+        };
+      }
+      if (!current.parts.some((assignment) => assignment.assetId === assetId)) {
+        return {
+          status: "notFound",
+          message: "Der ausgewählte Part ist diesem Projekt nicht mehr zugewiesen."
+        };
+      }
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      return updateActiveProject({
+        ...current,
+        parts: current.parts.map((assignment) =>
+          assignment.assetId === assetId
+            ? { ...assignment, mirrorPolicy }
+            : assignment
+        ),
+        mirrorReviews: current.mirrorReviews.filter(
+          (review) => review.assetId !== assetId
+        ),
+        updatedAt: timestamp
+      });
+    },
+    [now, updateActiveProject]
+  );
+
+  const confirmDirectionMirrorReview = useCallback(
+    (
+      definition: ConfirmDirectionMirrorReviewDefinition
+    ): AnimationProjectCommandResult<AnimationProject> => {
+      const current = stateRef.current.activeProject;
+      if (!current) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt zum Bearbeiten geöffnet."
+        };
+      }
+      if (!current.parts.some(({ assetId }) => assetId === definition.assetId)) {
+        return {
+          status: "notFound",
+          message: "Die zu prüfende Spiegelquelle ist dem Projekt nicht mehr zugewiesen."
+        };
+      }
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      return updateActiveProject({
+        ...current,
+        mirrorReviews: [
+          ...current.mirrorReviews.filter(
+            (review) =>
+              review.assetId !== definition.assetId ||
+              review.targetDirection !== definition.targetDirection
+          ),
+          {
+            assetId: definition.assetId,
+            sourceUpdatedAt: definition.sourceUpdatedAt,
+            targetDirection: definition.targetDirection,
+            confirmedAt: timestamp
+          }
+        ],
+        updatedAt: timestamp
+      });
+    },
+    [now, updateActiveProject]
+  );
+
   const loadPartAssets = useCallback(
     async (
       assetIds: readonly StableId[]
@@ -1214,6 +1341,9 @@ export function AnimationProjectProvider({
       openProject,
       updateActiveProject,
       updatePartLayerOffset,
+      updateProjectMirrorPolicy,
+      updatePartMirrorPolicy,
+      confirmDirectionMirrorReview,
       saveActiveProject,
       loadPartAssets,
       importPartAsset,
@@ -1241,7 +1371,10 @@ export function AnimationProjectProvider({
       saveActiveProject,
       state,
       updateActiveProject,
-      updatePartLayerOffset
+      updatePartLayerOffset,
+      updateProjectMirrorPolicy,
+      updatePartMirrorPolicy,
+      confirmDirectionMirrorReview
     ]
   );
 

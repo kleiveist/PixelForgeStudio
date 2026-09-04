@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { Surface } from "../../components/ui";
 import type { AnimationPartAsset, StableId } from "../../schemas";
 import type { PartImportCommitDefinition } from "../animation-part-import";
@@ -22,6 +22,7 @@ export function AnimationWorkspaceLifecycleView({
     activeProjectId,
     activeProjectRevision,
     canSaveProject,
+    confirmDirectionMirrorReview,
     configurePartAsset,
     imageDecoder,
     importPartAsset,
@@ -32,7 +33,9 @@ export function AnimationWorkspaceLifecycleView({
     saveActiveProject,
     saveError,
     saveStatus,
-    updatePartLayerOffset
+    updatePartLayerOffset,
+    updatePartMirrorPolicy,
+    updateProjectMirrorPolicy
   } = useAnimationProject();
   const { navigateTo } = useNavigation();
   const attemptedProjectRef = useRef<StableId | null>(null);
@@ -136,6 +139,37 @@ export function AnimationWorkspaceLifecycleView({
       : { status: "error" as const, message: result.message };
   };
 
+  const commitProjectMirrorPolicy: NonNullable<
+    ComponentProps<typeof AnimationWorkspace>["onSetProjectMirrorPolicy"]
+  > = async (mirrorPolicy) => {
+    const result = updateProjectMirrorPolicy(mirrorPolicy);
+    return result.status === "ok"
+      ? { status: "ok" as const }
+      : { status: "error" as const, message: result.message };
+  };
+
+  const commitPartMirrorPolicy: NonNullable<
+    ComponentProps<typeof AnimationWorkspace>["onSetPartMirrorPolicy"]
+  > = async (assetId, mirrorPolicy) => {
+    const result = updatePartMirrorPolicy(assetId, mirrorPolicy);
+    return result.status === "ok"
+      ? { status: "ok" as const }
+      : { status: "error" as const, message: result.message };
+  };
+
+  const commitMirrorReview: NonNullable<
+    ComponentProps<typeof AnimationWorkspace>["onConfirmMirrorReview"]
+  > = async (assetId, sourceUpdatedAt, targetDirection) => {
+    const result = confirmDirectionMirrorReview({
+      assetId,
+      sourceUpdatedAt,
+      targetDirection
+    });
+    return result.status === "ok"
+      ? { status: "ok" as const }
+      : { status: "error" as const, message: result.message };
+  };
+
   if (!projectId) {
     return (
       <div className={styles.view}>
@@ -228,6 +262,9 @@ export function AnimationWorkspaceLifecycleView({
       onLoadPartBlob={loadPartBlob}
       onConfigurePart={commitPartSetup}
       onSetPartLayerOffset={commitPartLayerOffset}
+      onSetProjectMirrorPolicy={commitProjectMirrorPolicy}
+      onSetPartMirrorPolicy={commitPartMirrorPolicy}
+      onConfirmMirrorReview={commitMirrorReview}
     />
   );
 }

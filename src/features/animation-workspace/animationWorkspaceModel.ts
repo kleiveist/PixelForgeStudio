@@ -3,6 +3,7 @@ import {
   PART_SLOT_DEFINITIONS,
   PART_SLOT_GROUPS,
   getRequiredAuthoredDirections,
+  getMirroredSourceDirection,
   type Direction,
   type PartSlot,
   type PartSlotDefinition,
@@ -266,7 +267,7 @@ export function getWorkspaceDirectionOptions(
 ): readonly Readonly<{
   direction: Direction;
   label: string;
-  source: "authored" | "mirrored";
+  source: "authored" | "mirrored" | "required";
 }>[] {
   const authored = new Set(
     getRequiredAuthoredDirections(project.directionSourceMode)
@@ -276,7 +277,12 @@ export function getWorkspaceDirectionOptions(
       Object.freeze({
         direction,
         label: DIRECTION_LABELS[direction],
-        source: authored.has(direction) ? "authored" : "mirrored"
+        source: authored.has(direction)
+          ? "authored"
+          : project.directionSourceMode === "fiveAuthoredPlusMirror" &&
+              getMirroredSourceDirection(direction)
+            ? "mirrored"
+            : "required"
       })
     )
   );

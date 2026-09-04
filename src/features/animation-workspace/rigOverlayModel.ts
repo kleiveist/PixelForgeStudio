@@ -1,13 +1,12 @@
 import {
   JOINT_IDS,
   PART_SLOT_DEFINITIONS,
-  findDirectionRig,
+  resolveRuntimeDirectionRig,
   type BoneId,
   type Direction,
   type JointId,
   type PartSlot,
   type Point,
-  type RigSourceDirection,
   type RigTemplate
 } from "../../domain/animation";
 
@@ -30,7 +29,7 @@ export interface RigOverlaySlotLabel {
 
 export interface RigOverlayModel {
   readonly templateId: string;
-  readonly direction: RigSourceDirection;
+  readonly direction: Direction;
   readonly frameWidth: number;
   readonly frameHeight: number;
   readonly groundlineY: number;
@@ -43,8 +42,9 @@ export function createRigOverlayModel(
   template: RigTemplate,
   direction: Direction
 ): RigOverlayModel | null {
-  const directionRig = findDirectionRig(template, direction);
-  if (!directionRig) return null;
+  const resolution = resolveRuntimeDirectionRig(template, direction);
+  if (!resolution) return null;
+  const directionRig = resolution.rig;
 
   const bones = Object.freeze(
     template.bones.map((bone) =>

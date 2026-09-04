@@ -24,11 +24,21 @@ describe("CharacterKitSchema", () => {
       name: "Waldwächter",
       description: "Humanoides Kit",
       rigTemplateId: "humanoid-80-v1",
-      directionSourceMode: "fiveAuthoredPlusMirror"
+      directionSourceMode: "fiveAuthoredPlusMirror",
+      mirrorPolicy: "allow"
     });
     expect(parsed.partAssetIds).toEqual(["part_head_south_001"]);
     expect(Object.isFrozen(parsed)).toBe(true);
     expect(Object.isFrozen(parsed.partAssetIds)).toBe(true);
+  });
+
+  it("reads old kits with an allow default and accepts an explicit safe default", () => {
+    const input = createCharacterKitInput();
+    const { mirrorPolicy: _legacyMissing, ...legacyInput } = input;
+    expect(parseCharacterKit(legacyInput).mirrorPolicy).toBe("allow");
+    expect(parseCharacterKit(createCharacterKitInput({
+      mirrorPolicy: "forbid"
+    })).mirrorPolicy).toBe("forbid");
   });
 
   it("rejects duplicate PartAsset references", () => {

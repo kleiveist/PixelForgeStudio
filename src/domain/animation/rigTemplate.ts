@@ -61,7 +61,8 @@ export interface DirectionMotionProfile {
 }
 
 export interface DirectionRig {
-  readonly direction: RigSourceDirection;
+  /** Built-in templates author five source directions; runtime projections may use all eight. */
+  readonly direction: Direction;
   readonly joints: Readonly<Record<JointId, JointDefinition>>;
   readonly motionProfile: DirectionMotionProfile;
 }
@@ -154,7 +155,7 @@ function validateDirectionRigs(
   template: RigTemplate,
   issues: RigValidationIssue[]
 ): void {
-  const directions = new Map<RigSourceDirection, DirectionRig>();
+  const directions = new Map<Direction, DirectionRig>();
   template.directions.forEach((directionRig, directionIndex) => {
     if (directions.has(directionRig.direction)) {
       addIssue(

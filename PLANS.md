@@ -2,10 +2,10 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 43 — Timeline, Playback und Onion Skin
-  (abgeschlossen; Phase D geschlossen)
-- **Nächste Aufgabe:** Prompt 44 — Richtungsprojektion und kontrollierte
-  Spiegelung (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 44 — Richtungsprojektion und kontrollierte
+  Spiegelung (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 45 — vollständige Acht-Richtungs-Walk-Generierung
+  (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
   Phase C mit Prompts 36–39 und Phase D mit Prompts 40–43 abgeschlossen;
@@ -16,6 +16,63 @@
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 44 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `21acdc4`; Phase D erzeugt und spielt acht deterministische
+  South-Walk-Frames ab. Die bisherige Coverage-Tabelle unterscheidet nur
+  eigene Quellen, fehlende Quellen und Ankerzustände und leitet keine
+  Spiegelquelle für das Rendering ab.
+- Abnahme: pure Auflösung für eigene, gültig gespiegelte, prüfpflichtig
+  gespiegelte, verbotene, fehlende, optional ungenutzte und ankerunvollständige
+  Quellen in allen acht Richtungen; eigene Zielquellen besitzen Vorrang.
+- Spiegelvertrag: `fiveAuthoredPlusMirror` leitet ausschließlich Südwest aus
+  Südost, West aus Ost und Nordwest aus Nordost ab. `eightAuthored` spiegelt
+  nie, der Einrichtungsprototyp bleibt als nicht 8-dir-exportbereit sichtbar.
+- Policy und Review: Projektdefault und Partoverride werden deterministisch
+  aufgelöst; eine asymmetrische Spiegelung benötigt eine explizite,
+  projektbezogene Bestätigung und Dialogschließen bestätigt sie nicht.
+- Projektion: Sourcepixel/-anker spiegeln um `sourceWidth - 1 - x`,
+  Framejoints um `2 * footAnchor.x - x`; Rotation und X-Deltas wechseln ihr
+  Vorzeichen, Originalmetadaten und anatomische Slot-IDs bleiben unverändert.
+- Workspace: vollständige Slot-mal-8-Matrix mit Symbol und Text, harter
+  Produktionsblock bei `forbid` ohne Zielquelle und erklärender Reviewdialog.
+- Grenze: Prompt 44 erzeugt noch keinen vollständigen Acht-Richtungs-Walk,
+  keine Framekorrekturen, Character Kits oder Exporte.
+
+## Prompt 44 — Ergebnis
+
+1. `directionProjection.ts` definiert ausschließlich die drei vertraglichen
+   Paare Südost→Südwest, Ost→West und Nordost→Nordwest. Quellpixel/-anker,
+   Trimrechtecke und Framejoints verwenden getrennte, dokumentierte Achsen;
+   Rotation, Step-Axis und X-Offsets wechseln ihr Vorzeichen.
+2. Fünf authored Rigposen werden für die drei westlichen Zielrichtungen nur
+   flüchtig projiziert. Anatomische Joint-/Slot-IDs bleiben gleich und die
+   Zielrichtung liefert weiterhin ihre eigene Draw-Order und visuelle Nahseite.
+3. `coverage.ts` löst eigene Quellen vor Spiegelquellen auf und unterscheidet
+   sieben Statuswerte. `eightAuthored` fällt nie zurück; der Einrichtungsmodus
+   bleibt unabhängig von vorhandenen Einzelquellen nicht acht-dir-exportbereit.
+4. Projekt-, Kit- und Partpolicy folgen der Priorität Part→Projekt→Kit→sicheres
+   `forbid`. Schema V1 liest ältere Projekte/Kits über additive `allow`-
+   Defaults, ohne Prompt-Schema/-Format V2 oder Storage-Namespaces zu ändern.
+5. Projektzuweisungen speichern optionale Partoverrides. Explizite Reviews
+   binden Asset-ID, Source-Revision und Zielrichtung; Policy-/Sourceänderungen
+   machen alte Entscheidungen unwirksam. `forbid` und offene Reviews sind
+   strukturierte Produktionsblocker.
+6. Der Workspace zeigt 39 × 8 Zellen mit Symbol und Text, Policycontrols,
+   Prototype-Hinweis und einen fokussierten Reviewdialog für Waffen, Schilde,
+   Taschen, Narben, Schrift/Wappen und Weltlicht. Nur die Bestätigung schreibt;
+   Abbruch und Escape kehren ohne Entscheidung zum Auslöser zurück.
+7. Der Renderpfad spiegelt dekodierte RGBA-Daten und Metadatenprojektionen
+   ausschließlich im Arbeitsspeicher. Originalpixel, PNG-Blob, PartAsset und
+   authored Rigtemplate bleiben nachweislich unverändert; eigene Zielassets
+   gewinnen.
+8. Nutzerhilfe, README, Architektur, Changelog und Plan beschreiben Achsen,
+   Vorrang, Review und Blocker. PyGitIndex wird vor dem Commit erneut über die
+   vollständige Dokumentation ausgeführt.
+9. `npm run verify` bestand mit 160 Testdateien und 1001 Tests, Strict-
+   Typecheck und Produktionsbuild. `git diff --check` ist sauber; einzig die
+   bekannte Vite-Warnung zum über 500 kB großen Hauptchunk bleibt.
 - **Zusätzliche Ausgabe-/Bibliothekskorrektur:** doppelte Prüfungsroute auf
   Ausgabe kanonisiert, TXT durch Markdown ersetzt und freie Profilsuche auf
   eine Auswahl gültiger Assetprofile umgestellt; Prompt 41 bleibt davon

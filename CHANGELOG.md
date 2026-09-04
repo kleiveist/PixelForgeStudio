@@ -146,6 +146,15 @@
 - flüchtigen, hart begrenzten Renderframe-LRU-Cache an Projekt-ID/-Revision,
   Clip, Richtung und Frame gebunden und zielgenaue Invalidierung sowie
   Scheduler-Cleanup bei Kontextwechsel und Unmount abgesichert
+- kontrollierte Fünf-zu-Acht-Richtungsableitung für Südwest, West und Nordwest
+  mit getrennten Sourcepixel-/Framejoint-Achsen, korrekten Rotations-/X-Delta-
+  Vorzeichen und zielrichtungsabhängiger Draw-Order ergänzt
+- vollständige Slot-mal-acht-Coverage mit Symbol und Text, deterministischer
+  Projekt-/Part-Spiegelpolicy, hartem `forbid`-Blocker und revisionsgebundener
+  expliziter Reviewentscheidung für asymmetrische Parts eingeführt
+- westliche Runtime-Pixel und Rigjoints ohne Blob- oder Metadatenduplikation
+  gespiegelt; eigene Zielquellen behalten Vorrang und `eightAuthored` erhält
+  keinen automatischen Quellenfallback
 
 ## 2.0.0 — 2026-09-03
 

@@ -61,8 +61,10 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   ordnen Körperteile und Ausrüstung vor dem Rendern; der Inspector verwaltet
   kleine projektweite Layer-Deltas und der Viewport erklärt Clippingkanten.
   Ein vollständiges South-Partset erzeugt über `walk-humanoid-8-v1` acht
-  reproduzierbare Walk-Frames; Playback und Character Kits bleiben getrennte
-  folgende Fachphasen.
+  reproduzierbare Walk-Frames mit Timeline, Playback und Onion Skin. Die
+  vollständige Slot-mal-acht-Coverage leitet West, Nordwest und Südwest
+  kontrolliert zur Renderzeit ab, blockiert verbotene Spiegelungen und
+  verlangt für asymmetrische Parts eine ausdrückliche Reviewentscheidung.
 
 ## Einstiegspunkte
 

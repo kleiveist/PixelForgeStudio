@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { PART_SLOT_IDS } from "../domain/animation";
+import {
+  PART_SLOT_IDS,
+  getMirroredSourceDirection
+} from "../domain/animation";
 import { IsoDateTimeSchema, StableIdSchema } from "./common.schema";
 import {
   AnimationActionIdSchema,
@@ -7,6 +10,7 @@ import {
   AnimationDirectionSourceModeSchema,
   AnimationFrameProfileSchema,
   AnimationJointIdSchema,
+  AnimationMirrorPolicySchema,
   AnimationNameSchema,
   AnimationPartSlotSchema,
   AnimationProjectPartDeltaSchema,
@@ -26,7 +30,8 @@ export const ProjectPartAssignmentSchema = z
   .strictObject({
     assetId: StableIdSchema,
     transformDelta: AnimationProjectPartDeltaSchema.optional(),
-    layerOffset: AnimationProjectPartLayerOffsetSchema.optional()
+    layerOffset: AnimationProjectPartLayerOffsetSchema.optional(),
+    mirrorPolicy: AnimationMirrorPolicySchema.optional()
   })
   .readonly();
 
@@ -128,6 +133,29 @@ export const DirectionFrameOverridesSchema = z
   .max(MAX_ANIMATION_OVERRIDES_PER_PROJECT)
   .readonly();
 
+export const DirectionMirrorReviewSchema = z
+  .strictObject({
+    assetId: StableIdSchema,
+    sourceUpdatedAt: IsoDateTimeSchema,
+    targetDirection: AnimationDirectionSchema,
+    confirmedAt: IsoDateTimeSchema
+  })
+  .superRefine((review, context) => {
+    if (!getMirroredSourceDirection(review.targetDirection)) {
+      context.addIssue({
+        code: "custom",
+        path: ["targetDirection"],
+        message: "A mirror review must target southwest, west, or northwest."
+      });
+    }
+  })
+  .readonly();
+
+export const DirectionMirrorReviewsSchema = z
+  .array(DirectionMirrorReviewSchema)
+  .max(MAX_ANIMATION_OVERRIDES_PER_PROJECT)
+  .readonly();
+
 const AnimationProjectObjectSchema = z.strictObject({
   schemaVersion: AnimationSchemaVersionSchema,
   kind: z.literal("animationProject"),
@@ -138,6 +166,8 @@ const AnimationProjectObjectSchema = z.strictObject({
   rigTemplateId: AnimationRigTemplateIdSchema,
   frameProfile: AnimationFrameProfileSchema,
   directionSourceMode: AnimationDirectionSourceModeSchema,
+  mirrorPolicy: AnimationMirrorPolicySchema.default("allow"),
+  mirrorReviews: DirectionMirrorReviewsSchema.default([]),
   parts: ProjectPartAssignmentsSchema,
   clips: AnimationClipsSchema,
   overrides: DirectionFrameOverridesSchema,
@@ -199,6 +229,26 @@ export const AnimationProjectSchema = AnimationProjectObjectSchema.superRefine(
       }
       overrideTargets.add(target);
     });
+
+    const mirrorReviewTargets = new Set<string>();
+    project.mirrorReviews.forEach((review, index) => {
+      if (!assetIds.has(review.assetId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["mirrorReviews", index, "assetId"],
+          message: `Mirror review references unassigned asset "${review.assetId}".`
+        });
+      }
+      const target = `${review.assetId}:${review.targetDirection}`;
+      if (mirrorReviewTargets.has(target)) {
+        context.addIssue({
+          code: "custom",
+          path: ["mirrorReviews", index],
+          message: `Duplicate mirror review target "${target}".`
+        });
+      }
+      mirrorReviewTargets.add(target);
+    });
   }
 ).readonly();
 
@@ -212,6 +262,9 @@ export type ProjectPartAssignment = z.infer<
 export type AnimationClip = z.infer<typeof AnimationClipSchema>;
 export type DirectionFrameOverride = z.infer<
   typeof DirectionFrameOverrideSchema
+>;
+export type DirectionMirrorReview = z.infer<
+  typeof DirectionMirrorReviewSchema
 >;
 export type SourcePromptReference = z.infer<
   typeof SourcePromptReferenceSchema

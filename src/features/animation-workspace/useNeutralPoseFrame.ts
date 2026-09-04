@@ -4,6 +4,7 @@ import {
   HUMANOID_WALK_FRAME_COUNT,
   getBuiltInRigTemplate,
   renderFrame,
+  resolveProjectDirectionCoverage,
   type Direction,
   type RenderedFrame
 } from "../../domain/animation";
@@ -134,11 +135,34 @@ export function useNeutralPoseFrame(
       })
     );
     const assignedIds = new Set(project.parts.map(({ assetId }) => assetId));
-    const readyAssets = partAssets.filter(
-      (asset) =>
-        assignedIds.has(asset.assetId) &&
-        asset.direction === direction &&
-        asset.anchorStatus === "ready"
+    const assignedAssets = partAssets
+      .filter((asset) => assignedIds.has(asset.assetId))
+      .map((asset) => {
+        const assignment = project.parts.find(
+          ({ assetId }) => assetId === asset.assetId
+        );
+        return assignment?.mirrorPolicy
+          ? Object.freeze({ ...asset, mirrorPolicy: assignment.mirrorPolicy })
+          : asset;
+      });
+    const coverage = resolveProjectDirectionCoverage({
+      mode: project.directionSourceMode,
+      assets: assignedAssets,
+      projectMirrorPolicy: project.mirrorPolicy,
+      reviews: project.mirrorReviews
+    });
+    const targetAssetIds = new Set(
+      coverage.rows.flatMap((row) => {
+        const cell = row.cells.find(
+          (candidate) => candidate.targetDirection === direction
+        );
+        return cell?.sourceAsset && cell.sourceAsset.anchorStatus === "ready"
+          ? [cell.sourceAsset.assetId]
+          : [];
+      })
+    );
+    const readyAssets = assignedAssets.filter((asset) =>
+      targetAssetIds.has(asset.assetId)
     );
 
     void Promise.all(

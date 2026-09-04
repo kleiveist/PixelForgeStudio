@@ -22,7 +22,11 @@ describe("createRigOverlayModel", () => {
     });
   });
 
-  it("does not invent a western source direction", () => {
-    expect(createRigOverlayModel(HUMANOID_80_RIG_TEMPLATE, "west")).toBeNull();
+  it("projects western runtime geometry without changing the authored template", () => {
+    const authoredCount = HUMANOID_80_RIG_TEMPLATE.directions.length;
+    const model = createRigOverlayModel(HUMANOID_80_RIG_TEMPLATE, "west");
+    expect(model?.direction).toBe("west");
+    expect(model?.joints.find(({ id }) => id === "root")?.position.x).toBe(64);
+    expect(HUMANOID_80_RIG_TEMPLATE.directions).toHaveLength(authoredCount);
   });
 });

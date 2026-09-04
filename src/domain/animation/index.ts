@@ -53,6 +53,38 @@ export {
   type DirectionSourceMode
 } from "./directions";
 export {
+  MIRRORED_DIRECTION_SOURCE,
+  getMirroredSourceDirection,
+  mirrorDirectionRig,
+  mirrorFramePoint,
+  mirrorRgbaImage,
+  mirrorSourceAnchors,
+  mirrorSourcePoint,
+  mirrorSourceRect,
+  mirrorSourceX,
+  mirrorTransformDelta,
+  resolveRuntimeDirectionRig,
+  type MirroredTargetDirection,
+  type RuntimeDirectionRigResolution
+} from "./directionProjection";
+export {
+  DIRECTION_COVERAGE_STATUSES,
+  partRequiresMirrorReview,
+  resolveDirectionSource,
+  resolveProjectDirectionCoverage,
+  validateMirrorPolicy,
+  type DirectionCoverageStatus,
+  type DirectionMirrorReview,
+  type DirectionSourceAsset,
+  type DirectionSourceResolution,
+  type EffectiveMirrorPolicy,
+  type MirrorPolicySource,
+  type MirrorPolicyValidation,
+  type ProjectDirectionCoverage,
+  type ProjectDirectionCoverageRow,
+  type ResolveDirectionSourceInput
+} from "./coverage";
+export {
   ANCHOR_CONTRACT_VERSION,
   DIRECTION_CONTRACT_VERSION,
   HUMANOID_80_FRAME_PROFILE,

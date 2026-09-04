@@ -91,6 +91,8 @@ describe("AnimationProjectSchema", () => {
     expect(parsed.parts).toEqual([]);
     expect(parsed.clips).toEqual([]);
     expect(parsed.overrides).toEqual([]);
+    expect(parsed.mirrorPolicy).toBe("allow");
+    expect(parsed.mirrorReviews).toEqual([]);
     expect("sourcePrompt" in parsed).toBe(false);
     expect("previewBlobId" in parsed).toBe(false);
   });
@@ -154,6 +156,45 @@ describe("AnimationProjectSchema", () => {
         ).success
       ).toBe(false);
     }
+  });
+
+  it("stores project/part mirror policy and only explicit valid reviews", () => {
+    const parsed = parseAnimationProject(
+      createAnimationProjectInput({
+        mirrorPolicy: "forbid",
+        parts: [{
+          assetId: "part_head_south_001",
+          mirrorPolicy: "allow"
+        }],
+        mirrorReviews: [{
+          assetId: "part_head_south_001",
+          sourceUpdatedAt: "2026-09-04T12:00:00.000Z",
+          targetDirection: "west",
+          confirmedAt: "2026-09-04T12:05:00.000Z"
+        }]
+      })
+    );
+    expect(parsed.mirrorPolicy).toBe("forbid");
+    expect(parsed.parts[0]?.mirrorPolicy).toBe("allow");
+    expect(parsed.mirrorReviews).toHaveLength(1);
+    expect(Object.isFrozen(parsed.mirrorReviews)).toBe(true);
+
+    expect(AnimationProjectSchema.safeParse(createAnimationProjectInput({
+      mirrorReviews: [{
+        assetId: "part_head_south_001",
+        sourceUpdatedAt: "2026-09-04T12:00:00.000Z",
+        targetDirection: "east",
+        confirmedAt: "2026-09-04T12:05:00.000Z"
+      }]
+    })).success).toBe(false);
+    expect(AnimationProjectSchema.safeParse(createAnimationProjectInput({
+      mirrorReviews: [{
+        assetId: "part_unassigned_001",
+        sourceUpdatedAt: "2026-09-04T12:00:00.000Z",
+        targetDirection: "west",
+        confirmedAt: "2026-09-04T12:05:00.000Z"
+      }]
+    })).success).toBe(false);
   });
 
   it.each([

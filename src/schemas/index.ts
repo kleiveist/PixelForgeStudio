@@ -80,6 +80,8 @@ export {
   AnimationClipSchema,
   AnimationClipsSchema,
   AnimationProjectSchema,
+  DirectionMirrorReviewSchema,
+  DirectionMirrorReviewsSchema,
   DirectionFrameOverrideSchema,
   DirectionFrameOverridesSchema,
   ProjectPartAssignmentSchema,
@@ -88,6 +90,7 @@ export {
   parseAnimationProject,
   type AnimationClip,
   type AnimationProject,
+  type DirectionMirrorReview,
   type DirectionFrameOverride,
   type ProjectPartAssignment,
   type SourcePromptReference

@@ -223,4 +223,50 @@ describe("animation production source validation", () => {
       direction: "south"
     });
   });
+
+  it("treats forbidden and unreviewed asymmetric mirrors as production blockers", () => {
+    const required = requiredAssetsForDirections([
+      "south",
+      "southEast",
+      "east",
+      "northEast",
+      "north"
+    ]);
+    const weapon = parseAnimationPartAsset(createAnimationPartAssetInput({
+      assetId: "part_weapon_east_001",
+      blobId: "blob_weapon_east_001",
+      label: "Runenschwert",
+      slot: "weapon.right",
+      direction: "east",
+      anchors: { proximal: { x: 8, y: 8 } },
+      mirrorPolicy: "allow"
+    }));
+    const assets = [...required, weapon];
+    const project = projectForAssets("fiveAuthoredPlusMirror", assets);
+    expect(validateAnimationProjectProductionSources(project, assets)).toContainEqual({
+      code: "mirrorReviewRequired",
+      assetId: weapon.assetId,
+      slot: "weapon.right",
+      sourceDirection: "east",
+      targetDirection: "west"
+    });
+
+    const forbiddenProject = parseAnimationProject({
+      ...project,
+      parts: project.parts.map((assignment) =>
+        assignment.assetId === weapon.assetId
+          ? { ...assignment, mirrorPolicy: "forbid" }
+          : assignment
+      )
+    });
+    expect(
+      validateAnimationProjectProductionSources(forbiddenProject, assets)
+    ).toContainEqual({
+      code: "mirrorForbidden",
+      assetId: weapon.assetId,
+      slot: "weapon.right",
+      sourceDirection: "east",
+      targetDirection: "west"
+    });
+  });
 });

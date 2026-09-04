@@ -31,10 +31,11 @@ Sie sind deshalb als **Prompt 28 bis Prompt 51** nummeriert.
 
 ## Umsetzungsstand
 
-- Prompts 28–43: abgeschlossen
+- Prompts 28–44: abgeschlossen
 - Phasen A–D: abgeschlossen
-- Prompt 44: nächster Auftrag, noch nicht begonnen
-- Prompts 45–51: noch nicht begonnen
+- Phase E: Prompt 44 abgeschlossen
+- Prompt 45: nächster Auftrag, noch nicht begonnen
+- Prompts 46–51: noch nicht begonnen
 
 ## Empfohlener Zielname
 

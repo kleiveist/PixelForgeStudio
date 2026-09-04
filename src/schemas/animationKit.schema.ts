@@ -3,6 +3,7 @@ import { IsoDateTimeSchema, StableIdSchema } from "./common.schema";
 import {
   AnimationDescriptionSchema,
   AnimationDirectionSourceModeSchema,
+  AnimationMirrorPolicySchema,
   AnimationNameSchema,
   AnimationRigTemplateIdSchema,
   AnimationSchemaVersionSchema,
@@ -20,6 +21,7 @@ export const CharacterKitSchema = z
     rigTemplateId: AnimationRigTemplateIdSchema,
     rigCompatibilityKey: RigCompatibilityKeySchema,
     directionSourceMode: AnimationDirectionSourceModeSchema,
+    mirrorPolicy: AnimationMirrorPolicySchema.default("allow"),
     partAssetIds: z
       .array(StableIdSchema)
       .max(MAX_ANIMATION_PARTS_PER_PROJECT)

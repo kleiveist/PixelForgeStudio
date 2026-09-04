@@ -15,14 +15,15 @@
 
 ## 2. Aktueller Ausführungsstand
 
-Prompts 28 bis 43 und damit die Phasen A bis D sind abgeschlossen. Das
+Prompts 28 bis 44 und damit die Phasen A bis D sowie der erste Auftrag von
+Phase E sind abgeschlossen. Das
 Animation Studio besitzt nun seine Grundlagen, Projektpersistenz, den
 South-Rig-/Part-Workflow sowie den deterministischen acht Frames langen
 Walk-Laufzyklus mit Timeline. Beginne nach einem neuen konkreten Auftrag als
 Nächstes mit:
 
 ```text
-docs/aufgaben/pixelforge-studio-v3/prompts/44_DIRECTION_MIRRORING_AND_COVERAGE.md
+docs/aufgaben/pixelforge-studio-v3/prompts/45_EIGHT_DIRECTION_WALK_GENERATION.md
 ```
 
 Führe anschließend weiterhin genau einen Prompt nach dem anderen bis Prompt 51

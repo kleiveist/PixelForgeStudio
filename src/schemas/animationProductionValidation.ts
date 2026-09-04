@@ -3,6 +3,7 @@ import {
   REQUIRED_PART_SLOT_IDS,
   getRequiredAuthoredDirections,
   isRequiredPartSlot,
+  resolveProjectDirectionCoverage,
   resolveDirectionDrawOrder,
   type Direction,
   type PartSlot,
@@ -44,6 +45,13 @@ export type AnimationProductionIssue =
       assetId: AnimationPartAsset["assetId"];
       slot: PartSlot;
       direction: Direction;
+    }>
+  | Readonly<{
+      code: "mirrorForbidden" | "mirrorReviewRequired";
+      assetId: AnimationPartAsset["assetId"];
+      slot: PartSlot;
+      sourceDirection: Direction;
+      targetDirection: Direction;
     }>;
 
 function sourceKey(slot: RequiredPartSlot, direction: Direction): string {
@@ -121,6 +129,39 @@ export function validateAnimationProjectProductionSources(
   const assignmentByAssetId = new Map(
     project.parts.map((assignment) => [assignment.assetId, assignment])
   );
+  const coverageAssets = referencedAssets.map((asset) => {
+    const assignment = assignmentByAssetId.get(asset.assetId);
+    return assignment?.mirrorPolicy
+      ? Object.freeze({ ...asset, mirrorPolicy: assignment.mirrorPolicy })
+      : asset;
+  });
+  const coverage = resolveProjectDirectionCoverage({
+    mode: project.directionSourceMode,
+    assets: coverageAssets,
+    projectMirrorPolicy: project.mirrorPolicy,
+    reviews: project.mirrorReviews
+  });
+  for (const cell of coverage.rows.flatMap((row) => row.cells)) {
+    if (
+      !cell.sourceAsset ||
+      !cell.sourceDirection ||
+      (cell.status !== "mirrorForbidden" &&
+        cell.status !== "mirroredNeedsReview")
+    ) {
+      continue;
+    }
+    issues.push(Object.freeze({
+      code:
+        cell.status === "mirrorForbidden"
+          ? "mirrorForbidden"
+          : "mirrorReviewRequired",
+      assetId: cell.sourceAsset.assetId as AnimationPartAsset["assetId"],
+      slot: cell.slot,
+      sourceDirection: cell.sourceDirection,
+      targetDirection: cell.targetDirection
+    }));
+  }
+
   for (const direction of DIRECTION_IDS) {
     const directionAssets = referencedAssets.filter(
       (asset) => asset.direction === direction

@@ -5,9 +5,14 @@ import {
   createTranslationTransform,
   createUniformScaleTransform,
   cropRgba,
-  findDirectionRig,
   findSlotBinding,
   isRequiredPartSlot,
+  mirrorRgbaImage,
+  mirrorSourceAnchors,
+  mirrorSourceRect,
+  mirrorTransformDelta,
+  resolveProjectDirectionCoverage,
+  resolveRuntimeDirectionRig,
   resolveDirectionDrawOrder,
   resolveBonePlacement,
   resolveEffectiveAnchor,
@@ -34,7 +39,8 @@ export const NEUTRAL_POSE_PREPARATION_ISSUE_CODES = Object.freeze([
   "missingDecodedSource",
   "decodedDimensionsMismatch",
   "invalidPlacement",
-  "invalidLayerOrder"
+  "invalidLayerOrder",
+  "directionSourceBlocked"
 ] as const);
 
 export type NeutralPosePreparationIssueCode =
@@ -103,8 +109,8 @@ export function prepareNeutralPoseParts(
   partAssets: readonly AnimationPartAsset[],
   decodedSources: readonly DecodedPartSource[]
 ): NeutralPosePreparationResult {
-  const directionRig = findDirectionRig(template, direction);
-  if (!directionRig) {
+  const rigResolution = resolveRuntimeDirectionRig(template, direction);
+  if (!rigResolution) {
     return Object.freeze({
       parts: Object.freeze([]),
       issues: Object.freeze([
@@ -117,13 +123,53 @@ export function prepareNeutralPoseParts(
     });
   }
 
-  return prepareDirectionRigParts(
+  const assignedIds = new Set(project.parts.map(({ assetId }) => assetId));
+  const assignedAssets = partAssets
+    .filter((asset) => assignedIds.has(asset.assetId))
+    .map((asset) => {
+      const assignment = project.parts.find(
+        ({ assetId }) => assetId === asset.assetId
+      );
+      return assignment?.mirrorPolicy
+        ? Object.freeze({ ...asset, mirrorPolicy: assignment.mirrorPolicy })
+        : asset;
+    });
+  const coverage = resolveProjectDirectionCoverage({
+    mode: project.directionSourceMode,
+    assets: assignedAssets,
+    projectMirrorPolicy: project.mirrorPolicy,
+    reviews: project.mirrorReviews
+  });
+  const cells = coverage.rows.map((row) =>
+    row.cells.find((cell) => cell.targetDirection === direction)!
+  );
+  const projections = new Map(
+    cells.flatMap((cell) =>
+      cell.sourceAsset &&
+      (cell.status === "authoredSource" ||
+        cell.status === "mirroredValid" ||
+        cell.status === "mirroredNeedsReview" ||
+        cell.status === "anchorsIncomplete")
+        ? [[cell.sourceAsset.assetId, Object.freeze({ mirrored: cell.mirrored })] as const]
+        : []
+    )
+  );
+  const prepared = prepareDirectionRigParts(
     project,
     template,
-    directionRig,
+    rigResolution.rig,
     partAssets,
-    decodedSources
+    decodedSources,
+    projections
   );
+  return Object.freeze({
+    parts: prepared.parts,
+    issues: prepared.issues
+  });
+}
+
+export interface PartRuntimeProjection {
+  readonly mirrored: boolean;
 }
 
 /** Prepares renderer-ready parts against an already resolved authored pose. */
@@ -132,7 +178,8 @@ export function prepareDirectionRigParts(
   template: RigTemplate,
   directionRig: DirectionRig,
   partAssets: readonly AnimationPartAsset[],
-  decodedSources: readonly DecodedPartSource[]
+  decodedSources: readonly DecodedPartSource[],
+  projections?: ReadonlyMap<string, PartRuntimeProjection>
 ): NeutralPosePreparationResult {
   const direction = directionRig.direction;
 
@@ -146,7 +193,11 @@ export function prepareDirectionRigParts(
 
   for (const assignment of project.parts) {
     const asset = assetsById.get(assignment.assetId);
-    if (!asset || asset.direction !== direction) continue;
+    const projection = asset ? projections?.get(asset.assetId) : undefined;
+    if (
+      !asset ||
+      (projections ? !projection : asset.direction !== direction)
+    ) continue;
     if (asset.anchorStatus !== "ready" || !asset.anchors) {
       issues.push(
         issue(
@@ -158,8 +209,8 @@ export function prepareDirectionRigParts(
       );
       continue;
     }
-    const source = sourcesByAssetId.get(asset.assetId);
-    if (!source) {
+    const decodedSource = sourcesByAssetId.get(asset.assetId);
+    if (!decodedSource) {
       issues.push(
         issue(
           "missingDecodedSource",
@@ -171,8 +222,8 @@ export function prepareDirectionRigParts(
       continue;
     }
     if (
-      source.width !== asset.sourceSize.width ||
-      source.height !== asset.sourceSize.height
+      decodedSource.width !== asset.sourceSize.width ||
+      decodedSource.height !== asset.sourceSize.height
     ) {
       issues.push(
         issue(
@@ -184,9 +235,22 @@ export function prepareDirectionRigParts(
       );
       continue;
     }
+    const mirrored = projection?.mirrored ?? false;
+    const source = mirrored ? mirrorRgbaImage(decodedSource) : decodedSource;
+    const trimRect = mirrored
+      ? mirrorSourceRect(asset.sourceSize.width, asset.trimRect)
+      : asset.trimRect;
+    const sourceAnchors = Object.freeze({
+      proximal: asset.anchors.proximal,
+      ...(asset.anchors.distal ? { distal: asset.anchors.distal } : {}),
+      ...(asset.anchors.pivot ? { pivot: asset.anchors.pivot } : {})
+    });
+    const anchors = mirrored
+      ? mirrorSourceAnchors(asset.sourceSize.width, sourceAnchors)
+      : sourceAnchors;
     let cropped: RgbaImage;
     try {
-      cropped = cropRgba(source, asset.trimRect);
+      cropped = cropRgba(source, trimRect);
     } catch {
       issues.push(
         issue(
@@ -198,7 +262,8 @@ export function prepareDirectionRigParts(
       );
       continue;
     }
-    const delta = assignment.transformDelta ?? IDENTITY_DELTA;
+    const baseDelta = assignment.transformDelta ?? IDENTITY_DELTA;
+    const delta = mirrored ? mirrorTransformDelta(baseDelta) : baseDelta;
     let placementTransform: Transform2D;
     if (isRequiredPartSlot(asset.slot)) {
       const binding = findSlotBinding(template, asset.slot);
@@ -225,9 +290,9 @@ export function prepareDirectionRigParts(
       }
       const placement = resolveBonePlacement({
         binding,
-        trimRect: asset.trimRect,
+        trimRect,
         sourceSize: asset.sourceSize,
-        anchors: asset.anchors,
+        anchors,
         targetParent: parent,
         targetChild: child
       });
@@ -266,8 +331,8 @@ export function prepareDirectionRigParts(
         continue;
       }
       const effectiveProximal = resolveEffectiveAnchor(
-        asset.trimRect,
-        asset.anchors.proximal
+        trimRect,
+        anchors.proximal
       );
       placementTransform = composeTransforms(
         createTranslationTransform(

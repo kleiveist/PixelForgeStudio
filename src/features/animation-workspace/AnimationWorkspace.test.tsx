@@ -685,7 +685,7 @@ describe("AnimationWorkspace", () => {
     );
   });
 
-  it("keeps western source geometry explicitly unavailable", async () => {
+  it("shows western geometry as an explicit runtime mirror projection", async () => {
     setViewportWidth(1440);
     const user = userEvent.setup();
     const { container } = renderWorkspace();
@@ -697,11 +697,90 @@ describe("AnimationWorkspace", () => {
 
     expect(
       screen.getByRole("img", {
-        name: "West: keine freigegebene Rig-Quellgeometrie"
+        name: "West: Neutralpose des humanoid-80-v1"
       })
-    ).toHaveAttribute("data-rig-available", "false");
-    expect(container.querySelectorAll("[data-joint-id]")).toHaveLength(0);
-    expect(container.querySelectorAll("[data-bone-id]")).toHaveLength(0);
+    ).toHaveAttribute("data-rig-available", "true");
+    expect(container.querySelectorAll("[data-joint-id]")).toHaveLength(21);
+    expect(container.querySelectorAll("[data-bone-id]")).toHaveLength(20);
+  });
+
+  it("requires an explicit review action and exposes project and part mirror policies", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    const weapon = parseAnimationPartAsset(createAnimationPartAssetInput({
+      assetId: "part_weapon_right_east_001",
+      blobId: "blob_weapon_right_east_001",
+      label: "Runenschwert",
+      slot: "weapon.right",
+      direction: "east",
+      sourceSize: { width: 1, height: 1 },
+      trimRect: { x: 0, y: 0, width: 1, height: 1 },
+      anchors: { proximal: { x: 0, y: 0 } }
+    }));
+    const project = parseAnimationProject(createAnimationProjectInput({
+      parts: [{ assetId: weapon.assetId }],
+      overrides: []
+    }));
+    const onConfirmMirrorReview = vi.fn(async () => ({ status: "ok" as const }));
+    const onSetProjectMirrorPolicy = vi.fn(async () => ({ status: "ok" as const }));
+    const onSetPartMirrorPolicy = vi.fn(async () => ({ status: "ok" as const }));
+
+    render(
+      <AnimationWorkspace
+        project={project}
+        canSave={false}
+        saveStatus="saved"
+        saveError={null}
+        sourceError={null}
+        onSave={vi.fn()}
+        partAssets={[weapon]}
+        missingPartAssetIds={[]}
+        onConfirmMirrorReview={onConfirmMirrorReview}
+        onSetProjectMirrorPolicy={onSetProjectMirrorPolicy}
+        onSetPartMirrorPolicy={onSetPartMirrorPolicy}
+      />
+    );
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Projektstandard für Spiegelung" }),
+      "forbid"
+    );
+    expect(onSetProjectMirrorPolicy).toHaveBeenCalledWith("forbid");
+
+    await user.click(screen.getByText("Richtungs-Coverage"));
+    const reviewButton = screen.getByRole("button", { name: "Prüfen" });
+    await user.click(reviewButton);
+    expect(screen.getByRole("dialog", {
+      name: "Gespiegelte Quelle freigeben?"
+    })).toHaveTextContent("feste Weltlichtseite");
+    await user.click(screen.getByRole("button", { name: "Abbrechen" }));
+    expect(onConfirmMirrorReview).not.toHaveBeenCalled();
+    expect(reviewButton).toHaveFocus();
+
+    await user.click(reviewButton);
+    await user.click(
+      screen.getByRole("button", { name: "Spiegelung bestätigen" })
+    );
+    await waitFor(() =>
+      expect(onConfirmMirrorReview).toHaveBeenCalledWith(
+        weapon.assetId,
+        weapon.updatedAt,
+        "west"
+      )
+    );
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Richtung" }),
+      "east"
+    );
+    await user.click(screen.getByRole("button", {
+      name: "Rechte Waffe; Optional; Produktionsbereit"
+    }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Partoverride für Spiegelung" }),
+      "allow"
+    );
+    expect(onSetPartMirrorPolicy).toHaveBeenCalledWith(weapon.assetId, "allow");
   });
 
   it("switches between project clips and resets the frame selection", async () => {

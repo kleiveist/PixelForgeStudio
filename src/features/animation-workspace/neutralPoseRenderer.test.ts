@@ -70,7 +70,54 @@ describe("neutral pose renderer preparation", () => {
     expect([...source.pixels]).toEqual(before);
   });
 
-  it("reports unavailable rigs, pending anchors and decoded size mismatches", () => {
+  it("mirrors source pixels at render time for West and keeps source metadata unchanged", () => {
+    const asset = parseAnimationPartAsset(createAnimationPartAssetInput({
+      assetId: "part_head_east_001",
+      blobId: "blob_head_east_001",
+      label: "Kopf Ost",
+      direction: "east",
+      sourceSize: { width: 2, height: 1 },
+      trimRect: { x: 0, y: 0, width: 2, height: 1 },
+      anchors: { proximal: { x: 0, y: 0 } }
+    }));
+    const project = parseAnimationProject(createAnimationProjectInput({
+      parts: [{
+        assetId: asset.assetId,
+        transformDelta: {
+          offsetX: 3,
+          offsetY: 1,
+          rotationDelta: 0.2,
+          scaleMultiplier: 1
+        }
+      }],
+      overrides: []
+    }));
+    const pixels = new Uint8ClampedArray([
+      255, 0, 0, 255,
+      0, 0, 255, 255
+    ]);
+    const metadataBefore = JSON.stringify(asset);
+    const prepared = prepareNeutralPoseParts(
+      project,
+      HUMANOID_80_RIG_TEMPLATE,
+      "west",
+      [asset],
+      [{ assetId: asset.assetId, image: { width: 2, height: 1, pixels } }]
+    );
+
+    expect(prepared.parts).toHaveLength(1);
+    expect([...prepared.parts[0]!.source.pixels]).toEqual([
+      0, 0, 255, 255,
+      255, 0, 0, 255
+    ]);
+    expect(JSON.stringify(asset)).toBe(metadataBefore);
+    expect([...pixels]).toEqual([
+      255, 0, 0, 255,
+      0, 0, 255, 255
+    ]);
+  });
+
+  it("reports pending anchors and decoded size mismatches while projected rigs remain available", () => {
     const project = parseAnimationProject(createAnimationProjectInput({
       parts: [{ assetId: "part_head_south_001" }],
       overrides: []
@@ -104,7 +151,8 @@ describe("neutral pose renderer preparation", () => {
       [{ assetId: ready.assetId, image: { width: 1, height: 1, pixels: new Uint8ClampedArray(4) } }]
     );
 
-    expect(unavailable.issues[0]?.code).toBe("missingDirectionRig");
+    expect(unavailable.parts).toEqual([]);
+    expect(unavailable.issues).toEqual([]);
     expect(pendingResult.issues[0]?.code).toBe("sourceNotReady");
     expect(mismatch.issues[0]?.code).toBe("decodedDimensionsMismatch");
   });

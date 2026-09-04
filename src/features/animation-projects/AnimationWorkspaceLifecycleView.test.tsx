@@ -197,8 +197,8 @@ describe("AnimationWorkspaceLifecycleView", () => {
       value: { type: "image/png" }
     });
     await waitFor(() =>
-      expect(document.querySelector('td[data-coverage="anchorsPending"]')).toHaveTextContent(
-        "Anker offen"
+      expect(document.querySelector('td[data-coverage="anchorsIncomplete"]')).toHaveTextContent(
+        "Anker unvollständig"
       )
     );
     await user.click(screen.getByRole("button", { name: "Eigenschaften" }));

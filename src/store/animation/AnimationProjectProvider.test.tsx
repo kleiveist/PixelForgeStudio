@@ -146,6 +146,8 @@ describe("AnimationProjectProvider", () => {
           footAnchor: { x: 64, y: 112 }
         },
         directionSourceMode: "fiveAuthoredPlusMirror",
+        mirrorPolicy: "allow",
+        mirrorReviews: [],
         parts: [],
         clips: [
           {
@@ -374,6 +376,49 @@ describe("AnimationProjectProvider", () => {
       ).toMatchObject({ status: "invalid" });
     });
     expect(context.activeProject?.parts[0]?.layerOffset).toBe(3);
+  });
+
+  it("tracks project/part mirror policy and explicit review decisions as project metadata", async () => {
+    const repository = new MemoryAnimationRepository();
+    const project = await seedProject(repository, {
+      parts: [{ assetId: "part_weapon_east_001" }]
+    });
+    const assetId = project.parts[0]!.assetId;
+    renderProvider(repository, { now: () => NOW, autosaveDelayMs: 60_000 });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+
+    act(() => {
+      expect(context.updateProjectMirrorPolicy("forbid")).toMatchObject({
+        status: "ok"
+      });
+      expect(
+        context.updatePartMirrorPolicy(assetId, "allow")
+      ).toMatchObject({ status: "ok" });
+      expect(context.confirmDirectionMirrorReview({
+        assetId,
+        sourceUpdatedAt: "2026-09-04T12:00:00.000Z",
+        targetDirection: "west"
+      })).toMatchObject({ status: "ok" });
+    });
+
+    expect(context.activeProject).toMatchObject({
+      mirrorPolicy: "forbid",
+      parts: [{ assetId: "part_weapon_east_001", mirrorPolicy: "allow" }],
+      mirrorReviews: [{
+        assetId: "part_weapon_east_001",
+        sourceUpdatedAt: "2026-09-04T12:00:00.000Z",
+        targetDirection: "west",
+        confirmedAt: NOW
+      }]
+    });
+
+    act(() => {
+      context.updatePartMirrorPolicy(assetId, "forbid");
+    });
+    expect(context.activeProject?.mirrorReviews).toEqual([]);
   });
 
   it("loads assigned PartAssets and atomically imports an anchor-pending source", async () => {
