@@ -15,11 +15,12 @@
 PixelForge Studio ist eine lokale React-Dachanwendung für Pixelart-Produktion.
 Das release-abgenommene **PixelForge Prompt Studio** erstellt konsistente
 Pixelart-Prompts. Eine produktive Studio-Startseite bündelt den letzten
-Prompt-Entwurf, zuletzt verwendete Profile und den Einstieg in beide Module.
-Das **PixelForge Animation Studio** besitzt bereits seine zugängliche
-Modulfläche; Projekt-, Rig- und Renderingfunktionen folgen in den offenen
-Phasen. Profile, Entwürfe und Einstellungen bleiben im Browser; ein Backend
-ist nicht erforderlich.
+Prompt-Entwurf, zuletzt verwendete Profile, zuletzt bearbeitete
+Animationsprojekte und den Einstieg in beide Module. Das **PixelForge
+Animation Studio** verwaltet lokale Projekte vollständig; Rig-, Import- und
+Renderingfunktionen folgen in den offenen Phasen. Profile, Entwürfe,
+Einstellungen und Animationsprojekte bleiben im Browser; ein Backend ist nicht
+erforderlich.
 
 Repository: [kleiveist/PixelForgeStudio](https://github.com/kleiveist/PixelForgeStudio)
 
@@ -38,13 +39,15 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
 
 - Der Brandlink öffnet die Studio-Startseite.
 - Die Startseite bietet gleichwertige Einstiege in beide Module, vorhandene
-  Prompt-Zusammenfassungen und einen ehrlichen Animation-Empty-State.
+  Prompt-Zusammenfassungen und echte zuletzt bearbeitete Animationsprojekte.
 - Der globale Umschalter wechselt per URL zwischen Prompt Studio und Animation
   Studio; Theme, Skip-Link und Fokusführung gelten für beide Module.
 - Prompt Studio enthält Dashboard, Profile, Wizard, Prüfung, Ausgabe und
   Einstellungen. Dort lassen sich Dach-, Prompt- und Animationsstart getrennt
-  festlegen. Animation Studio zeigt bis zur jeweiligen Fachphase kontrollierte
-  Einstiege für Projekte, Workspace, Character Kits und Rig-Vorlagen.
+  festlegen. Animation Studio kann Projekte anlegen, suchen, öffnen,
+  umbenennen, duplizieren und bestätigt löschen. Der lokale IndexedDB-
+  Speicher arbeitet über Autosave; Workspace-Editor, Character Kits und
+  Rig-Vorlagen bleiben bis zu ihren jeweiligen Fachphasen klar markiert.
 
 ## Einstiegspunkte
 

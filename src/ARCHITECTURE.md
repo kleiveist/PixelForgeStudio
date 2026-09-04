@@ -1,13 +1,12 @@
 # PixelForge Studio source architecture
 
-Prompt 34 extends Phase B with an injectable asynchronous Animation repository
-on top of the public domain and strict metadata schemas from Prompts 32–33.
-The productive Studio Home
-continues to project existing Prompt summaries and equal module entries
-without owning either domain. Animation UI/provider integration and rendering
-remain honest placeholders, while the persistence boundary, domain values and
-schema-valid metadata now each have one source of truth. Both modules share
-one route source, settings source, theme, skip target, title and focus boundary.
+Prompt 35 completes the local Animation project lifecycle on top of the
+injectable repository from Prompt 34 and the public domain/schema contracts
+from Prompts 32–33. Studio Home projects only narrow Prompt and Animation
+summaries and owns neither domain. The Animation project list and lifecycle
+provider are productive; image import, Character Kits, rig editing, Canvas and
+rendering remain honest placeholders. Both modules share one route source,
+settings source, theme, skip target, title and focus boundary.
 
 - `app/`: Composition, globale `StudioShell`, getrennte Prompt-/Animations-
   Modulflächen, pure Home-Zusammenfassungsprojektion mit schmalem Controller,
@@ -68,7 +67,9 @@ one route source, settings source, theme, skip target, title and focus boundary.
   spezialisierten Asset-Editoren; `review-output/` enthält Review, Prompt-
   Ausgaben und den kontrollierten Profilkonvertierungsworkflow; `settings/`
   enthält getrennte Startziele, den sichtbaren Migrationsstatus und den
-  vollständigen lokalen Workspace-JSON-Transfer
+  vollständigen lokalen Workspace-JSON-Transfer; `animation-projects/`
+  enthält die validierte Projektanlage, pure Listenprojektion, CRUD-Ansicht,
+  Dialoge und den kontrollierten Workspace-Lifecycle-State
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -100,7 +101,9 @@ one route source, settings source, theme, skip target, title and focus boundary.
   effective theme state;
   `profiles/` owns the validated profile-library UI state, filters, and
   mutation boundary; `navigation/` owns only the current canonical Studio
-  route and backward-compatible Prompt-view projections;
+  route, backward-compatible Prompt-view projections and the injectable
+  unsaved-navigation guard; `animation/` owns the pure project reducer,
+  revision/dirty/save selectors and the repository-backed lifecycle provider;
   `wizard/` owns Startintent, aktiven validierten Draft, Dirty-Baseline und
   Persistenzstatus, während React Hook Form Eigentümer der aktuellen
   Formularwerte bleibt
@@ -354,6 +357,35 @@ and it creates no shared singleton. Tests inject either an isolated native-API
 facsimile or `MemoryAnimationRepository`; the Prompt-V2 localStorage adapter
 and its six namespaces are unchanged.
 
+`store/animation/index.ts` is the Prompt-35 React lifecycle boundary. Its pure
+reducer owns sorted summaries, one active validated project, explicit load and
+save states, monotonically increasing in-memory revisions, the last persisted
+revision and rejected raw-input issues. `AnimationProjectProvider` receives
+the repository, clock and ID factories from composition. Initial summary
+hydration and project reads are write-free. Valid edits schedule one debounced
+metadata write; explicit save and a deliberate project switch flush the latest
+valid revision first. Writes are serialized, stale completions cannot replace
+a newer active revision, and a failure retains the last valid in-memory model
+with a concrete `failed` status. Neither the reducer nor provider holds PNG or
+other Blob values.
+
+`features/animation-projects/index.ts` is the public Prompt-35 UI boundary.
+`AnimationProjectsView` creates schema-valid `humanoid-80-v1` projects with a
+128 × 128 frame, 80 px character, 64/112 foot anchor,
+`fiveAuthoredPlusMirror`, and an enabled eight-frame Walk at 10 FPS. Search and
+sort are pure summary projections. Open, rename, copy-on-write duplicate and
+confirmed delete call only the injected repository provider; views never use
+IndexedDB directly. Workspace routes retain the stable project ID. Missing IDs
+remain on an explained non-looping error surface, while no-ID, Character Kit,
+import, rig and editor surfaces stay explicit placeholders for later prompts.
+
+The provider registers `beforeunload` only while a project is dirty. The
+navigation provider also asks the composition-injected guard before internal
+link or history navigation and restores the prior route when navigation is
+cancelled. Project-switch commands flush before changing the active project.
+Studio Home receives at most the three newest animation summaries through
+`StudioHomeAnimationSummaryPort`; merely having data never opens a project.
+
 `services/v1Migration.ts` reads both V1 keys independently, writes their exact
 raw strings to a `prepared` backup before parsing, transforms valid sources,
 then writes the `completed` marker last. IDs derive from technical values and
@@ -443,8 +475,10 @@ from `resolveStudioStartRoute(settings)`. The Context exposes `activeRoute`,
 `navigateTo()`. `activeView`, `hrefFor()` and `navigate()` remain deprecated
 Prompt compatibility aliases for existing consumers; the global shell no
 longer depends on them. The projection is derived and never a second state
-source. `MemoryNavigation` records complete routes while retaining Prompt-view
-projections for existing feature tests.
+source. An optional synchronous guard can reject explicit and History-driven
+route changes; rejected History navigation replaces the prior canonical route
+without adding a new entry. `MemoryNavigation` records complete routes while
+retaining Prompt-view projections for existing feature tests.
 
 `app/StudioShell.tsx` owns only roof-level composition: brand-to-Home,
 `StudioSwitcher`, global theme, visible route context, skip link, document
@@ -453,15 +487,16 @@ landmark. Route and Wizard-session focus uses `preventScroll`, so module and
 Home transitions preserve the user's viewport position; activating the skip
 link still performs the deliberate jump to main content.
 `app/AppShell.tsx` now exports the productive Prompt module surface
-and its six-view navigation. `app/AnimationStudioShell.tsx` exports the four
-routed placeholder views and a controlled no-project Workspace; it owns no
-animation domain, persistence or canvas behavior. `StudioHomeController`
-combines the mounted profile provider with the injected draft read port and
-passes only a pure `StudioHomeData` summary to `StudioHomeView`. The view owns
-no storage access or domain writes; animation projects stay an explicit empty
-state until Prompt 35 provides their repository. Its compact recent-profile
-projection contains only ID, title, category/type and favorite state; profile
-facts, tags, materials and base metadata stay out of the roof-level view.
+and its six-view navigation. `app/AnimationStudioShell.tsx` routes the
+productive project list and lifecycle-aware Workspace plus explicit Character
+Kit and Rig placeholders; it owns no repository implementation or Canvas
+behavior. `StudioHomeController` combines the mounted profile and Animation
+providers with the injected draft read port and passes only pure, narrow
+`StudioHomeData` summaries to `StudioHomeView`. The view owns no storage access
+or domain writes and opens animation data only after an explicit user action.
+Its compact recent projections contain only IDs and presentation metadata;
+profile facts, tags, materials, base metadata and full Animation projects stay
+out of the roof-level view.
 
 `components/navigation/index.ts` exposes `StudioLink` as the semantic typed
 anchor for every `StudioRoute`. It preserves real hrefs and modifier/new-tab
@@ -952,5 +987,7 @@ start settings. Prompt 32 starts Phase B with the public, tested Animation rig
 foundation. Prompt 33 adds the independent strict Animation metadata and
 bundle-graph schemas. Prompt 34 adds the native IndexedDB/Memory repository
 boundary, atomic Part-/Blob-Writes, shared-reference duplication and explicit
-binary garbage collection. Prompt 35 is the next unstarted task and owns the
-Animation project lifecycle UI/provider integration.
+binary garbage collection. Prompt 35 adds the productive project CRUD UI,
+repository-backed provider, revision-safe autosave, guarded navigation, stable
+workspace loading and real recent-project Home summaries. Prompt 36 is the next
+unstarted task and owns the Animation Workspace shell.

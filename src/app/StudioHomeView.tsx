@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   AnimationStudioArtwork,
   PromptStudioArtwork
@@ -7,6 +8,7 @@ import { Badge, Surface } from "../components/ui";
 import { BRAND } from "../config";
 import type { StudioRoute } from "../domain/navigation";
 import { CategoryIcon } from "../features/dashboard/CategoryIcon";
+import { DIRECTION_SOURCE_MODE_LABELS } from "../features/animation-projects";
 import type { StableId } from "../schemas";
 import type {
   StudioHomeData,
@@ -18,6 +20,9 @@ export interface StudioHomeViewProps {
   readonly animationRoute: StudioRoute;
   readonly data: StudioHomeData;
   readonly onOpenProfile: (profileId: StableId) => void;
+  readonly onOpenAnimationProject: (
+    projectId: StableId
+  ) => Promise<string | null>;
   readonly onResumeDraft: (draftId: StableId) => void;
   readonly promptRoute: StudioRoute;
 }
@@ -75,15 +80,29 @@ function CompactProfileCard({
 export function StudioHomeView({
   animationRoute,
   data,
+  onOpenAnimationProject,
   onOpenProfile,
   onResumeDraft,
   promptRoute
 }: StudioHomeViewProps) {
+  const [openingAnimationProjectId, setOpeningAnimationProjectId] =
+    useState<StableId | null>(null);
+  const [animationOpenError, setAnimationOpenError] = useState<string | null>(
+    null
+  );
   const draft = data.draft;
   const collectionMessage =
     data.collectionStatus === "ready"
       ? null
       : collectionMessages[data.collectionStatus];
+
+  const openAnimationProject = async (projectId: StableId) => {
+    setAnimationOpenError(null);
+    setOpeningAnimationProjectId(projectId);
+    const error = await onOpenAnimationProject(projectId);
+    setOpeningAnimationProjectId(null);
+    if (error) setAnimationOpenError(error);
+  };
 
   return (
     <div className={styles.home} data-studio-view="home">
@@ -201,20 +220,78 @@ export function StudioHomeView({
             className={`${styles.sectionHeading} ${styles.activityHeading}`}
           >
             <p className={styles.eyebrow}>Animation Studio</p>
-            <h2 id="home-animation-title">Letztes Animationsprojekt</h2>
+            <h2 id="home-animation-title">Letzte Animationsprojekte</h2>
           </div>
-          <Surface className={styles.activityCard} tone="soft" role="note">
-            <span className={styles.activityCardCopy}>
-              <span className={styles.activityType}>Projektübersicht</span>
-              <strong>Noch keine Animationsprojekte verfügbar</strong>
-            </span>
+          {data.animationStatus === "ready" &&
+          data.recentAnimationProjects.length > 0 ? (
+            <ul className={styles.activityList}>
+              {data.recentAnimationProjects.map((project) => (
+                <li key={project.id}>
+                  <button
+                    className={styles.activityCard}
+                    type="button"
+                    disabled={openingAnimationProjectId !== null}
+                    onClick={() => void openAnimationProject(project.id)}
+                  >
+                    <span className={styles.activityCardCopy}>
+                      <span className={styles.activityType}>
+                        {DIRECTION_SOURCE_MODE_LABELS[project.directionSourceMode]}
+                      </span>
+                      <strong>{project.name}</strong>
+                    </span>
+                    <span className={styles.inlineAction} aria-hidden="true">
+                      {openingAnimationProjectId === project.id
+                        ? "Öffnet …"
+                        : "Öffnen →"}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : data.animationStatus === "idle" ||
+            data.animationStatus === "loading" ? (
+            <Surface className={styles.activityCard} tone="soft" role="status">
+              <span className={styles.activityCardCopy}>
+                <span className={styles.activityType}>Projektübersicht</span>
+                <strong>Animationsprojekte werden geladen …</strong>
+              </span>
+            </Surface>
+          ) : (
+            <Surface
+              className={styles.activityCard}
+              tone="soft"
+              role={data.animationStatus === "ready" ? "note" : "alert"}
+            >
+              <span className={styles.activityCardCopy}>
+                <span className={styles.activityType}>Projektübersicht</span>
+                <strong>
+                  {data.animationStatus === "ready"
+                    ? "Noch keine Animationsprojekte verfügbar"
+                    : "Animationsprojekte konnten nicht geladen werden"}
+                </strong>
+                {data.animationError ? <span>{data.animationError}</span> : null}
+              </span>
+              <StudioLink
+                className={styles.inlineAction}
+                route={{ studio: "animation", view: "projects" }}
+              >
+                Bereich öffnen →
+              </StudioLink>
+            </Surface>
+          )}
+          {animationOpenError ? (
+            <p className={styles.notice} role="alert">
+              {animationOpenError}
+            </p>
+          ) : null}
+          {data.recentAnimationProjects.length > 0 ? (
             <StudioLink
               className={styles.inlineAction}
               route={{ studio: "animation", view: "projects" }}
             >
-              Bereich öffnen →
+              Alle Projekte öffnen →
             </StudioLink>
-          </Surface>
+          ) : null}
         </section>
       </div>
 

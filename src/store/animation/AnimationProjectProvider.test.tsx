@@ -1,0 +1,338 @@
+import { act, render, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { HUMANOID_80_FRAME_PROFILE } from "../../domain/animation";
+import { parseAnimationProject, type AnimationProject } from "../../schemas";
+import { MemoryAnimationRepository } from "../../services";
+import { createAnimationProjectInput } from "../../test/animationSchemaFixtures";
+import {
+  AnimationProjectProvider,
+  useAnimationProject,
+  type AnimationProjectContextValue,
+  type CreateAnimationProjectDefinition
+} from "./AnimationProjectProvider";
+
+const NOW = "2026-09-04T15:00:00.000Z";
+const DEFAULT_DEFINITION: CreateAnimationProjectDefinition = {
+  name: "Neue Waldläuferin",
+  frameProfile: HUMANOID_80_FRAME_PROFILE,
+  directionSourceMode: "fiveAuthoredPlusMirror",
+  walk: { enabled: true, frameCount: 8, fps: 10 }
+};
+
+let context: AnimationProjectContextValue;
+
+function ContextObserver() {
+  context = useAnimationProject();
+  return (
+    <output data-testid="animation-state">
+      {JSON.stringify({
+        list: context.projectListStatus,
+        activeId: context.activeProjectId,
+        activeName: context.activeProject?.name ?? null,
+        load: context.activeLoadStatus,
+        save: context.saveStatus,
+        dirty: context.projectDirty,
+        revision: context.activeProjectRevision,
+        persistedRevision: context.persistedProjectRevision,
+        rawError: context.rawProjectError?.message ?? null
+      })}
+    </output>
+  );
+}
+
+function renderProvider(
+  repository: MemoryAnimationRepository | null,
+  overrides: Readonly<{
+    now?: () => string;
+    createProjectId?: () => string;
+    createClipId?: () => string;
+    autosaveDelayMs?: number;
+  }> = {}
+) {
+  return render(
+    <AnimationProjectProvider
+      repository={repository}
+      {...overrides}
+    >
+      <ContextObserver />
+    </AnimationProjectProvider>
+  );
+}
+
+async function expectListReady() {
+  await waitFor(() => expect(context.projectListStatus).toBe("ready"));
+}
+
+async function seedProject(
+  repository: MemoryAnimationRepository,
+  overrides: Parameters<typeof createAnimationProjectInput>[0] = {}
+): Promise<AnimationProject> {
+  const project = parseAnimationProject(createAnimationProjectInput(overrides));
+  expect(await repository.createProject(project)).toEqual({ status: "ok" });
+  return project;
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
+
+describe("AnimationProjectProvider", () => {
+  it("hydrates the summary list and opens a project without writing", async () => {
+    const repository = new MemoryAnimationRepository();
+    const project = await seedProject(repository);
+    const writeProject = vi.spyOn(repository, "writeProject");
+    renderProvider(repository);
+
+    await expectListReady();
+    expect(context.projectSummaries).toHaveLength(1);
+    await act(async () => {
+      expect(await context.openProject(project.projectId)).toMatchObject({
+        status: "ok",
+        value: { projectId: project.projectId }
+      });
+    });
+
+    expect(context).toMatchObject({
+      activeProject: project,
+      activeLoadStatus: "ready",
+      saveStatus: "saved",
+      projectDirty: false,
+      activeProjectRevision: 0,
+      persistedProjectRevision: 0
+    });
+    expect(writeProject).not.toHaveBeenCalled();
+  });
+
+  it("creates a schema-valid default project through injected ID and time factories", async () => {
+    const repository = new MemoryAnimationRepository();
+    renderProvider(repository, {
+      now: () => NOW,
+      createProjectId: () => "project_created_001",
+      createClipId: () => "clip_created_walk_001"
+    });
+    await expectListReady();
+
+    await act(async () => {
+      expect(await context.createProject(DEFAULT_DEFINITION)).toMatchObject({
+        status: "ok",
+        value: { projectId: "project_created_001" }
+      });
+    });
+
+    const stored = await repository.readProject("project_created_001");
+    expect(stored).toEqual({
+      status: "ok",
+      value: {
+        schemaVersion: 1,
+        kind: "animationProject",
+        projectId: "project_created_001",
+        name: "Neue Waldläuferin",
+        createdAt: NOW,
+        updatedAt: NOW,
+        rigTemplateId: "humanoid-80-v1",
+        frameProfile: {
+          frameSize: { width: 128, height: 128 },
+          characterHeight: 80,
+          footAnchor: { x: 64, y: 112 }
+        },
+        directionSourceMode: "fiveAuthoredPlusMirror",
+        parts: [],
+        clips: [
+          {
+            clipId: "clip_created_walk_001",
+            templateId: "walk-humanoid-8-v1",
+            action: "walk",
+            frameCount: 8,
+            fps: 10,
+            loop: true
+          }
+        ],
+        overrides: []
+      }
+    });
+    expect(context.projectDirty).toBe(false);
+  });
+
+  it("debounces valid edits and never replaces the active model with invalid raw input", async () => {
+    const repository = new MemoryAnimationRepository();
+    const project = await seedProject(repository);
+    renderProvider(repository);
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+    const writeProject = vi.spyOn(repository, "writeProject");
+    vi.useFakeTimers();
+
+    const edited = parseAnimationProject({
+      ...project,
+      name: "Autosave-Revision",
+      updatedAt: NOW
+    });
+    act(() => {
+      expect(context.updateActiveProject(edited)).toMatchObject({ status: "ok" });
+    });
+    expect(context.projectDirty).toBe(true);
+    expect(context.activeProjectRevision).toBe(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(299);
+      await Promise.resolve();
+    });
+    expect(writeProject).not.toHaveBeenCalled();
+
+    act(() => {
+      expect(
+        context.updateActiveProject({ ...edited, name: "" })
+      ).toMatchObject({ status: "invalid" });
+    });
+    expect(context.activeProject?.name).toBe("Autosave-Revision");
+    expect(context.rawProjectError).not.toBeNull();
+    await act(async () => {
+      vi.advanceTimersByTime(1_000);
+      await Promise.resolve();
+    });
+    expect(writeProject).not.toHaveBeenCalled();
+
+    act(() => {
+      context.clearRawProjectError();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(writeProject).toHaveBeenCalledTimes(1);
+    expect(context.saveStatus).toBe("saved");
+    expect(context.projectDirty).toBe(false);
+  });
+
+  it("flushes the latest valid revision before opening another project", async () => {
+    const repository = new MemoryAnimationRepository();
+    const first = await seedProject(repository, {
+      projectId: "project_switch_first_001",
+      name: "Erstes Projekt"
+    });
+    const second = await seedProject(repository, {
+      projectId: "project_switch_second_001",
+      name: "Zweites Projekt"
+    });
+    renderProvider(repository, { autosaveDelayMs: 60_000 });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(first.projectId);
+    });
+    const writeProject = vi.spyOn(repository, "writeProject");
+
+    const edited = parseAnimationProject({
+      ...first,
+      name: "Vor Wechsel gespeichert",
+      updatedAt: NOW
+    });
+    act(() => {
+      context.updateActiveProject(edited);
+    });
+    await act(async () => {
+      expect(await context.openProject(second.projectId)).toMatchObject({
+        status: "ok",
+        value: { projectId: second.projectId }
+      });
+    });
+
+    expect(writeProject).toHaveBeenCalledTimes(1);
+    expect(writeProject).toHaveBeenCalledWith(edited);
+    expect(context.activeProject?.projectId).toBe(second.projectId);
+    expect(await repository.readProject(first.projectId)).toMatchObject({
+      status: "ok",
+      value: { name: "Vor Wechsel gespeichert" }
+    });
+  });
+
+  it("retains the last valid in-memory revision and exposes a concrete write failure", async () => {
+    const repository = new MemoryAnimationRepository();
+    const project = await seedProject(repository);
+    renderProvider(repository);
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+    vi.spyOn(repository, "writeProject").mockResolvedValueOnce({
+      status: "failed",
+      reason: "transaction",
+      message: "Quota überschritten."
+    });
+    vi.useFakeTimers();
+
+    const edited = parseAnimationProject({
+      ...project,
+      name: "Bleibt im Speicher",
+      updatedAt: NOW
+    });
+    act(() => {
+      context.updateActiveProject(edited);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(context.activeProject).toEqual(edited);
+    expect(context.saveStatus).toBe("failed");
+    expect(context.saveError).toBe("Quota überschritten.");
+    expect(context.projectDirty).toBe(true);
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { name: project.name }
+    });
+  });
+
+  it("installs the unload warning only while changes are unsaved", async () => {
+    const repository = new MemoryAnimationRepository();
+    const project = await seedProject(repository);
+    renderProvider(repository, { autosaveDelayMs: 60_000 });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+
+    const cleanEvent = new Event("beforeunload", {
+      bubbles: false,
+      cancelable: true
+    });
+    window.dispatchEvent(cleanEvent);
+    expect(cleanEvent.defaultPrevented).toBe(false);
+
+    act(() => {
+      context.updateActiveProject(
+        parseAnimationProject({ ...project, name: "Ungesichert", updatedAt: NOW })
+      );
+    });
+    const dirtyEvent = new Event("beforeunload", {
+      bubbles: false,
+      cancelable: true
+    });
+    window.dispatchEvent(dirtyEvent);
+    expect(dirtyEvent.defaultPrevented).toBe(true);
+
+    await act(async () => {
+      await context.saveActiveProject();
+    });
+    const savedEvent = new Event("beforeunload", {
+      bubbles: false,
+      cancelable: true
+    });
+    window.dispatchEvent(savedEvent);
+    expect(savedEvent.defaultPrevented).toBe(false);
+  });
+
+  it("reports unavailable storage without throwing during hydration", async () => {
+    renderProvider(null);
+    await waitFor(() => expect(context.projectListStatus).toBe("unavailable"));
+    expect(context.projectListError).toBe(
+      "Der lokale Animationsspeicher ist nicht verfügbar."
+    );
+    expect(context.projectSummaries).toEqual([]);
+  });
+});

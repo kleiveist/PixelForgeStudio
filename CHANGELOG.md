@@ -51,6 +51,18 @@
 - atomare Part-/Blob-Writes, copy-on-write Projektduplikation über geteilte
   unveränderliche Referenzen, schmale sortierte Projektzusammenfassungen und
   fail-closed Garbage Collection über pure Binärreferenzanalyse abgesichert
+- vollständigen lokalen Animationsprojekt-Lifecycle mit validierter Anlage,
+  Suche/Sortierung, Öffnen per stabiler Workspace-ID, Umbenennen,
+  Copy-on-write-Duplizieren und bestätigt Löschen umgesetzt
+- repository-gestützten `AnimationProjectProvider` mit purer
+  Revision-/Dirty-/Load-/Save-State-Machine, schreibfreier Hydration,
+  debounced Autosave, sofortigem Projektwechsel-Flush und fehlertolerantem
+  In-Memory-State ergänzt
+- Navigation und Browser-Unload bei ungespeicherten Animationsänderungen
+  abgesichert sowie unbekannte Projekt-IDs ohne Redirectschleife erklärt
+- Studio Home über einen schmalen Summary-Port mit den drei zuletzt
+  bearbeiteten realen Animationsprojekten verbunden; vorhandene Daten lösen
+  weiterhin keine automatische Projektöffnung aus
 
 ## 2.0.0 — 2026-09-03
 

@@ -2,13 +2,60 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 34 — IndexedDB-Repository (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 35 — Animationsprojekt-Lifecycle (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 35 — Animationsprojekt-Lifecycle (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 36 — Animation-Workspace-Shell (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31 abgeschlossen; Phase B mit
-  Prompts 32–34 abgeschlossen, Prompts 35–51 offen unter
+  Prompts 32–35 abgeschlossen, Prompts 36–51 offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
+
+## Prompt 35 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `d245f7b`
+- Baseline: Prompt 34 abgeschlossen mit 126 Testdateien und 799 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Abnahme: pure Projektlisten-/Aktivprojekt-/Load-/Save-/Revision-/Rohfehler-
+  State-Machine; `AnimationProjectProvider` mit injiziertem Repository, Uhr
+  und ID-Factory; schreibfreie Hydration; debounced Autosave und expliziter
+  beziehungsweise projektwechselbedingter Flush
+- Oberfläche: vollständige Projektübersicht mit validierter Standardanlage,
+  Suche/Sortierung, Öffnen samt stabiler Workspace-Route, Umbenennen,
+  Duplizieren und bestätigtem Löschen; verständlicher Unknown-ID-State;
+  echte letzte Animationsprojekte auf Studio Home
+- Grenze: keine PNGs oder Blobs im Provider, kein Canvas/Rig-Editor, keine
+  Character-Kit-Fachfunktion, keine Undo/Redo-History und kein Prompt 36
+
+## Prompt 35 — Ergebnis
+
+1. Eine pure Projekt-State-Machine verwaltet sortierte Summaries, das aktive
+   validierte Projekt, Load-/Save-Status, Dirty- und Persistenzrevisionen sowie
+   abgewiesene Rohfehler getrennt vom letzten gültigen In-Memory-Modell.
+2. Der injizierbare `AnimationProjectProvider` hydratisiert und öffnet
+   schreibfrei, serialisiert Repository-Writes, autosaved valide Änderungen
+   debounced und flusht vor explizitem Speichern oder bewusstem Projektwechsel.
+   Write-Fehler behalten das gültige Modell und einen konkreten Fehlerstatus.
+3. Die produktive Projektansicht unterstützt Zod-/RHF-validierte Anlage,
+   Suche, vier Sortierungen, Öffnen, Umbenennen, Copy-on-write-Duplizieren und
+   bestätigt Löschen. Der Startvertrag verwendet `humanoid-80-v1`, 128 × 128,
+   Figurenhöhe 80, Fußanker 64/112, `fiveAuthoredPlusMirror` und Walk mit acht
+   Frames bei 10 FPS.
+4. Workspace-Routen tragen die stabile Projekt-ID. Ein fehlendes oder bereits
+   gelöschtes Projekt bleibt als erklärter Error State ohne automatisches
+   Umschreiben oder Ladeschleife sichtbar; Editor, Import, Kits und Rigs
+   bleiben kontrollierte Platzhalter für spätere Prompts.
+5. Studio Home liest maximal drei zuletzt bearbeitete Projekte über einen
+   schmalen Summary-Port und öffnet sie ausschließlich nach Nutzeraktion.
+   Dirty-Projekte aktivieren einen gezielten Browser-Unload- und internen
+   Navigationsschutz; sauberer State installiert keine globale Unload-Warnung.
+6. 26 zusätzliche beziehungsweise angepasste Lifecycle-, Provider-, Reducer-,
+   Daten-, Home-, Dialog-, Fokus-, Tastatur-, Routing- und Fehlerfalltests
+   decken die Prompt-35-Abnahme ab.
+7. `npm run verify` bestand mit 132 Testdateien und 825 Tests sowie
+   erfolgreichem Typecheck und Produktionsbuild. Einzige Ausgabe bleibt die
+   bekannte Vite-Warnung zum über 500 kB großen Hauptchunk;
+   `git diff --check` ist sauber.
+8. Prompt 36 wurde nicht begonnen und bleibt die nächste getrennte Aufgabe.
 
 ## Prompt 34 — Ausgangsstand und Abnahme
 

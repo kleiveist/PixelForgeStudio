@@ -428,7 +428,7 @@ describe("application shell navigation", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText("8 Richtungen")).not.toBeInTheDocument();
     expect(
-      screen.getByText("Noch keine Animationsprojekte verfügbar")
+      screen.getByText("Animationsprojekte konnten nicht geladen werden")
     ).toBeVisible();
     expect(storage.mutations).toEqual([]);
 

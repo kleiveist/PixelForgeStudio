@@ -2,6 +2,7 @@ import type { AnimationStudioView, StudioRoute } from "../domain/navigation";
 import type { StableId } from "../schemas";
 import type { V2StorageAdapter } from "../services";
 import { useNavigation } from "../store/navigation";
+import { useAnimationProject } from "../store/animation";
 import { useProfileLibrary } from "../store/profiles";
 import { useSettings } from "../store/settings";
 import { useWizardSession } from "../store/wizard";
@@ -26,13 +27,19 @@ export function StudioHomeController({
   storageAdapter
 }: StudioHomeControllerProps) {
   const { navigateTo } = useNavigation();
+  const animationProjects = useAnimationProject();
   const { libraryResult } = useProfileLibrary();
   const { settings } = useSettings();
   const { requestProfile, requestResume } = useWizardSession();
   const data = createStudioHomeData(
     libraryResult,
     storageAdapter.readDraft(),
-    activeBaseProfileId
+    activeBaseProfileId,
+    {
+      status: animationProjects.projectListStatus,
+      projects: animationProjects.projectSummaries,
+      error: animationProjects.projectListError
+    }
   );
 
   const openProfile = (profileId: StableId) => {
@@ -45,11 +52,21 @@ export function StudioHomeController({
     navigateTo({ studio: "prompt", view: "wizard" });
   };
 
+  const openAnimationProject = async (
+    projectId: StableId
+  ): Promise<string | null> => {
+    const result = await animationProjects.openProject(projectId);
+    if (result.status !== "ok") return result.message;
+    navigateTo({ studio: "animation", view: "workspace", projectId });
+    return null;
+  };
+
   return (
     <StudioHomeView
       animationRoute={animationStartRoute(settings.animationStartView)}
       data={data}
       onOpenProfile={openProfile}
+      onOpenAnimationProject={openAnimationProject}
       onResumeDraft={resumeDraft}
       promptRoute={{ studio: "prompt", view: settings.startView }}
     />

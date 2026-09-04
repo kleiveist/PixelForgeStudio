@@ -255,7 +255,7 @@ describe("V2 dashboard interactions", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Animationsprojekte übersichtlich vorbereiten."
+        name: "Animationsprojekte organisieren."
       })
     ).toBeVisible();
   });

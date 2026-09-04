@@ -18,18 +18,18 @@ export const ANIMATION_STUDIO_VIEW_DEFINITIONS: Readonly<
 > = Object.freeze({
   projects: Object.freeze({
     label: "Projekte",
-    title: "Animationsprojekte übersichtlich vorbereiten.",
+    title: "Animationsprojekte organisieren.",
     eyebrow: "Animation Studio",
     description:
-      "Die lokale Projektverwaltung wird in einer eigenen Umsetzungsphase ergänzt.",
-    nextStep: "Bis dahin bleibt diese Fläche ein klar gekennzeichneter Einstieg."
+      "Lokale Projekte lassen sich anlegen, suchen, öffnen, umbenennen, duplizieren und kontrolliert löschen.",
+    nextStep: "Wähle ein Projekt oder lege eine neue Produktion an."
   }),
   workspace: Object.freeze({
     label: "Workspace",
     title: "Kein Animationsprojekt geöffnet.",
     eyebrow: "Animation Workspace",
     description:
-      "Lege später ein Projekt an oder öffne eines aus der Projektübersicht, bevor du Figuren riggst.",
+      "Lege ein Projekt an oder öffne eines aus der Projektübersicht, bevor du Figuren riggst.",
     nextStep: "Der Workspace zeigt ohne Projekt bewusst keinen leeren Editor."
   }),
   library: Object.freeze({

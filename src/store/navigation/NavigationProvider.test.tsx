@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { StableIdSchema } from "../../schemas";
 import { MemoryNavigation } from "../../test/memoryNavigation";
 import { NavigationProvider, useNavigation } from "./NavigationProvider";
@@ -30,12 +30,17 @@ function RouteProbe() {
 
 function renderProvider(
   navigation: MemoryNavigation,
-  fallbackView: "dashboard" | "profiles" = "dashboard"
+  fallbackView: "dashboard" | "profiles" = "dashboard",
+  confirmNavigation?: (
+    nextRoute: Parameters<MemoryNavigation["pushRoute"]>[0],
+    currentRoute: Parameters<MemoryNavigation["pushRoute"]>[0]
+  ) => boolean
 ) {
   return render(
     <NavigationProvider
       fallbackView={fallbackView}
       navigationAdapter={navigation}
+      {...(confirmNavigation ? { confirmNavigation } : {})}
     >
       <RouteProbe />
     </NavigationProvider>
@@ -130,5 +135,38 @@ describe("studio navigation provider", () => {
     expect(navigation.pushedRoutes).toEqual([
       { studio: "animation", view: "projects" }
     ]);
+  });
+
+  it("keeps the current route when a navigation guard rejects links or history changes", async () => {
+    const user = userEvent.setup();
+    const navigation = new MemoryNavigation({
+      status: "valid",
+      route: { studio: "home" }
+    });
+    const confirmNavigation = vi.fn(() => false);
+    renderProvider(navigation, "dashboard", confirmNavigation);
+
+    await user.click(
+      screen.getByRole("button", { name: "Animation projects" })
+    );
+    expect(screen.getByTestId("active-route")).toHaveTextContent(
+      '{"studio":"home"}'
+    );
+    expect(navigation.pushedRoutes).toEqual([]);
+    expect(confirmNavigation).toHaveBeenCalledWith(
+      { studio: "animation", view: "projects" },
+      { studio: "home" }
+    );
+
+    act(() => {
+      navigation.emitRoute({
+        status: "valid",
+        route: { studio: "prompt", view: "profiles" }
+      });
+    });
+    expect(screen.getByTestId("active-route")).toHaveTextContent(
+      '{"studio":"home"}'
+    );
+    expect(navigation.replacedRoutes).toEqual([{ studio: "home" }]);
   });
 });

@@ -37,6 +37,10 @@ export interface NavigationContextValue {
 
 export interface NavigationProviderProps {
   readonly children: ReactNode;
+  readonly confirmNavigation?: (
+    nextRoute: StudioRoute,
+    currentRoute: StudioRoute
+  ) => boolean;
   readonly fallbackView: AppView;
   readonly fallbackRoute?: StudioRoute;
   readonly navigationAdapter: NavigationAdapter;
@@ -46,6 +50,7 @@ const NavigationContext = createContext<NavigationContextValue | null>(null);
 
 export function NavigationProvider({
   children,
+  confirmNavigation,
   fallbackView,
   fallbackRoute: configuredFallbackRoute,
   navigationAdapter
@@ -59,13 +64,24 @@ export function NavigationProvider({
   );
   const [state, dispatch] = useReducer(navigationReducer, initialState);
   const activeRouteRef = useRef(state.activeRoute);
+  const confirmNavigationRef = useRef(confirmNavigation);
 
   activeRouteRef.current = state.activeRoute;
+  confirmNavigationRef.current = confirmNavigation;
 
   useEffect(() => {
     const synchronizeWithLocation = () => {
       const result = navigationAdapter.readRoute();
       const route = resolveInitialRoute(result, fallbackRoute);
+
+      if (
+        !studioRoutesEqual(route, activeRouteRef.current) &&
+        confirmNavigationRef.current &&
+        !confirmNavigationRef.current(route, activeRouteRef.current)
+      ) {
+        navigationAdapter.replaceRoute(activeRouteRef.current);
+        return;
+      }
 
       if (result.status !== "valid") {
         navigationAdapter.replaceRoute(route);
@@ -88,6 +104,12 @@ export function NavigationProvider({
   const navigateTo = useCallback(
     (route: StudioRoute) => {
       if (studioRoutesEqual(route, activeRouteRef.current)) return;
+      if (
+        confirmNavigationRef.current &&
+        !confirmNavigationRef.current(route, activeRouteRef.current)
+      ) {
+        return;
+      }
       navigationAdapter.pushRoute(route);
       activeRouteRef.current = route;
       dispatch({ type: "routeChanged", route });

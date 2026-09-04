@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
   createBrowserOutputWorkspaceAdapter,
+  type AnimationRepository,
   type LegacyV1StorageMigrationResult,
   type NavigationAdapter,
   type OutputWorkspaceAdapter
@@ -18,6 +19,10 @@ import {
   type ProfileLibraryStorage
 } from "../store/profiles";
 import { NavigationProvider } from "../store/navigation";
+import {
+  AnimationProjectProvider,
+  useAnimationProject
+} from "../store/animation";
 import { WizardSessionProvider } from "../store/wizard";
 import { StudioShell } from "./StudioShell";
 
@@ -31,6 +36,11 @@ export interface AppProps {
   readonly createProfileId?: () => string;
   readonly createBaseProfileId?: () => string;
   readonly createDraftId?: () => string;
+  readonly animationRepository?: AnimationRepository | null;
+  readonly animationRepositoryUnavailableMessage?: string;
+  readonly createAnimationProjectId?: () => string;
+  readonly createAnimationClipId?: () => string;
+  readonly animationAutosaveDelayMs?: number;
   readonly outputAdapter?: OutputWorkspaceAdapter;
   readonly startupMigration?: LegacyV1StorageMigrationResult;
 }
@@ -51,6 +61,7 @@ function NavigationRoot({
   createDraftId?: () => string;
 }>) {
   const { settings } = useSettings();
+  const { projectDirty } = useAnimationProject();
   const fallbackRoute = useMemo(
     () => resolveStudioStartRoute(settings),
     [
@@ -59,9 +70,18 @@ function NavigationRoot({
       settings.startView
     ]
   );
+  const confirmNavigation = useCallback(
+    () =>
+      !projectDirty ||
+      window.confirm(
+        "Das aktive Animationsprojekt enthält ungespeicherte Änderungen. Trotzdem navigieren?"
+      ),
+    [projectDirty]
+  );
 
   return (
     <NavigationProvider
+      confirmNavigation={confirmNavigation}
       fallbackRoute={fallbackRoute}
       fallbackView={settings.startView}
       navigationAdapter={navigationAdapter}
@@ -87,6 +107,11 @@ export function App({
   createProfileId,
   createBaseProfileId,
   createDraftId,
+  animationRepository = null,
+  animationRepositoryUnavailableMessage,
+  createAnimationProjectId,
+  createAnimationClipId,
+  animationAutosaveDelayMs,
   outputAdapter = createBrowserOutputWorkspaceAdapter(),
   startupMigration = { status: "notNeeded" }
 }: AppProps) {
@@ -102,14 +127,31 @@ export function App({
         storageAdapter={storageAdapter}
         {...optionalProfileProviderProps}
       >
-        <NavigationRoot
-          navigationAdapter={navigationAdapter}
-          outputAdapter={outputAdapter}
-          startupMigration={startupMigration}
-          storageAdapter={storageAdapter}
+        <AnimationProjectProvider
+          repository={animationRepository}
+          {...(animationRepositoryUnavailableMessage
+            ? { unavailableMessage: animationRepositoryUnavailableMessage }
+            : {})}
+          {...(createAnimationProjectId
+            ? { createProjectId: createAnimationProjectId }
+            : {})}
+          {...(createAnimationClipId
+            ? { createClipId: createAnimationClipId }
+            : {})}
+          {...(animationAutosaveDelayMs !== undefined
+            ? { autosaveDelayMs: animationAutosaveDelayMs }
+            : {})}
           {...(now ? { now } : {})}
-          {...(createDraftId ? { createDraftId } : {})}
-        />
+        >
+          <NavigationRoot
+            navigationAdapter={navigationAdapter}
+            outputAdapter={outputAdapter}
+            startupMigration={startupMigration}
+            storageAdapter={storageAdapter}
+            {...(now ? { now } : {})}
+            {...(createDraftId ? { createDraftId } : {})}
+          />
+        </AnimationProjectProvider>
       </ProfileLibraryProvider>
     </SettingsProvider>
   );
