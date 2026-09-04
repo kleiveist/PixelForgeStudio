@@ -12,7 +12,8 @@ boundary.
   Modulflächen, pure Home-Zusammenfassungsprojektion mit schmalem Controller,
   View-Metadaten und semantische Modulnavigation
 - `components/`: wiederverwendbare CSS-Module-Oberflächen, globales Theme-
-  Control, typisierte Studio-/Prompt-Links und lokale SVG-Icons
+  Control, typisierte Studio-/Prompt-Links und lokale SVG-Icons einschließlich
+  eigener thematischer Illustrationen für Prompt Studio und Animation Studio
 - `config/`: zentrale, typisierte `BRAND`-Konfiguration für Dachprodukt,
   Prompt-Modul und Animationsmodul, daraus abgeleitete Moduldefinitionen sowie
   getrennte, bewusst stabile Exportformat-Identifier
@@ -400,14 +401,19 @@ projections for existing feature tests.
 `app/StudioShell.tsx` owns only roof-level composition: brand-to-Home,
 `StudioSwitcher`, global theme, visible route context, skip link, document
 title, route/session focus, module navigation selection and the single main
-landmark. `app/AppShell.tsx` now exports the productive Prompt module surface
+landmark. Route and Wizard-session focus uses `preventScroll`, so module and
+Home transitions preserve the user's viewport position; activating the skip
+link still performs the deliberate jump to main content.
+`app/AppShell.tsx` now exports the productive Prompt module surface
 and its six-view navigation. `app/AnimationStudioShell.tsx` exports the four
 routed placeholder views and a controlled no-project Workspace; it owns no
 animation domain, persistence or canvas behavior. `StudioHomeController`
 combines the mounted profile provider with the injected draft read port and
 passes only a pure `StudioHomeData` summary to `StudioHomeView`. The view owns
 no storage access or domain writes; animation projects stay an explicit empty
-state until Prompt 35 provides their repository.
+state until Prompt 35 provides their repository. Its compact recent-profile
+projection contains only ID, title, category/type and favorite state; profile
+facts, tags, materials and base metadata stay out of the roof-level view.
 
 `components/navigation/index.ts` exposes `StudioLink` as the semantic typed
 anchor for every `StudioRoute`. It preserves real hrefs and modifier/new-tab

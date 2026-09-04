@@ -160,6 +160,27 @@
 7. Phase A ist abgeschlossen. Prompt 32 ist als nächste Aufgabe dokumentiert,
    aber nicht begonnen; Animationsdomain, -schemas und IndexedDB bleiben offen.
 
+## Nachtrag zu Prompt 31 — kompakte Home-Karten und Scrollstabilität
+
+1. Routen- und Wizard-Fokus setzt weiterhin den semantischen Hauptbereich,
+   verwendet dabei aber `preventScroll`. Brand-, Home-, Prompt- und
+   Animationswechsel behalten dadurch die aktuelle Viewport-Position; der
+   Skip-Link scrollt weiterhin bewusst zum Hauptinhalt.
+2. Die beiden gleichwertigen Modulkarten besitzen eigene lokale, dekorative
+   SVG-React-Illustrationen für Prompt-Erstellung beziehungsweise Rig/
+   Timeline. Karte, Text und Aktionszeile begrenzen und umbrechen lange Inhalte
+   innerhalb ihrer Fläche.
+3. Letzter Prompt-Entwurf und Animation-Empty-State stehen als gleich breite,
+   kompakte Aktivitätskarten nebeneinander. Letzte Prompt-Profile erhalten ein
+   eigenes kompaktes Read-Model und zeigen nur Kategorie/Typ, Titel, Icon und
+   gegebenenfalls den Favoritenstern; technische Fakten, Basisprofil,
+   Materialien und Tags werden auf Home nicht mehr dargestellt.
+4. Gezielte Prüfung: 2 Testdateien und 36 Tests bestanden. `npm run verify`
+   bestand mit 113 Testdateien und 684 Tests sowie erfolgreichem Typecheck und
+   Produktionsbuild; einzige Ausgabe bleibt die bekannte Vite-Warnung zum
+   über 500 kB großen Hauptchunk. Die Shell-Regression trennt den zulässigen
+   zeitgesteuerten Draft-Autosave von der exakt einmaligen Settings-Mutation.
+
 ## Plan — Dokumentationsordnung
 
 1. Aktive Leitdokumente von abgeschlossenen V2- und V1-Unterlagen trennen.

@@ -25,6 +25,10 @@
   Schemaerhöhung weiter akzeptiert
 - Startziele in den Einstellungen persistierbar gemacht und das Prompt-
   Dashboard um nachgeordnete Home-/Animation-Schnellaktionen ergänzt
+- Studio-Wechsel fokussiert den Hauptbereich ohne Scrollsprung; Home-
+  Modulkarten besitzen eigene thematische SVG-Illustrationen, begrenzen lange
+  Texte sicher und verwenden kompakte Prompt-/Animationsaktivitäts- und
+  Profilkarten
 
 ## 2.0.0 — 2026-09-03
 

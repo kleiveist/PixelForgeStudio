@@ -75,7 +75,7 @@ export function StudioShell({
       previousWizardSessionRevisionRef.current !== sessionRevision;
 
     if (routeChanged || wizardSessionChanged) {
-      mainRef.current?.focus();
+      mainRef.current?.focus({ preventScroll: true });
     }
     previousRouteRef.current = activeRoute;
     previousWizardSessionRevisionRef.current = sessionRevision;

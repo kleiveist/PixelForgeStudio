@@ -85,6 +85,7 @@
   border: 1px solid var(--color-line);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-panel);
+  overflow: hidden;
   transition:
     border-color var(--duration-fast) var(--ease-standard),
     transform var(--duration-fast) var(--ease-standard);
@@ -93,6 +94,33 @@
 .moduleCard:hover {
   border-color: var(--color-accent-line);
   transform: translateY(-3px);
+}
+
+.moduleTopline {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.moduleArtwork {
+  width: clamp(8rem, 42%, 11.5rem);
+  aspect-ratio: 3 / 2;
+  flex: 0 1 11.5rem;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: var(--space-2);
+  color: var(--color-accent-text);
+  background: var(--color-accent-wash);
+  border: 1px solid var(--color-accent-line);
+  border-radius: var(--radius-lg);
+}
+
+.moduleArtwork svg {
+  width: 100%;
+  height: 100%;
 }
 
 .moduleCopy {
@@ -109,11 +137,11 @@
 }
 
 .moduleCopy span,
-.draftCard time,
-.draftCard > span:first-child > span,
 .emptyState p {
   color: var(--color-text-muted);
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .moduleAction,
@@ -122,6 +150,11 @@
 .emptyState a {
   color: var(--color-accent-text);
   font-weight: 800;
+}
+
+.moduleAction {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .section {
@@ -155,15 +188,36 @@
   align-items: center;
 }
 
-.draftCard {
+.activityGrid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.activitySection {
+  align-content: start;
+}
+
+.activityHeading h2 {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+.activityCard {
   width: 100%;
   min-width: 0;
+  min-height: 6.75rem;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-5);
-  padding: var(--space-5);
+  gap: var(--space-4);
+  padding: var(--space-4);
   color: var(--color-text);
+}
+
+button.activityCard {
   font: inherit;
   text-align: left;
   background: var(--color-accent-wash);
@@ -172,10 +226,26 @@
   cursor: pointer;
 }
 
-.draftCard > span:first-child {
+.activityCardCopy {
   min-width: 0;
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-2);
+}
+
+.activityCardCopy strong {
+  font-size: var(--font-size-md);
+  overflow-wrap: anywhere;
+}
+
+.activityType,
+.profileMeta {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  text-transform: uppercase;
 }
 
 .profileGrid {
@@ -185,6 +255,60 @@
 
 .profileGrid li > * {
   width: 100%;
+}
+
+.profileCard {
+  width: 100%;
+  min-width: 0;
+  min-height: 6rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  background: var(--color-panel-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.profileCard:hover {
+  border-color: var(--color-accent-line);
+}
+
+.profileIcon {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  color: var(--color-accent-text);
+  background: var(--color-accent-wash);
+  border-radius: var(--radius-md);
+}
+
+.profileIcon svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+.profileCopy {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.profileCopy strong {
+  overflow-wrap: anywhere;
+}
+
+.favorite {
+  align-self: start;
+  color: var(--color-accent-text);
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 .emptyState {
@@ -203,7 +327,8 @@
   line-height: 1.55;
 }
 
-.draftCard:focus-visible {
+.activityCard:focus-visible,
+.profileCard:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
 }
@@ -215,12 +340,13 @@
 }
 
 @media (max-width: 700px) {
+  .activityGrid,
   .moduleGrid,
   .profileGrid {
     grid-template-columns: 1fr;
   }
 
-  .draftCard {
+  .activityCard {
     align-items: flex-start;
     flex-direction: column;
   }

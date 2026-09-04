@@ -198,6 +198,7 @@ describe("application shell navigation", () => {
       view: "dashboard"
     });
     renderStudio(navigation);
+    const mainFocus = vi.spyOn(screen.getByRole("main"), "focus");
 
     await user.click(
       within(studioSwitcher()).getByRole("link", { name: "Animation Studio" })
@@ -210,6 +211,8 @@ describe("application shell navigation", () => {
       })
     ).toBeVisible();
     expect(screen.getByRole("main")).toHaveFocus();
+    expect(mainFocus).toHaveBeenCalledTimes(1);
+    expect(mainFocus).toHaveBeenLastCalledWith({ preventScroll: true });
     expect(navigation.pushedRoutes).toEqual([
       { studio: "animation", view: "projects" }
     ]);
@@ -220,6 +223,8 @@ describe("application shell navigation", () => {
 
     expect(currentPrimaryLink()).toHaveAccessibleName("Dashboard");
     expect(screen.getByRole("main")).toHaveFocus();
+    expect(mainFocus).toHaveBeenCalledTimes(2);
+    expect(mainFocus).toHaveBeenLastCalledWith({ preventScroll: true });
     expect(navigation.pushedRoutes).toEqual([
       { studio: "animation", view: "projects" },
       { studio: "prompt", view: "dashboard" }
@@ -255,9 +260,18 @@ describe("application shell navigation", () => {
       "Wandernde Alchemistin"
     );
     expect(screen.getByRole("radio", { name: "Dunkel" })).toBeChecked();
-    expect(storage.mutations).toEqual([
-      { operation: "set", key: V2_STORAGE_KEYS.settings }
-    ]);
+    expect(
+      storage.mutations.filter(
+        (mutation) => mutation.key === V2_STORAGE_KEYS.settings
+      )
+    ).toEqual([{ operation: "set", key: V2_STORAGE_KEYS.settings }]);
+    expect(
+      storage.mutations.every(
+        (mutation) =>
+          mutation.key === V2_STORAGE_KEYS.settings ||
+          mutation.key === V2_STORAGE_KEYS.draft
+      )
+    ).toBe(true);
   });
 
   it("uses the stored start view when the URL has no view", () => {
@@ -376,6 +390,7 @@ describe("application shell navigation", () => {
     });
 
     render(<App navigationAdapter={navigation} storageAdapter={adapter} />);
+    const mainFocus = vi.spyOn(screen.getByRole("main"), "focus");
 
     const promptLink = screen.getByRole("link", {
       name: "Prompt Studio öffnen"
@@ -389,12 +404,29 @@ describe("application shell navigation", () => {
       "?studio=animation&view=library"
     );
     expect(
+      promptLink.querySelector('[data-studio-artwork="prompt"]')
+    ).toBeInTheDocument();
+    expect(
+      animationLink.querySelector('[data-studio-artwork="animation"]')
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("heading", { name: "Letzter Prompt-Entwurf" })
     ).toBeVisible();
     expect(screen.getByText("Nebelwald")).toBeVisible();
+    const recentProfiles = screen.getAllByRole("button", {
+      name: /Profil .* im Wizard öffnen/i
+    });
+    expect(recentProfiles).toHaveLength(3);
     expect(
-      screen.getAllByRole("button", { name: /Profil .* im Wizard öffnen/i })
-    ).toHaveLength(3);
+      recentProfiles[0]?.querySelector('[data-category-icon="character"]')
+    ).toBeInTheDocument();
+    expect(
+      within(recentProfiles[0] as HTMLElement).getByText("★")
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Weltfamilie 32 px / Figuren 80 px")
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("8 Richtungen")).not.toBeInTheDocument();
     expect(
       screen.getByText("Noch keine Animationsprojekte verfügbar")
     ).toBeVisible();
@@ -410,6 +442,8 @@ describe("application shell navigation", () => {
       })
     ).toBeVisible();
     expect(screen.getByRole("main")).toHaveFocus();
+    expect(mainFocus).toHaveBeenCalledTimes(1);
+    expect(mainFocus).toHaveBeenLastCalledWith({ preventScroll: true });
     expect(navigation.pushedRoutes).toEqual([
       { studio: "animation", view: "library" }
     ]);
@@ -417,6 +451,8 @@ describe("application shell navigation", () => {
     await user.click(
       screen.getByRole("link", { name: "PixelForge Studio – Startseite" })
     );
+    expect(mainFocus).toHaveBeenCalledTimes(2);
+    expect(mainFocus).toHaveBeenLastCalledWith({ preventScroll: true });
     const configuredPromptLink = screen.getByRole("link", {
       name: "Prompt Studio öffnen"
     });
@@ -425,6 +461,8 @@ describe("application shell navigation", () => {
 
     expect(currentPrimaryLink()).toHaveAccessibleName("Ausgabe");
     expect(screen.getByRole("main")).toHaveFocus();
+    expect(mainFocus).toHaveBeenCalledTimes(3);
+    expect(mainFocus).toHaveBeenLastCalledWith({ preventScroll: true });
     expect(navigation.pushedRoutes).toEqual([
       { studio: "animation", view: "library" },
       { studio: "home" },
@@ -463,7 +501,7 @@ describe("application shell navigation", () => {
 
     expect(navigation.pushedRoutes).toEqual([]);
     await user.click(
-      screen.getByRole("button", { name: /Hafenlaterne.*Entwurf fortsetzen/i })
+      screen.getByRole("button", { name: /Hafenlaterne.*Fortsetzen/i })
     );
 
     expect(navigation.pushedRoutes).toEqual([

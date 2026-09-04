@@ -1,11 +1,17 @@
+import {
+  AnimationStudioArtwork,
+  PromptStudioArtwork
+} from "../components/icons";
 import { StudioLink } from "../components/navigation";
 import { Badge, Surface } from "../components/ui";
 import { BRAND } from "../config";
 import type { StudioRoute } from "../domain/navigation";
-import { ProfileCard } from "../features/dashboard/ProfileCard";
-import { formatDashboardDate } from "../features/dashboard/dashboardData";
+import { CategoryIcon } from "../features/dashboard/CategoryIcon";
 import type { StableId } from "../schemas";
-import type { StudioHomeData } from "./studioHomeData";
+import type {
+  StudioHomeData,
+  StudioHomeProfileSummary
+} from "./studioHomeData";
 import styles from "./StudioHomeView.module.css";
 
 export interface StudioHomeViewProps {
@@ -33,6 +39,38 @@ const collectionMessages = {
       "Beide Studios bleiben erreichbar, gespeicherte Profile können momentan aber nicht zusammengefasst werden."
   }
 } as const;
+
+function CompactProfileCard({
+  onOpen,
+  profile
+}: Readonly<{
+  onOpen: (profileId: StableId) => void;
+  profile: StudioHomeProfileSummary;
+}>) {
+  return (
+    <button
+      className={styles.profileCard}
+      type="button"
+      aria-label={`Profil ${profile.name}${profile.favorite ? " (Favorit)" : ""} im Wizard öffnen`}
+      onClick={() => onOpen(profile.id)}
+    >
+      <span className={styles.profileIcon} aria-hidden="true">
+        <CategoryIcon category={profile.category} />
+      </span>
+      <span className={styles.profileCopy}>
+        <span className={styles.profileMeta}>
+          {profile.categoryLabel} · {profile.subtypeLabel}
+        </span>
+        <strong>{profile.name}</strong>
+      </span>
+      {profile.favorite ? (
+        <span className={styles.favorite} aria-hidden="true">
+          ★
+        </span>
+      ) : null}
+    </button>
+  );
+}
 
 export function StudioHomeView({
   animationRoute,
@@ -64,8 +102,11 @@ export function StudioHomeView({
               className={styles.moduleCard}
               route={promptRoute}
             >
-              <span className={styles.moduleIndex} aria-hidden="true">
-                01
+              <span className={styles.moduleTopline} aria-hidden="true">
+                <span className={styles.moduleIndex}>01</span>
+                <span className={styles.moduleArtwork}>
+                  <PromptStudioArtwork />
+                </span>
               </span>
               <span className={styles.moduleCopy}>
                 <strong>{BRAND.modules.prompt.shortLabel}</strong>
@@ -85,8 +126,11 @@ export function StudioHomeView({
               className={styles.moduleCard}
               route={animationRoute}
             >
-              <span className={styles.moduleIndex} aria-hidden="true">
-                02
+              <span className={styles.moduleTopline} aria-hidden="true">
+                <span className={styles.moduleIndex}>02</span>
+                <span className={styles.moduleArtwork}>
+                  <AnimationStudioArtwork />
+                </span>
               </span>
               <span className={styles.moduleCopy}>
                 <strong>{BRAND.modules.animation.shortLabel}</strong>
@@ -103,40 +147,76 @@ export function StudioHomeView({
         </ul>
       </nav>
 
-      {draft ? (
-        <section className={styles.section} aria-labelledby="home-draft-title">
-          <div className={styles.sectionHeading}>
-            <p className={styles.eyebrow}>Direkt weiterarbeiten</p>
-            <h2 id="home-draft-title">Letzter Prompt-Entwurf</h2>
-          </div>
-          <button
-            className={styles.draftCard}
-            type="button"
-            onClick={() => onResumeDraft(draft.id)}
+      <div className={styles.activityGrid}>
+        {draft ? (
+          <section
+            className={`${styles.section} ${styles.activitySection}`}
+            aria-labelledby="home-draft-title"
           >
-            <span>
-              <strong>{draft.projectName}</strong>
-              <span>
-                {draft.categoryLabel
-                  ? `${draft.categoryLabel} · `
-                  : ""}
-                Schritt {draft.currentStep}
+            <div
+              className={`${styles.sectionHeading} ${styles.activityHeading}`}
+            >
+              <p className={styles.eyebrow}>Direkt weiterarbeiten</p>
+              <h2 id="home-draft-title">Letzter Prompt-Entwurf</h2>
+            </div>
+            <button
+              className={styles.activityCard}
+              type="button"
+              onClick={() => onResumeDraft(draft.id)}
+            >
+              <span className={styles.activityCardCopy}>
+                <span className={styles.activityType}>
+                  {draft.categoryLabel ?? "Prompt-Entwurf"}
+                </span>
+                <strong>{draft.projectName}</strong>
               </span>
-              <time dateTime={draft.savedAt}>
-                Gesichert {formatDashboardDate(draft.savedAt)}
-              </time>
+              <span className={styles.inlineAction}>Fortsetzen →</span>
+            </button>
+          </section>
+        ) : data.draftStatus === "invalid" ||
+          data.draftStatus === "unavailable" ? (
+          <section
+            className={`${styles.section} ${styles.activitySection}`}
+            aria-labelledby="home-draft-title"
+          >
+            <div
+              className={`${styles.sectionHeading} ${styles.activityHeading}`}
+            >
+              <p className={styles.eyebrow}>Prompt Studio</p>
+              <h2 id="home-draft-title">Letzter Prompt-Entwurf</h2>
+            </div>
+            <p className={styles.notice} role="note">
+              {data.draftStatus === "invalid"
+                ? "Der lokale Prompt-Entwurf ist ungültig und wurde nicht automatisch geöffnet."
+                : "Der lokale Prompt-Entwurf kann derzeit nicht gelesen werden."}
+            </p>
+          </section>
+        ) : null}
+
+        <section
+          className={`${styles.section} ${styles.activitySection}`}
+          aria-labelledby="home-animation-title"
+        >
+          <div
+            className={`${styles.sectionHeading} ${styles.activityHeading}`}
+          >
+            <p className={styles.eyebrow}>Animation Studio</p>
+            <h2 id="home-animation-title">Letztes Animationsprojekt</h2>
+          </div>
+          <Surface className={styles.activityCard} tone="soft" role="note">
+            <span className={styles.activityCardCopy}>
+              <span className={styles.activityType}>Projektübersicht</span>
+              <strong>Noch keine Animationsprojekte verfügbar</strong>
             </span>
-            <span className={styles.inlineAction}>Entwurf fortsetzen →</span>
-          </button>
+            <StudioLink
+              className={styles.inlineAction}
+              route={{ studio: "animation", view: "projects" }}
+            >
+              Bereich öffnen →
+            </StudioLink>
+          </Surface>
         </section>
-      ) : data.draftStatus === "invalid" ||
-        data.draftStatus === "unavailable" ? (
-        <p className={styles.notice} role="note">
-          {data.draftStatus === "invalid"
-            ? "Der lokale Prompt-Entwurf ist ungültig und wurde nicht automatisch geöffnet."
-            : "Der lokale Prompt-Entwurf kann derzeit nicht gelesen werden."}
-        </p>
-      ) : null}
+      </div>
 
       <section className={styles.section} aria-labelledby="home-profiles-title">
         <div className={styles.sectionHeading}>
@@ -151,7 +231,7 @@ export function StudioHomeView({
           <ul className={styles.profileGrid}>
             {data.recentProfiles.map((profile) => (
               <li key={profile.id}>
-                <ProfileCard profile={profile} onOpen={onOpenProfile} />
+                <CompactProfileCard profile={profile} onOpen={onOpenProfile} />
               </li>
             ))}
           </ul>
@@ -175,23 +255,6 @@ export function StudioHomeView({
             Zusammenfassung ausgeblendet und nicht verändert.
           </p>
         ) : null}
-      </section>
-
-      <section className={styles.section} aria-labelledby="home-animation-title">
-        <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Animation Studio</p>
-          <h2 id="home-animation-title">Letzte Animationsprojekte</h2>
-        </div>
-        <Surface className={styles.emptyState} tone="soft" role="note">
-          <strong>Noch keine Animationsprojekte verfügbar</strong>
-          <p>
-            Die Projektablage wird in Prompt 35 angeschlossen. Bis dahin zeigt
-            die Startseite bewusst keine erfundenen Projekte.
-          </p>
-          <StudioLink route={{ studio: "animation", view: "projects" }}>
-            Animationsbereich öffnen →
-          </StudioLink>
-        </Surface>
       </section>
     </div>
   );

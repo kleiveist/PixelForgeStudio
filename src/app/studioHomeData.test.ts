@@ -30,16 +30,25 @@ describe("studio home summary projection", () => {
     expect(data.draft).toEqual({
       id: "draft_home_summary",
       projectName: "Nordtorwache",
-      categoryLabel: "Charakter / Figur",
-      currentStep: "character-details",
-      savedAt: "2026-09-04T14:00:00.000Z"
+      categoryLabel: "Charakter / Figur"
     });
     expect(data.draft).not.toHaveProperty("answers");
-    expect(data.recentProfiles).toHaveLength(3);
-    expect(
-      (data.recentProfiles[0]?.updatedAt ?? "") >=
-        (data.recentProfiles[1]?.updatedAt ?? "")
-    ).toBe(true);
+    expect(data.recentProfiles.map((profile) => profile.id)).toEqual([
+      "asset_smith_80",
+      "asset_guard_80",
+      "asset_mage_96"
+    ]);
+    expect(data.recentProfiles[0]).toEqual({
+      id: "asset_smith_80",
+      name: "Dorfschmied mit Lederschürze",
+      category: "character",
+      categoryLabel: "Charakter / Figur",
+      subtypeLabel: "NPC",
+      favorite: true
+    });
+    expect(data.recentProfiles[0]).not.toHaveProperty("facts");
+    expect(data.recentProfiles[0]).not.toHaveProperty("materials");
+    expect(data.recentProfiles[0]).not.toHaveProperty("tags");
   });
 
   it("keeps unavailable and empty sources explicit", () => {

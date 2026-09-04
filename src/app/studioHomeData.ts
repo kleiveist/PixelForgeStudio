@@ -1,3 +1,4 @@
+import type { AssetCategory } from "../domain/assets";
 import { getDashboardCategory } from "../features/dashboard/dashboardCatalog";
 import {
   createDashboardData,
@@ -16,13 +17,20 @@ export interface StudioHomeDraftSummary {
   readonly id: StableId;
   readonly projectName: string;
   readonly categoryLabel: string | null;
-  readonly currentStep: string;
-  readonly savedAt: string;
+}
+
+export interface StudioHomeProfileSummary {
+  readonly id: StableId;
+  readonly name: string;
+  readonly category: AssetCategory;
+  readonly categoryLabel: string;
+  readonly subtypeLabel: string;
+  readonly favorite: boolean;
 }
 
 export interface StudioHomeData {
   readonly collectionStatus: DashboardCollectionStatus;
-  readonly recentProfiles: readonly DashboardProfileSummary[];
+  readonly recentProfiles: readonly StudioHomeProfileSummary[];
   readonly skippedProfileCount: number;
   readonly draftStatus: DashboardDraftStatus;
   readonly draft: StudioHomeDraftSummary | null;
@@ -35,9 +43,20 @@ function summarizeDraft(draft: WizardDraft): StudioHomeDraftSummary {
     categoryLabel:
       "category" in draft
         ? getDashboardCategory(draft.category).label
-        : null,
-    currentStep: draft.currentStep,
-    savedAt: draft.savedAt
+        : null
+  };
+}
+
+function summarizeProfile(
+  profile: DashboardProfileSummary
+): StudioHomeProfileSummary {
+  return {
+    id: profile.id,
+    name: profile.name,
+    category: profile.category,
+    categoryLabel: profile.categoryLabel,
+    subtypeLabel: profile.subtypeLabel,
+    favorite: profile.favorite
   };
 }
 
@@ -54,7 +73,7 @@ export function createStudioHomeData(
 
   return {
     collectionStatus: dashboard.collectionStatus,
-    recentProfiles: dashboard.recentProfiles,
+    recentProfiles: dashboard.recentProfiles.map(summarizeProfile),
     skippedProfileCount: dashboard.skippedProfileCount,
     draftStatus: dashboard.draftStatus,
     draft: dashboard.draft ? summarizeDraft(dashboard.draft) : null
