@@ -2,11 +2,11 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 32 — Animationsdomain-Grundlage (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 33 — Animationsprojekt-Schemas (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 33 — Animationsprojekt-Schemas (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 34 — IndexedDB-Repository (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31 abgeschlossen; Phase B mit
-  Prompt 32 begonnen, Prompts 33–51 offen unter
+  Prompts 32–33 abgeschlossen, Prompts 34–51 offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 
@@ -220,6 +220,49 @@
 7. Prompt 33 wurde nicht begonnen. Animationsschemas, Persistenz, konkrete
    Posen, Rendering und UI bleiben bewusst nachfolgenden Einzelprompts
    vorbehalten.
+
+## Prompt 33 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `cbaac06`
+- Baseline: `npm run verify` erfolgreich mit 118 Testdateien und 722 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Abnahme: getrennte strikte Zod-V1-Schemas für Animationsprojekt, Part,
+  Character Kit und Bundlegraph; aus Zod abgeleitete readonly Typen;
+  Cross-Field-Prüfungen für Anker/Trim, eindeutige IDs, Walk-Frames,
+  Overrides und Bundle-Referenzen; separate Draft-Produktionsvalidierung
+- Grenze: keine Persistenz, IndexedDB, Blobs/Base64 im JSON, UI, Projekt-
+  Provider, konkrete Rigdaten, Schemaänderung an Prompt-V2 oder Prompt 34
+
+## Prompt 33 — Ergebnis
+
+1. Projekt, PartAsset und Character Kit besitzen getrennte, strikte
+   `schemaVersion: 1`-Schemas; das `.pfanim`-Manifest verwendet unabhängig
+   `formatVersion: 1` und den stabilen Animation-Application-Identifier.
+   Sämtliche öffentlichen Metadatentypen werden mit `z.infer` abgeleitet.
+2. Gemeinsame Zod-Primitives validieren finite Pixelkoordinaten, positive
+   Dimensionen, Frameprofile, Source-Anker, Trim-Rechtecke und alle stabilen
+   Direction-/SourceMode-/Slot-/Joint-/Mirror-/Rig-/Action-Domainwerte ohne
+   Zahlen-Coercion oder unbekannte Keys.
+3. Projektrefinements sichern eindeutige PartAsset-/Clip-IDs, exakt acht
+   Frames pro V1-Walk, eindeutige Frameziele und Overrides auf vorhandene
+   Clips, kanonische Richtungen und gültige Frameindizes. Ein leerer Draft
+   bleibt absichtlich schema-validierbar.
+4. PartAssets halten ausschließlich Blob-Referenzen; Source-Anker und Trim
+   müssen vollständig im ungetrimmten Original liegen. Der Bundlegraph löst
+   Projekt→PartAsset→Blob sowie optionale Previewreferenzen vollständig auf
+   und lehnt fehlende oder doppelte IDs ab.
+5. `validateAnimationProjectProductionSources()` trennt Produktionsreife von
+   Schema-Gültigkeit und meldet fehlende Pflichtquellen je SourceMode,
+   unbekannte PartAsset-Referenzen und fehlende Distalanker. Kein Blob,
+   Base64, IndexedDB-, Canvas-, Storage- oder UI-Verhalten wurde vorgezogen.
+6. Gezielte Prüfung: 6 Testdateien und 60 Tests bestanden. `npm run verify`
+   bestand mit 124 Testdateien und 782 Tests sowie erfolgreichem Typecheck und
+   Produktionsbuild; einzige Ausgabe bleibt die bekannte Vite-Warnung zum
+   über 500 kB großen Hauptchunk. PyGitIndex meldet 64 aktuelle Markdown-
+   Seiten, und alle 43 Aufgabenpaket-Prüfsummen sind gültig.
+7. Prompt 34 wurde nicht begonnen. Der IndexedDB-Port, Browser-/Memoryadapter,
+   Transaktionen und Binärspeicherung bleiben vollständig der nächsten
+   Einzelaufgabe vorbehalten.
 
 ## Plan — Dokumentationsordnung
 

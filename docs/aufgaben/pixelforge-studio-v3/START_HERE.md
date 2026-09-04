@@ -15,12 +15,12 @@
 
 ## 2. Aktueller Ausführungsstand
 
-Prompts 28 bis 32 sind abgeschlossen; Phase A ist vollständig und Phase B hat
-mit der frameworkfreien Animationsdomain begonnen. Beginne nach einem neuen
-konkreten Auftrag als Nächstes mit:
+Prompts 28 bis 33 sind abgeschlossen; Phase A ist vollständig und Phase B
+besitzt Domain- sowie strikte Schema-V1-Grundverträge. Beginne nach einem
+neuen konkreten Auftrag als Nächstes mit:
 
 ```text
-docs/aufgaben/pixelforge-studio-v3/prompts/33_ANIMATION_PROJECT_SCHEMAS.md
+docs/aufgaben/pixelforge-studio-v3/prompts/34_INDEXEDDB_ANIMATION_REPOSITORY.md
 ```
 
 Führe anschließend weiterhin genau einen Prompt nach dem anderen bis Prompt 51

@@ -8,8 +8,9 @@
 
 Die additive AppSettings-Erweiterung aus Abschnitt 10 ist seit Prompt 31 ohne
 Schemaversionserhöhung umgesetzt. Alte Settings- und ExportBundle-V2-Objekte
-ohne die neuen Felder bleiben über Zod-Defaults lesbar. Die Animationsschemas
-und ihre IndexedDB-Persistenz beginnen erst mit Prompts 33 und 34.
+ohne die neuen Felder bleiben über Zod-Defaults lesbar. Die strikten
+Animationsschemas und der referenzgeprüfte Bundlegraph sind seit Prompt 33
+umgesetzt; ihre IndexedDB-Persistenz beginnt erst mit Prompt 34.
 
 ## 1. Formatgrenzen
 

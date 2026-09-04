@@ -12,7 +12,8 @@ globale Studio-Shell, die produktive Prompt-Modulfläche und die vier bewusst
 fachlogikfreien Animation-Platzhalter. Prompt 31 vervollständigte Phase A mit
 der produktiven Home-Fläche sowie kompatiblen, getrennten Startzielen. Prompt
 32 eröffnete Phase B mit der frameworkfreien Animations-, Rig- und Slot-Domain;
-Projekt-Schemas und Persistenz bleiben nachfolgende Grenzen.
+Prompt 33 ergänzte die getrennten strikten Animation-Schema-V1-Verträge und
+den referenzgeprüften Bundlegraph. Persistenz bleibt Prompt 34 vorbehalten.
 
 ## Leitprinzip
 
@@ -269,6 +270,13 @@ Seit Prompt 32 ist `src/domain/animation/index.ts` die öffentliche Quelle für:
 Die Domain besitzt keine React-, Zod-, DOM-, Canvas-, IndexedDB- oder Storage-
 Abhängigkeit. Konkrete Posen, Rigdaten und Rendering gehören nicht in diesen
 Grundvertrag.
+
+Die Schema-Schicht übernimmt seit Prompt 33 die separate
+`schemaVersion: 1` für Projekt, PartAsset und Character Kit sowie
+`formatVersion: 1` für das `.pfanim`-Manifest. Parsefunktionen akzeptieren
+`unknown`; Source-Anker, Trimgrenzen, ID-Eindeutigkeit, Walk-Frames,
+Overrideziele und Bundle-Referenzen werden vor jeder späteren Persistenz
+geprüft. Prompt-Studio-Daten verbleiben unabhängig bei Schema/Format V2.
 
 ## Settings-Kompatibilität
 

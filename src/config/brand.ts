@@ -22,6 +22,6 @@ export const PROMPT_EXPORT_APPLICATION_ID = "PixelForge Prompt Studio" as const;
 // Backward-compatible public alias retained for existing consumers.
 export const EXPORT_APPLICATION_ID = PROMPT_EXPORT_APPLICATION_ID;
 
-// Reserved for the future animation export schema; Prompt 28 does not use it.
+// Stable protocol discriminator for Animation Studio V1 metadata and bundles.
 export const ANIMATION_EXPORT_APPLICATION_ID =
   "PixelForge Animation Studio" as const;

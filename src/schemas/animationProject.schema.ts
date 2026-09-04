@@ -1,0 +1,215 @@
+import { z } from "zod";
+import { PART_SLOT_IDS } from "../domain/animation";
+import { IsoDateTimeSchema, StableIdSchema } from "./common.schema";
+import {
+  AnimationActionIdSchema,
+  AnimationDirectionSchema,
+  AnimationDirectionSourceModeSchema,
+  AnimationFrameProfileSchema,
+  AnimationJointIdSchema,
+  AnimationNameSchema,
+  AnimationPartSlotSchema,
+  AnimationRigTemplateIdSchema,
+  AnimationSchemaVersionSchema,
+  AnimationTransformDeltaSchema,
+  MAX_ANIMATION_CLIPS_PER_PROJECT,
+  MAX_ANIMATION_FPS,
+  MAX_ANIMATION_FRAMES_PER_CLIP,
+  MAX_ANIMATION_OVERRIDES_PER_PROJECT,
+  MAX_ANIMATION_PARTS_PER_PROJECT,
+  MAX_ANIMATION_COMPATIBILITY_KEY_LENGTH
+} from "./animationPrimitives.schema";
+
+export const ProjectPartAssignmentSchema = z
+  .strictObject({
+    assetId: StableIdSchema
+  })
+  .readonly();
+
+export const AnimationClipSchema = z
+  .strictObject({
+    clipId: StableIdSchema,
+    templateId: StableIdSchema,
+    action: AnimationActionIdSchema,
+    frameCount: z.number().int().min(1).max(MAX_ANIMATION_FRAMES_PER_CLIP),
+    fps: z.number().finite().positive().max(MAX_ANIMATION_FPS),
+    loop: z.boolean()
+  })
+  .superRefine((clip, context) => {
+    if (clip.action === "walk" && clip.frameCount !== 8) {
+      context.addIssue({
+        code: "custom",
+        path: ["frameCount"],
+        message: "Walk clips require exactly 8 frames in animation format V1."
+      });
+    }
+  })
+  .readonly();
+
+const JointDeltaRecordSchema = z
+  .partialRecord(AnimationJointIdSchema, AnimationTransformDeltaSchema)
+  .readonly();
+const PartDeltaRecordSchema = z
+  .partialRecord(AnimationPartSlotSchema, AnimationTransformDeltaSchema)
+  .readonly();
+
+const LayerOrderOverrideSchema = z
+  .array(AnimationPartSlotSchema)
+  .max(PART_SLOT_IDS.length)
+  .refine((slots) => new Set(slots).size === slots.length, {
+    message: "Layer order override must not contain duplicate slots."
+  })
+  .readonly();
+
+export const DirectionFrameOverrideSchema = z
+  .strictObject({
+    clipId: StableIdSchema,
+    direction: AnimationDirectionSchema,
+    frameIndex: z
+      .number()
+      .int()
+      .min(0)
+      .max(MAX_ANIMATION_FRAMES_PER_CLIP - 1),
+    rootDelta: AnimationTransformDeltaSchema.optional(),
+    jointDeltas: JointDeltaRecordSchema.optional(),
+    partDeltas: PartDeltaRecordSchema.optional(),
+    layerOrderOverride: LayerOrderOverrideSchema.optional()
+  })
+  .superRefine((override, context) => {
+    const hasJointDelta =
+      override.jointDeltas !== undefined &&
+      Object.keys(override.jointDeltas).length > 0;
+    const hasPartDelta =
+      override.partDeltas !== undefined &&
+      Object.keys(override.partDeltas).length > 0;
+    const hasLayerOverride =
+      override.layerOrderOverride !== undefined &&
+      override.layerOrderOverride.length > 0;
+
+    if (
+      override.rootDelta === undefined &&
+      !hasJointDelta &&
+      !hasPartDelta &&
+      !hasLayerOverride
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "A frame override must contain at least one explicit delta."
+      });
+    }
+  })
+  .readonly();
+
+export const SourcePromptReferenceSchema = z
+  .strictObject({
+    assetProfileId: StableIdSchema,
+    compatibilityKey: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_ANIMATION_COMPATIBILITY_KEY_LENGTH)
+  })
+  .readonly();
+
+export const ProjectPartAssignmentsSchema = z
+  .array(ProjectPartAssignmentSchema)
+  .max(MAX_ANIMATION_PARTS_PER_PROJECT)
+  .readonly();
+export const AnimationClipsSchema = z
+  .array(AnimationClipSchema)
+  .max(MAX_ANIMATION_CLIPS_PER_PROJECT)
+  .readonly();
+export const DirectionFrameOverridesSchema = z
+  .array(DirectionFrameOverrideSchema)
+  .max(MAX_ANIMATION_OVERRIDES_PER_PROJECT)
+  .readonly();
+
+const AnimationProjectObjectSchema = z.strictObject({
+  schemaVersion: AnimationSchemaVersionSchema,
+  kind: z.literal("animationProject"),
+  projectId: StableIdSchema,
+  name: AnimationNameSchema,
+  createdAt: IsoDateTimeSchema,
+  updatedAt: IsoDateTimeSchema,
+  rigTemplateId: AnimationRigTemplateIdSchema,
+  frameProfile: AnimationFrameProfileSchema,
+  directionSourceMode: AnimationDirectionSourceModeSchema,
+  parts: ProjectPartAssignmentsSchema,
+  clips: AnimationClipsSchema,
+  overrides: DirectionFrameOverridesSchema,
+  sourcePrompt: SourcePromptReferenceSchema.optional(),
+  previewBlobId: StableIdSchema.optional()
+});
+
+export const AnimationProjectSchema = AnimationProjectObjectSchema.superRefine(
+  (project, context) => {
+    const assetIds = new Set<string>();
+    project.parts.forEach((part, index) => {
+      if (assetIds.has(part.assetId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["parts", index, "assetId"],
+          message: `Duplicate project part asset id "${part.assetId}".`
+        });
+      }
+      assetIds.add(part.assetId);
+    });
+
+    const clipsById = new Map(project.clips.map((clip) => [clip.clipId, clip]));
+    const clipIds = new Set<string>();
+    project.clips.forEach((clip, index) => {
+      if (clipIds.has(clip.clipId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["clips", index, "clipId"],
+          message: `Duplicate animation clip id "${clip.clipId}".`
+        });
+      }
+      clipIds.add(clip.clipId);
+    });
+
+    const overrideTargets = new Set<string>();
+    project.overrides.forEach((override, index) => {
+      const clip = clipsById.get(override.clipId);
+      if (!clip) {
+        context.addIssue({
+          code: "custom",
+          path: ["overrides", index, "clipId"],
+          message: `Frame override references missing clip "${override.clipId}".`
+        });
+      } else if (override.frameIndex >= clip.frameCount) {
+        context.addIssue({
+          code: "custom",
+          path: ["overrides", index, "frameIndex"],
+          message: `Frame index must be between 0 and ${clip.frameCount - 1}.`
+        });
+      }
+
+      const target = `${override.clipId}:${override.direction}:${override.frameIndex}`;
+      if (overrideTargets.has(target)) {
+        context.addIssue({
+          code: "custom",
+          path: ["overrides", index],
+          message: `Duplicate frame override target "${target}".`
+        });
+      }
+      overrideTargets.add(target);
+    });
+  }
+).readonly();
+
+export function parseAnimationProject(input: unknown): AnimationProject {
+  return AnimationProjectSchema.parse(input);
+}
+
+export type ProjectPartAssignment = z.infer<
+  typeof ProjectPartAssignmentSchema
+>;
+export type AnimationClip = z.infer<typeof AnimationClipSchema>;
+export type DirectionFrameOverride = z.infer<
+  typeof DirectionFrameOverrideSchema
+>;
+export type SourcePromptReference = z.infer<
+  typeof SourcePromptReferenceSchema
+>;
+export type AnimationProject = z.infer<typeof AnimationProjectSchema>;

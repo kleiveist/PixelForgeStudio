@@ -35,6 +35,12 @@
 - unveränderlichen `humanoid-80-v1`-Framevertrag sowie pure Vektor-, Winkel-
   und affine Matrixoperationen als Grundlage für spätere Rig-, Placement- und
   Renderphasen ergänzt
+- eigenständige strikte Animation-Schema-/Formatversion 1 für Projekte,
+  PartAssets, Character Kits und `.pfanim`-Manifeste eingeführt, ohne den
+  Prompt-Studio-V2-Vertrag zu verändern
+- Cross-Field-Prüfungen für Source-Anker, Trim-Bounds, eindeutige Part-/Clip-
+  IDs, Walk-Frames, Frame-Overrides und vollständige Bundle-Referenzen sowie
+  eine getrennte Produktionsquellenprüfung ergänzt
 
 ## 2.0.0 — 2026-09-03
 

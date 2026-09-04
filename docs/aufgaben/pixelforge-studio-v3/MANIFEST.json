@@ -87,13 +87,13 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 4232,
-      "sha256": "5f32a4a45b2d2bc60d628d9fa2846ca6e804b6451699d064e4f85028240036ab"
+      "bytes": 4259,
+      "sha256": "92c7b27317c5ae170950f134789dd930c3e82750c1dc17c57bd8c9134fd986c9"
     },
     {
       "path": "START_HERE.md",
-      "bytes": 1914,
-      "sha256": "40bcc69e17ced2685d4204554266790b7d1e5730a1f1bd19abdb1acaa0c7351f"
+      "bytes": 1920,
+      "sha256": "7455644bc36073081dcd5fff2642f644937c105e6cabbf1e672e3064d0e2751d"
     },
     {
       "path": "grundlagen/00_REPOSITORY_BASELINE.md",
@@ -107,8 +107,8 @@
     },
     {
       "path": "grundlagen/02_TARGET_ARCHITECTURE.md",
-      "bytes": 12003,
-      "sha256": "a903fbf87618167b5dfad4e4decc3b48265232b5b30bf4957978bce03c5720b8"
+      "bytes": 12517,
+      "sha256": "103b02d7c603a72b4563526cf6e961b828ced7678f1ec27ba7e32ed145e7f99c"
     },
     {
       "path": "grundlagen/03_UI_INFORMATION_ARCHITECTURE.md",
@@ -122,8 +122,8 @@
     },
     {
       "path": "grundlagen/05_DATA_STORAGE_AND_FORMATS.md",
-      "bytes": 10745,
-      "sha256": "49cbbf60e7a3eb332920f85458472ea1543347c33e31fad9a447d64ee6043c7a"
+      "bytes": 10810,
+      "sha256": "6f4966cf5c1f73c77e915c90c2d87df80e38806f0e9461229b5a7ac8f7930ae9"
     },
     {
       "path": "grundlagen/06_EXPORT_AND_GODOT_SPEC.md",
@@ -272,8 +272,8 @@
     },
     {
       "path": "prompts/index.md",
-      "bytes": 3036,
-      "sha256": "80f80457fdb53ce6bfb34c0320ead6631e60c1f8b2bf61c670f87c3b1454ddaa"
+      "bytes": 3067,
+      "sha256": "d9770ab29208dbd2dfb638262f0a71eb8a9251ed2f34e43f277217322ec5a117"
     },
     {
       "path": "templates/AGENTS-PIXELFORGE-STUDIO-ADDENDUM.md",

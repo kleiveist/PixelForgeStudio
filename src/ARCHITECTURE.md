@@ -1,12 +1,12 @@
 # PixelForge Studio source architecture
 
-Prompt 32 opens Phase B with the first public Animation Studio domain. The
-productive Studio Home continues to project existing Prompt summaries and
-equal module entries without owning either domain. Animation projects and
-rendering remain honest placeholders, while directions, humanoid slots,
-joint/bone topology, production-frame constants and affine mathematics now
-have one framework-free source of truth. Both modules share one route source,
-settings source, theme, skip target, title and focus boundary.
+Prompt 33 extends Phase B with strict, independent Animation metadata schemas
+on top of the public domain from Prompt 32. The productive Studio Home
+continues to project existing Prompt summaries and equal module entries
+without owning either domain. Animation persistence and rendering remain
+honest placeholders, while domain values and schema-valid metadata now have
+one source of truth each. Both modules share one route source, settings source,
+theme, skip target, title and focus boundary.
 
 - `app/`: Composition, globale `StudioShell`, getrennte Prompt-/Animations-
   Modulflächen, pure Home-Zusammenfassungsprojektion mit schmalem Controller,
@@ -80,6 +80,10 @@ settings source, theme, skip target, title and focus boundary.
     Animation start settings with defaults for older strict data;
     `wizardDraft.schema.ts` and `exportBundle.schema.ts`: remaining
     persisted/imported V2 contracts
+  - `animationPrimitives.schema.ts`, `animationProject.schema.ts`,
+    `animationPartAsset.schema.ts`, `animationKit.schema.ts` and
+    `animationBundle.schema.ts`: independent strict Animation schema/format
+    V1 contracts, cross-field invariants and validated bundle references
   - `legacyV1.schema.ts`: defensive whitelist and normalization boundary for
     raw, autosave, preset, and export-shaped V1 input
   - `storage.schema.ts`: versioned collection envelopes, profile-graph
@@ -344,8 +348,9 @@ names. `BRAND.productName` identifies PixelForge Studio while
 compact labels. `PROMPT_EXPORT_APPLICATION_ID` remains the persisted
 `"PixelForge Prompt Studio"` wire discriminator;
 `EXPORT_APPLICATION_ID` is its backward-compatible alias.
-`ANIMATION_EXPORT_APPLICATION_ID` is reserved for a future, separately
-versioned animation schema and is not consumed by Prompt Studio exports.
+`ANIMATION_EXPORT_APPLICATION_ID` is the active discriminator of the
+separately versioned Animation format V1 and is never consumed by Prompt
+Studio exports.
 
 `domain/theme/index.ts` is the framework-free theme API. It distinguishes the
 persisted `light | dark | system` preference from the resolved `light | dark`
@@ -769,8 +774,33 @@ foot anchor 64/112, contract version 1). Vector, radian-angle and affine 2D
 matrix helpers are deterministic pure functions. Matrix composition uses
 `T × R × S` order and therefore applies the right-most transform first.
 Production files in this directory import neither React nor Zod and reference
-no browser, persistence or Canvas API. Zod schemas begin in Prompt 33;
-concrete joint coordinates, poses, rendering and UI remain later boundaries.
+no browser, persistence or Canvas API. Concrete joint coordinates, poses,
+rendering and UI remain later boundaries.
+
+`schemas/index.ts` is also the public Animation metadata boundary since Prompt
+33. Project, PartAsset and CharacterKit use strict `schemaVersion: 1` objects;
+the `.pfanim` manifest independently fixes `application` to
+`"PixelForge Animation Studio"` and `formatVersion` to `1`. Every parse
+function accepts `unknown`, rejects newer versions and unknown keys, returns
+the Zod-derived readonly normal form, and never accepts Blob or Base64 payloads.
+Prompt Studio keeps its independent schema/format version 2.
+
+The validated bundle graph resolves references before any future write:
+
+```text
+project.parts[*].assetId → partAssets[*].assetId
+partAssets[*].blobId     → blobIds[*]
+project.previewBlobId    → blobIds[*]
+```
+
+Project refinements enforce unique PartAsset and clip IDs, exactly eight
+frames for the V1 Walk action, and unique overrides that target an existing
+clip, canonical direction and in-range frame. Source anchors and trim bounds
+remain in original-image coordinates.
+`validateAnimationProjectProductionSources()` is deliberately separate from
+schema parsing: an incomplete draft remains storable, while missing required
+slot/direction sources and two-point anchors are explicit production issues.
+IndexedDB and atomic writes begin only with Prompt 34.
 
 `domain/prompt-engine/index.ts` is the framework-free public boundary for
 Prompt 23. `buildPromptPackages()` accepts only an already validated
@@ -878,5 +908,6 @@ Home and Animation routes are typed and roundtrip-stable without a visible new
 shell. Prompt 30 adds the global shell and accessible module placeholders.
 Prompt 31 completes Phase A with the productive Home surface and additive
 start settings. Prompt 32 starts Phase B with the public, tested Animation rig
-foundation. Prompt 33 is the next unstarted task and owns Animation project
-schemas; no Animation project persistence exists yet.
+foundation. Prompt 33 adds the independent strict Animation metadata and
+bundle-graph schemas. Prompt 34 is the next unstarted task and owns the
+IndexedDB repository; no Animation project persistence exists yet.
