@@ -1,12 +1,12 @@
 # PixelForge Studio source architecture
 
-Prompt 31 completes Phase A on top of the module-aware routing boundary. The
-productive Studio Home projects existing Prompt summaries and equal module
-entries without owning either domain. The released Prompt Studio remains the
-productive module; Animation Studio exposes honest, accessible empty and
-placeholder views until its project domain starts in Prompt 32. Both modules
-share one route source, settings source, theme, skip target, title and focus
-boundary.
+Prompt 32 opens Phase B with the first public Animation Studio domain. The
+productive Studio Home continues to project existing Prompt summaries and
+equal module entries without owning either domain. Animation projects and
+rendering remain honest placeholders, while directions, humanoid slots,
+joint/bone topology, production-frame constants and affine mathematics now
+have one framework-free source of truth. Both modules share one route source,
+settings source, theme, skip target, title and focus boundary.
 
 - `app/`: Composition, globale `StudioShell`, getrennte Prompt-/Animations-
   Modulflächen, pure Home-Zusammenfassungsprojektion mit schmalem Controller,
@@ -18,6 +18,9 @@ boundary.
   Prompt-Modul und Animationsmodul, daraus abgeleitete Moduldefinitionen sowie
   getrennte, bewusst stabile Exportformat-Identifier
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
+  - `animation/`: stable direction/source-mode contracts, complete Production-
+    Humanoid slot metadata, joint/bone topology, versioned frame defaults and
+    pure vector/angle/affine-matrix helpers without pose or rendering data
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
   - `characters/`: Character/NPC option catalogs, subtype guards, canonical
@@ -751,6 +754,24 @@ values continue through the shared strict Zod schemas and
 Base→Category→Asset resolver; Artwork type and game-specific technical values
 are never duplicated into `ArtworkAnswers`.
 
+`domain/animation/index.ts` is the framework-free public boundary introduced
+by Prompt 32. It owns the non-alphabetical eight-direction production order,
+the three explicit source modes and their authored-direction requirements,
+all 39 Production-Humanoid slots with stable groups, labels and required
+status, 21 joint IDs, 20 coordinate-free bone edges and the complete required-
+slot binding contract. Anatomical left/right slot IDs are never renamed by
+direction mirroring.
+
+The same boundary publishes readonly point, size, rectangle, source-anchor,
+frame and transform types; mirror, rig-template and animation-action IDs; and
+the immutable `humanoid-80-v1` standard (128 × 128 frame, 80 px character,
+foot anchor 64/112, contract version 1). Vector, radian-angle and affine 2D
+matrix helpers are deterministic pure functions. Matrix composition uses
+`T × R × S` order and therefore applies the right-most transform first.
+Production files in this directory import neither React nor Zod and reference
+no browser, persistence or Canvas API. Zod schemas begin in Prompt 33;
+concrete joint coordinates, poses, rendering and UI remain later boundaries.
+
 `domain/prompt-engine/index.ts` is the framework-free public boundary for
 Prompt 23. `buildPromptPackages()` accepts only an already validated
 `ResolvedProfile` plus an optional canonical language selection. It returns
@@ -856,5 +877,6 @@ boundaries. Legacy Prompt URLs remain valid and are canonically replaced;
 Home and Animation routes are typed and roundtrip-stable without a visible new
 shell. Prompt 30 adds the global shell and accessible module placeholders.
 Prompt 31 completes Phase A with the productive Home surface and additive
-start settings. Prompt 32 is the next unstarted phase and owns the first
-framework-free Animation domain; no Animation project persistence exists yet.
+start settings. Prompt 32 starts Phase B with the public, tested Animation rig
+foundation. Prompt 33 is the next unstarted task and owns Animation project
+schemas; no Animation project persistence exists yet.

@@ -36,8 +36,9 @@ Sie sind deshalb als **Prompt 28 bis Prompt 51** nummeriert.
 - Prompt 30: abgeschlossen
 - Prompt 31: abgeschlossen
 - Phase A (Prompts 28–31): abgeschlossen
-- Prompt 32: nächster Auftrag, noch nicht begonnen
-- Prompts 33–51: noch nicht begonnen
+- Prompt 32: abgeschlossen; Phase B begonnen
+- Prompt 33: nächster Auftrag, noch nicht begonnen
+- Prompts 34–51: noch nicht begonnen
 
 ## Empfohlener Zielname
 

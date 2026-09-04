@@ -10,7 +10,9 @@ Die modulbasierte Route, ihre Browser-History-Grenze und der zugehörige
 Provider wurden mit Prompt 29 umgesetzt. Prompt 30 ergänzte die sichtbare
 globale Studio-Shell, die produktive Prompt-Modulfläche und die vier bewusst
 fachlogikfreien Animation-Platzhalter. Prompt 31 vervollständigte Phase A mit
-der produktiven Home-Fläche sowie kompatiblen, getrennten Startzielen.
+der produktiven Home-Fläche sowie kompatiblen, getrennten Startzielen. Prompt
+32 eröffnete Phase B mit der frameworkfreien Animations-, Rig- und Slot-Domain;
+Projekt-Schemas und Persistenz bleiben nachfolgende Grenzen.
 
 ## Leitprinzip
 
@@ -252,6 +254,21 @@ Parser und Serializer sind pure Funktionen und besitzen Tests für:
 - Projekt-ID nur im Workspace,
 - Erhalt fremder, nicht konfliktbehafteter Query-Parameter,
 - Browser-Zurück/Vorwärts.
+
+### Animationsdomain
+
+Seit Prompt 32 ist `src/domain/animation/index.ts` die öffentliche Quelle für:
+
+- den verbindlichen Acht-Richtungs-Kanon und drei explizite SourceModes,
+- 39 Production-Humanoid-Slots mit Gruppen, Labels und Required-Status,
+- 21 Joint- und 20 koordinatenfreie Bone-IDs samt Pflichtslot-Bindungen,
+- readonly Geometrie-, Anker-, Frame- und Transformverträge,
+- `humanoid-80-v1` mit 128 × 128 px, 80 px Figurenhöhe und Fußanker 64/112,
+- sowie pure Vektor-, Winkel- und affine Matrixoperationen.
+
+Die Domain besitzt keine React-, Zod-, DOM-, Canvas-, IndexedDB- oder Storage-
+Abhängigkeit. Konkrete Posen, Rigdaten und Rendering gehören nicht in diesen
+Grundvertrag.
 
 ## Settings-Kompatibilität
 

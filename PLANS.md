@@ -2,11 +2,11 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 31 — Studio-Startseite und Startziele (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 32 — Animationsdomain-Grundlage (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 32 — Animationsdomain-Grundlage (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 33 — Animationsprojekt-Schemas (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
-- **Aktive Serie:** Phase A mit Prompts 28–31 abgeschlossen; Prompts 32–51
-  offen unter
+- **Aktive Serie:** Phase A mit Prompts 28–31 abgeschlossen; Phase B mit
+  Prompt 32 begonnen, Prompts 33–51 offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 
@@ -180,6 +180,46 @@
    Produktionsbuild; einzige Ausgabe bleibt die bekannte Vite-Warnung zum
    über 500 kB großen Hauptchunk. Die Shell-Regression trennt den zulässigen
    zeitgesteuerten Draft-Autosave von der exakt einmaligen Settings-Mutation.
+
+## Prompt 32 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `bc25455`
+- Baseline: `npm run verify` erfolgreich mit 113 Testdateien und 684 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Abnahme: öffentliche, frameworkfreie `domain/animation` mit kanonischen
+  Richtungen und SourceModes, vollständigem Production-Humanoid-Slotkatalog,
+  stabiler Joint-/Bone-Topologie, readonly Grundtypen und Standardframe sowie
+  getesteter Vektor-, Winkel- und affiner Matrixmathematik
+- Grenze: keine Zod-Schemas, Persistenz, UI, Canvas, konkrete Gelenkpose,
+  Renderingfunktion, Tier-/Fahrzeugrigs oder Arbeit an Prompt 33
+
+## Prompt 32 — Ergebnis
+
+1. `domain/animation/index.ts` veröffentlicht den stabilen Richtungskanon,
+   alle drei SourceModes, Spiegel-/Gegenrichtungsauflösung und die je Modus
+   exakt erforderlichen, unveränderlichen Quellrichtungen.
+2. Der vollständige Production-Humanoid-Vertrag umfasst 15 Pflicht- und 24
+   optionale Slots mit Domainlabels, zehn Gruppen und Required-Status. Alle 15
+   Pflichtslots sind einmalig an eine gültige Parent-/Child-Joint-Kante
+   gebunden; anatomische Seiten bleiben von visueller Spiegelung unabhängig.
+3. 21 Joint- und 20 Bone-IDs bilden eine koordinatenfreie, deterministisch
+   geordnete Topologie. Konkrete Neutralposen und Rigkoordinaten bleiben wie
+   vorgesehen Prompt 38 vorbehalten.
+4. Readonly Grundtypen, Mirror-/Rig-/Action-Kataloge und der unveränderliche
+   `humanoid-80-v1`-Standard definieren 128 × 128 px, 80 px Figurenhöhe,
+   Fußanker 64/112 und Contract-Version 1.
+5. Pure Vektor-, Radiantwinkel- und affine Matrixfunktionen decken Addition,
+   Subtraktion, Länge, Nullvektor, Clamp, Normalisierung, Identity,
+   Komposition, Anwendung, Inversion und Roundtrip ab. Die Domain enthält
+   keine React-, Zod-, DOM-, Canvas-, Storage- oder IndexedDB-Abhängigkeit.
+6. Gezielte Prüfung: 5 Testdateien und 38 Tests bestanden. `npm run verify`
+   bestand mit 118 Testdateien und 722 Tests sowie erfolgreichem Typecheck und
+   Produktionsbuild; einzige Ausgabe bleibt die bekannte Vite-Warnung zum
+   über 500 kB großen Hauptchunk. PyGitIndex meldet 63 unveränderte Markdown-
+   Seiten, und alle 43 Paketchecksummen sind gültig.
+7. Prompt 33 wurde nicht begonnen. Animationsschemas, Persistenz, konkrete
+   Posen, Rendering und UI bleiben bewusst nachfolgenden Einzelprompts
+   vorbehalten.
 
 ## Plan — Dokumentationsordnung
 

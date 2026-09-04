@@ -15,11 +15,12 @@
 
 ## 2. Aktueller Ausführungsstand
 
-Prompts 28 bis 31 und damit Phase A sind abgeschlossen. Beginne nach einem
-neuen konkreten Auftrag als Nächstes mit:
+Prompts 28 bis 32 sind abgeschlossen; Phase A ist vollständig und Phase B hat
+mit der frameworkfreien Animationsdomain begonnen. Beginne nach einem neuen
+konkreten Auftrag als Nächstes mit:
 
 ```text
-docs/aufgaben/pixelforge-studio-v3/prompts/32_ANIMATION_DOMAIN_FOUNDATION.md
+docs/aufgaben/pixelforge-studio-v3/prompts/33_ANIMATION_PROJECT_SCHEMAS.md
 ```
 
 Führe anschließend weiterhin genau einen Prompt nach dem anderen bis Prompt 51

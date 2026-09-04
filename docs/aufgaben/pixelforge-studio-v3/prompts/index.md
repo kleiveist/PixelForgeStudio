@@ -40,5 +40,6 @@
 - Prompt 29 ist abgeschlossen.
 - Prompt 30 ist abgeschlossen.
 - Prompt 31 und damit Phase A sind abgeschlossen.
-- Prompt 32 ist der nächste Auftrag und wurde noch nicht begonnen.
-- Prompts 33–51 sind ebenfalls offen.
+- Prompt 32 ist abgeschlossen und hat Phase B begonnen.
+- Prompt 33 ist der nächste Auftrag und wurde noch nicht begonnen.
+- Prompts 34–51 sind ebenfalls offen.

@@ -87,13 +87,13 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 4187,
-      "sha256": "0a459470555604f8ee0d396ed3c2375e98b2a2b612e35663e25370f32a4d97d9"
+      "bytes": 4232,
+      "sha256": "5f32a4a45b2d2bc60d628d9fa2846ca6e804b6451699d064e4f85028240036ab"
     },
     {
       "path": "START_HERE.md",
-      "bytes": 1842,
-      "sha256": "7f9af26fa06b433168fc2ffdc4274ec750167de1fefd40a73a1c5e3b492b7ece"
+      "bytes": 1914,
+      "sha256": "40bcc69e17ced2685d4204554266790b7d1e5730a1f1bd19abdb1acaa0c7351f"
     },
     {
       "path": "grundlagen/00_REPOSITORY_BASELINE.md",
@@ -107,8 +107,8 @@
     },
     {
       "path": "grundlagen/02_TARGET_ARCHITECTURE.md",
-      "bytes": 11157,
-      "sha256": "27123fc6af5fff56a9c4410aaec812e195193d4618f95de9ee78bdcfeccca1cf"
+      "bytes": 12003,
+      "sha256": "a903fbf87618167b5dfad4e4decc3b48265232b5b30bf4957978bce03c5720b8"
     },
     {
       "path": "grundlagen/03_UI_INFORMATION_ARCHITECTURE.md",
@@ -272,8 +272,8 @@
     },
     {
       "path": "prompts/index.md",
-      "bytes": 2980,
-      "sha256": "99d30f105ad1b42acf65c8f342e28e677eb96a4886efe519f6f6b04607123027"
+      "bytes": 3036,
+      "sha256": "80f80457fdb53ce6bfb34c0320ead6631e60c1f8b2bf61c670f87c3b1454ddaa"
     },
     {
       "path": "templates/AGENTS-PIXELFORGE-STUDIO-ADDENDUM.md",

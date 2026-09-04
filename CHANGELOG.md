@@ -29,6 +29,12 @@
   Modulkarten besitzen eigene thematische SVG-Illustrationen, begrenzen lange
   Texte sicher und verwenden kompakte Prompt-/Animationsaktivitäts- und
   Profilkarten
+- frameworkfreie Animationsdomain mit festem 8-Richtungs-Kanon, drei
+  Quellmodi, vollständigem 39-Slot-Production-Humanoid-Katalog, 21 Joints,
+  20 Bones und eindeutigen Pflichtslot-Bindungen eingeführt
+- unveränderlichen `humanoid-80-v1`-Framevertrag sowie pure Vektor-, Winkel-
+  und affine Matrixoperationen als Grundlage für spätere Rig-, Placement- und
+  Renderphasen ergänzt
 
 ## 2.0.0 — 2026-09-03
 
