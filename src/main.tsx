@@ -5,6 +5,7 @@ import { BRAND } from "./config";
 import {
   createBrowserNavigationAdapter,
   createBrowserAnimationRepository,
+  createBrowserImageDecoder,
   createBrowserOutputWorkspaceAdapter,
   initializeBrowserWorkspaceStorage
 } from "./services";
@@ -20,6 +21,7 @@ if (!rootElement) {
 const { storageAdapter, migration } = initializeBrowserWorkspaceStorage();
 const navigationAdapter = createBrowserNavigationAdapter();
 const outputAdapter = createBrowserOutputWorkspaceAdapter();
+const animationImageDecoder = createBrowserImageDecoder();
 
 async function renderApplication(root: HTMLElement) {
   const animationRepositoryResult = await createBrowserAnimationRepository();
@@ -36,6 +38,7 @@ async function renderApplication(root: HTMLElement) {
             ? animationRepositoryResult.repository
             : null
         }
+        animationImageDecoder={animationImageDecoder}
         {...(animationRepositoryResult.status === "unavailable"
           ? {
               animationRepositoryUnavailableMessage:

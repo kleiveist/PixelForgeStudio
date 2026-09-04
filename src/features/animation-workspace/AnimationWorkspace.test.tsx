@@ -61,22 +61,21 @@ describe("AnimationWorkspace", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Timeline" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 3, name: "Körpermitte" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 3, name: "Freie Accessoires" })).toBeVisible();
-    expect(screen.getByText(/1 Projekt-Referenz besitzt/)).toBeVisible();
+    expect(screen.getByText(/part_head_south_001 konnte/)).toBeVisible();
 
     const headSlot = screen.getByRole("button", {
-      name: "Kopf; Erforderlich; Zuordnung nicht geladen"
+      name: "Kopf; Erforderlich; Fehlt"
     });
     expect(headSlot).toHaveAttribute("aria-pressed", "false");
 
     const playback = screen.getByRole("button", { name: "Play / Pause" });
     const exportButton = screen.getByRole("button", { name: "Exportieren" });
-    const importButton = screen.getByRole("button", { name: "PNG-Teil importieren" });
+    const importInput = screen.getByLabelText("PNG-Datei auswählen");
     expect(playback).toBeDisabled();
     expect(playback).toHaveAccessibleDescription(/echten Timeline/);
     expect(exportButton).toBeDisabled();
     expect(exportButton).toHaveAccessibleDescription(/Renderpipeline/);
-    expect(importButton).toBeDisabled();
-    expect(importButton).toHaveAccessibleDescription(/Prompt 37/);
+    expect(importInput).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Jetzt speichern" }));
     expect(onSave).toHaveBeenCalledTimes(1);
@@ -171,7 +170,7 @@ describe("AnimationWorkspace", () => {
     renderWorkspace();
 
     const headSlot = screen.getByRole("button", {
-      name: "Kopf; Erforderlich; Zuordnung nicht geladen"
+      name: "Kopf; Erforderlich; Fehlt"
     });
     headSlot.focus();
     await user.keyboard("{Enter}");
@@ -181,7 +180,7 @@ describe("AnimationWorkspace", () => {
     );
     const inspector = screen.getByRole("heading", { level: 2, name: "Eigenschaften" }).closest("section");
     if (!inspector) throw new Error("Inspector panel missing.");
-    expect(within(inspector).getByText("Nicht aufgelöst")).toBeVisible();
+    expect(within(inspector).getByText("Teilweise nicht aufgelöst")).toBeVisible();
     expect(within(inspector).getByText("Noch nicht geladen")).toBeVisible();
     expect(within(inspector).queryByRole("textbox")).not.toBeInTheDocument();
 

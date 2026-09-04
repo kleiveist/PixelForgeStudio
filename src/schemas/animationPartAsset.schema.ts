@@ -2,6 +2,7 @@ import { z } from "zod";
 import { IsoDateTimeSchema, StableIdSchema } from "./common.schema";
 import {
   AnimationDirectionSchema,
+  AnimationAnchorStatusSchema,
   AnimationJointIdSchema,
   AnimationMirrorPolicySchema,
   AnimationNameSchema,
@@ -43,7 +44,8 @@ export const AnimationPartAssetSchema = z
     direction: AnimationDirectionSchema,
     sourceSize: AnimationSizeSchema,
     trimRect: AnimationTrimRectSchema,
-    anchors: AnimationSourceAnchorsSchema,
+    anchorStatus: AnimationAnchorStatusSchema.default("ready"),
+    anchors: AnimationSourceAnchorsSchema.optional(),
     mirrorPolicy: AnimationMirrorPolicySchema,
     attachmentJointId: AnimationJointIdSchema.optional(),
     createdAt: IsoDateTimeSchema,
@@ -65,6 +67,23 @@ export const AnimationPartAssetSchema = z
         message: "Trim rectangle must fit inside the source height."
       });
     }
+
+    if (asset.anchorStatus === "ready" && !asset.anchors) {
+      context.addIssue({
+        code: "custom",
+        path: ["anchors"],
+        message: "Ready part assets require source anchors."
+      });
+    }
+    if (asset.anchorStatus === "anchorsPending" && asset.anchors) {
+      context.addIssue({
+        code: "custom",
+        path: ["anchors"],
+        message: "Anchor-pending part assets must not contain guessed anchors."
+      });
+    }
+
+    if (!asset.anchors) return;
 
     addPointOutsideSourceIssue(
       asset.anchors.proximal,

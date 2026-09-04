@@ -97,7 +97,7 @@ describe("animation production source validation", () => {
         label: arm.label,
         slot: arm.slot,
         direction: arm.direction,
-        anchors: { proximal: arm.anchors.proximal }
+        anchors: { proximal: arm.anchors!.proximal }
       })
     );
     const incompleteAssets = assets.map((asset, index) =>
@@ -136,6 +136,23 @@ describe("animation production source validation", () => {
     expect(
       issues.filter((issue) => issue.code === "missingRequiredSource")
     ).toHaveLength(15);
+  });
+
+  it("keeps an imported anchor-pending source visible as a production blocker", () => {
+    const pending = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        anchorStatus: "anchorsPending",
+        anchors: undefined
+      })
+    );
+    const project = projectForAssets("singleDirectionPrototype", [pending]);
+
+    expect(validateAnimationProjectProductionSources(project, [pending])).toContainEqual({
+      code: "anchorsPending",
+      assetId: pending.assetId,
+      slot: "head",
+      direction: "south"
+    });
   });
 
   it("uses canonical direction order for full authored validation", () => {

@@ -8,7 +8,20 @@ import {
 } from "react";
 import { Badge, Surface } from "../../components/ui";
 import { isDirection, type PartSlot } from "../../domain/animation";
-import type { AnimationClip, AnimationProject } from "../../schemas";
+import {
+  PartImportPanel,
+  createPartCoverageMatrix,
+  findPartAssetForSource,
+  type PartImportCommitDefinition,
+  type PartImportCommitResult
+} from "../animation-part-import";
+import type {
+  AnimationClip,
+  AnimationPartAsset,
+  AnimationProject,
+  StableId
+} from "../../schemas";
+import type { ImageDecoder } from "../../services";
 import {
   DIRECTION_LABELS,
   OVERLAY_LABELS,
@@ -47,6 +60,14 @@ export interface AnimationWorkspaceProps {
   readonly saveError: string | null;
   readonly sourceError: string | null;
   readonly onSave: () => void;
+  readonly partAssets?: readonly AnimationPartAsset[];
+  readonly missingPartAssetIds?: readonly StableId[];
+  readonly partAssetLoadError?: string | null;
+  readonly partAssetsLoading?: boolean;
+  readonly imageDecoder?: ImageDecoder | null;
+  readonly onImportPart?: (
+    definition: PartImportCommitDefinition
+  ) => Promise<PartImportCommitResult>;
 }
 
 const SAVE_STATUS_COPY: Readonly<Record<WorkspaceSaveStatus, string>> =
@@ -313,20 +334,47 @@ function PaneNavigation({
 }
 
 interface PartInventoryProps {
+  readonly project: AnimationProject;
+  readonly direction: AnimationWorkspaceState["direction"];
   readonly selectedSlot: PartSlot | null;
+  readonly partAssets: readonly AnimationPartAsset[];
+  readonly missingPartAssetIds: readonly StableId[];
+  readonly partAssetLoadError: string | null;
+  readonly partAssetsLoading: boolean;
+  readonly imageDecoder: ImageDecoder | null;
+  readonly onImportPart: (
+    definition: PartImportCommitDefinition
+  ) => Promise<PartImportCommitResult>;
   readonly unresolvedReferenceCount: number;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
 }
 
 function PartInventory({
+  project,
+  direction,
   selectedSlot,
+  partAssets,
+  missingPartAssetIds,
+  partAssetLoadError,
+  partAssetsLoading,
+  imageDecoder,
+  onImportPart,
   unresolvedReferenceCount,
   dispatch,
   layout
 }: PartInventoryProps) {
-  const occupancyLabel =
-    unresolvedReferenceCount > 0 ? "Zuordnung nicht geladen" : "Frei";
+  const selectedSlotDefinition = getPartSlotDefinition(selectedSlot);
+  const existingPart = selectedSlot
+    ? findPartAssetForSource(partAssets, selectedSlot, direction)
+    : null;
+  const coverage = createPartCoverageMatrix(project, partAssets);
+  const coverageLabels = {
+    authoredSource: "Quelle",
+    missing: "Fehlt",
+    optional: "Optional",
+    anchorPending: "Anker offen"
+  } as const;
   return (
     <Surface
       as="section"
@@ -349,60 +397,116 @@ function PartInventory({
         Pflicht- und optionale Slots stammen direkt aus dem Humanoid-Domainkatalog.
       </p>
 
-      {unresolvedReferenceCount > 0 ? (
+      {partAssetsLoading ? (
         <div className={styles.sourceNotice} role="status">
-          <strong>Bildquellen noch nicht aufgelöst</strong>
+          <strong>Part-Metadaten werden geladen …</strong>
+          <span>Projektzuweisungen bleiben bis zum Abschluss unverändert.</span>
+        </div>
+      ) : partAssetLoadError ? (
+        <div className={styles.sourceNotice} role="alert">
+          <strong>Part-Metadaten konnten nicht geladen werden</strong>
+          <span>{partAssetLoadError}</span>
+        </div>
+      ) : unresolvedReferenceCount > 0 ? (
+        <div className={styles.sourceNotice} role="status">
+          <strong>Einige Part-Referenzen fehlen</strong>
           <span>
-            {unresolvedReferenceCount} Projekt-
-            {unresolvedReferenceCount === 1 ? "Referenz" : "Referenzen"} besitzt
-            noch keine geladene Slot-/Blobinformation in dieser Workspace-Phase.
+            {missingPartAssetIds.join(", ")} konnte{unresolvedReferenceCount === 1 ? "" : "n"}
+            nicht als gespeicherte Part-Metadaten aufgelöst werden.
           </span>
         </div>
-      ) : (
+      ) : partAssets.length === 0 ? (
         <div className={styles.sourceNotice} role="status">
           <strong>Noch keine Teile zugewiesen</strong>
           <span>Der leere Katalog verändert das Projekt nicht.</span>
         </div>
+      ) : (
+        <div className={styles.sourceNotice} role="status">
+          <strong>{partAssets.length} Part-{partAssets.length === 1 ? "Quelle" : "Quellen"} geladen</strong>
+          <span>Importierte Quellen bleiben bis zur Ankerbearbeitung Produktionsentwürfe.</span>
+        </div>
       )}
 
-      <button
-        className={styles.primaryButton}
-        type="button"
-        disabled
-        aria-describedby="part-import-unavailable"
-      >
-        PNG-Teil importieren
-      </button>
-      <p id="part-import-unavailable" className={styles.actionReason}>
-        Die validierte Importstrecke wird in Prompt 37 an dieser Stelle angeschlossen.
-      </p>
+      <PartImportPanel
+        selectedSlot={selectedSlot}
+        selectedSlotLabel={selectedSlotDefinition?.label ?? null}
+        direction={direction}
+        directionLabel={DIRECTION_LABELS[direction]}
+        decoder={imageDecoder}
+        existingPart={existingPart}
+        onCommit={onImportPart}
+      />
 
       <div className={styles.slotGroups}>
         {WORKSPACE_SLOT_GROUPS.map((group) => (
           <section key={group.id} className={styles.slotGroup} aria-labelledby={`slot-group-${group.id}`}>
             <h3 id={`slot-group-${group.id}`}>{group.label}</h3>
             <ul>
-              {group.slots.map((slot) => (
-                <li key={slot.id}>
-                  <button
-                    type="button"
-                    className={styles.slotButton}
-                    aria-label={`${slot.label}; ${slot.required ? "Erforderlich" : "Optional"}; ${occupancyLabel}`}
-                    aria-pressed={selectedSlot === slot.id}
-                    onClick={() => dispatch({ type: "slotSelected", slot: slot.id })}
-                  >
-                    <span className={styles.slotName}>{slot.label}</span>
-                    <span className={styles.slotMeta}>
-                      <span>{slot.required ? "Erforderlich" : "Optional"}</span>
-                      <span>{occupancyLabel}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {group.slots.map((slot) => {
+                const source = findPartAssetForSource(
+                  partAssets,
+                  slot.id,
+                  direction
+                );
+                const occupancyLabel = source
+                  ? source.anchorStatus === "anchorsPending"
+                    ? "Anker ausstehend"
+                    : "Quelle vorhanden"
+                  : slot.required
+                    ? "Fehlt"
+                    : "Optional";
+                return (
+                  <li key={slot.id}>
+                    <button
+                      type="button"
+                      className={styles.slotButton}
+                      aria-label={`${slot.label}; ${slot.required ? "Erforderlich" : "Optional"}; ${occupancyLabel}`}
+                      aria-pressed={selectedSlot === slot.id}
+                      onClick={() =>
+                        dispatch({ type: "slotSelected", slot: slot.id })
+                      }
+                    >
+                      <span className={styles.slotName}>{slot.label}</span>
+                      <span className={styles.slotMeta}>
+                        <span>{slot.required ? "Erforderlich" : "Optional"}</span>
+                        <span>{occupancyLabel}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ))}
       </div>
+
+      <details className={styles.coverage}>
+        <summary>Richtungs-Coverage</summary>
+        <div className={styles.coverageScroller}>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Slot</th>
+                {coverage.directions.map((coverageDirection) => (
+                  <th key={coverageDirection} scope="col">{DIRECTION_LABELS[coverageDirection]}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {coverage.rows.map((row) => (
+                <tr key={row.slot}>
+                  <th scope="row">{row.label}</th>
+                  {row.cells.map((cell) => (
+                    <td key={cell.direction} data-coverage={cell.status}>
+                      {coverageLabels[cell.status]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
     </Surface>
   );
 }
@@ -412,6 +516,7 @@ interface RigViewportProps {
   readonly state: AnimationWorkspaceState;
   readonly activeClip: AnimationClip | null;
   readonly unresolvedReferenceCount: number;
+  readonly loadedPartCount: number;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
 }
@@ -421,6 +526,7 @@ function RigViewport({
   state,
   activeClip,
   unresolvedReferenceCount,
+  loadedPartCount,
   dispatch,
   layout
 }: RigViewportProps) {
@@ -533,11 +639,15 @@ function RigViewport({
         <strong>
           {unresolvedReferenceCount > 0
             ? "Keine renderbaren Bilddaten"
-            : "Viewport wartet auf Teile"}
+            : loadedPartCount > 0
+              ? "Partquellen validiert geladen"
+              : "Viewport wartet auf Teile"}
         </strong>{" "}
         {unresolvedReferenceCount > 0
           ? `${unresolvedReferenceCount} Asset-Referenz${unresolvedReferenceCount === 1 ? "" : "en"} ist noch nicht bis zum Blob aufgelöst; der Projektframe bleibt absichtlich leer.`
-          : "Dem Projekt sind noch keine PartAssets zugewiesen; es wird kein Dummybild erzeugt."}{" "}
+          : loadedPartCount > 0
+            ? `${loadedPartCount} Part-${loadedPartCount === 1 ? "Quelle ist" : "Quellen sind"} dem Projekt zugewiesen; die Renderpipeline folgt in ihrer eigenen Phase.`
+            : "Dem Projekt sind noch keine PartAssets zugewiesen; es wird kein Dummybild erzeugt."}{" "}
         Die Overlaygrafik markiert nur die vorbereiteten Bedienebenen und ist keine Quelle für Rigdaten.
       </p>
 
@@ -581,7 +691,9 @@ function RigViewport({
           <span className={styles.viewportPlaceholder}>
             {unresolvedReferenceCount > 0
               ? "Bilddaten fehlen"
-              : "Keine Teile belegt"}
+              : loadedPartCount > 0
+                ? "Renderer folgt"
+                : "Keine Teile belegt"}
           </span>
         </div>
       </div>
@@ -626,6 +738,7 @@ interface InspectorProps {
   readonly state: AnimationWorkspaceState;
   readonly activeClip: AnimationClip | null;
   readonly unresolvedReferenceCount: number;
+  readonly partAssets: readonly AnimationPartAsset[];
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
 }
@@ -635,10 +748,14 @@ function Inspector({
   state,
   activeClip,
   unresolvedReferenceCount,
+  partAssets,
   dispatch,
   layout
 }: InspectorProps) {
   const selectedSlot = getPartSlotDefinition(state.selectedSlot);
+  const selectedPart = state.selectedSlot
+    ? findPartAssetForSource(partAssets, state.selectedSlot, state.direction)
+    : null;
   const contexts: readonly Readonly<{
     id: WorkspaceInspectorContext;
     label: string;
@@ -706,15 +823,15 @@ function Inspector({
                 <div><dt>Slot</dt><dd>{selectedSlot.label}</dd></div>
                 <div><dt>Vertrag</dt><dd>{selectedSlot.required ? "Erforderlich" : "Optional"}</dd></div>
                 <div><dt>Richtung</dt><dd>{DIRECTION_LABELS[state.direction]}</dd></div>
-                <div><dt>Belegung</dt><dd>{unresolvedReferenceCount > 0 ? "Nicht aufgelöst" : "Frei"}</dd></div>
-                <div><dt>Bilddatei</dt><dd>Noch nicht geladen</dd></div>
-                <div><dt>Originalgröße / Trim</dt><dd>Noch nicht verfügbar</dd></div>
-                <div><dt>Anker / Pivot</dt><dd>Noch nicht verfügbar</dd></div>
+                <div><dt>Belegung</dt><dd>{selectedPart ? "Quelle vorhanden" : unresolvedReferenceCount > 0 ? "Teilweise nicht aufgelöst" : "Frei"}</dd></div>
+                <div><dt>Part</dt><dd>{selectedPart?.label ?? "Noch nicht geladen"}</dd></div>
+                <div><dt>Originalgröße / Trim</dt><dd>{selectedPart ? `${selectedPart.sourceSize.width} × ${selectedPart.sourceSize.height} px / X ${selectedPart.trimRect.x}, Y ${selectedPart.trimRect.y}, ${selectedPart.trimRect.width} × ${selectedPart.trimRect.height} px` : "Noch nicht verfügbar"}</dd></div>
+                <div><dt>Anker / Pivot</dt><dd>{selectedPart?.anchorStatus === "anchorsPending" ? "Ausstehend – Produktion gesperrt" : selectedPart?.anchors ? `${selectedPart.anchors.proximal.x} / ${selectedPart.anchors.proximal.y}` : "Noch nicht verfügbar"}</dd></div>
                 <div><dt>Skalierung / Offset / Layer</dt><dd>Noch nicht verfügbar</dd></div>
-                <div><dt>Spiegelregel</dt><dd>Noch nicht verfügbar</dd></div>
+                <div><dt>Spiegelregel</dt><dd>{selectedPart?.mirrorPolicy ?? "Noch nicht verfügbar"}</dd></div>
               </dl>
               <p className={styles.emptyDetail}>
-                Dies sind schreibgeschützte Anschlussstellen. Import und Part-Eigenschaften folgen ab Prompt 37.
+                Importierte Originalbilder bleiben unverändert gespeichert. Anker werden erst in der dafür vorgesehenen Bearbeitungsphase gesetzt.
               </p>
             </>
           ) : (
@@ -844,7 +961,16 @@ export function AnimationWorkspace({
   saveStatus,
   saveError,
   sourceError,
-  onSave
+  onSave,
+  partAssets = [],
+  missingPartAssetIds,
+  partAssetLoadError = null,
+  partAssetsLoading = false,
+  imageDecoder = null,
+  onImportPart = async () => ({
+    status: "error",
+    message: "Der Part-Import ist in dieser Ansicht nicht verbunden."
+  })
 }: AnimationWorkspaceProps) {
   const [state, dispatch] = useReducer(
     animationWorkspaceReducer,
@@ -855,7 +981,9 @@ export function AnimationWorkspace({
   const rootRef = useRef<HTMLDivElement>(null);
   const pendingPaneFocus = useRef<WorkspacePanel | null>(null);
   const activeClip = getActiveWorkspaceClip(project, state.clipId);
-  const unresolvedReferenceCount = project.parts.length;
+  const effectiveMissingPartAssetIds =
+    missingPartAssetIds ?? project.parts.map(({ assetId }) => assetId);
+  const unresolvedReferenceCount = effectiveMissingPartAssetIds.length;
 
   useEffect(() => {
     const panel = pendingPaneFocus.current;
@@ -899,7 +1027,15 @@ export function AnimationWorkspace({
       <div className={styles.workspaceGrid}>
         {panelIsVisible("parts", layout, state) ? (
           <PartInventory
+            project={project}
+            direction={state.direction}
             selectedSlot={state.selectedSlot}
+            partAssets={partAssets}
+            missingPartAssetIds={effectiveMissingPartAssetIds}
+            partAssetLoadError={partAssetLoadError}
+            partAssetsLoading={partAssetsLoading}
+            imageDecoder={imageDecoder}
+            onImportPart={onImportPart}
             unresolvedReferenceCount={unresolvedReferenceCount}
             dispatch={dispatch}
             layout={layout}
@@ -911,6 +1047,7 @@ export function AnimationWorkspace({
             state={state}
             activeClip={activeClip}
             unresolvedReferenceCount={unresolvedReferenceCount}
+            loadedPartCount={partAssets.length}
             dispatch={dispatch}
             layout={layout}
           />
@@ -921,6 +1058,7 @@ export function AnimationWorkspace({
             state={state}
             activeClip={activeClip}
             unresolvedReferenceCount={unresolvedReferenceCount}
+            partAssets={partAssets}
             dispatch={dispatch}
             layout={layout}
           />

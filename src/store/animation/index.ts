@@ -20,5 +20,8 @@ export {
   type AnimationProjectContextValue,
   type AnimationProjectProviderProps,
   type CreateAnimationProjectDefinition,
-  type DeletedAnimationProject
+  type DeletedAnimationProject,
+  type AnimationPartAssetResolution,
+  type ImportAnimationPartDefinition,
+  type ImportedAnimationPart
 } from "./AnimationProjectProvider";

@@ -13,6 +13,7 @@ import {
 } from "./animationReferenceAnalysis";
 import {
   createAnimationProjectSummary,
+  PersistAnimationPartImportInputSchema,
   sortAnimationProjects,
   sortAnimationProjectSummaries,
   sortCharacterKits,
@@ -23,7 +24,8 @@ import {
   type AnimationRepositoryQueryResult,
   type AnimationRepositoryReadResult,
   type AnimationRepositoryValueMutationResult,
-  type AnimationProjectSummary
+  type AnimationProjectSummary,
+  type PersistedAnimationPartImport
 } from "./animationRepository";
 import {
   createDuplicatedProject,
@@ -41,6 +43,7 @@ export type MemoryAnimationRepositoryOperation =
   | "deleteProject"
   | "duplicateProject"
   | "writePartAsset"
+  | "writePartAssetToProject"
   | "deletePartAsset"
   | "writeBlob"
   | "writePreview"
@@ -212,6 +215,86 @@ export class MemoryAnimationRepository implements AnimationRepository {
       this.partAssets = nextPartAssets;
       this.imageBlobs = nextImageBlobs;
     });
+  }
+
+  public async writePartAssetToProject(
+    input: unknown,
+    blob: Blob
+  ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationPartImport>> {
+    const command = parseRepositoryValue(
+      PersistAnimationPartImportInputSchema,
+      input,
+      "The part import was not written because its metadata is invalid."
+    );
+    if (!command.success) return command.result;
+    const currentProject = this.projects.get(command.value.project.projectId);
+    if (!currentProject) {
+      return repositoryNotFound("project", command.value.project.projectId);
+    }
+    if (this.partAssets.has(command.value.partAsset.assetId)) {
+      return repositoryConflict("partAsset", command.value.partAsset.assetId);
+    }
+    if (this.imageBlobs.has(command.value.partAsset.blobId)) {
+      return repositoryConflict("imageBlob", command.value.partAsset.blobId);
+    }
+    const expectedPartIds = [
+      ...currentProject.parts
+        .map(({ assetId }) => assetId)
+        .filter((assetId) => assetId !== command.value.replacedAssetId),
+      command.value.partAsset.assetId
+    ];
+    if (
+      command.value.replacedAssetId !== undefined &&
+      !currentProject.parts.some(
+        ({ assetId }) => assetId === command.value.replacedAssetId
+      )
+    ) {
+      return repositoryConflict("project", currentProject.projectId);
+    }
+    if (command.value.replacedAssetId !== undefined) {
+      const replacedPart = this.partAssets.get(command.value.replacedAssetId);
+      if (!replacedPart) {
+        return repositoryNotFound("partAsset", command.value.replacedAssetId);
+      }
+      if (
+        replacedPart.slot !== command.value.partAsset.slot ||
+        replacedPart.direction !== command.value.partAsset.direction
+      ) {
+        return repositoryConflict("project", currentProject.projectId);
+      }
+    }
+    if (
+      command.value.project.parts.length !== expectedPartIds.length ||
+      command.value.project.parts.some(
+        ({ assetId }, index) => assetId !== expectedPartIds[index]
+      )
+    ) {
+      return repositoryConflict("project", currentProject.projectId);
+    }
+
+    const nextProjects = new Map(this.projects);
+    const nextPartAssets = new Map(this.partAssets);
+    const nextImageBlobs = new Map(this.imageBlobs);
+    nextProjects.set(command.value.project.projectId, command.value.project);
+    nextPartAssets.set(command.value.partAsset.assetId, command.value.partAsset);
+    nextImageBlobs.set(command.value.partAsset.blobId, blob);
+    const committed = await this.commit("writePartAssetToProject", () => {
+      this.projects = nextProjects;
+      this.partAssets = nextPartAssets;
+      this.imageBlobs = nextImageBlobs;
+    });
+    return committed.status === "ok"
+      ? {
+          status: "ok",
+          value: Object.freeze({
+            project: command.value.project,
+            partAsset: command.value.partAsset,
+            ...(command.value.replacedAssetId
+              ? { replacedAssetId: command.value.replacedAssetId }
+              : {})
+          })
+        }
+      : committed;
   }
 
   public async deletePartAsset(

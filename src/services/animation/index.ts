@@ -1,5 +1,16 @@
 export {
+  ImageDecodingError,
+  type ImageDecoder,
+  type ImageDecodingErrorCode
+} from "./imageDecoder";
+export {
+  BrowserImageDecoder,
+  createBrowserImageDecoder,
+  type BrowserImageDecoderEnvironment
+} from "./browserImageDecoder";
+export {
   DuplicateAnimationProjectInputSchema,
+  PersistAnimationPartImportInputSchema,
   createAnimationProjectSummary,
   sortAnimationProjectSummaries,
   sortAnimationProjects,
@@ -20,7 +31,9 @@ export {
   type AnimationRepositoryUnavailableResult,
   type AnimationRepositoryValidationIssue,
   type AnimationRepositoryValueMutationResult,
-  type DuplicateAnimationProjectInput
+  type DuplicateAnimationProjectInput,
+  type PersistAnimationPartImportInput,
+  type PersistedAnimationPartImport
 } from "./animationRepository";
 export {
   analyzeAnimationBinaryReferences,

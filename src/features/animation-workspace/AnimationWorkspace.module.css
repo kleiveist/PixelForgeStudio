@@ -351,6 +351,59 @@
   gap: var(--space-4);
 }
 
+.coverage {
+  min-width: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-line);
+}
+
+.coverage summary {
+  min-height: var(--control-min-size);
+  display: flex;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.coverageScroller {
+  min-width: 0;
+  overflow-x: auto;
+  margin-top: var(--space-2);
+}
+
+.coverage table {
+  width: 100%;
+  min-width: max-content;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+.coverage th,
+.coverage td {
+  padding: var(--space-2);
+  text-align: left;
+  border: 1px solid var(--color-line);
+}
+
+.coverage th {
+  background: var(--color-panel-soft);
+}
+
+.coverage td[data-coverage="authoredSource"] {
+  color: var(--color-success);
+}
+
+.coverage td[data-coverage="missing"],
+.coverage td[data-coverage="anchorPending"] {
+  color: var(--color-danger-text);
+  font-weight: 800;
+}
+
+.coverage td[data-coverage="optional"] {
+  color: var(--color-text-subtle);
+}
+
 .slotGroup {
   min-width: 0;
   padding-top: var(--space-3);

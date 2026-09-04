@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
+  AnimationPartAssetSchema,
   AnimationNameSchema,
+  AnimationProjectSchema,
   IsoDateTimeSchema,
   StableIdSchema,
   type AnimationPartAsset,
@@ -118,6 +120,46 @@ export type DuplicateAnimationProjectInput = z.infer<
   typeof DuplicateAnimationProjectInputSchema
 >;
 
+export const PersistAnimationPartImportInputSchema = z
+  .strictObject({
+    project: AnimationProjectSchema,
+    partAsset: AnimationPartAssetSchema,
+    replacedAssetId: StableIdSchema.optional()
+  })
+  .superRefine((input, context) => {
+    const importedReferences = input.project.parts.filter(
+      ({ assetId }) => assetId === input.partAsset.assetId
+    );
+    if (importedReferences.length !== 1) {
+      context.addIssue({
+        code: "custom",
+        path: ["project", "parts"],
+        message: "The updated project must reference the imported part exactly once."
+      });
+    }
+    if (
+      input.replacedAssetId !== undefined &&
+      input.project.parts.some(({ assetId }) => assetId === input.replacedAssetId)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["project", "parts"],
+        message: "The updated project must no longer reference the replaced part."
+      });
+    }
+  })
+  .readonly();
+
+export type PersistAnimationPartImportInput = z.infer<
+  typeof PersistAnimationPartImportInputSchema
+>;
+
+export interface PersistedAnimationPartImport {
+  readonly project: AnimationProject;
+  readonly partAsset: AnimationPartAsset;
+  readonly replacedAssetId?: StableId;
+}
+
 export interface AnimationRepository {
   listProjects(): Promise<
     AnimationRepositoryQueryResult<readonly AnimationProject[]>
@@ -142,6 +184,10 @@ export interface AnimationRepository {
     input: unknown,
     blob: Blob
   ): Promise<AnimationRepositoryMutationResult>;
+  writePartAssetToProject(
+    input: unknown,
+    blob: Blob
+  ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationPartImport>>;
   deletePartAsset(assetId: unknown): Promise<AnimationRepositoryMutationResult>;
 
   readBlob(blobId: unknown): Promise<AnimationRepositoryReadResult<Blob>>;

@@ -180,3 +180,63 @@ Release-Abnahme. App-eigene Vorlagen und erzeugte Release-Beispiele enthalten
 keine direkten Namen bestehender Spiele, Marken, Figuren, Werke oder
 Kunstschaffender; die generische negative Regel gegen namentliche Imitation
 bleibt erhalten. Evidenz: `erledigt/V2-RELEASE-ACCEPTANCE.md`.
+
+## 10. Implementierung V3
+
+V3 erweitert das Dachprodukt zu **PixelForge Studio** mit den getrennten
+Modulen **PixelForge Prompt Studio** und **PixelForge Animation Studio**. Diese
+Produktstufe ist keine stillschweigende Migration des Promptformats: Prompt
+Studio behält `schemaVersion: 2`, den bestehenden Export-Identifier und die
+sechs `pixelforge:v2:*`-localStorage-Namespaces. Die in den Abschnitten 1–9
+definierten Promptregeln, Paketbestandteile und Capability-Grenzen bleiben
+damit verbindlich.
+
+Die technische Ownership ist bewusst getrennt:
+
+| Bereich | Versionsvertrag | Persistenz | zuständige Grenze |
+|---|---|---|---|
+| Prompt Studio | Prompt-Schema und Exportformat V2 | sechs bestehende localStorage-Namespaces | Profil-/Wizard-Provider und `src/domain/prompt-engine/` |
+| Animation Studio | eigenständiges Animationsformat V1 | native IndexedDB-Datenbank `pixelforge-studio` | `AnimationRepository` und `AnimationProjectProvider` |
+| Animation Workspace | kein eigener Persistenzvertrag | Richtung, Clip, Frame, Slot, Zoom, Overlays und Paneele nur flüchtig | lokaler `animationWorkspaceReducer` |
+
+`buildPromptPackages()` bleibt die einzige Produktionsgrenze für die vier
+Promptausgaben. Animation-Projekte oder Workspace-Auswahlen werden nicht
+automatisch in `ResolvedProfile`, Hauptprompt, Negativprompt oder technische
+Spezifikation gemischt. Eine spätere Übergabe vom Prompt- zum
+Animationsmodul muss explizit erfolgen, validierte Referenzen verwenden und
+die beiden Versionsverträge getrennt halten.
+
+Der derzeit implementierte V3-Ausbaustand umfasst:
+
+1. die kompatible Produktumbenennung, typisierte Modulmarken und
+   roundtrip-stabile Studio-Routen,
+2. die gemeinsame zugängliche App-Shell, Studio-Startseite und getrennte
+   Startziele,
+3. die frameworkfreie Animationsdomain mit acht Richtungen, 39 Slots,
+   Rig-Topologie und dem unveränderlichen `humanoid-80-v1`-Framevertrag,
+4. strikte Animationsprojekt-, PartAsset-, Character-Kit- und Bundle-Schemas,
+5. den injizierbaren Memory-/IndexedDB-Repository-Port mit getrennter
+   Metadaten-/Blob-Persistenz,
+6. den validierten Animationsprojekt-Lifecycle mit CRUD, Autosave,
+   Dirty-Navigation und stabiler Workspace-Projekt-ID sowie
+7. die responsive Animation-Workspace-Shell mit Teileinventar,
+   DOM-Viewport, Projekt-/Part-/Frame-Inspektor und acht Walk-Frameplätzen sowie
+8. den validierten PNG-Part-Import mit injiziertem Decoder, Alpha-Trim,
+   kurzlebiger Vorschau, `anchorsPending`, Richtungs-Coverage und atomarer
+   Part-/Blob-/Projektzuweisung.
+
+Im Workspace markieren Schachbrett, Raster, Rig, Anker,
+Begrenzungsrahmen und Fußlinie derzeit ausschließlich vorbereitete
+Bedienebenen. Sie sind weder Quelle der Rigdaten noch ein fertiger
+Part-Renderer. Ganzzahliger Zoom verändert nur die Anzeige; Projekt- und
+Exportkoordinaten bleiben unverändert. Nicht aufgelöste PartAsset-/Blob-
+Referenzen werden sichtbar als fehlende Quelle behandelt, ohne Dummybilder
+oder scheinpräzise Anker zu erzeugen.
+
+Die V3-Implementierung ist mit Prompt 37 noch nicht releasevollständig.
+Konkretes Humanoid-Rig, Ankerplatzierung, deterministische
+Pixelkomposition, richtungsabhängige Layer, Walk-Generierung, Playback,
+Korrektur-History, Character Kits, Sprite-Sheet-/Godot-Export und die explizite
+Prompt→Animation-Übergabe gehören zu den noch offenen Prompts 38–51. Der
+verbindliche Ausführungsstand und die Reihenfolge stehen unter
+`aufgaben/pixelforge-studio-v3/START_HERE.md` und in `../PLANS.md`.

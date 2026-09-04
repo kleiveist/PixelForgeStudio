@@ -4,6 +4,7 @@ import {
   getRequiredAuthoredDirections,
   isRequiredPartSlot,
   type Direction,
+  type PartSlot,
   type RequiredPartSlot
 } from "../domain/animation";
 import type { AnimationPartAsset } from "./animationPartAsset.schema";
@@ -23,6 +24,12 @@ export type AnimationProductionIssue =
       code: "missingDistalAnchor";
       assetId: AnimationPartAsset["assetId"];
       slot: RequiredPartSlot;
+      direction: Direction;
+    }>
+  | Readonly<{
+      code: "anchorsPending";
+      assetId: AnimationPartAsset["assetId"];
+      slot: PartSlot;
       direction: Direction;
     }>;
 
@@ -52,6 +59,16 @@ export function validateAnimationProjectProductionSources(
       continue;
     }
     referencedAssets.push(asset);
+    if (asset.anchorStatus === "anchorsPending") {
+      issues.push(
+        Object.freeze({
+          code: "anchorsPending",
+          assetId: asset.assetId,
+          slot: asset.slot,
+          direction: asset.direction
+        })
+      );
+    }
   }
 
   const requiredSources = new Map<string, AnimationPartAsset>();
@@ -82,8 +99,9 @@ export function validateAnimationProjectProductionSources(
       }
 
       if (
+        asset.anchorStatus === "ready" &&
         bindingBySlot.get(slot)?.sourceAnchorRequirement === "twoPoint" &&
-        asset.anchors.distal === undefined
+        asset.anchors?.distal === undefined
       ) {
         issues.push(
           Object.freeze({

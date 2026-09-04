@@ -2,13 +2,80 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 36 — Animation-Workspace-Shell (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 37 — PNG-Part-Import und Normalisierung (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 37 — PNG-Part-Import und Normalisierung (abgeschlossen)
+- **Nächste Aufgabe:** Prompt 38 — Humanoid-80-Rig-Vorlage (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31 abgeschlossen; Phase B mit
-  Prompts 32–35 und Phase C mit Prompt 36 abgeschlossen, Prompts 37–51 offen unter
+  Prompts 32–35 und Phase C mit Prompts 36–37 abgeschlossen sowie Prompts
+  38–51 offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
+
+## Prompt 37 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `e24bd94`
+- Baseline: Prompt 36 abgeschlossen mit 135 Testdateien und 842 Tests;
+  Typecheck und Build erfolgreich; `git diff --check` sauber
+- Abnahme: ausschließlich decodierbare PNG-Dateien bis 16 MiB und
+  2048 × 2048 px; mindestens ein sichtbares Pixel; deterministische pure
+  Alpha-Bounds und RGBA-Crops bei Standardschwelle 1
+- Architektur: injizierter frameworkfreier `ImageDecoder`-Port, Browseradapter
+  mit `createImageBitmap` und kontrolliertem Fallback, kurzlebige und sicher
+  widerrufene Object URLs nur in Hook/Service sowie unverändertes Originalblob
+- Persistenz: PartAsset-Metadaten mit explizitem `anchorsPending`, Originalmaß
+  und Trim in Originalkoordinaten atomar mit dem Blob schreiben; aktive
+  Projektzuweisung erst nach erfolgreichem Repository-Write aktualisieren
+- Oberfläche: additive Datei- und Dropzone-Bedienung, Slot und Richtung,
+  Vorschau, Dateiname, Maße, Trim, Warnungen, Bestätigen/Abbrechen sowie eine
+  erste Richtungs-/Slot-Coverage ohne erfundene Anker oder automatische
+  Platzierung
+- Fehlergrenze: ungültige/zu große/transparente Dateien, Decoder- und
+  Repositoryfehler lassen die bestehende Projektzuweisung unverändert;
+  ersetzte Parts werden nicht gelöscht und bleiben der Garbage Collection
+  vorbehalten
+- Dokumentation: öffentliche Modulgrenzen, Nutzerhilfe, Changelog,
+  V3-Implementierungsstand und Übergabe auf Prompt 38 aktualisieren
+
+## Prompt 37 — Ergebnis
+
+1. Der injizierbare `ImageDecoder`-Port und sein Browseradapter trennen
+   Decodierung von Domain und React. Der Adapter bevorzugt
+   `createImageBitmap`, verwendet einen kontrollierten Image-Fallback und
+   widerruft dessen Object URL in jedem Ausgang; Dimensionen werden vor einer
+   unbeschränkten Canvas-/RGBA-Allokation begrenzt.
+2. `prepareAnimationPartImport()` behandelt Dateien als `unknown` und prüft
+   MIME-Typ, PNG-Signatur, positive Größe, 16-MiB-Grenze, Decodierbarkeit,
+   2048-×-2048-Grenze, RGBA-Länge und sichtbaren Alpha-Inhalt. JPG,
+   umbenannte oder beschädigte Nicht-PNGs, transparente und übergroße Quellen
+   enden vor jedem Write mit konkretem Fehler.
+3. Pure Domainfunktionen bestimmen bei Standardschwelle 1 deterministisch die
+   Alpha-Bounds, erzeugen einen kopierten RGBA-Crop und erkennen vollständig
+   opake Außenrandpixel. Das Originalblob bleibt unverändert; Trimwerte bleiben
+   Originalkoordinaten.
+4. PartAssets unterstützen additiv `anchorStatus`. Bestehende V1-Daten ohne
+   Feld normalisieren zu `ready`; neue Imports erhalten
+   `anchorsPending` ohne erfundene `anchors`. Die Produktionsvalidierung führt
+   diesen Status als eigenen Blocker.
+5. Dateiinput und additive Dropzone, Zielslot/-richtung, lokale Vorschau,
+   Dateiname, Originalmaß, Trim, Warnungen, Bestätigung und Abbruch sind im
+   Teileinventar produktiv. Der Inspector zeigt persistierte Partdaten; die
+   Coverage-Matrix unterscheidet Quelle, fehlende Pflichtquelle, optionalen
+   Slot und offene Anker je tatsächlich authorender Richtung.
+6. `writePartAssetToProject()` validiert und schreibt neues PartAsset,
+   Originalblob und aktualisierte Projektzuweisung gemeinsam in Memory- oder
+   IndexedDB-Transaktion. IDs und Zeitstempel stammen aus injizierten
+   Factories; ein Ersatz löst nur die alte Projektzuweisung und löscht weder
+   Alt-Part noch Alt-Blob.
+7. Repository-/Providerfehler lassen den bisherigen Projektstand und alle drei
+   Stores unverändert. Der Provider übernimmt erst das erfolgreich persistierte
+   Ergebnis als sauberen Aktivstand; Vorschau-URLs werden bei Ersatz, Abbruch,
+   Unmount und damit Projektwechsel widerrufen.
+8. `npm run verify` bestand mit 141 Testdateien und 866 Tests sowie
+   erfolgreichem Strict-Typecheck und Produktionsbuild. Einzige Ausgabe bleibt
+   die bekannte Vite-Warnung zum über 500 kB großen Hauptchunk. PyGitIndex
+   2.1.0 meldet alle 65 Markdown-Dateien aktuell; der Root-/Dokuindex enthält
+   keine doppelten Linkziele. Prompt 38 wurde nicht begonnen und bleibt die
+   nächste getrennte Aufgabe.
 
 ## Prompt 36 — Ausgangsstand und Abnahme
 

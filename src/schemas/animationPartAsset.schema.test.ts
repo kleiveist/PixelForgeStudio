@@ -28,6 +28,29 @@ describe("AnimationPartAssetSchema", () => {
     expect("imageData" in parsed).toBe(false);
     expect(Object.isFrozen(parsed)).toBe(true);
     expect(Object.isFrozen(parsed.anchors)).toBe(true);
+    expect(parsed.anchorStatus).toBe("ready");
+  });
+
+  it("accepts explicit pending anchors without inventing source coordinates", () => {
+    const parsed = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        anchorStatus: "anchorsPending",
+        anchors: undefined
+      })
+    );
+
+    expect(parsed.anchorStatus).toBe("anchorsPending");
+    expect(parsed.anchors).toBeUndefined();
+    expect(
+      AnimationPartAssetSchema.safeParse(
+        createAnimationPartAssetInput({ anchors: undefined })
+      ).success
+    ).toBe(false);
+    expect(
+      AnimationPartAssetSchema.safeParse(
+        createAnimationPartAssetInput({ anchorStatus: "anchorsPending" })
+      ).success
+    ).toBe(false);
   });
 
   it.each([

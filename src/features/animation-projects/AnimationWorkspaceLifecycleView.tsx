@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Surface } from "../../components/ui";
-import type { StableId } from "../../schemas";
+import type { AnimationPartAsset, StableId } from "../../schemas";
+import type { PartImportCommitDefinition } from "../animation-part-import";
 import { useAnimationProject } from "../../store/animation";
 import { useNavigation } from "../../store/navigation";
 import { AnimationWorkspace } from "../animation-workspace";
@@ -19,6 +20,9 @@ export function AnimationWorkspaceLifecycleView({
     activeProject,
     activeProjectId,
     canSaveProject,
+    imageDecoder,
+    importPartAsset,
+    loadPartAssets,
     openProject,
     rawProjectError,
     saveActiveProject,
@@ -28,6 +32,12 @@ export function AnimationWorkspaceLifecycleView({
   const { navigateTo } = useNavigation();
   const attemptedProjectRef = useRef<StableId | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
+  const [partSources, setPartSources] = useState<Readonly<{
+    status: "idle" | "loading" | "ready" | "failed";
+    assets: readonly AnimationPartAsset[];
+    missingAssetIds: readonly StableId[];
+    error: string | null;
+  }>>({ status: "idle", assets: [], missingAssetIds: [], error: null });
 
   useEffect(() => {
     if (!projectId) {
@@ -45,6 +55,41 @@ export function AnimationWorkspaceLifecycleView({
     void openProject(projectId);
   }, [activeLoadStatus, activeProjectId, openProject, projectId]);
 
+  useEffect(() => {
+    if (activeLoadStatus !== "ready" || !activeProject) {
+      setPartSources({ status: "idle", assets: [], missingAssetIds: [], error: null });
+      return undefined;
+    }
+    let cancelled = false;
+    const assetIds = activeProject.parts.map(({ assetId }) => assetId);
+    if (assetIds.length === 0) {
+      setPartSources({ status: "ready", assets: [], missingAssetIds: [], error: null });
+      return undefined;
+    }
+    setPartSources({ status: "loading", assets: [], missingAssetIds: [], error: null });
+    void loadPartAssets(assetIds).then((result) => {
+      if (cancelled) return;
+      if (result.status === "ok") {
+        setPartSources({
+          status: "ready",
+          assets: result.value.assets,
+          missingAssetIds: result.value.missingAssetIds,
+          error: null
+        });
+      } else {
+        setPartSources({
+          status: "failed",
+          assets: [],
+          missingAssetIds: assetIds,
+          error: result.message
+        });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLoadStatus, activeProject, loadPartAssets]);
+
   const explicitSave = async () => {
     setCommandError(null);
     const result = await saveActiveProject();
@@ -53,6 +98,13 @@ export function AnimationWorkspaceLifecycleView({
 
   const goToProjects = () => {
     navigateTo({ studio: "animation", view: "projects" });
+  };
+
+  const commitPartImport = async (definition: PartImportCommitDefinition) => {
+    const result = await importPartAsset(definition);
+    return result.status === "ok"
+      ? { status: "ok" as const, partAsset: result.value.partAsset }
+      : { status: "error" as const, message: result.message };
   };
 
   if (!projectId) {
@@ -137,6 +189,12 @@ export function AnimationWorkspaceLifecycleView({
       saveError={commandError ?? saveError}
       sourceError={rawProjectError?.message ?? null}
       onSave={() => void explicitSave()}
+      partAssets={partSources.assets}
+      missingPartAssetIds={partSources.missingAssetIds}
+      partAssetLoadError={partSources.error}
+      partAssetsLoading={partSources.status === "loading"}
+      imageDecoder={imageDecoder}
+      onImportPart={commitPartImport}
     />
   );
 }

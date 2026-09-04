@@ -215,6 +215,59 @@ describe("IndexedDbAnimationRepository", () => {
     await repository.close();
   });
 
+  it("atomically writes an imported PartAsset, original Blob and replacement assignment", async () => {
+    const repository = new IndexedDbAnimationRepository(createFactory());
+    const oldPart = createAnimationPartAssetInput();
+    const oldBlob = pngBlob("old pixels");
+    const project = createAnimationProjectInput({ parts: [{ assetId: oldPart.assetId }] });
+    await repository.writePartAsset(oldPart, oldBlob);
+    await repository.createProject(project);
+
+    const importedPart = createAnimationPartAssetInput({
+      assetId: "part_head_south_imported_001",
+      blobId: "blob_head_south_imported_001",
+      label: "Neuer Kopf Süd",
+      anchorStatus: "anchorsPending",
+      anchors: undefined,
+      createdAt: LATER_TIMESTAMP,
+      updatedAt: LATER_TIMESTAMP
+    });
+    const updatedProject = {
+      ...project,
+      parts: [{ assetId: importedPart.assetId }],
+      updatedAt: LATER_TIMESTAMP
+    };
+
+    const failed = await repository.writePartAssetToProject(
+      { project: updatedProject, partAsset: importedPart, replacedAssetId: oldPart.assetId },
+      (() => undefined) as unknown as Blob
+    );
+    expect(failed).toMatchObject({ status: "failed", reason: "transaction" });
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { parts: [{ assetId: oldPart.assetId }] }
+    });
+    expect(await repository.readPartAsset(importedPart.assetId)).toMatchObject({ status: "notFound" });
+    expect(await repository.readBlob(importedPart.blobId)).toMatchObject({ status: "notFound" });
+
+    expect(
+      await repository.writePartAssetToProject(
+        { project: updatedProject, partAsset: importedPart, replacedAssetId: oldPart.assetId },
+        pngBlob("new pixels")
+      )
+    ).toMatchObject({ status: "ok", value: { replacedAssetId: oldPart.assetId } });
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { parts: [{ assetId: importedPart.assetId }] }
+    });
+    expect(await repository.readPartAsset(oldPart.assetId)).toMatchObject({ status: "ok" });
+    expect(await repository.readBlob(oldPart.blobId)).toMatchObject({
+      status: "ok",
+      value: { size: oldBlob.size }
+    });
+    await repository.close();
+  });
+
   it("keeps shared binaries on project deletion and removes only explicit garbage", async () => {
     const repository = new IndexedDbAnimationRepository(createFactory());
     const part = createAnimationPartAssetInput();

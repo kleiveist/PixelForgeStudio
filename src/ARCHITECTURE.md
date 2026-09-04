@@ -1,13 +1,16 @@
 # PixelForge Studio source architecture
 
-Prompt 36 adds the productive Animation Workspace information architecture on
-top of the Prompt-35 project lifecycle. The loaded project and save state still
+Prompt 37 adds the validated PNG Part import boundary to the productive
+Animation Workspace. Files stay unknown until MIME, signature, byte,
+decodability, dimension and alpha-content checks pass. Original Blob, decoded
+RGBA, deterministic trim bounds and persisted metadata remain separate; new
+parts are explicitly `anchorsPending`. The loaded project and save state still
 come from the provider, while direction, clip, frame, slot, zoom, overlays,
 pan and responsive pane selection remain temporary local reducer state. The
-workspace deliberately renders no imported pixels yet; image import,
-Character Kits, rig editing, playback and export remain explicit future
-boundaries. Both modules share one route source, settings source, theme, skip
-target, title and focus boundary.
+workspace deliberately renders no imported pixels yet; Character Kits, rig
+editing, placement, playback and export remain explicit future boundaries.
+Both modules share one route source, settings source, theme, skip target,
+title and focus boundary.
 
 - `app/`: Composition, globale `StudioShell`, getrennte Prompt-/Animations-
   Modulflächen, pure Home-Zusammenfassungsprojektion mit schmalem Controller,
@@ -20,8 +23,9 @@ target, title and focus boundary.
   getrennte, bewusst stabile Exportformat-Identifier
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
   - `animation/`: stable direction/source-mode contracts, complete Production-
-    Humanoid slot metadata, joint/bone topology, versioned frame defaults and
-    pure vector/angle/affine-matrix helpers without pose or rendering data
+    Humanoid slot metadata, joint/bone topology, versioned frame defaults,
+    pure vector/angle/affine-matrix helpers and deterministic RGBA alpha-bound/
+    crop operations without pose or browser data
   - `assets/`: V2 categories, subtype catalogs, capability resolution, and
     direction-option guards
   - `characters/`: Character/NPC option catalogs, subtype guards, canonical
@@ -73,7 +77,9 @@ target, title and focus boundary.
   Dialoge und den kontrollierten Workspace-Lifecycle-State;
   `animation-workspace/` enthält die repository-freie Arbeitsoberfläche, ihre
   pure temporäre State-Machine, responsive Paneelprojektion, Slotinventar,
-  DOM-Viewport, read-only Inspektor und Frameauswahl
+  DOM-Viewport, read-only Inspektor und Frameauswahl;
+  `animation-part-import/` enthält die unbekannte Datei-/Decoder-Grenze,
+  Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -97,9 +103,9 @@ target, title and focus boundary.
 - `services/`: injectable storage, navigation, output and Animation repository
   ports, JSON profile transfer, V1 storage migration orchestration, and the
   browser workspace bootstrap that runs migration before provider hydration;
-  `animation/` owns the native IndexedDB and full Memory adapters, pure binary
-  reference analysis and the browser factory; public exports live in
-  `services/index.ts`
+  `animation/` owns the `ImageDecoder` port plus browser implementation, the
+  native IndexedDB and full Memory adapters, pure binary reference analysis
+  and browser factories; public exports live in `services/index.ts`
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
   complete validated app-settings envelope, all three start decisions and
   effective theme state;
@@ -331,7 +337,9 @@ missing records and collisions remain explicit, absent/open-failed IndexedDB
 is `unavailable`, and transaction failures are `failed`. No React component,
 provider or domain module handles `IDBRequest` or opens the database directly.
 The Memory and IndexedDB adapters implement the same project, PartAsset,
-binary, preview, Character Kit and garbage-collection contract.
+binary, preview, Character Kit and garbage-collection contract. Prompt 37
+extends it with one validated import transaction that adds a fresh PartAsset,
+its original Blob and the updated project assignment together.
 
 The browser adapter owns database `pixelforge-studio` version 1 with these
 stable key-path stores and secondary indexes:
@@ -345,7 +353,10 @@ animationPreviews.previewId
 ```
 
 Every metadata write passes through the Prompt-33 Zod schemas. A PartAsset and
-its referenced image Blob enter both stores in one readwrite transaction.
+its referenced image Blob enter both stores in one readwrite transaction. A
+confirmed workspace import spans the project, PartAsset and image-Blob stores,
+so transaction failure leaves all three unchanged. Replacing a slot removes
+only the old project reference; it never deletes the old PartAsset or Blob.
 Project duplication creates only new project identity/timestamps and shares
 immutable PartAsset, image and preview IDs as a copy-on-write boundary; it
 never copies PNG bytes. Project, PartAsset and Kit deletion never cascades
@@ -355,23 +366,28 @@ deletion operation and aborts before mutation when any stored metadata is
 invalid. Future database versions append monotonic `oldVersion < n` upgrade
 blocks and retain existing stores and indexes during ordinary upgrades.
 
-`createBrowserAnimationRepository()` is the only global browser-capability
+`createBrowserAnimationRepository()` is the only global IndexedDB capability
 check. It returns `unavailable` when IndexedDB is absent or cannot be opened,
-and it creates no shared singleton. Tests inject either an isolated native-API
-facsimile or `MemoryAnimationRepository`; the Prompt-V2 localStorage adapter
-and its six namespaces are unchanged.
+and it creates no shared singleton. `ImageDecoder` is a separate injected port;
+the browser implementation prefers `createImageBitmap`, falls back to a
+short-lived image-element Object URL and revokes that URL in every outcome.
+Tests inject either an isolated native-API facsimile or
+`MemoryAnimationRepository`; the Prompt-V2 localStorage adapter and its six
+namespaces are unchanged.
 
 `store/animation/index.ts` is the Prompt-35 React lifecycle boundary. Its pure
 reducer owns sorted summaries, one active validated project, explicit load and
 save states, monotonically increasing in-memory revisions, the last persisted
 revision and rejected raw-input issues. `AnimationProjectProvider` receives
-the repository, clock and ID factories from composition. Initial summary
+the repository, image decoder, clock and ID factories from composition. Initial summary
 hydration and project reads are write-free. Valid edits schedule one debounced
 metadata write; explicit save and a deliberate project switch flush the latest
 valid revision first. Writes are serialized, stale completions cannot replace
 a newer active revision, and a failure retains the last valid in-memory model
-with a concrete `failed` status. Neither the reducer nor provider holds PNG or
-other Blob values.
+with a concrete `failed` status. Neither the reducer nor provider state holds
+PNG or other Blob values; the import command forwards one confirmed original
+Blob directly into the repository transaction and then publishes its already
+persisted project result.
 
 `features/animation-projects/index.ts` is the public Prompt-35 UI boundary.
 `AnimationProjectsView` creates schema-valid `humanoid-80-v1` projects with a
@@ -410,6 +426,23 @@ medium keeps viewport/timeline and one explicitly switchable side pane; small
 renders a four-tab progressive view. Pane changes transfer focus to the newly
 rendered heading. The same state remains local across a resize and is never
 written through the project provider.
+
+`features/animation-part-import/index.ts` is the public Prompt-37 import
+boundary. `prepareAnimationPartImport()` accepts `unknown`, requires MIME
+`image/png`, the PNG signature, at most 16 MiB, a successful injected decode,
+at most 2048 × 2048 pixels and at least one alpha value above the default
+threshold 1. It retains the original Blob, keeps decoded and cropped RGBA as
+transient values, records trim bounds in original-image coordinates and warns
+when a fully opaque pixel touches the outer edge. It never creates anchors.
+
+`PartImportPanel` adds drag-and-drop beside a native keyboard-operable file
+input, shows filename, original size, trim, warnings, target slot/direction and
+explicit confirm/cancel actions. `useObjectUrl()` is the only preview URL owner
+and revokes on draft replacement, cancellation, unmount and therefore project
+switch. The coverage matrix projects every canonical slot over authored source
+directions as `authoredSource`, `missing`, `optional` or `anchorPending`.
+Confirmed imports receive injected IDs/timestamps and use
+`writePartAssetToProject()`; failed writes do not change provider state.
 
 The provider registers `beforeunload` only while a project is dirty. The
 navigation provider also asks the composition-injected guard before internal
@@ -903,10 +936,14 @@ project.previewBlobId    → blobIds[*]
 Project refinements enforce unique PartAsset and clip IDs, exactly eight
 frames for the V1 Walk action, and unique overrides that target an existing
 clip, canonical direction and in-range frame. Source anchors and trim bounds
-remain in original-image coordinates.
+remain in original-image coordinates. Existing V1 PartAssets without
+`anchorStatus` normalize to `ready`; new imports persist
+`anchorStatus: "anchorsPending"` without an `anchors` object, so no joint or
+pivot can be guessed.
 `validateAnimationProjectProductionSources()` is deliberately separate from
 schema parsing: an incomplete draft remains storable, while missing required
-slot/direction sources and two-point anchors are explicit production issues.
+slot/direction sources, `anchorsPending` parts and two-point anchors are
+explicit production issues.
 IndexedDB persistence and atomic writes are implemented by Prompt 34 through
 the repository boundary above; schemas remain independent of storage APIs.
 
@@ -1024,5 +1061,7 @@ repository-backed provider, revision-safe autosave, guarded navigation, stable
 workspace loading and real recent-project Home summaries. Prompt 36 adds the
 responsive Animation Workspace shell, temporary selection reducer,
 domain-driven inventory, DOM viewport, contextual inspector and eight-frame
-Walk timeline. Prompt 37 is the next unstarted task and owns validated PNG Part
-import, decoding, trimming and atomic project assignment.
+Walk timeline. Prompt 37 adds validated PNG decoding and trimming,
+anchor-pending PartAssets, atomic Part/Blob/project assignment, transient
+preview URLs and authored-direction coverage. Prompt 38 is the next unstarted
+task and owns the concrete built-in `humanoid-80-v1` rig template.

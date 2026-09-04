@@ -71,6 +71,7 @@ export const AnimationJointIdSchema = z.enum(JOINT_IDS);
 export const AnimationMirrorPolicySchema = z.enum(MIRROR_POLICIES);
 export const AnimationRigTemplateIdSchema = z.enum(RIG_TEMPLATE_IDS);
 export const AnimationActionIdSchema = z.enum(ANIMATION_ACTION_IDS);
+export const AnimationAnchorStatusSchema = z.enum(["anchorsPending", "ready"]);
 
 export const AnimationPointSchema = z
   .strictObject({
@@ -161,6 +162,9 @@ export type ValidatedAnimationFrameProfile = z.infer<
 >;
 export type ValidatedAnimationSourceAnchors = z.infer<
   typeof AnimationSourceAnchorsSchema
+>;
+export type ValidatedAnimationAnchorStatus = z.infer<
+  typeof AnimationAnchorStatusSchema
 >;
 export type ValidatedAnimationTransformDelta = z.infer<
   typeof AnimationTransformDeltaSchema

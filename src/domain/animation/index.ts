@@ -1,4 +1,11 @@
 export {
+  DEFAULT_ALPHA_THRESHOLD,
+  cropRgba,
+  findAlphaBounds,
+  hasOpaqueOuterEdge,
+  type RgbaImage
+} from "./rgba";
+export {
   ANIMATION_ACTION_IDS,
   MIRROR_POLICIES,
   RIG_TEMPLATE_IDS,

@@ -528,7 +528,11 @@ JSON-Metadaten abgelegt.
 Der Browseradapter kapselt Open-, Upgrade-, Request- und Transaktionsfehler
 vollständig und liefert dieselben diskriminierten Resultate wie der
 vollständige Memoryadapter. Neue Part-Metadaten und ihr Bildblob werden in
-einer gemeinsamen Transaktion geschrieben. Projektlöschung kaskadiert nicht
+einer gemeinsamen Transaktion geschrieben. Der bestätigte PNG-Import erweitert
+diese Grenze atomar um die aktualisierte Projektzuweisung und speichert das
+unveränderte Originalblob; der injizierte Browserdecoder bevorzugt
+`createImageBitmap` und widerruft seine kontrollierte Object-URL-Fallbackquelle
+in jedem Ausgang. Projektlöschung kaskadiert nicht
 in geteilte Binärdaten; ausschließlich die explizite Garbage Collection darf
 nach einer puren Referenzanalyse tatsächlich unreferenzierte Bild- und
 Preview-Datensätze entfernen. Sie bricht bei schema-ungültigen Metadaten ohne

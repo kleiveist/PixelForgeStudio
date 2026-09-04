@@ -11,19 +11,27 @@ import {
 import { jsonValuesEqual } from "../../domain/json";
 import {
   HUMANOID_80_RIG_TEMPLATE_ID,
+  type Direction,
   type DirectionSourceMode,
-  type FrameProfile
+  type FrameProfile,
+  type PartSlot,
+  type Rect,
+  type Size
 } from "../../domain/animation";
 import {
+  AnimationPartAssetSchema,
   AnimationProjectSchema,
   StableIdSchema,
+  type AnimationPartAsset,
   type AnimationProject,
   type StableId
 } from "../../schemas";
 import {
+  createBrowserImageDecoder,
   createAnimationProjectSummary,
   type AnimationRepository,
-  type AnimationRepositoryValidationIssue
+  type AnimationRepositoryValidationIssue,
+  type ImageDecoder
 } from "../../services";
 import {
   INITIAL_ANIMATION_PROJECT_STATE,
@@ -69,7 +77,29 @@ export interface DeletedAnimationProject {
   readonly wasActive: boolean;
 }
 
+export interface AnimationPartAssetResolution {
+  readonly assets: readonly AnimationPartAsset[];
+  readonly missingAssetIds: readonly StableId[];
+}
+
+export interface ImportAnimationPartDefinition {
+  readonly originalBlob: Blob;
+  readonly label: string;
+  readonly slot: PartSlot;
+  readonly direction: Direction;
+  readonly sourceSize: Size;
+  readonly trimRect: Rect;
+  readonly replacedAssetId?: StableId;
+}
+
+export interface ImportedAnimationPart {
+  readonly project: AnimationProject;
+  readonly partAsset: AnimationPartAsset;
+  readonly replacedAssetId?: StableId;
+}
+
 export interface AnimationProjectContextValue extends AnimationProjectState {
+  readonly imageDecoder: ImageDecoder;
   readonly projectDirty: boolean;
   readonly canSaveProject: boolean;
   readonly refreshProjects: () => Promise<void>;
@@ -85,6 +115,12 @@ export interface AnimationProjectContextValue extends AnimationProjectState {
   readonly saveActiveProject: () => Promise<
     AnimationProjectCommandResult<AnimationProject>
   >;
+  readonly loadPartAssets: (
+    assetIds: readonly StableId[]
+  ) => Promise<AnimationProjectCommandResult<AnimationPartAssetResolution>>;
+  readonly importPartAsset: (
+    definition: ImportAnimationPartDefinition
+  ) => Promise<AnimationProjectCommandResult<ImportedAnimationPart>>;
   readonly renameProject: (
     projectId: StableId,
     name: string
@@ -105,6 +141,9 @@ export interface AnimationProjectProviderProps {
   readonly now?: () => string;
   readonly createProjectId?: () => string;
   readonly createClipId?: () => string;
+  readonly createPartAssetId?: () => string;
+  readonly createImageBlobId?: () => string;
+  readonly imageDecoder?: ImageDecoder;
   readonly autosaveDelayMs?: number;
 }
 
@@ -117,7 +156,7 @@ function currentIsoTimestamp(): string {
   return new Date().toISOString();
 }
 
-function randomAnimationId(prefix: "project" | "clip"): string {
+function randomAnimationId(prefix: "project" | "clip" | "part" | "blob"): string {
   try {
     if (
       typeof globalThis.crypto !== "undefined" &&
@@ -139,6 +178,14 @@ function createDefaultProjectId(): string {
 
 function createDefaultClipId(): string {
   return randomAnimationId("clip");
+}
+
+function createDefaultPartAssetId(): string {
+  return randomAnimationId("part");
+}
+
+function createDefaultImageBlobId(): string {
+  return randomAnimationId("blob");
 }
 
 function validationIssues(
@@ -228,6 +275,9 @@ export function AnimationProjectProvider({
   now = currentIsoTimestamp,
   createProjectId = createDefaultProjectId,
   createClipId = createDefaultClipId,
+  createPartAssetId = createDefaultPartAssetId,
+  createImageBlobId = createDefaultImageBlobId,
+  imageDecoder = createBrowserImageDecoder(),
   autosaveDelayMs = ANIMATION_AUTOSAVE_DELAY_MS
 }: AnimationProjectProviderProps) {
   const [state, dispatch] = useReducer(
@@ -587,6 +637,164 @@ export function AnimationProjectProvider({
     [dispatchState]
   );
 
+  const loadPartAssets = useCallback(
+    async (
+      assetIds: readonly StableId[]
+    ): Promise<AnimationProjectCommandResult<AnimationPartAssetResolution>> => {
+      if (!repository) return unavailableCommand(unavailableMessage);
+      try {
+        const reads = await Promise.all(
+          assetIds.map((assetId) => repository.readPartAsset(assetId))
+        );
+        const assets: AnimationPartAsset[] = [];
+        const missingAssetIds: StableId[] = [];
+        for (const [index, read] of reads.entries()) {
+          const assetId = assetIds[index];
+          if (!assetId) continue;
+          if (read.status === "ok") {
+            assets.push(read.value);
+          } else if (read.status === "notFound") {
+            missingAssetIds.push(assetId);
+          } else {
+            return repositoryFailure(read);
+          }
+        }
+        return {
+          status: "ok",
+          value: Object.freeze({
+            assets: Object.freeze(assets),
+            missingAssetIds: Object.freeze(missingAssetIds)
+          })
+        };
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [repository, unavailableMessage]
+  );
+
+  const importPartAsset = useCallback(
+    async (
+      definition: ImportAnimationPartDefinition
+    ): Promise<AnimationProjectCommandResult<ImportedAnimationPart>> => {
+      if (!repository) return unavailableCommand(unavailableMessage);
+      const beforeImport = stateRef.current;
+      if (!beforeImport.activeProject) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt für den Part-Import geöffnet."
+        };
+      }
+      if (selectAnimationProjectDirty(beforeImport)) {
+        const saved = await saveActiveProject();
+        if (saved.status !== "ok") return saved;
+      } else {
+        await saveQueueRef.current;
+      }
+
+      const current = stateRef.current.activeProject;
+      if (!current) {
+        return {
+          status: "notFound",
+          message: "Das Animationsprojekt wurde während des Imports geschlossen."
+        };
+      }
+
+      let timestamp: string;
+      let assetId: string;
+      let blobId: string;
+      try {
+        timestamp = now();
+        assetId = createPartAssetId();
+        blobId = createImageBlobId();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      const parsedPart = AnimationPartAssetSchema.safeParse({
+        schemaVersion: 1,
+        kind: "animationPartAsset",
+        assetId,
+        blobId,
+        label: definition.label,
+        slot: definition.slot,
+        direction: definition.direction,
+        sourceSize: definition.sourceSize,
+        trimRect: definition.trimRect,
+        anchorStatus: "anchorsPending",
+        mirrorPolicy: "inherit",
+        createdAt: timestamp,
+        updatedAt: timestamp
+      });
+      if (!parsedPart.success) {
+        return invalidCommand(
+          "Die Part-Metadaten sind ungültig und wurden nicht gespeichert.",
+          validationIssues(parsedPart.error.issues)
+        );
+      }
+      const parsedProject = AnimationProjectSchema.safeParse({
+        ...current,
+        parts: [
+          ...current.parts.filter(
+            ({ assetId: currentAssetId }) =>
+              currentAssetId !== definition.replacedAssetId
+          ),
+          { assetId: parsedPart.data.assetId }
+        ],
+        updatedAt: timestamp
+      });
+      if (!parsedProject.success) {
+        return invalidCommand(
+          "Das Projekt kann diesen Part nicht aufnehmen.",
+          validationIssues(parsedProject.error.issues)
+        );
+      }
+
+      try {
+        const result = await repository.writePartAssetToProject(
+          {
+            project: parsedProject.data,
+            partAsset: parsedPart.data,
+            ...(definition.replacedAssetId
+              ? { replacedAssetId: definition.replacedAssetId }
+              : {})
+          },
+          definition.originalBlob
+        );
+        if (result.status !== "ok") return repositoryFailure(result);
+        clearAutosaveTimer();
+        listRequestRevisionRef.current += 1;
+        projectRequestRevisionRef.current += 1;
+        dispatchState({
+          type: "activeProjectLoaded",
+          project: result.value.project,
+          summary: createAnimationProjectSummary(result.value.project)
+        });
+        return {
+          status: "ok",
+          value: Object.freeze({
+            project: result.value.project,
+            partAsset: result.value.partAsset,
+            ...(result.value.replacedAssetId
+              ? { replacedAssetId: result.value.replacedAssetId }
+              : {})
+          })
+        };
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [
+      clearAutosaveTimer,
+      createImageBlobId,
+      createPartAssetId,
+      dispatchState,
+      now,
+      repository,
+      saveActiveProject,
+      unavailableMessage
+    ]
+  );
+
   const renameProject = useCallback(
     async (
       projectId: StableId,
@@ -805,6 +1013,7 @@ export function AnimationProjectProvider({
   const value = useMemo<AnimationProjectContextValue>(
     () => ({
       ...state,
+      imageDecoder,
       projectDirty,
       canSaveProject: selectAnimationProjectCanSave(state),
       refreshProjects,
@@ -812,6 +1021,8 @@ export function AnimationProjectProvider({
       openProject,
       updateActiveProject,
       saveActiveProject,
+      loadPartAssets,
+      importPartAsset,
       renameProject,
       duplicateProject,
       deleteProject,
@@ -822,7 +1033,10 @@ export function AnimationProjectProvider({
       createProject,
       deleteProject,
       duplicateProject,
+      imageDecoder,
       openProject,
+      importPartAsset,
+      loadPartAssets,
       projectDirty,
       refreshProjects,
       renameProject,

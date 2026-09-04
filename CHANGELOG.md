@@ -74,6 +74,15 @@
 - fehlende Projekt-, Repository- und Bildquellen getrennt erklärt sowie
   Import, Playback und Export bis zu ihren echten Implementierungsphasen
   sichtbar begründet deaktiviert
+- sicheren PNG-Part-Import mit MIME-/Signatur-/16-MiB-/2048-px-/Alpha-Prüfung,
+  injizierter RGBA-Decodierung, deterministischem Trim und Außenrandwarnung
+  umgesetzt
+- native Datei- und additive Dropzone-Bedienung mit kurzlebiger Vorschau,
+  Bestätigen/Abbrechen, Part-Inspector und Coverage für Quelle, fehlend,
+  optional und `anchorsPending` ergänzt
+- Originalblob, anchor-pending PartAsset und aktualisierte Projektzuweisung in
+  einer gemeinsamen Memory-/IndexedDB-Transaktion abgesichert; ersetzte Parts
+  bleiben unangetastet und Importfehler verändern weder Projekt noch Blobstore
 
 ## 2.0.0 — 2026-09-03
 

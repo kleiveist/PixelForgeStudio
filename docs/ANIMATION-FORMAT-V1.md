@@ -42,10 +42,15 @@ Distalanker. Schema-Gültigkeit behauptet daher keine Produktionsreife.
 PartAsset-Metadaten enthalten nur eine stabile `blobId`, niemals Blobbytes,
 PNG-Base64 oder Object URLs. Source-Anker beziehen sich auf das ungetrimmte
 Originalbild. Jeder Anker muss innerhalb von `sourceSize` liegen; `trimRect`
-muss vollständig darin enthalten sein.
+muss vollständig darin enthalten sein. Bestehende Datensätze ohne
+`anchorStatus` werden kompatibel als `ready` gelesen. Ein neu importiertes
+PartAsset verwendet `anchorStatus: "anchorsPending"` ohne erfundene
+Ankerkoordinaten und bleibt dadurch sichtbar nicht produktionsreif.
 
-Binärdaten werden erst ab Prompt 34 getrennt in IndexedDB gespeichert. Die
-Schemaoberfläche führt ausschließlich Metadaten und Referenz-IDs.
+Binärdaten werden seit Prompt 34 getrennt in IndexedDB gespeichert. Prompt 37
+schreibt Original-PNG, PartAsset-Metadaten und die aktualisierte
+Projektzuweisung gemeinsam transaktional. Die Schemaoberfläche führt
+ausschließlich Metadaten und Referenz-IDs.
 
 ## Validierter Bundlegraph
 

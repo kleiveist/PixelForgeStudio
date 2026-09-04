@@ -1,4 +1,5 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
 import { parseAnimationProject, type AnimationProject } from "../../schemas";
@@ -8,13 +9,24 @@ import {
   type AnimationRepositoryReadResult
 } from "../../services";
 import { createAnimationProjectInput } from "../../test/animationSchemaFixtures";
+import { PNG_SIGNATURE } from "../animation-part-import";
 import { MemoryNavigation } from "../../test/memoryNavigation";
 import { MemoryStorage } from "../../test/memoryStorage";
 
 function renderWorkspaceRoute(
   repository: MemoryAnimationRepository | null,
   projectId?: string,
-  unavailableMessage?: string
+  unavailableMessage?: string,
+  importOptions: Readonly<{
+    imageDecoder?: Readonly<{ decode: (blob: Blob) => Promise<Readonly<{
+      width: number;
+      height: number;
+      pixels: Uint8ClampedArray;
+    }>> }>;
+    createPartAssetId?: () => string;
+    createImageBlobId?: () => string;
+    now?: () => string;
+  }> = {}
 ) {
   const navigation = new MemoryNavigation({
     status: "valid",
@@ -33,6 +45,16 @@ function renderWorkspaceRoute(
       navigationAdapter={navigation}
       storageAdapter={createV2StorageAdapter(new MemoryStorage())}
       animationRepository={repository}
+      {...(importOptions.imageDecoder
+        ? { animationImageDecoder: importOptions.imageDecoder }
+        : {})}
+      {...(importOptions.createPartAssetId
+        ? { createAnimationPartAssetId: importOptions.createPartAssetId }
+        : {})}
+      {...(importOptions.createImageBlobId
+        ? { createAnimationImageBlobId: importOptions.createImageBlobId }
+        : {})}
+      {...(importOptions.now ? { now: importOptions.now } : {})}
       {...(unavailableMessage
         ? { animationRepositoryUnavailableMessage: unavailableMessage }
         : {})}
@@ -120,5 +142,66 @@ describe("AnimationWorkspaceLifecycleView", () => {
     expect(
       screen.getByText("IndexedDB ist in dieser Browserumgebung nicht verfügbar.")
     ).toBeVisible();
+  });
+
+  it("imports a valid PNG through the workspace and exposes anchor-pending coverage", async () => {
+    const user = userEvent.setup();
+    const repository = new MemoryAnimationRepository();
+    const project = parseAnimationProject(
+      createAnimationProjectInput({
+        projectId: "project_import_ui_001",
+        parts: [],
+        previewBlobId: undefined
+      })
+    );
+    await repository.createProject(project);
+    const pixels = new Uint8ClampedArray(2 * 2 * 4);
+    pixels[3] = 255;
+    renderWorkspaceRoute(repository, project.projectId, undefined, {
+      imageDecoder: {
+        decode: vi.fn().mockResolvedValue({ width: 2, height: 2, pixels })
+      },
+      createPartAssetId: () => "part_import_ui_001",
+      createImageBlobId: () => "blob_import_ui_001",
+      now: () => "2026-09-04T16:00:00.000Z"
+    });
+
+    expect(await screen.findByRole("heading", { level: 1, name: project.name })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Kopf; Erforderlich; Fehlt" }));
+    const source = new File([new Uint8Array(PNG_SIGNATURE)], "hero-head.png", {
+      type: "image/png"
+    });
+    await user.upload(screen.getByLabelText("PNG-Datei auswählen"), source);
+    await user.click(await screen.findByRole("button", { name: "Import bestätigen" }));
+
+    expect(await screen.findByText(/hero-head.*wurde importiert/)).toBeVisible();
+    await waitFor(async () => {
+      expect(await repository.readProject(project.projectId)).toMatchObject({
+        status: "ok",
+        value: {
+          updatedAt: "2026-09-04T16:00:00.000Z",
+          parts: [{ assetId: "part_import_ui_001" }]
+        }
+      });
+    });
+    expect(await repository.readPartAsset("part_import_ui_001")).toMatchObject({
+      status: "ok",
+      value: {
+        label: "hero-head",
+        anchorStatus: "anchorsPending",
+        trimRect: { x: 0, y: 0, width: 1, height: 1 }
+      }
+    });
+    expect(await repository.readBlob("blob_import_ui_001")).toMatchObject({
+      status: "ok",
+      value: { type: "image/png" }
+    });
+    await waitFor(() =>
+      expect(document.querySelector('td[data-coverage="anchorPending"]')).toHaveTextContent(
+        "Anker offen"
+      )
+    );
+    await user.click(screen.getByRole("button", { name: "Eigenschaften" }));
+    expect(screen.getByText("Ausstehend – Produktion gesperrt")).toBeVisible();
   });
 });

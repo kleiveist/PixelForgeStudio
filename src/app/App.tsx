@@ -1,7 +1,9 @@
 import { useCallback, useMemo } from "react";
 import {
   createBrowserOutputWorkspaceAdapter,
+  createBrowserImageDecoder,
   type AnimationRepository,
+  type ImageDecoder,
   type LegacyV1StorageMigrationResult,
   type NavigationAdapter,
   type OutputWorkspaceAdapter
@@ -40,7 +42,10 @@ export interface AppProps {
   readonly animationRepositoryUnavailableMessage?: string;
   readonly createAnimationProjectId?: () => string;
   readonly createAnimationClipId?: () => string;
+  readonly createAnimationPartAssetId?: () => string;
+  readonly createAnimationImageBlobId?: () => string;
   readonly animationAutosaveDelayMs?: number;
+  readonly animationImageDecoder?: ImageDecoder;
   readonly outputAdapter?: OutputWorkspaceAdapter;
   readonly startupMigration?: LegacyV1StorageMigrationResult;
 }
@@ -111,7 +116,10 @@ export function App({
   animationRepositoryUnavailableMessage,
   createAnimationProjectId,
   createAnimationClipId,
+  createAnimationPartAssetId,
+  createAnimationImageBlobId,
   animationAutosaveDelayMs,
+  animationImageDecoder = createBrowserImageDecoder(),
   outputAdapter = createBrowserOutputWorkspaceAdapter(),
   startupMigration = { status: "notNeeded" }
 }: AppProps) {
@@ -129,6 +137,7 @@ export function App({
       >
         <AnimationProjectProvider
           repository={animationRepository}
+          imageDecoder={animationImageDecoder}
           {...(animationRepositoryUnavailableMessage
             ? { unavailableMessage: animationRepositoryUnavailableMessage }
             : {})}
@@ -137,6 +146,12 @@ export function App({
             : {})}
           {...(createAnimationClipId
             ? { createClipId: createAnimationClipId }
+            : {})}
+          {...(createAnimationPartAssetId
+            ? { createPartAssetId: createAnimationPartAssetId }
+            : {})}
+          {...(createAnimationImageBlobId
+            ? { createImageBlobId: createAnimationImageBlobId }
             : {})}
           {...(animationAutosaveDelayMs !== undefined
             ? { autosaveDelayMs: animationAutosaveDelayMs }

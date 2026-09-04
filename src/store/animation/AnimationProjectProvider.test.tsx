@@ -1,9 +1,16 @@
 import { act, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HUMANOID_80_FRAME_PROFILE } from "../../domain/animation";
-import { parseAnimationProject, type AnimationProject } from "../../schemas";
+import {
+  parseAnimationPartAsset,
+  parseAnimationProject,
+  type AnimationProject
+} from "../../schemas";
 import { MemoryAnimationRepository } from "../../services";
-import { createAnimationProjectInput } from "../../test/animationSchemaFixtures";
+import {
+  createAnimationPartAssetInput,
+  createAnimationProjectInput
+} from "../../test/animationSchemaFixtures";
 import {
   AnimationProjectProvider,
   useAnimationProject,
@@ -46,6 +53,8 @@ function renderProvider(
     now?: () => string;
     createProjectId?: () => string;
     createClipId?: () => string;
+    createPartAssetId?: () => string;
+    createImageBlobId?: () => string;
     autosaveDelayMs?: number;
   }> = {}
 ) {
@@ -334,5 +343,107 @@ describe("AnimationProjectProvider", () => {
       "Der lokale Animationsspeicher ist nicht verfügbar."
     );
     expect(context.projectSummaries).toEqual([]);
+  });
+
+  it("loads assigned PartAssets and atomically imports an anchor-pending source", async () => {
+    const repository = new MemoryAnimationRepository();
+    const existing = parseAnimationPartAsset(createAnimationPartAssetInput());
+    await repository.writePartAsset(existing, new Blob(["old"], { type: "image/png" }));
+    const project = await seedProject(repository, {
+      parts: [{ assetId: existing.assetId }]
+    });
+    renderProvider(repository, {
+      now: () => NOW,
+      createPartAssetId: () => "part_head_south_import_001",
+      createImageBlobId: () => "blob_head_south_import_001"
+    });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+
+    await act(async () => {
+      expect(
+        await context.loadPartAssets([existing.assetId, "part_missing_001" as typeof existing.assetId])
+      ).toMatchObject({
+        status: "ok",
+        value: {
+          assets: [{ assetId: existing.assetId }],
+          missingAssetIds: ["part_missing_001"]
+        }
+      });
+    });
+
+    const originalBlob = new Blob(["new"], { type: "image/png" });
+    await act(async () => {
+      expect(
+        await context.importPartAsset({
+          originalBlob,
+          label: "Neuer Kopf Süd",
+          slot: "head",
+          direction: "south",
+          sourceSize: { width: 32, height: 40 },
+          trimRect: { x: 2, y: 3, width: 28, height: 36 },
+          replacedAssetId: existing.assetId
+        })
+      ).toMatchObject({
+        status: "ok",
+        value: {
+          partAsset: {
+            assetId: "part_head_south_import_001",
+            anchorStatus: "anchorsPending"
+          },
+          replacedAssetId: existing.assetId
+        }
+      });
+    });
+
+    expect(context.activeProject?.parts).toEqual([
+      { assetId: "part_head_south_import_001" }
+    ]);
+    expect(context.activeProject?.updatedAt).toBe(NOW);
+    expect(context.projectDirty).toBe(false);
+    expect(context.saveStatus).toBe("saved");
+    expect(await repository.readBlob("blob_head_south_import_001")).toEqual({
+      status: "ok",
+      value: originalBlob
+    });
+    expect(await repository.readPartAsset(existing.assetId)).toMatchObject({ status: "ok" });
+  });
+
+  it("does not mutate provider state when the import transaction fails", async () => {
+    const repository = new MemoryAnimationRepository({
+      beforeCommit(operation) {
+        if (operation === "writePartAssetToProject") throw new Error("Import write failed");
+      }
+    });
+    const project = await seedProject(repository, { parts: [] });
+    renderProvider(repository, {
+      now: () => NOW,
+      createPartAssetId: () => "part_failed_import_001",
+      createImageBlobId: () => "blob_failed_import_001"
+    });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+
+    await act(async () => {
+      expect(
+        await context.importPartAsset({
+          originalBlob: new Blob(["failed"], { type: "image/png" }),
+          label: "Fehlgeschlagener Kopf",
+          slot: "head",
+          direction: "south",
+          sourceSize: { width: 4, height: 4 },
+          trimRect: { x: 0, y: 0, width: 4, height: 4 }
+        })
+      ).toMatchObject({ status: "failed", message: "Import write failed" });
+    });
+
+    expect(context.activeProject).toEqual(project);
+    expect(context.projectDirty).toBe(false);
+    expect(await repository.readPartAsset("part_failed_import_001")).toMatchObject({ status: "notFound" });
+    expect(await repository.readBlob("blob_failed_import_001")).toMatchObject({ status: "notFound" });
   });
 });

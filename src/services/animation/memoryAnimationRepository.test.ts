@@ -166,6 +166,70 @@ describe("MemoryAnimationRepository", () => {
     });
   });
 
+  it("atomically assigns an imported part while preserving the replaced source", async () => {
+    let failImport = false;
+    const repository = new MemoryAnimationRepository({
+      beforeCommit(operation) {
+        if (operation === "writePartAssetToProject" && failImport) {
+          throw new Error("simulated import failure");
+        }
+      }
+    });
+    const oldPart = createAnimationPartAssetInput();
+    const oldBlob = pngBlob("old pixels");
+    const project = createAnimationProjectInput({
+      parts: [{ assetId: oldPart.assetId }]
+    });
+    await repository.writePartAsset(oldPart, oldBlob);
+    await repository.createProject(project);
+
+    const importedPart = createAnimationPartAssetInput({
+      assetId: "part_head_south_imported_001",
+      blobId: "blob_head_south_imported_001",
+      label: "Neuer Kopf Süd",
+      anchorStatus: "anchorsPending",
+      anchors: undefined,
+      updatedAt: LATER_TIMESTAMP,
+      createdAt: LATER_TIMESTAMP
+    });
+    const updatedProject = {
+      ...project,
+      parts: [{ assetId: importedPart.assetId }],
+      updatedAt: LATER_TIMESTAMP
+    };
+
+    failImport = true;
+    expect(
+      await repository.writePartAssetToProject(
+        { project: updatedProject, partAsset: importedPart, replacedAssetId: oldPart.assetId },
+        pngBlob("failed pixels")
+      )
+    ).toMatchObject({ status: "failed" });
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { parts: [{ assetId: oldPart.assetId }] }
+    });
+    expect(await repository.readPartAsset(importedPart.assetId)).toMatchObject({ status: "notFound" });
+    expect(await repository.readBlob(importedPart.blobId)).toMatchObject({ status: "notFound" });
+
+    failImport = false;
+    expect(
+      await repository.writePartAssetToProject(
+        { project: updatedProject, partAsset: importedPart, replacedAssetId: oldPart.assetId },
+        pngBlob("new pixels")
+      )
+    ).toMatchObject({
+      status: "ok",
+      value: { partAsset: { anchorStatus: "anchorsPending" }, replacedAssetId: oldPart.assetId }
+    });
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { parts: [{ assetId: importedPart.assetId }], updatedAt: LATER_TIMESTAMP }
+    });
+    expect(await repository.readPartAsset(oldPart.assetId)).toMatchObject({ status: "ok" });
+    expect(await repository.readBlob(oldPart.blobId)).toEqual({ status: "ok", value: oldBlob });
+  });
+
   it("duplicates only project metadata and retains immutable shared references", async () => {
     const repository = new MemoryAnimationRepository();
     const source = createAnimationProjectInput();

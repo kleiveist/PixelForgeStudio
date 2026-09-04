@@ -13,6 +13,7 @@ import {
 } from "./animationReferenceAnalysis";
 import {
   createAnimationProjectSummary,
+  PersistAnimationPartImportInputSchema,
   sortAnimationProjects,
   sortAnimationProjectSummaries,
   sortCharacterKits,
@@ -24,7 +25,8 @@ import {
   type AnimationRepositoryMutationResult,
   type AnimationRepositoryQueryResult,
   type AnimationRepositoryReadResult,
-  type AnimationRepositoryValueMutationResult
+  type AnimationRepositoryValueMutationResult,
+  type PersistedAnimationPartImport
 } from "./animationRepository";
 import {
   createDuplicatedProject,
@@ -648,6 +650,148 @@ export class IndexedDbAnimationRepository implements AnimationRepository {
       pendingRequests.push(blobWrite);
       await Promise.all([metadataWrite, blobWrite, completion]);
       return { status: "ok" };
+    } catch (error) {
+      if (transaction) abortQuietly(transaction);
+      await Promise.allSettled(
+        completion ? [...pendingRequests, completion] : pendingRequests
+      );
+      return repositoryTransactionFailed(error);
+    }
+  }
+
+  public async writePartAssetToProject(
+    input: unknown,
+    blob: Blob
+  ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationPartImport>> {
+    const command = parseRepositoryValue(
+      PersistAnimationPartImportInputSchema,
+      input,
+      "The part import was not written because its metadata is invalid."
+    );
+    if (!command.success) return command.result;
+    const database = await this.databaseOrUnavailable();
+    if (database.status !== "ok") return database;
+
+    let transaction: IDBTransaction | undefined;
+    let completion: Promise<void> | undefined;
+    const pendingRequests: Promise<unknown>[] = [];
+    try {
+      transaction = database.value.transaction(
+        [
+          ANIMATION_DATABASE_STORES.projects,
+          ANIMATION_DATABASE_STORES.partAssets,
+          ANIMATION_DATABASE_STORES.imageBlobs
+        ],
+        "readwrite"
+      );
+      completion = transactionDone(transaction);
+      const projects = transaction.objectStore(ANIMATION_DATABASE_STORES.projects);
+      const parts = transaction.objectStore(ANIMATION_DATABASE_STORES.partAssets);
+      const blobs = transaction.objectStore(ANIMATION_DATABASE_STORES.imageBlobs);
+      const [currentProjectRow, existingPartRow, existingBlobRow, replacedPartRow] = await Promise.all([
+        requestValue<unknown>(projects.get(command.value.project.projectId)),
+        requestValue<unknown>(parts.get(command.value.partAsset.assetId)),
+        requestValue<unknown>(blobs.get(command.value.partAsset.blobId)),
+        command.value.replacedAssetId
+          ? requestValue<unknown>(parts.get(command.value.replacedAssetId))
+          : Promise.resolve(undefined)
+      ]);
+
+      if (currentProjectRow === undefined) {
+        await completion;
+        return repositoryNotFound("project", command.value.project.projectId);
+      }
+      if (existingPartRow !== undefined) {
+        await completion;
+        return repositoryConflict("partAsset", command.value.partAsset.assetId);
+      }
+      if (existingBlobRow !== undefined) {
+        await completion;
+        return repositoryConflict("imageBlob", command.value.partAsset.blobId);
+      }
+      const currentProject = parseRepositoryValue(
+        AnimationProjectSchema,
+        currentProjectRow,
+        "Stored project metadata is invalid; the part import was cancelled."
+      );
+      if (!currentProject.success) {
+        abortQuietly(transaction);
+        await completion.catch(() => undefined);
+        return currentProject.result;
+      }
+      if (
+        command.value.replacedAssetId !== undefined &&
+        !currentProject.value.parts.some(
+          ({ assetId }) => assetId === command.value.replacedAssetId
+        )
+      ) {
+        abortQuietly(transaction);
+        await completion.catch(() => undefined);
+        return repositoryConflict("project", currentProject.value.projectId);
+      }
+      if (command.value.replacedAssetId !== undefined) {
+        if (replacedPartRow === undefined) {
+          abortQuietly(transaction);
+          await completion.catch(() => undefined);
+          return repositoryNotFound("partAsset", command.value.replacedAssetId);
+        }
+        const replacedPart = parseRepositoryValue(
+          AnimationPartAssetSchema,
+          replacedPartRow,
+          "Stored replacement PartAsset metadata is invalid; the import was cancelled."
+        );
+        if (!replacedPart.success) {
+          abortQuietly(transaction);
+          await completion.catch(() => undefined);
+          return replacedPart.result;
+        }
+        if (
+          replacedPart.value.slot !== command.value.partAsset.slot ||
+          replacedPart.value.direction !== command.value.partAsset.direction
+        ) {
+          abortQuietly(transaction);
+          await completion.catch(() => undefined);
+          return repositoryConflict("project", currentProject.value.projectId);
+        }
+      }
+      const expectedPartIds = [
+        ...currentProject.value.parts
+          .map(({ assetId }) => assetId)
+          .filter((assetId) => assetId !== command.value.replacedAssetId),
+        command.value.partAsset.assetId
+      ];
+      if (
+        command.value.project.parts.length !== expectedPartIds.length ||
+        command.value.project.parts.some(
+          ({ assetId }, index) => assetId !== expectedPartIds[index]
+        )
+      ) {
+        abortQuietly(transaction);
+        await completion.catch(() => undefined);
+        return repositoryConflict("project", currentProject.value.projectId);
+      }
+
+      const projectWrite = requestValue(projects.put(command.value.project));
+      pendingRequests.push(projectWrite);
+      const partWrite = requestValue(parts.add(command.value.partAsset));
+      pendingRequests.push(partWrite);
+      const blobRecord: StoredImageBlob = {
+        blobId: command.value.partAsset.blobId,
+        blob
+      };
+      const blobWrite = requestValue(blobs.add(blobRecord));
+      pendingRequests.push(blobWrite);
+      await Promise.all([projectWrite, partWrite, blobWrite, completion]);
+      return {
+        status: "ok",
+        value: Object.freeze({
+          project: command.value.project,
+          partAsset: command.value.partAsset,
+          ...(command.value.replacedAssetId
+            ? { replacedAssetId: command.value.replacedAssetId }
+            : {})
+        })
+      };
     } catch (error) {
       if (transaction) abortQuietly(transaction);
       await Promise.allSettled(
