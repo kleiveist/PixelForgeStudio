@@ -1,5 +1,4 @@
 import { StudioLink } from "../components/navigation";
-import { Surface } from "../components/ui";
 import {
   ANIMATION_STUDIO_VIEW_IDS,
   type AnimationStudioRoute,
@@ -10,8 +9,8 @@ import {
   AnimationWorkspaceLifecycleView
 } from "../features/animation-projects";
 import { CharacterKitLibraryView } from "../features/animation-kits";
+import { RigTemplateLibraryView } from "../features/animation-rigs";
 import shellStyles from "./AppShell.module.css";
-import styles from "./StudioPlaceholderViews.module.css";
 import { ANIMATION_STUDIO_VIEW_DEFINITIONS } from "./studioViewConfig";
 
 function routeForAnimationView(
@@ -54,8 +53,6 @@ export function AnimationStudioNavigation({
 export function AnimationStudioShell({
   route
 }: Readonly<{ route: AnimationStudioRoute }>) {
-  const definition = ANIMATION_STUDIO_VIEW_DEFINITIONS[route.view];
-
   return (
     <section
       aria-labelledby={`animation-${route.view}-view-title`}
@@ -69,22 +66,7 @@ export function AnimationStudioShell({
         />
       ) : null}
       {route.view === "library" ? <CharacterKitLibraryView /> : null}
-      {route.view === "rigs" ? (
-        <div className={styles.view}>
-          <p className={styles.eyebrow}>{definition.eyebrow}</p>
-          <h1 id={`animation-${route.view}-view-title`}>{definition.title}</h1>
-          <p className={styles.description}>{definition.description}</p>
-          <Surface
-            as="section"
-            className={styles.placeholder}
-            tone="soft"
-            role="note"
-          >
-            <h2>Noch keine Projektdaten</h2>
-            <p>{definition.nextStep}</p>
-          </Surface>
-        </div>
-      ) : null}
+      {route.view === "rigs" ? <RigTemplateLibraryView /> : null}
     </section>
   );
 }

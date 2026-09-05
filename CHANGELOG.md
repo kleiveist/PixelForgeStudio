@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 3.0.0 — 2026-09-05
+
+- PixelForge Studio 3.0 als gemeinsames Dach für das kompatible Prompt Studio
+  V2 und das Animation Studio mit eigenständigem Datenformat V1 abgenommen
+- produktive Rig-Vorlagenbibliothek für `humanoid-80-v1` anstelle der letzten
+  Platzhalterfläche ergänzt
+- reproduzierbare Playwright-Release-Smokes für Chromium und Firefox mit
+  Routen-, Tastatur-, Dialog-, Responsive- und Reduced-Motion-Prüfung ergänzt
+- Produktionsbuild über fachliche Rolldown-Chunks aufgeteilt; größter
+  JavaScript-Chunk von rund 1,25 MB auf unter 200 kB reduziert
+- Paketversion auf `3.0.0` und sichtbares Produktlabel auf `V3` gesetzt
+
 - pure Prompt-zu-Animation-Seed-Abbildung für konfliktfrei aufgelöste
   humanoide Character-Profile ergänzt, die ausschließlich ID, Name,
   Figurenhöhe, Compatibility Key, Richtungszahl und Aktions-/Framewünsche

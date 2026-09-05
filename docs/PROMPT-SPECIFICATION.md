@@ -207,9 +207,9 @@ Die technische Ownership ist bewusst getrennt:
 `buildPromptPackages()` bleibt die einzige Produktionsgrenze für die vier
 Promptausgaben. Animation-Projekte oder Workspace-Auswahlen werden nicht
 automatisch in `ResolvedProfile`, Hauptprompt, Negativprompt oder technische
-Spezifikation gemischt. Eine spätere Übergabe vom Prompt- zum
-Animationsmodul muss explizit erfolgen, validierte Referenzen verwenden und
-die beiden Versionsverträge getrennt halten.
+Spezifikation gemischt. Die Übergabe vom Prompt- zum Animationsmodul erfolgt
+explizit über einen validierten, schmalen Projektseed und hält die beiden
+Versionsverträge getrennt.
 
 Der derzeit implementierte V3-Ausbaustand umfasst:
 
@@ -249,7 +249,13 @@ Der derzeit implementierte V3-Ausbaustand umfasst:
 14. kontrollierte Acht-Richtungs-Coverage und exakt 64 reproduzierbare Frames,
 15. sparse Framekorrekturen sowie eine begrenzte Metadaten-History und
 16. lokale Character Kits mit referenzgeteiltem Ausrüstungsinventar,
-    Compatibility-Grenze und kontrollierter Overridebereinigung.
+    Compatibility-Grenze und kontrollierter Overridebereinigung,
+17. neutrale 64-Frame-, 1024×1024-SpriteSheet-, JSON- und `.pfanim`-Exporte
+    sowie einen abgeleiteten Godot-4-Paketadapter,
+18. die explizite Promptprofil-Übergabe, ein versioniertes Workerprotokoll,
+    kontrollierte Fallbacks und revisionsgebundene Ressourcencaches sowie
+19. die produktive Rig-Vorlagenbibliothek und die automatisierte
+    Accessibility-, Responsive-, Browser- und Regressionsabnahme für 3.0.
 
 Im Workspace liest das Rig-SVG Bones, Joints, Groundline und Pflichtslotlabels
 direkt aus den versionierten Produktionsdaten. Schachbrett, Raster,
@@ -259,9 +265,9 @@ die Anzeige; Projekt- und Exportkoordinaten bleiben unverändert. Nicht
 aufgelöste PartAsset-/Blob-Referenzen werden sichtbar als fehlende Quelle
 behandelt, ohne Dummybilder oder scheinpräzise Anker zu erzeugen.
 
-Die V3-Implementierung hat mit Prompt 47 Phase E und mit Prompt 50 die
-Implementierung der Phase F abgeschlossen; die Release-Abnahme ist noch offen.
-SpriteSheet-/Godot-Export und die explizite Prompt→Animation-Übergabe sind
-umgesetzt. Release 3.0 gehört zu Prompt 51. Der
-verbindliche Ausführungsstand und die Reihenfolge stehen unter
-`aufgaben/pixelforge-studio-v3/START_HERE.md` und in `../PLANS.md`.
+Die V3-Implementierung und Release-Abnahme sind mit Prompt 51 abgeschlossen.
+Der Dach-Stack steht in [`TECHNOLOGIE-STACK-V3.md`](TECHNOLOGIE-STACK-V3.md),
+die prüfbaren Release-Nachweise in
+[`PIXELFORGE-STUDIO-V3-RELEASE-ACCEPTANCE.md`](PIXELFORGE-STUDIO-V3-RELEASE-ACCEPTANCE.md).
+Die Prompts 28–51 bleiben als historischer Umsetzungsnachweis unter
+`erledigt/pixelforge-studio-v3/` erhalten.

@@ -2,19 +2,22 @@
 
 Prompts 40 through 43 complete Phase D's deterministic pure TypeScript
 renderer, versioned draw-order contract, first reconstructable Walk clip and
-frame-accurate preview lifecycle. Prompts 44 and 45 start Phase E with
-controlled source/geometry mirroring and complete eight-direction generation.
+frame-accurate preview lifecycle. Prompts 44 through 47 complete Phase E with
+controlled source/geometry mirroring, eight-direction generation,
+non-destructive corrections and reusable Character Kits.
 Inverse affine nearest-neighbor sampling, integer-rounded source-over,
 direction-specific near/far layering, eight explicit movement phases, clamped
 Two-Bone IK and pure elapsed-time playback projection are independent of React
 and Canvas. A complete five- or eight-source partset produces 64 transient
 frames while the project stores only template ID, FPS, loop and later
 overrides. Timeline, manual playback, Onion Skin and the static eight-direction
-review consume these values without becoming a second project source; export
-is exported through a versioned worker boundary. Prompt 50 adds a one-way,
+review consume these values without becoming a second project source. Phase F
+exports the result through neutral, `.pfanim` and Godot-4 adapters behind a
+versioned worker boundary. Prompt 50 adds a one-way,
 pure Prompt-profile-to-animation-seed integration; it copies only production
 identifiers and resolved animation requirements and never copies prompt text
-or PNG data.
+or PNG data. Prompt 51 releases these boundaries as PixelForge Studio 3.0 and
+adds a productive rig catalog plus Chromium-/Firefox-Smokes.
 Both modules share one route source, settings source, theme, skip target,
 title and focus boundary.
 
@@ -100,7 +103,9 @@ title and focus boundary.
   Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion;
   `animation-anchor-editor/` besitzt Originalbild-Eingabe, Zoom/Pan, zugängliche
   Koordinatenfelder, Live-Placement-Anzeigeadapter und projektweite
-  Delta-Bedienung; `studio-handoff/` is the sole cross-provider UI bridge. It
+  Delta-Bedienung; `animation-rigs/` projects immutable built-in rig contracts
+  into a productive, repository-free catalog; `studio-handoff/` is the sole
+  cross-provider UI bridge. It
   resolves a profile, owns the accessible confirmation dialog, asks the
   Animation provider to persist the final seed and then performs typed
   navigation; neither provider imports the other
@@ -152,6 +157,8 @@ title and focus boundary.
   Reset-/Grundregeln
 - `test/`: gemeinsames Vitest-/Testing-Library-Setup und nicht ausführbare,
   synthetische V1-Migrations-/Promptverträge unter `fixtures/legacy-v1/`
+- `e2e/`: Playwright-Release-Smokes für beide nativen Browserengines; die
+  Szenarien verändern keine Produktionsverträge
 
 The executable V1 UI was removed in Prompt 27 only after automated and manual
 parity was demonstrated. Historical inputs now live as inert fixtures under
@@ -647,11 +654,12 @@ title, route/session focus, module navigation selection and the single main
 landmark. Route and Wizard-session focus uses `preventScroll`, so module and
 Home transitions preserve the user's viewport position; activating the skip
 link still performs the deliberate jump to main content.
-`app/AppShell.tsx` now exports the productive Prompt module surface
-and its six-view navigation. `app/AnimationStudioShell.tsx` routes the
-productive project list and lifecycle-aware Workspace plus explicit Character
-Kit and Rig placeholders; it owns no repository implementation or Canvas
-behavior. `StudioHomeController` combines the mounted profile and Animation
+`app/AppShell.tsx` exports the productive Prompt module surface with five
+canonical views; the historical `review` route is only an alias for `output`.
+`app/AnimationStudioShell.tsx` routes the productive project list,
+lifecycle-aware Workspace, Character Kit library and built-in Rig catalog; it
+owns no repository implementation or Canvas behavior. `StudioHomeController`
+combines the mounted profile and Animation
 providers with the injected draft read port and passes only pure, narrow
 `StudioHomeData` summaries to `StudioHomeView`. The view owns no storage access
 or domain writes and opens animation data only after an explicit user action.
@@ -1380,3 +1388,38 @@ The package adapter groups the native Sheet PNG, unchanged neutral JSON,
 `.tres` and generated import README under one relative directory. No Godot
 state enters `AnimationProject`, and no patch release is encoded as a lasting
 contract.
+
+`domain/studio-handoff/` maps a successfully resolved humanoid Prompt profile
+to a deliberately narrow Animation seed. The mapper transfers only stable
+identity, effective height, compatibility key and requested direction/action
+facts. Four-direction and noncanonical Walk requests remain explicit user
+decisions; Prompt text, clothing prose and image bytes never cross this
+boundary. Existing projects retain an informational source reference even if
+the Prompt profile is later removed.
+
+`workers/animationExport.worker.ts` and the browser-side controller form the
+serializable Worker protocol V1. Rendering, Sheet composition, PNG preparation
+and ZIP packaging report bounded progress and honor cancellation. Project ID,
+revision and job ID prevent stale acceptance. Bounded decoded-source and
+rendered-frame caches are released on project changes; environments without a
+Worker or OffscreenCanvas use the explicit yielding fallback and never publish
+a partial download.
+
+`features/animation-rigs/` is the public release catalog for built-in rig
+contracts. Its pure projection reads `BUILT_IN_RIG_TEMPLATES`; the view exposes
+frame, body, anchor, direction, topology, required-binding and compatibility
+facts without duplicating or mutating Rig data.
+
+`playwright.config.ts` and `e2e/release-smoke.spec.ts` are the release-only
+browser boundary. Chromium and Firefox exercise all current routes, legacy
+canonicalization, keyboard/focus behavior, responsive reflow and reduced
+motion against a real Vite server. Unit and integration ownership remains with
+Vitest. Vite's production chunk groups mirror feature ownership and change no
+runtime or persisted-data contract.
+
+Prompt 51 completes the 3.0 release. Product version `3.0.0` and the visible
+`V3` label are intentionally separate from Prompt V2 and Animation V1 data
+formats. The evidence and the one explicitly open real-Godot import check live
+in `docs/PIXELFORGE-STUDIO-V3-RELEASE-ACCEPTANCE.md`; Prompts 28–51 remain
+archived as historical implementation records under
+`docs/erledigt/pixelforge-studio-v3/`.

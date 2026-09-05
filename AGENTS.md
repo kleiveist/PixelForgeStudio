@@ -2,25 +2,25 @@
 
 ## Auftrag
 
-Dieses Repository enthält das Dachprodukt **PixelForge Studio**. Sein erstes
-release-abgenommenes Modul ist das **PixelForge Prompt Studio V2** mit
-Dashboard, Profilbibliothek, geführtem Wizard, Profilvererbung und
-spezialisierten Asset-Editoren. Das **PixelForge Animation Studio** ist als
-zugängliches Modul mit vier kontrollierten Einstiegen vorbereitet; seine
-Fachdomain beginnt mit Prompt 32. Die Rebranding- und Studio-Shell-Phase A
-(Prompts 28–31) ist abgeschlossen.
+Dieses Repository enthält das release-abgenommene Dachprodukt **PixelForge
+Studio 3.0**. Das **PixelForge Prompt Studio** bleibt dem V2-Schema-, Storage-
+und Exportvertrag verpflichtet. Das produktive **PixelForge Animation Studio**
+verwaltet lokale Projekte, PNG-Körperteile, `humanoid-80-v1`, Acht-Richtungs-
+Walks, Character Kits sowie neutrale und Godot-4-Exporte im eigenständigen
+Animationsformat V1.
 
 Vor funktionalen Änderungen lesen:
 
-1. `docs/TECHNOLOGIE-STACK-V2.md`
-2. `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md`
-3. `docs/PROMPT-SPECIFICATION.md`
-4. `PLANS.md` und die dort benannte aktive Prompt-Unterlage
+1. `docs/TECHNOLOGIE-STACK-V3.md`
+2. `docs/TECHNOLOGIE-STACK-V2.md`
+3. `docs/V2-ABFRAGEKATALOG-UND-PROFILMODELL.md`
+4. `docs/PROMPT-SPECIFICATION.md`
+5. `PLANS.md` und die dort benannte aktive Prompt-Unterlage
 
-Für die aktive Serie 28–51 zusätzlich zuerst
-`docs/aufgaben/pixelforge-studio-v3/START_HERE.md` und anschließend
-genau die beauftragte Einzeldatei unter
-`docs/aufgaben/pixelforge-studio-v3/prompts/` lesen.
+Die abgeschlossene V3-Serie 28–51 liegt als historischer Umsetzungsnachweis
+unter `docs/erledigt/pixelforge-studio-v3/`. Sie ist keine aktive
+Aufgabenliste. Die verbindliche Release-Evidenz steht unter
+`docs/PIXELFORGE-STUDIO-V3-RELEASE-ACCEPTANCE.md`.
 
 Der abgeschlossene Katalog der Prompts 00–27 liegt ausschließlich als
 historische Referenz unter `docs/erledigt/CODEX-V2-PROMPTS.md` und ist keine
@@ -50,9 +50,12 @@ V1-Migrationsbaseline liegen ebenfalls nur noch unter `docs/erledigt/`.
 - Zod
 - React Context + `useReducer`
 - localStorage + JSON-Import/-Export
+- native IndexedDB für Animationsmetadaten und Bildblobs
+- `fflate` für lokale ZIP-Bundles
 - CSS Modules + CSS Custom Properties
 - eigene lokale SVG-React-Komponenten
 - Vitest + React Testing Library + jsdom
+- Playwright-Smokes in Chromium und Firefox
 - kein Backend
 - kein Python in der Haupt-App
 
@@ -95,6 +98,8 @@ npm run dev
 npm run typecheck
 npm run test
 npm run test:run
+npm run test:browser:install
+npm run test:browser
 npm run build
 npm run verify
 ```

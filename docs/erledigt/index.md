@@ -18,5 +18,6 @@
 - [PixelForge Prompt Studio V2 — Release-Abnahme](V2-RELEASE-ACCEPTANCE.md)
 
 ### Bereiche
+- [Erledigte Promptserie — PixelForge Studio V3](pixelforge-studio-v3/README.md)
 - [Archiv — V2 Target Scaffold](v2-template/README.md)
 <!-- PYGINDEX:INDEX END -->

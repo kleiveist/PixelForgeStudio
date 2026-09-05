@@ -1,7 +1,7 @@
 export const BRAND = Object.freeze({
   productName: "PixelForge Studio",
   shortName: "PixelForge",
-  versionLabel: "Studio Preview",
+  versionLabel: "V3",
   tagline: "Lokale Prompt-Produktion und Pixelanimation aus einer Oberfläche",
   modules: Object.freeze({
     prompt: Object.freeze({

@@ -1,6 +1,6 @@
 {
   "name": "pixelforge-studio",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "description": "Lokales Dachstudio für Pixelart-Prompt-Produktion und Pixelanimation.",
@@ -16,6 +16,8 @@
     "typecheck": "tsc -b --pretty false",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:browser": "playwright test",
+    "test:browser:install": "playwright install chromium firefox",
     "verify": "npm run typecheck && npm run test:run && npm run build"
   },
   "engines": {
@@ -31,6 +33,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "^16.3.3",

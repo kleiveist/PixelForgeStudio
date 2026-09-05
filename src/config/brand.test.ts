@@ -10,7 +10,7 @@ describe("PixelForge Studio brand contract", () => {
   it("defines the umbrella product and both modules centrally", () => {
     expect(BRAND.productName).toBe("PixelForge Studio");
     expect(BRAND.shortName).toBe("PixelForge");
-    expect(BRAND.versionLabel).toBe("Studio Preview");
+    expect(BRAND.versionLabel).toBe("V3");
     expect(BRAND.modules).toEqual({
       prompt: {
         productName: "PixelForge Prompt Studio",

@@ -5,58 +5,44 @@ import type {
 } from "../domain/navigation";
 import { PROMPT_STUDIO_VIEW_DEFINITIONS } from "./appViewConfig";
 
-export interface StudioPlaceholderViewDefinition {
+export interface StudioViewDefinition {
   readonly label: string;
   readonly title: string;
   readonly eyebrow: string;
   readonly description: string;
-  readonly nextStep: string;
 }
 
 export const ANIMATION_STUDIO_VIEW_DEFINITIONS: Readonly<
-  Record<AnimationStudioView, StudioPlaceholderViewDefinition>
+  Record<AnimationStudioView, StudioViewDefinition>
 > = Object.freeze({
   projects: Object.freeze({
     label: "Projekte",
     title: "Animationsprojekte organisieren.",
     eyebrow: "Animation Studio",
     description:
-      "Lokale Projekte lassen sich anlegen, suchen, öffnen, umbenennen, duplizieren und kontrolliert löschen.",
-    nextStep: "Wähle ein Projekt oder lege eine neue Produktion an."
+      "Lokale Projekte lassen sich anlegen, suchen, öffnen, umbenennen, duplizieren und kontrolliert löschen."
   }),
   workspace: Object.freeze({
     label: "Workspace",
     title: "Kein Animationsprojekt geöffnet.",
     eyebrow: "Animation Workspace",
     description:
-      "Lege ein Projekt an oder öffne eines aus der Projektübersicht, bevor du Figuren riggst.",
-    nextStep: "Der Workspace zeigt ohne Projekt bewusst keinen leeren Editor."
+      "Lege ein Projekt an oder öffne eines aus der Projektübersicht, bevor du Figuren riggst."
   }),
   library: Object.freeze({
     label: "Character Kits",
     title: "Figuren und Ausrüstung wiederverwenden.",
     eyebrow: "Kit-Bibliothek",
     description:
-      "Lokale Character Kits teilen PartAssets sicher zwischen kompatiblen Projekten.",
-    nextStep: "Suche, prüfe und verwalte deine lokalen Character Kits."
+      "Lokale Character Kits teilen PartAssets sicher zwischen kompatiblen Projekten."
   }),
   rigs: Object.freeze({
     label: "Rig-Vorlagen",
-    title: "Rig-Vorlagen werden vorbereitet.",
+    title: "Produktionsreife Rig-Vorlagen.",
     eyebrow: "Rig-Bibliothek",
     description:
-      "Versionierte Vorlagen werden hier erst mit der Animationsdomain verfügbar.",
-    nextStep: "Die derzeitige Ansicht verändert keine Prompt- oder Animationsdaten."
+      "Versionierte, validierte Vorlagen machen Frameprofil, Gelenke, Bones und Pflichtslot-Bindungen transparent."
   })
-});
-
-export const STUDIO_HOME_PLACEHOLDER = Object.freeze({
-  title: BRAND.productName,
-  eyebrow: "Studio-Startseite",
-  description:
-    "Wähle im globalen Studio-Umschalter die Prompt-Produktion oder den vorbereiteten Animationsbereich.",
-  nextStep:
-    "Die produktive Startübersicht mit Zusammenfassungen folgt als eigener nächster Schritt."
 });
 
 export function studioRouteTitle(route: StudioRoute): string {

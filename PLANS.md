@@ -2,21 +2,90 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 50 — Prompt-Handoff und Workerexport
-  (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 51 — Release-Abnahme V3
-  (nicht begonnen)
+- **Aktuelle Aufgabe:** Prompt 51 — Release-Abnahme V3 abgeschlossen
+- **Nächste Aufgabe:** keine; Prompt 51 beendet die beauftragte V3-Serie
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
-- **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35,
+- **Abgeschlossene V3-Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35,
   Phase C mit Prompts 36–39, Phase D mit Prompts 40–43, Phase E mit Prompts
-  44–47 und Phase F mit Prompts 48–50 abgeschlossen; Prompt 51 folgt getrennt
-  unter
-  `docs/aufgaben/pixelforge-studio-v3/prompts/`
+  44–47 und Phase F mit Prompts 48–51; archiviert unter
+  `docs/erledigt/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 - **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 51 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `a8ec4df`; Prompts 28–50 sind einzeln umgesetzt und geprüft.
+  Das Dachprodukt trägt technisch noch Version `2.0.0` und sichtbar das Label
+  `Studio Preview`. Prompt-Schema/-Bundle bleiben bewusst V2,
+  Animationsschema/-bundle bewusst V1.
+- Repository: Paketmetadaten und `origin` zeigen auf
+  `kleiveist/PixelForgeStudio`; die flüchtig konfigurierte GitHub CLI ist als
+  `kleiveist` angemeldet. Der administrative Rename ist damit kein offener
+  Releaseblocker.
+- Automatisierbare Baseline: Prompt 50 bestand mit 178 Testdateien und 1085
+  Tests, Strict-Typecheck und Produktionsbuild. Der Vite-Build meldet noch
+  einen 1,246-MB-Hauptchunk; Releasehärtung soll diesen sinnvoll aufteilen,
+  nicht lediglich die Warnschwelle erhöhen.
+- View-Audit: Studio Home, fünf kanonische Prompt-Flächen plus kompatibler
+  `review`-Alias, Projekte, Workspace und Character Kits sind produktiv. Die
+  Route „Rig-Vorlagen“ zeigt trotz vorhandenem `humanoid-80-v1` noch den alten
+  Platzhalter und muss als tote Placeholder-Oberfläche ersetzt werden.
+- Accessibility/Responsive: globale Skip-/Landmark-/Focus-visible- und
+  Reduced-Motion-Grundlagen sowie mittlere/kleine CSS-Breakpoints sind
+  vorhanden. Die Releaseprüfung bündelt Navigation, Dialogfokus,
+  Tastaturalternativen, schrittweisen Kleinbildschirm-Workspace und 200-%-
+  Reflow in expliziten Nachweisen.
+- Laufzeitmatrix: im aktuellen Docker-Image sind zunächst weder Chromium,
+  Firefox noch Godot installiert. Browserprüfungen werden nach Möglichkeit
+  reproduzierbar in der flüchtigen Sitzung nachinstalliert; ein nicht
+  ausführbarer Lauf wird mit Datum und Umgebung als offen dokumentiert. Ein
+  realer Godot-Import wird ohne Engine ausdrücklich nicht behauptet.
+- Release-Gate: vollständige Prompt-Kompatibilität, Animations-Lifecycle,
+  Pixel-/64-Frame-/1024-Sheet-/Bundle-/Godot-Fixtures, Workerressourcen,
+  Repositoryfehler und UI-Flows müssen grün sein. Erst danach werden
+  Produktversion `3.0.0` und sichtbares Label `V3` gesetzt.
+
+## Prompt 51 — Ergebnis
+
+1. Das letzte tote Rig-Placeholder wurde durch eine produktive, rein aus den
+   Built-in-Verträgen projizierte Vorlagenbibliothek ersetzt. Sie zeigt für
+   `humanoid-80-v1` Frame, Körperhöhe, Fußanker, fünf eigene und acht
+   Laufzeitrichtungen, 21 Joints, 20 Bones, 15 Pflichtbindungen und den
+   Compatibility Key.
+2. Das Paket trägt nach dem grünen Vorab-Gate Version `3.0.0`, die Oberfläche
+   das Label `V3`. Prompt-Schema, Prompt-Export und `pixelforge:v2:*` bleiben
+   V2; Animationsschema und `.pfanim` bleiben V1.
+3. Playwright ergänzt sechs reale Release-Szenarien für Chromium und Firefox:
+   alle produktiven Views, alte `?view=`-Links, Tastatur-/Dialogfokus,
+   1440/900/640/320-px-Reflow, kleiner Workspace und Reduced Motion. Beide
+   Engines bestanden alle 12 Läufe.
+4. Der Produktionsbuild teilt React, Formulare, Archivcode, Animation und
+   Promptfeatures fachlich. Der größte JavaScript-Chunk sank von 1.246,01 kB
+   auf 194,06 kB; die bisherige Größenwarnung ist beseitigt.
+5. Prompt-Kompatibilität, Projekt-/Autosave-/Recovery-Lifecycle, PNG-/Rig-/
+   Renderpfad, Spiegelreview, 64 Frames, Korrekturen, Character Kits,
+   1024×1024-Sheet, `.pfanim`, Godot-Fixtures, Worker/Cancel/Caches und
+   Object-URL-Cleanup sind in der Release-Matrix nachgewiesen.
+6. Der echte Git-Remote und die GitHub-Abfrage bestätigen
+   `kleiveist/PixelForgeStudio`; ein administrativer Rename ist nicht offen.
+   Godot ist in der Docker-Sitzung nicht installiert, deshalb bleibt der reale
+   Engineimport exakt als manuelle Prüfung dokumentiert und wird nicht als
+   ausgeführt behauptet.
+7. README, AGENTS, Changelog, Dach-Stack, Promptvertrag, Architektur und
+   Release-Acceptance beschreiben den Stand 3.0. Die vollständig erledigte
+   Serie 28–51 wurde ohne Löschung unter
+   `docs/erledigt/pixelforge-studio-v3/` archiviert.
+8. Der gezielte Release-Audit bestand mit 81 Testdateien und 566 Tests. Das
+   vollständige Gate bestand vor der Versionsfreigabe sowie zweimal nach den
+   finalen Versions-/Dokumentationsänderungen mit jeweils 179 Testdateien und
+   1087 Tests, Strict-Typecheck und Produktionsbuild. PyGitIndex,
+   Paketchecksummen und `git diff --check` sind abschließend grün.
+9. Es gibt keinen nächsten Prompt dieser Serie. Weitere Clip-/Rigfamilien,
+   Tauri, Cloud und KI-Bildanalyse bleiben außerhalb von Release 3.0. Es wurde
+   weder gepusht noch ein Release-Tag erstellt.
 
 ## Prompt 50 — Ausgangsstand und Abnahme
 
@@ -1246,7 +1315,7 @@
 ## Nachtrag — einsatzbereite Aufgabenstruktur
 
 1. Die vollständige offene Serie liegt unter
-   `docs/aufgaben/pixelforge-studio-v3/`.
+   `docs/erledigt/pixelforge-studio-v3/`.
 2. Verbindliche Planungsunterlagen liegen unter `grundlagen/`, ausführbare
    Einzelaufträge unter `prompts/` und Übergabevorlagen unter `templates/`.
 3. Alle Pfade in den Einzelprompts zeigen vom Repository-Root auf diese

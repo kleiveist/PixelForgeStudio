@@ -4,9 +4,8 @@
 
 # Aufgaben
 
-<!-- PYGINDEX:INDEX START -->
-## Inhalt
+Derzeit sind keine offenen nummerierten Promptaufgaben hinterlegt. Die
+vollständig abgeschlossene Serie 28–51 liegt ohne Dokumentverlust unter
+[`docs/erledigt/pixelforge-studio-v3/`](../erledigt/pixelforge-studio-v3/README.md).
 
-### Bereiche
-- [Offene Aufgaben — PixelForge Studio V3](pixelforge-studio-v3/README.md)
-<!-- PYGINDEX:INDEX END -->
+Neue Aufgaben werden erst nach einem konkreten Auftrag hier einsortiert.

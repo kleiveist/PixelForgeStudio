@@ -159,7 +159,7 @@ describe("application shell navigation", () => {
   );
 
   it.each(ANIMATION_STUDIO_VIEW_IDS)(
-    "renders the Animation Studio %s placeholder as a routed main view",
+    "renders the Animation Studio %s view as a routed main view",
     (view) => {
       const navigation = new MemoryNavigation({
         status: "valid",
