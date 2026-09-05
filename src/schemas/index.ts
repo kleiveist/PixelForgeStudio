@@ -13,9 +13,12 @@ export {
   type AnimationProjectBundleManifest
 } from "./animationBundle.schema";
 export {
+  CharacterKitCoverageSchema,
   CharacterKitSchema,
+  EMPTY_CHARACTER_KIT_COVERAGE,
   parseCharacterKit,
-  type CharacterKit
+  type CharacterKit,
+  type CharacterKitCoverage
 } from "./animationKit.schema";
 export {
   AnimationPartAssetSchema,

@@ -180,6 +180,20 @@
 - Render- und künftigen Exportpfad auf Generated Baseline plus aktive Deltas
   vereinheitlicht und Overrideänderungen auf zielgenaue Framecache-
   Invalidierung begrenzt
+- Character-Kit-V1 um eine validierte Coverage-Zusammenfassung ergänzt und
+  den Rig-Compatibility-Key auf ausschließlich Rig-ID, Frameprofil,
+  Charakterhöhe sowie Anchor-/Slot-/Direction-Contract-Versionen begrenzt
+- produktive lokale Character-Kit-Bibliothek mit Suche, Rig-/Coveragefilter,
+  Preview, Kompatibilitätsstatus sowie Speichern, Öffnen, Anwenden,
+  Umbenennen, Duplizieren und bestätigt Löschen eingeführt
+- referenzbasierten Kitwechsel mit projekt-eigenem Rig/Clip, hartem
+  Inkompatibilitätsblock und sichtbarer Abbruch- oder Bereinigungsentscheidung
+  für ungültige FrameOverride-Slotdeltas umgesetzt
+- Workspace-Inventar mit tastaturbedienbarem Einsetzen, Ersetzen und Entfernen
+  wiederverwendbarer Ausrüstung verbunden; freie Accessoires ohne
+  Attachment-Joint werden blockiert und geteilte Part-/Blobdaten nicht kopiert
+- Phase E durch zwei NPC-Kits abgeschlossen, die denselben Walk-Clip verwenden
+  und zwei unterschiedliche gültige 64-Frame-Sätze erzeugen
 
 ## 2.0.0 — 2026-09-03
 

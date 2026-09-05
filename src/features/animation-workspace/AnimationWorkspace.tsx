@@ -18,12 +18,14 @@ import {
   JOINT_IDS,
   MAX_PROJECT_LAYER_OFFSET,
   MIN_PROJECT_LAYER_OFFSET,
+  EQUIPMENT_PART_SLOT_IDS,
   PART_SLOT_IDS,
   applyFrameLayerOrder,
   collectFrameOverrideWarnings,
   findFrameOverride,
   getBuiltInRigTemplate,
   getDefaultLayerGroup,
+  getMirroredSourceDirection,
   getDirectionDrawOrder,
   isDirection,
   resolveDirectionDrawOrder,
@@ -116,6 +118,7 @@ export type PartLayerOffsetCommitResult =
 
 export type MirrorPolicyCommitResult = PartLayerOffsetCommitResult;
 export type FrameOverrideCommitResult = PartLayerOffsetCommitResult;
+export type PartEquipmentCommitResult = PartLayerOffsetCommitResult;
 
 export interface AnimationWorkspaceProps {
   readonly project: AnimationProject;
@@ -134,6 +137,9 @@ export interface AnimationWorkspaceProps {
   readonly missingPartAssetIds?: readonly StableId[];
   readonly partAssetLoadError?: string | null;
   readonly partAssetsLoading?: boolean;
+  readonly libraryPartAssets?: readonly AnimationPartAsset[];
+  readonly libraryPartAssetsLoading?: boolean;
+  readonly libraryPartAssetError?: string | null;
   readonly imageDecoder?: ImageDecoder | null;
   readonly onImportPart?: (
     definition: PartImportCommitDefinition
@@ -142,6 +148,12 @@ export interface AnimationWorkspaceProps {
   readonly onConfigurePart?: (
     definition: AnchorEditorCommitDefinition
   ) => Promise<AnchorEditorCommitResult>;
+  readonly onEquipPartAsset?: (
+    assetId: StableId
+  ) => Promise<PartEquipmentCommitResult>;
+  readonly onRemovePartAsset?: (
+    assetId: StableId
+  ) => Promise<PartEquipmentCommitResult>;
   readonly onSetPartLayerOffset?: (
     assetId: StableId,
     layerOffset: number
@@ -206,6 +218,11 @@ const DISCONNECTED_MIRROR_CONFIGURATION = async (): Promise<MirrorPolicyCommitRe
 const DISCONNECTED_FRAME_OVERRIDE = async (): Promise<FrameOverrideCommitResult> => ({
   status: "error",
   message: "Die Framekorrekturen sind in dieser Ansicht nicht verbunden."
+});
+
+const DISCONNECTED_EQUIPMENT = async (): Promise<PartEquipmentCommitResult> => ({
+  status: "error",
+  message: "Die Ausrüstungsbibliothek ist in dieser Ansicht nicht verbunden."
 });
 
 type ReadyWalkCycle = Extract<
@@ -631,10 +648,19 @@ interface PartInventoryProps {
   readonly missingPartAssetIds: readonly StableId[];
   readonly partAssetLoadError: string | null;
   readonly partAssetsLoading: boolean;
+  readonly libraryPartAssets: readonly AnimationPartAsset[];
+  readonly libraryPartAssetsLoading: boolean;
+  readonly libraryPartAssetError: string | null;
   readonly imageDecoder: ImageDecoder | null;
   readonly onImportPart: (
     definition: PartImportCommitDefinition
   ) => Promise<PartImportCommitResult>;
+  readonly onEquipPartAsset: NonNullable<
+    AnimationWorkspaceProps["onEquipPartAsset"]
+  >;
+  readonly onRemovePartAsset: NonNullable<
+    AnimationWorkspaceProps["onRemovePartAsset"]
+  >;
   readonly unresolvedReferenceCount: number;
   readonly onConfirmMirrorReview: NonNullable<
     AnimationWorkspaceProps["onConfirmMirrorReview"]
@@ -651,8 +677,13 @@ function PartInventory({
   missingPartAssetIds,
   partAssetLoadError,
   partAssetsLoading,
+  libraryPartAssets,
+  libraryPartAssetsLoading,
+  libraryPartAssetError,
   imageDecoder,
   onImportPart,
+  onEquipPartAsset,
+  onRemovePartAsset,
   unresolvedReferenceCount,
   onConfirmMirrorReview,
   dispatch,
@@ -661,11 +692,27 @@ function PartInventory({
   const [reviewCell, setReviewCell] = useState<PartCoverageCell | null>(null);
   const [reviewPending, setReviewPending] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [equipmentPendingId, setEquipmentPendingId] = useState<StableId | null>(null);
+  const [equipmentMessage, setEquipmentMessage] = useState<string | null>(null);
+  const [equipmentError, setEquipmentError] = useState<string | null>(null);
   const reviewTriggerRef = useRef<HTMLButtonElement | null>(null);
   const selectedSlotDefinition = getPartSlotDefinition(selectedSlot);
   const existingPart = selectedSlot
     ? findPartAssetForSource(partAssets, selectedSlot, direction)
     : null;
+  const mirrorSourceDirection = getMirroredSourceDirection(direction);
+  const compatibleLibraryParts = selectedSlot
+    ? libraryPartAssets.filter(
+        (asset) =>
+          asset.slot === selectedSlot &&
+          (asset.direction === direction ||
+            (project.directionSourceMode === "fiveAuthoredPlusMirror" &&
+              asset.direction === mirrorSourceDirection))
+      )
+    : [];
+  const selectedSlotIsEquipment = selectedSlot
+    ? (EQUIPMENT_PART_SLOT_IDS as readonly PartSlot[]).includes(selectedSlot)
+    : false;
   const coverage = createPartCoverageMatrix(project, partAssets);
   const coverageLabels = {
     authoredSource: "● Eigene Quelle",
@@ -692,6 +739,28 @@ function PartInventory({
     } else {
       setReviewError(result.message);
     }
+  };
+  const equip = async (assetId: StableId) => {
+    setEquipmentPendingId(assetId);
+    setEquipmentError(null);
+    setEquipmentMessage(null);
+    const result = await onEquipPartAsset(assetId);
+    setEquipmentPendingId(null);
+    if (result.status === "ok") {
+      setEquipmentMessage(existingPart ? "Teil wurde ersetzt." : "Teil wurde eingesetzt.");
+    } else {
+      setEquipmentError(result.message);
+    }
+  };
+  const remove = async () => {
+    if (!existingPart) return;
+    setEquipmentPendingId(existingPart.assetId);
+    setEquipmentError(null);
+    setEquipmentMessage(null);
+    const result = await onRemovePartAsset(existingPart.assetId);
+    setEquipmentPendingId(null);
+    if (result.status === "ok") setEquipmentMessage("Teil wurde aus dem Projekt entfernt und bleibt in der Bibliothek.");
+    else setEquipmentError(result.message);
   };
   return (
     <Surface
@@ -754,6 +823,63 @@ function PartInventory({
         existingPart={existingPart}
         onCommit={onImportPart}
       />
+
+      <section className={styles.equipmentLibrary} aria-labelledby="part-equipment-library-title">
+        <div className={styles.equipmentHeading}>
+          <div>
+            <span className={styles.eyebrow}>Wiederverwendung</span>
+            <h3 id="part-equipment-library-title">Kompatible Bibliotheksteile</h3>
+          </div>
+          {selectedSlotIsEquipment ? <Badge tone="accent">Equipment</Badge> : null}
+        </div>
+        {!selectedSlot ? (
+          <p>Wähle zuerst eine Slotkarte.</p>
+        ) : libraryPartAssetsLoading ? (
+          <p role="status">Bibliotheksteile werden geladen …</p>
+        ) : libraryPartAssetError ? (
+          <p role="alert">{libraryPartAssetError}</p>
+        ) : compatibleLibraryParts.length === 0 ? (
+          <p role="status">Für {selectedSlotDefinition?.label} · {DIRECTION_LABELS[direction]} ist noch kein kompatibles Bibliotheksteil gespeichert.</p>
+        ) : (
+          <ul>
+            {compatibleLibraryParts.map((asset) => {
+              const assigned = existingPart?.assetId === asset.assetId;
+              const mirroredSource = asset.direction !== direction;
+              return (
+                <li key={asset.assetId}>
+                  <div>
+                    <strong>{asset.label}</strong>
+                    <span>
+                      {DIRECTION_LABELS[asset.direction]}
+                      {mirroredSource ? " · Spiegelquelle" : " · eigene Quelle"}
+                      {asset.anchorStatus === "ready" ? " · Anker bereit" : " · Anker offen"}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={assigned || equipmentPendingId !== null}
+                    onClick={() => void equip(asset.assetId)}
+                  >
+                    {assigned ? "Eingesetzt" : existingPart ? "Ersetzen" : "Einsetzen"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {existingPart ? (
+          <button
+            className={styles.removeEquipmentButton}
+            type="button"
+            disabled={equipmentPendingId !== null}
+            onClick={() => void remove()}
+          >
+            {existingPart.label} entfernen
+          </button>
+        ) : null}
+        {equipmentMessage ? <p role="status">{equipmentMessage}</p> : null}
+        {equipmentError ? <p className={styles.equipmentError} role="alert">{equipmentError}</p> : null}
+      </section>
 
       <div className={styles.slotGroups}>
         {WORKSPACE_SLOT_GROUPS.map((group) => (
@@ -2317,10 +2443,15 @@ export function AnimationWorkspace({
   missingPartAssetIds,
   partAssetLoadError = null,
   partAssetsLoading = false,
+  libraryPartAssets = EMPTY_PART_ASSETS,
+  libraryPartAssetsLoading = false,
+  libraryPartAssetError = null,
   imageDecoder = null,
   onImportPart = DISCONNECTED_PART_IMPORT,
   onLoadPartBlob = DISCONNECTED_PART_BLOB_LOADER,
   onConfigurePart = DISCONNECTED_PART_CONFIGURATION,
+  onEquipPartAsset = DISCONNECTED_EQUIPMENT,
+  onRemovePartAsset = DISCONNECTED_EQUIPMENT,
   onSetPartLayerOffset = DISCONNECTED_LAYER_CONFIGURATION,
   onSetProjectMirrorPolicy = DISCONNECTED_MIRROR_CONFIGURATION,
   onSetPartMirrorPolicy = DISCONNECTED_MIRROR_CONFIGURATION,
@@ -2458,8 +2589,13 @@ export function AnimationWorkspace({
             missingPartAssetIds={effectiveMissingPartAssetIds}
             partAssetLoadError={partAssetLoadError}
             partAssetsLoading={partAssetsLoading}
+            libraryPartAssets={libraryPartAssets}
+            libraryPartAssetsLoading={libraryPartAssetsLoading}
+            libraryPartAssetError={libraryPartAssetError}
             imageDecoder={imageDecoder}
             onImportPart={onImportPart}
+            onEquipPartAsset={onEquipPartAsset}
+            onRemovePartAsset={onRemovePartAsset}
             unresolvedReferenceCount={unresolvedReferenceCount}
             onConfirmMirrorReview={onConfirmMirrorReview}
             dispatch={dispatch}

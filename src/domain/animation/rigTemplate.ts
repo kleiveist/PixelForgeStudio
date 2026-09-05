@@ -485,24 +485,14 @@ export function findSlotBinding(
   return template.slotBindings.find((binding) => binding.slotId === slotId) ?? null;
 }
 
-const FNV_64_OFFSET_BASIS = 0xcbf29ce484222325n;
-const FNV_64_PRIME = 0x100000001b3n;
-const FNV_64_MASK = 0xffffffffffffffffn;
-
-function fingerprint(text: string): string {
-  let hash = FNV_64_OFFSET_BASIS;
-  for (const character of text) {
-    const codePoint = character.codePointAt(0) ?? 0;
-    for (let byteOffset = 0; byteOffset < 4; byteOffset += 1) {
-      const byte = (codePoint >>> (byteOffset * 8)) & 0xff;
-      hash ^= BigInt(byte);
-      hash = (hash * FNV_64_PRIME) & FNV_64_MASK;
-    }
-  }
-  return hash.toString(16).padStart(16, "0");
-}
-
-export function createRigCompatibilityKey(template: RigTemplate): string {
+/**
+ * Stable compatibility contract for reference-sharing between projects and kits.
+ * Pose coordinates, labels and motion tuning are deliberately excluded.
+ */
+export function createRigCompatibilityKey(
+  template: RigTemplate,
+  frameProfile: FrameProfile = template.frameProfile
+): string {
   const validation = validateRigTemplate(template);
   if (!validation.valid) {
     throw new TypeError(
@@ -510,68 +500,25 @@ export function createRigCompatibilityKey(template: RigTemplate): string {
     );
   }
 
-  const serialized = JSON.stringify({
-    id: template.id,
-    contracts: [
-      template.directionContractVersion,
-      template.anchorContractVersion,
-      template.slotContractVersion
-    ],
-    frame: [
-      template.frameProfile.frameSize.width,
-      template.frameProfile.frameSize.height,
-      template.frameProfile.characterHeight,
-      template.frameProfile.footAnchor.x,
-      template.frameProfile.footAnchor.y
-    ],
-    directions: RIG_SOURCE_DIRECTION_IDS.map((direction) => {
-      const directionRig = template.directions.find(
-        (candidate) => candidate.direction === direction
-      );
-      if (!directionRig) throw new TypeError(`Missing direction "${direction}".`);
-      return [
-        direction,
-        JOINT_IDS.map((jointId) => {
-          const joint = directionRig.joints[jointId];
-          return [jointId, joint.position.x, joint.position.y];
-        }),
-        directionRig.motionProfile
-      ];
-    }),
-    bones: BONE_IDS.map((boneId) => {
-      const bone = template.bones.find((candidate) => candidate.id === boneId);
-      if (!bone) throw new TypeError(`Missing bone "${boneId}".`);
-      return [
-        bone.id,
-        bone.parentJointId,
-        bone.childJointId,
-        bone.parentBoneId,
-        bone.role
-      ];
-    }),
-    slots: REQUIRED_PART_SLOT_IDS.map((slotId) => {
-      const binding = template.slotBindings.find(
-        (candidate) => candidate.slotId === slotId
-      );
-      if (!binding) throw new TypeError(`Missing slot binding "${slotId}".`);
-      return [
-        binding.slotId,
-        binding.boneId,
-        binding.proximalJointId,
-        binding.distalJointId ?? null,
-        binding.sourceAnchorRequirement,
-        binding.defaultSourceOrientation ?? null
-      ];
-    })
-  });
+  if (
+    !Number.isInteger(frameProfile.frameSize.width) ||
+    frameProfile.frameSize.width <= 0 ||
+    !Number.isInteger(frameProfile.frameSize.height) ||
+    frameProfile.frameSize.height <= 0 ||
+    !Number.isInteger(frameProfile.characterHeight) ||
+    frameProfile.characterHeight <= 0 ||
+    !Number.isFinite(frameProfile.footAnchor.x) ||
+    !Number.isFinite(frameProfile.footAnchor.y)
+  ) {
+    throw new TypeError("Cannot create compatibility key for invalid frame profile.");
+  }
 
-  const frame = template.frameProfile;
+  const frame = frameProfile;
   return [
     template.id,
     `frame-${frame.frameSize.width}x${frame.frameSize.height}`,
     `char-${frame.characterHeight}`,
     `foot-${frame.footAnchor.x}-${frame.footAnchor.y}`,
-    `contracts-${template.directionContractVersion}-${template.anchorContractVersion}-${template.slotContractVersion}`,
-    fingerprint(serialized)
+    `contracts-${template.anchorContractVersion}-${template.slotContractVersion}-${template.directionContractVersion}`
   ].join("__");
 }

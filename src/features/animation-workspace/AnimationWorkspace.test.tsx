@@ -935,6 +935,77 @@ describe("AnimationWorkspace", () => {
     expect(onSetPartMirrorPolicy).toHaveBeenCalledWith(weapon.assetId, "allow");
   });
 
+  it("equips, replaces and removes reusable inventory parts with keyboard controls", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    const existing = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_weapon_existing_001",
+        blobId: "blob_weapon_existing_001",
+        label: "Altes Schwert",
+        slot: "weapon.right",
+        direction: "south"
+      })
+    );
+    const reusable = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_weapon_library_001",
+        blobId: "blob_weapon_library_001",
+        label: "Bibliotheksklinge",
+        slot: "weapon.right",
+        direction: "south"
+      })
+    );
+    const project = parseAnimationProject(
+      createAnimationProjectInput({
+        parts: [{ assetId: existing.assetId }],
+        overrides: []
+      })
+    );
+    const onEquipPartAsset = vi.fn(async () => ({ status: "ok" as const }));
+    const onRemovePartAsset = vi.fn(async () => ({ status: "ok" as const }));
+    render(
+      <AnimationWorkspace
+        project={project}
+        canSave={false}
+        saveStatus="saved"
+        saveError={null}
+        sourceError={null}
+        onSave={vi.fn()}
+        partAssets={[existing]}
+        missingPartAssetIds={[]}
+        libraryPartAssets={[reusable]}
+        onEquipPartAsset={onEquipPartAsset}
+        onRemovePartAsset={onRemovePartAsset}
+      />
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Rechte Waffe; Optional; Produktionsbereit"
+      })
+    );
+    expect(
+      screen.getByRole("heading", { name: "Kompatible Bibliotheksteile" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Bibliotheksklinge")).toBeInTheDocument();
+    const replace = screen.getByRole("button", { name: "Ersetzen" });
+    replace.focus();
+    await user.keyboard("{Enter}");
+    expect(onEquipPartAsset).toHaveBeenCalledWith(reusable.assetId);
+    expect(await screen.findByText("Teil wurde ersetzt.")).toBeInTheDocument();
+
+    const remove = screen.getByRole("button", { name: "Altes Schwert entfernen" });
+    remove.focus();
+    await user.keyboard("{Enter}");
+    expect(onRemovePartAsset).toHaveBeenCalledWith(existing.assetId);
+    expect(
+      await screen.findByText(
+        "Teil wurde aus dem Projekt entfernt und bleibt in der Bibliothek."
+      )
+    ).toBeInTheDocument();
+  });
+
   it("switches between project clips and resets the frame selection", async () => {
     setViewportWidth(1440);
     const user = userEvent.setup();

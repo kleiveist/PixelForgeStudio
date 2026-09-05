@@ -4,12 +4,14 @@ import { HUMANOID_80_FRAME_PROFILE } from "../../domain/animation";
 import {
   parseAnimationPartAsset,
   parseAnimationProject,
+  parseCharacterKit,
   type AnimationProject
 } from "../../schemas";
 import { MemoryAnimationRepository } from "../../services";
 import {
   createAnimationPartAssetInput,
-  createAnimationProjectInput
+  createAnimationProjectInput,
+  createCharacterKitInput
 } from "../../test/animationSchemaFixtures";
 import {
   AnimationProjectProvider,
@@ -55,6 +57,7 @@ function renderProvider(
     createClipId?: () => string;
     createPartAssetId?: () => string;
     createImageBlobId?: () => string;
+    createKitId?: () => string;
     autosaveDelayMs?: number;
   }> = {}
 ) {
@@ -661,6 +664,205 @@ describe("AnimationProjectProvider", () => {
     expect(await repository.readBlob(draft.blobId)).toEqual({
       status: "ok",
       value: sourceBlob
+    });
+  });
+
+  it("saves, loads, renames, duplicates and deletes reference-only Character Kits", async () => {
+    const repository = new MemoryAnimationRepository();
+    const part = parseAnimationPartAsset(createAnimationPartAssetInput());
+    const blob = new Blob(["shared"], { type: "image/png" });
+    await repository.writePartAsset(part, blob);
+    const project = await seedProject(repository, {
+      parts: [{ assetId: part.assetId }]
+    });
+    const kitIds = ["kit_saved_001", "kit_copy_001"];
+    renderProvider(repository, {
+      now: () => NOW,
+      createKitId: () => kitIds.shift() ?? "kit_unexpected"
+    });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+
+    await act(async () => {
+      expect(
+        await context.saveActiveProjectAsKit({
+          name: "Waldwächter Kit",
+          description: "Geteilte PartAsset-Referenzen"
+        })
+      ).toMatchObject({
+        status: "ok",
+        value: {
+          kitId: "kit_saved_001",
+          partAssetIds: [part.assetId],
+          coverage: { requiredCellCount: 120 }
+        }
+      });
+    });
+    expect(context.characterKits).toHaveLength(1);
+    expect(await context.loadCharacterKit("kit_saved_001" as typeof part.assetId)).toMatchObject({
+      status: "ok",
+      value: { name: "Waldwächter Kit" }
+    });
+
+    await act(async () => {
+      expect(
+        await context.renameCharacterKit(
+          "kit_saved_001" as typeof part.assetId,
+          "Waldwächter Elite"
+        )
+      ).toMatchObject({ status: "ok", value: { name: "Waldwächter Elite" } });
+      expect(
+        await context.duplicateCharacterKit("kit_saved_001" as typeof part.assetId)
+      ).toMatchObject({
+        status: "ok",
+        value: { kitId: "kit_copy_001", partAssetIds: [part.assetId] }
+      });
+    });
+    expect(context.characterKits).toHaveLength(2);
+
+    await act(async () => {
+      expect(
+        await context.deleteCharacterKit("kit_saved_001" as typeof part.assetId)
+      ).toEqual({ status: "ok", value: "kit_saved_001" });
+    });
+    expect(context.characterKits.map(({ kitId }) => kitId)).toEqual([
+      "kit_copy_001"
+    ]);
+    expect(await repository.readPartAsset(part.assetId)).toMatchObject({
+      status: "ok"
+    });
+    expect(await repository.readBlob(part.blobId)).toEqual({
+      status: "ok",
+      value: blob
+    });
+  });
+
+  it("applies compatible kits by reference and exposes override cleanup before mutation", async () => {
+    const repository = new MemoryAnimationRepository();
+    const torso = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_torso_south_kit",
+        blobId: "blob_torso_south_kit",
+        slot: "torso"
+      })
+    );
+    await repository.writePartAsset(torso, new Blob(["torso"]));
+    const sourceKit = parseCharacterKit(
+      createCharacterKitInput({
+        kitId: "kit_apply_001",
+        rigCompatibilityKey:
+          "humanoid-80-v1__frame-128x128__char-80__foot-64-112__contracts-1-1-1",
+        partAssetIds: [torso.assetId]
+      })
+    );
+    await repository.writeKit(sourceKit);
+    const project = await seedProject(repository, {
+      parts: [{ assetId: "part_old_head_001" }],
+      overrides: [
+        {
+          clipId: "clip_walk_001",
+          direction: "south",
+          frameIndex: 2,
+          partDeltas: {
+            head: {
+              offsetX: 1,
+              offsetY: -1,
+              rotationDelta: 0.05,
+              scaleMultiplier: 1
+            }
+          }
+        }
+      ]
+    });
+    renderProvider(repository, { now: () => NOW, autosaveDelayMs: 60_000 });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+
+    await act(async () => {
+      expect(await context.applyCharacterKit(sourceKit.kitId)).toMatchObject({
+        status: "conflict",
+        reason: "overrideConflict",
+        assessment: { overrideConflicts: [{ slots: ["head"] }] }
+      });
+    });
+    expect(context.activeProject).toEqual(project);
+
+    await act(async () => {
+      expect(
+        await context.applyCharacterKit(
+          sourceKit.kitId,
+          "removeInvalidPartDeltas"
+        )
+      ).toMatchObject({
+        status: "ok",
+        value: { removedOverrideSlots: 1 }
+      });
+    });
+    expect(context.activeProject?.parts).toEqual([{ assetId: torso.assetId }]);
+    expect(context.activeProject?.overrides).toEqual([]);
+    expect(context.projectDirty).toBe(true);
+  });
+
+  it("equips, replaces and removes library assets while rejecting unattached accessories", async () => {
+    const repository = new MemoryAnimationRepository();
+    const oldWeapon = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_weapon_old_001",
+        blobId: "blob_weapon_old_001",
+        slot: "weapon.right"
+      })
+    );
+    const newWeapon = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_weapon_new_001",
+        blobId: "blob_weapon_new_001",
+        slot: "weapon.right"
+      })
+    );
+    const accessory = parseAnimationPartAsset(
+      createAnimationPartAssetInput({
+        assetId: "part_accessory_no_joint_001",
+        blobId: "blob_accessory_no_joint_001",
+        slot: "accessory.1"
+      })
+    );
+    await repository.writePartAsset(oldWeapon, new Blob(["old"]));
+    await repository.writePartAsset(newWeapon, new Blob(["new"]));
+    await repository.writePartAsset(accessory, new Blob(["accessory"]));
+    const project = await seedProject(repository, {
+      parts: [{ assetId: oldWeapon.assetId }]
+    });
+    renderProvider(repository, { now: () => NOW, autosaveDelayMs: 60_000 });
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+
+    await act(async () => {
+      expect(await context.equipPartAsset(newWeapon.assetId)).toMatchObject({
+        status: "ok",
+        value: { replacedAssetIds: [oldWeapon.assetId] }
+      });
+      expect(await context.equipPartAsset(accessory.assetId)).toMatchObject({
+        status: "invalid",
+        message: expect.stringMatching(/Attachment-Joint/)
+      });
+    });
+    expect(context.activeProject?.parts).toEqual([
+      { assetId: newWeapon.assetId }
+    ]);
+    act(() => {
+      expect(context.removeEquippedPartAsset(newWeapon.assetId)).toMatchObject({
+        status: "ok"
+      });
+    });
+    expect(context.activeProject?.parts).toEqual([]);
+    expect(await repository.readPartAsset(newWeapon.assetId)).toMatchObject({
+      status: "ok"
     });
   });
 });

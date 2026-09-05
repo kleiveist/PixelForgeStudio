@@ -123,10 +123,10 @@ describe("humanoid-80-v1 production template", () => {
     expect(Object.isFrozen(south?.motionProfile.stepAxis)).toBe(true);
   });
 
-  it("creates a stable key and changes it for contract-relevant geometry", () => {
+  it("creates a stable key from only the frame and versioned contracts", () => {
     const key = createRigCompatibilityKey(HUMANOID_80_RIG_TEMPLATE);
     expect(key).toBe(
-      "humanoid-80-v1__frame-128x128__char-80__foot-64-112__contracts-1-1-1__840c7385b8de44bc"
+      "humanoid-80-v1__frame-128x128__char-80__foot-64-112__contracts-1-1-1"
     );
     expect(createRigCompatibilityKey(HUMANOID_80_RIG_TEMPLATE)).toBe(key);
 
@@ -148,6 +148,12 @@ describe("humanoid-80-v1 production template", () => {
         ...HUMANOID_80_RIG_TEMPLATE.directions.slice(1)
       ]
     };
-    expect(createRigCompatibilityKey(changedTemplate)).not.toBe(key);
+    expect(createRigCompatibilityKey(changedTemplate)).toBe(key);
+    expect(
+      createRigCompatibilityKey(HUMANOID_80_RIG_TEMPLATE, {
+        ...HUMANOID_80_RIG_TEMPLATE.frameProfile,
+        characterHeight: 79
+      })
+    ).not.toBe(key);
   });
 });

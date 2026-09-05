@@ -130,4 +130,53 @@ describe("PartImportPanel", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("IndexedDB-Transaktion");
     expect(screen.getByText("helmet.png")).toBeVisible();
   });
+
+  it("requires a keyboard-selectable attachment joint for free accessories", async () => {
+    const user = userEvent.setup();
+    const onCommit = vi.fn().mockImplementation(async (definition) => ({
+      status: "ok",
+      partAsset: parseAnimationPartAsset(
+        createAnimationPartAssetInput({
+          assetId: "part_accessory_imported_001",
+          blobId: "blob_accessory_imported_001",
+          label: definition.label,
+          slot: "accessory.1",
+          attachmentJointId: definition.attachmentJointId,
+          anchorStatus: "anchorsPending",
+          anchors: undefined
+        })
+      )
+    }));
+    render(
+      <PartImportPanel
+        selectedSlot="accessory.1"
+        selectedSlotLabel="Accessoire 1"
+        direction="south"
+        directionLabel="Süd"
+        decoder={decoder()}
+        existingPart={null}
+        onCommit={onCommit}
+        objectUrlFactory={objectUrls()}
+      />
+    );
+
+    expect(screen.getByText("Default-LayerGroup: frontEquipment")).toBeVisible();
+    await user.upload(screen.getByLabelText("PNG-Datei auswählen"), file("amulet.png"));
+    await user.click(await screen.findByRole("button", { name: "Import bestätigen" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Attachment-Joint");
+    expect(onCommit).not.toHaveBeenCalled();
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Attachment-Joint" }),
+      "chest"
+    );
+    await user.click(screen.getByRole("button", { name: "Import bestätigen" }));
+    await waitFor(() => expect(onCommit).toHaveBeenCalledTimes(1));
+    expect(onCommit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slot: "accessory.1",
+        attachmentJointId: "chest"
+      })
+    );
+  });
 });

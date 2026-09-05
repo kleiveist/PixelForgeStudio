@@ -96,6 +96,27 @@ export {
   type RuntimeDirectionRigResolution
 } from "./directionProjection";
 export {
+  CHARACTER_KIT_COMPATIBILITY_ISSUE_CODES,
+  applyCharacterKitToProject,
+  assessCharacterKitApplication,
+  checkCharacterKitCompatibility,
+  equipCharacterPart,
+  removeCharacterPart,
+  summarizeCharacterKitCoverage,
+  type CharacterKitApplicationAssessment,
+  type CharacterKitApplyResult,
+  type CharacterKitCompatibilityIssue,
+  type CharacterKitCompatibilityIssueCode,
+  type CharacterKitCompatibilityResult,
+  type CharacterKitContract,
+  type CharacterKitCoverageSummary,
+  type CharacterKitOverrideConflict,
+  type CharacterKitPartAsset,
+  type CharacterKitProjectContract,
+  type CharacterKitProjectPartAssignment,
+  type EquipCharacterPartResult
+} from "./characterKits";
+export {
   DIRECTION_COVERAGE_STATUSES,
   partRequiresMirrorReview,
   resolveDirectionSource,
@@ -222,6 +243,7 @@ export {
   type SlotBinding
 } from "./rigTemplate";
 export {
+  EQUIPMENT_PART_SLOT_IDS,
   OPTIONAL_PART_SLOT_IDS,
   PART_SLOT_DEFINITIONS,
   PART_SLOT_GROUP_IDS,

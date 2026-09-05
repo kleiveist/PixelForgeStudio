@@ -34,11 +34,11 @@ export const ANIMATION_STUDIO_VIEW_DEFINITIONS: Readonly<
   }),
   library: Object.freeze({
     label: "Character Kits",
-    title: "Wiederverwendbare Character Kits folgen.",
+    title: "Figuren und Ausrüstung wiederverwenden.",
     eyebrow: "Kit-Bibliothek",
     description:
-      "Körperteile und Ausrüstung erhalten hier später ihre lokale Bibliothek.",
-    nextStep: "Es werden noch keine erfundenen Kits oder Projektdaten angezeigt."
+      "Lokale Character Kits teilen PartAssets sicher zwischen kompatiblen Projekten.",
+    nextStep: "Suche, prüfe und verwalte deine lokalen Character Kits."
   }),
   rigs: Object.freeze({
     label: "Rig-Vorlagen",

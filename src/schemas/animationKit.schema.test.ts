@@ -28,14 +28,33 @@ describe("CharacterKitSchema", () => {
       mirrorPolicy: "allow"
     });
     expect(parsed.partAssetIds).toEqual(["part_head_south_001"]);
+    expect(parsed.coverage).toMatchObject({
+      requiredCellCount: 120,
+      resolvedRequiredCellCount: 1,
+      productionReady: false
+    });
     expect(Object.isFrozen(parsed)).toBe(true);
     expect(Object.isFrozen(parsed.partAssetIds)).toBe(true);
   });
 
-  it("reads old kits with an allow default and accepts an explicit safe default", () => {
+  it("reads old kits with additive mirror and coverage defaults", () => {
     const input = createCharacterKitInput();
-    const { mirrorPolicy: _legacyMissing, ...legacyInput } = input;
+    const {
+      mirrorPolicy: _legacyMissing,
+      coverage: _legacyCoverage,
+      ...legacyInput
+    } = input;
     expect(parseCharacterKit(legacyInput).mirrorPolicy).toBe("allow");
+    expect(parseCharacterKit(legacyInput).coverage).toEqual({
+      requiredCellCount: 0,
+      resolvedRequiredCellCount: 0,
+      authoredRequiredCellCount: 0,
+      mirroredRequiredCellCount: 0,
+      anchorsIncompleteCount: 0,
+      mirrorReviewCount: 0,
+      mirrorForbiddenCount: 0,
+      productionReady: false
+    });
     expect(parseCharacterKit(createCharacterKitInput({
       mirrorPolicy: "forbid"
     })).mirrorPolicy).toBe("forbid");
@@ -46,6 +65,25 @@ describe("CharacterKitSchema", () => {
       CharacterKitSchema.safeParse(
         createCharacterKitInput({
           partAssetIds: ["part_head_south_001", "part_head_south_001"]
+        })
+      ).success
+    ).toBe(false);
+  });
+
+  it("rejects inconsistent persisted coverage summaries", () => {
+    expect(
+      CharacterKitSchema.safeParse(
+        createCharacterKitInput({
+          coverage: {
+            requiredCellCount: 120,
+            resolvedRequiredCellCount: 2,
+            authoredRequiredCellCount: 2,
+            mirroredRequiredCellCount: 1,
+            anchorsIncompleteCount: 0,
+            mirrorReviewCount: 0,
+            mirrorForbiddenCount: 0,
+            productionReady: false
+          }
         })
       ).success
     ).toBe(false);

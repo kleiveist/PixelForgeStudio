@@ -6,23 +6,32 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
   type ReactNode
 } from "react";
 import { jsonValuesEqual } from "../../domain/json";
 import {
+  applyCharacterKitToProject,
+  createRigCompatibilityKey,
+  equipCharacterPart,
   findSlotBinding,
   HUMANOID_80_RIG_TEMPLATE_ID,
   getBuiltInRigTemplate,
   isRequiredPartSlot,
+  removeCharacterPart,
   removeFrameOverride as removeFrameOverrideFromList,
   resetDirectionOverrides,
+  summarizeCharacterKitCoverage,
   upsertFrameOverride,
   validateSourceAnchors,
   type Direction,
+  type CharacterKitApplicationAssessment,
   type FrameOverrideAddress,
   type DirectionSourceMode,
   type FrameProfile,
   type MirrorPolicy,
+  type LayerGroup,
+  type JointId,
   type PartSlot,
   type Rect,
   type Size,
@@ -32,16 +41,19 @@ import {
 import {
   AnimationPartAssetSchema,
   AnimationProjectSchema,
+  CharacterKitSchema,
   DirectionFrameOverrideSchema,
   StableIdSchema,
   type AnimationPartAsset,
   type AnimationProject,
+  type CharacterKit,
   type DirectionFrameOverride,
   type StableId
 } from "../../schemas";
 import {
   createBrowserImageDecoder,
   createAnimationProjectSummary,
+  sortCharacterKits,
   type AnimationRepository,
   type AnimationRepositoryValidationIssue,
   type ImageDecoder
@@ -102,6 +114,7 @@ export interface ImportAnimationPartDefinition {
   readonly direction: Direction;
   readonly sourceSize: Size;
   readonly trimRect: Rect;
+  readonly attachmentJointId?: JointId;
   readonly replacedAssetId?: StableId;
 }
 
@@ -128,13 +141,51 @@ export interface ConfiguredAnimationPart {
   readonly partAsset: AnimationPartAsset;
 }
 
+export type CharacterKitListStatus =
+  | "loading"
+  | "ready"
+  | "unavailable"
+  | "failed";
+
+export interface SaveCharacterKitDefinition {
+  readonly name: string;
+  readonly description: string;
+}
+
+export interface AppliedCharacterKit {
+  readonly project: AnimationProject;
+  readonly kit: CharacterKit;
+  readonly removedOverrideSlots: number;
+}
+
+export type ApplyCharacterKitCommandResult =
+  | Readonly<{ status: "ok"; value: AppliedCharacterKit }>
+  | Readonly<{
+      status: "conflict";
+      reason: "incompatible" | "missingAssets" | "overrideConflict";
+      message: string;
+      assessment: CharacterKitApplicationAssessment;
+    }>
+  | AnimationProjectCommandFailure;
+
+export interface EquippedCharacterPart {
+  readonly project: AnimationProject;
+  readonly partAsset: AnimationPartAsset;
+  readonly replacedAssetIds: readonly StableId[];
+  readonly defaultLayerGroup: LayerGroup;
+}
+
 export interface AnimationProjectContextValue extends AnimationProjectState {
   readonly imageDecoder: ImageDecoder;
   readonly projectDirty: boolean;
   readonly canSaveProject: boolean;
   readonly canUndoProject: boolean;
   readonly canRedoProject: boolean;
+  readonly characterKits: readonly CharacterKit[];
+  readonly characterKitListStatus: CharacterKitListStatus;
+  readonly characterKitListError: string | null;
   readonly refreshProjects: () => Promise<void>;
+  readonly refreshCharacterKits: () => Promise<void>;
   readonly createProject: (
     definition: CreateAnimationProjectDefinition
   ) => Promise<AnimationProjectCommandResult<AnimationProject>>;
@@ -176,11 +227,17 @@ export interface AnimationProjectContextValue extends AnimationProjectState {
   readonly loadPartAssets: (
     assetIds: readonly StableId[]
   ) => Promise<AnimationProjectCommandResult<AnimationPartAssetResolution>>;
+  readonly loadReusablePartAssets: () => Promise<
+    AnimationProjectCommandResult<AnimationPartAssetResolution>
+  >;
   readonly importPartAsset: (
     definition: ImportAnimationPartDefinition
   ) => Promise<AnimationProjectCommandResult<ImportedAnimationPart>>;
   readonly loadPartImageBlob: (
     blobId: StableId
+  ) => Promise<AnimationProjectCommandResult<Blob>>;
+  readonly loadCharacterKitPreview: (
+    previewId: StableId
   ) => Promise<AnimationProjectCommandResult<Blob>>;
   readonly configurePartAsset: (
     definition: ConfigureAnimationPartDefinition
@@ -195,6 +252,32 @@ export interface AnimationProjectContextValue extends AnimationProjectState {
   readonly deleteProject: (
     projectId: StableId
   ) => Promise<AnimationProjectCommandResult<DeletedAnimationProject>>;
+  readonly saveActiveProjectAsKit: (
+    definition: SaveCharacterKitDefinition
+  ) => Promise<AnimationProjectCommandResult<CharacterKit>>;
+  readonly loadCharacterKit: (
+    kitId: StableId
+  ) => Promise<AnimationProjectCommandResult<CharacterKit>>;
+  readonly duplicateCharacterKit: (
+    kitId: StableId
+  ) => Promise<AnimationProjectCommandResult<CharacterKit>>;
+  readonly renameCharacterKit: (
+    kitId: StableId,
+    name: string
+  ) => Promise<AnimationProjectCommandResult<CharacterKit>>;
+  readonly deleteCharacterKit: (
+    kitId: StableId
+  ) => Promise<AnimationProjectCommandResult<StableId>>;
+  readonly applyCharacterKit: (
+    kitId: StableId,
+    overrideResolution?: "abort" | "removeInvalidPartDeltas"
+  ) => Promise<ApplyCharacterKitCommandResult>;
+  readonly equipPartAsset: (
+    assetId: StableId
+  ) => Promise<AnimationProjectCommandResult<EquippedCharacterPart>>;
+  readonly removeEquippedPartAsset: (
+    assetId: StableId
+  ) => AnimationProjectCommandResult<AnimationProject>;
   readonly clearRawProjectError: () => void;
 }
 
@@ -207,6 +290,7 @@ export interface AnimationProjectProviderProps {
   readonly createClipId?: () => string;
   readonly createPartAssetId?: () => string;
   readonly createImageBlobId?: () => string;
+  readonly createKitId?: () => string;
   readonly imageDecoder?: ImageDecoder;
   readonly autosaveDelayMs?: number;
 }
@@ -220,7 +304,9 @@ function currentIsoTimestamp(): string {
   return new Date().toISOString();
 }
 
-function randomAnimationId(prefix: "project" | "clip" | "part" | "blob"): string {
+function randomAnimationId(
+  prefix: "project" | "clip" | "part" | "blob" | "kit"
+): string {
   try {
     if (
       typeof globalThis.crypto !== "undefined" &&
@@ -250,6 +336,10 @@ function createDefaultPartAssetId(): string {
 
 function createDefaultImageBlobId(): string {
   return randomAnimationId("blob");
+}
+
+function createDefaultKitId(): string {
+  return randomAnimationId("kit");
 }
 
 function validationIssues(
@@ -341,6 +431,7 @@ export function AnimationProjectProvider({
   createClipId = createDefaultClipId,
   createPartAssetId = createDefaultPartAssetId,
   createImageBlobId = createDefaultImageBlobId,
+  createKitId = createDefaultKitId,
   imageDecoder = createBrowserImageDecoder(),
   autosaveDelayMs = ANIMATION_AUTOSAVE_DELAY_MS
 }: AnimationProjectProviderProps) {
@@ -348,6 +439,11 @@ export function AnimationProjectProvider({
     animationProjectReducer,
     INITIAL_ANIMATION_PROJECT_STATE
   );
+  const [characterKitState, setCharacterKitState] = useState<Readonly<{
+    kits: readonly CharacterKit[];
+    status: CharacterKitListStatus;
+    error: string | null;
+  }>>({ kits: [], status: "loading", error: null });
   const stateRef = useRef(state);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -404,12 +500,47 @@ export function AnimationProjectProvider({
     }
   }, [dispatchState, repository, unavailableMessage]);
 
+  const refreshCharacterKits = useCallback(async () => {
+    setCharacterKitState((current) => ({
+      kits: current.kits,
+      status: "loading",
+      error: null
+    }));
+    if (!repository) {
+      setCharacterKitState({
+        kits: [],
+        status: "unavailable",
+        error: unavailableMessage
+      });
+      return;
+    }
+    try {
+      const result = await repository.listKits();
+      if (result.status === "ok") {
+        setCharacterKitState({ kits: result.value, status: "ready", error: null });
+      } else {
+        setCharacterKitState({
+          kits: [],
+          status: result.status === "unavailable" ? "unavailable" : "failed",
+          error: result.message
+        });
+      }
+    } catch (error) {
+      setCharacterKitState({
+        kits: [],
+        status: "failed",
+        error: failedCommand(error).message
+      });
+    }
+  }, [repository, unavailableMessage]);
+
   useEffect(() => {
     void refreshProjects();
+    void refreshCharacterKits();
     return () => {
       listRequestRevisionRef.current += 1;
     };
-  }, [refreshProjects]);
+  }, [refreshCharacterKits, refreshProjects]);
 
   const persistSnapshot = useCallback(
     (
@@ -986,6 +1117,17 @@ export function AnimationProjectProvider({
     [repository, unavailableMessage]
   );
 
+  const loadReusablePartAssets = useCallback(async (): Promise<
+    AnimationProjectCommandResult<AnimationPartAssetResolution>
+  > => {
+    const assetIds = Object.freeze([
+      ...new Set(
+        characterKitState.kits.flatMap((kit) => kit.partAssetIds)
+      )
+    ]) as readonly StableId[];
+    return loadPartAssets(assetIds);
+  }, [characterKitState.kits, loadPartAssets]);
+
   const importPartAsset = useCallback(
     async (
       definition: ImportAnimationPartDefinition
@@ -1035,6 +1177,9 @@ export function AnimationProjectProvider({
         trimRect: definition.trimRect,
         anchorStatus: "anchorsPending",
         mirrorPolicy: "inherit",
+        ...(definition.attachmentJointId
+          ? { attachmentJointId: definition.attachmentJointId }
+          : {}),
         createdAt: timestamp,
         updatedAt: timestamp
       });
@@ -1113,6 +1258,21 @@ export function AnimationProjectProvider({
       if (!repository) return unavailableCommand(unavailableMessage);
       try {
         const result = await repository.readBlob(blobId);
+        return result.status === "ok"
+          ? { status: "ok", value: result.value }
+          : repositoryFailure(result);
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [repository, unavailableMessage]
+  );
+
+  const loadCharacterKitPreview = useCallback(
+    async (previewId: StableId): Promise<AnimationProjectCommandResult<Blob>> => {
+      if (!repository) return unavailableCommand(unavailableMessage);
+      try {
+        const result = await repository.readPreview(previewId);
         return result.status === "ok"
           ? { status: "ok", value: result.value }
           : repositoryFailure(result);
@@ -1395,6 +1555,392 @@ export function AnimationProjectProvider({
     [clearAutosaveTimer, dispatchState, repository, unavailableMessage]
   );
 
+  const upsertCharacterKitState = useCallback((kit: CharacterKit) => {
+    setCharacterKitState((current) => ({
+      kits: sortCharacterKits([
+        ...current.kits.filter((candidate) => candidate.kitId !== kit.kitId),
+        kit
+      ]),
+      status: "ready",
+      error: null
+    }));
+  }, []);
+
+  const loadCharacterKit = useCallback(
+    async (
+      kitId: StableId
+    ): Promise<AnimationProjectCommandResult<CharacterKit>> => {
+      const parsedId = StableIdSchema.safeParse(kitId);
+      if (!parsedId.success) return invalidCommand("Die Character-Kit-ID ist ungültig.");
+      if (!repository) return unavailableCommand(unavailableMessage);
+      try {
+        const result = await repository.readKit(parsedId.data);
+        return result.status === "ok"
+          ? { status: "ok", value: result.value }
+          : repositoryFailure(result);
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [repository, unavailableMessage]
+  );
+
+  const saveActiveProjectAsKit = useCallback(
+    async (
+      definition: SaveCharacterKitDefinition
+    ): Promise<AnimationProjectCommandResult<CharacterKit>> => {
+      if (!repository) return unavailableCommand(unavailableMessage);
+      const project = stateRef.current.activeProject;
+      if (!project) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt für ein Character Kit geöffnet."
+        };
+      }
+      const template = getBuiltInRigTemplate(project.rigTemplateId);
+      if (!template) return invalidCommand("Die Projekt-Rig-Vorlage ist nicht verfügbar.");
+      const sources = await loadPartAssets(
+        project.parts.map((assignment) => assignment.assetId)
+      );
+      if (sources.status !== "ok") return sources;
+      if (sources.value.missingAssetIds.length > 0) {
+        return invalidCommand(
+          `Das Kit kann wegen fehlender PartAssets nicht gespeichert werden: ${sources.value.missingAssetIds.join(", ")}.`
+        );
+      }
+      let timestamp: string;
+      let kitId: string;
+      try {
+        timestamp = now();
+        kitId = createKitId();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      const parsed = CharacterKitSchema.safeParse({
+        schemaVersion: 1,
+        kind: "characterKit",
+        kitId,
+        name: definition.name,
+        description: definition.description,
+        rigTemplateId: project.rigTemplateId,
+        rigCompatibilityKey: createRigCompatibilityKey(
+          template,
+          project.frameProfile
+        ),
+        directionSourceMode: project.directionSourceMode,
+        mirrorPolicy: project.mirrorPolicy,
+        coverage: summarizeCharacterKitCoverage({
+          mode: project.directionSourceMode,
+          assets: sources.value.assets,
+          projectMirrorPolicy: project.mirrorPolicy,
+          reviews: project.mirrorReviews
+        }),
+        partAssetIds: project.parts.map((assignment) => assignment.assetId),
+        ...(project.previewBlobId ? { previewBlobId: project.previewBlobId } : {}),
+        createdAt: timestamp,
+        updatedAt: timestamp
+      });
+      if (!parsed.success) {
+        return invalidCommand(
+          "Das Character Kit enthält ungültige Metadaten.",
+          validationIssues(parsed.error.issues)
+        );
+      }
+      try {
+        const existing = await repository.readKit(parsed.data.kitId);
+        if (existing.status === "ok") {
+          return {
+            status: "conflict",
+            message: `Die Character-Kit-ID ${parsed.data.kitId} ist bereits vergeben.`
+          };
+        }
+        if (existing.status !== "notFound") return repositoryFailure(existing);
+        const result = await repository.writeKit(parsed.data);
+        if (result.status !== "ok") return repositoryFailure(result);
+        upsertCharacterKitState(parsed.data);
+        return { status: "ok", value: parsed.data };
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [
+      createKitId,
+      loadPartAssets,
+      now,
+      repository,
+      unavailableMessage,
+      upsertCharacterKitState
+    ]
+  );
+
+  const duplicateCharacterKit = useCallback(
+    async (
+      kitId: StableId
+    ): Promise<AnimationProjectCommandResult<CharacterKit>> => {
+      if (!repository) return unavailableCommand(unavailableMessage);
+      const source = await loadCharacterKit(kitId);
+      if (source.status !== "ok") return source;
+      let timestamp: string;
+      let newKitId: string;
+      try {
+        timestamp = now();
+        newKitId = createKitId();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      const parsed = CharacterKitSchema.safeParse({
+        ...source.value,
+        kitId: newKitId,
+        name: duplicateName(source.value.name),
+        createdAt: timestamp,
+        updatedAt: timestamp
+      });
+      if (!parsed.success) {
+        return invalidCommand(
+          "Die Character-Kit-Kopie ist ungültig.",
+          validationIssues(parsed.error.issues)
+        );
+      }
+      try {
+        const existing = await repository.readKit(parsed.data.kitId);
+        if (existing.status === "ok") {
+          return {
+            status: "conflict",
+            message: `Die Character-Kit-ID ${parsed.data.kitId} ist bereits vergeben.`
+          };
+        }
+        if (existing.status !== "notFound") return repositoryFailure(existing);
+        const result = await repository.writeKit(parsed.data);
+        if (result.status !== "ok") return repositoryFailure(result);
+        upsertCharacterKitState(parsed.data);
+        return { status: "ok", value: parsed.data };
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [
+      createKitId,
+      loadCharacterKit,
+      now,
+      repository,
+      unavailableMessage,
+      upsertCharacterKitState
+    ]
+  );
+
+  const renameCharacterKit = useCallback(
+    async (
+      kitId: StableId,
+      name: string
+    ): Promise<AnimationProjectCommandResult<CharacterKit>> => {
+      if (!repository) return unavailableCommand(unavailableMessage);
+      const source = await loadCharacterKit(kitId);
+      if (source.status !== "ok") return source;
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      const parsed = CharacterKitSchema.safeParse({
+        ...source.value,
+        name,
+        updatedAt: timestamp
+      });
+      if (!parsed.success) {
+        return invalidCommand(
+          "Der Character-Kit-Name ist ungültig.",
+          validationIssues(parsed.error.issues)
+        );
+      }
+      try {
+        const result = await repository.writeKit(parsed.data);
+        if (result.status !== "ok") return repositoryFailure(result);
+        upsertCharacterKitState(parsed.data);
+        return { status: "ok", value: parsed.data };
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [loadCharacterKit, now, repository, unavailableMessage, upsertCharacterKitState]
+  );
+
+  const deleteCharacterKit = useCallback(
+    async (
+      kitId: StableId
+    ): Promise<AnimationProjectCommandResult<StableId>> => {
+      if (!repository) return unavailableCommand(unavailableMessage);
+      try {
+        const result = await repository.deleteKit(kitId);
+        if (result.status !== "ok") return repositoryFailure(result);
+        setCharacterKitState((current) => ({
+          kits: Object.freeze(
+            current.kits.filter((candidate) => candidate.kitId !== kitId)
+          ),
+          status: "ready",
+          error: null
+        }));
+        // Binary garbage collection is intentionally not coupled to kit deletion.
+        return { status: "ok", value: kitId };
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [repository, unavailableMessage]
+  );
+
+  const applyCharacterKit = useCallback(
+    async (
+      kitId: StableId,
+      overrideResolution: "abort" | "removeInvalidPartDeltas" = "abort"
+    ): Promise<ApplyCharacterKitCommandResult> => {
+      const project = stateRef.current.activeProject;
+      if (!project) {
+        return {
+          status: "notFound",
+          message: "Öffne zuerst ein Animationsprojekt, um ein Kit anzuwenden."
+        };
+      }
+      const kitResult = await loadCharacterKit(kitId);
+      if (kitResult.status !== "ok") return kitResult;
+      const sources = await loadPartAssets(kitResult.value.partAssetIds);
+      if (sources.status !== "ok") return sources;
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      const application = applyCharacterKitToProject({
+        kit: kitResult.value,
+        project,
+        template: getBuiltInRigTemplate(project.rigTemplateId),
+        assets: sources.value.assets,
+        timestamp,
+        overrideResolution
+      });
+      if (application.status !== "ok") {
+        const reason = application.status;
+        const message =
+          reason === "incompatible"
+            ? application.assessment.compatibility.issues
+                .map((issue) => issue.message)
+                .join(" ")
+            : reason === "missingAssets"
+              ? `PartAsset-Referenzen fehlen: ${application.assessment.missingAssetIds.join(", ")}.`
+              : `${application.assessment.overrideConflicts.length} Framekorrektur${application.assessment.overrideConflicts.length === 1 ? " ist" : "en sind"} mit dem Kit unvereinbar.`;
+        return {
+          status: "conflict",
+          reason,
+          message,
+          assessment: application.assessment
+        };
+      }
+      const parsed = AnimationProjectSchema.safeParse(application.project);
+      if (!parsed.success) {
+        return invalidCommand(
+          "Das angewendete Character Kit erzeugt ungültige Projektmetadaten.",
+          validationIssues(parsed.error.issues)
+        );
+      }
+      const updated = updateActiveProject(parsed.data);
+      if (updated.status !== "ok") return updated;
+      return {
+        status: "ok",
+        value: Object.freeze({
+          project: updated.value,
+          kit: kitResult.value,
+          removedOverrideSlots: application.removedOverrideSlots
+        })
+      };
+    },
+    [loadCharacterKit, loadPartAssets, now, updateActiveProject]
+  );
+
+  const equipPartAsset = useCallback(
+    async (
+      assetId: StableId
+    ): Promise<AnimationProjectCommandResult<EquippedCharacterPart>> => {
+      if (!repository) return unavailableCommand(unavailableMessage);
+      const project = stateRef.current.activeProject;
+      if (!project) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt für die Ausrüstung geöffnet."
+        };
+      }
+      try {
+        const candidate = await repository.readPartAsset(assetId);
+        if (candidate.status !== "ok") return repositoryFailure(candidate);
+        const assigned = await loadPartAssets(
+          project.parts.map((assignment) => assignment.assetId)
+        );
+        if (assigned.status !== "ok") return assigned;
+        if (assigned.value.missingAssetIds.length > 0) {
+          return invalidCommand(
+            "Ausrüstung wurde abgebrochen, weil bestehende Part-Referenzen fehlen."
+          );
+        }
+        const equipped = equipCharacterPart({
+          project,
+          asset: candidate.value,
+          assignedAssets: assigned.value.assets,
+          timestamp: now()
+        });
+        if (equipped.status !== "ok") return invalidCommand(equipped.message);
+        const parsed = AnimationProjectSchema.safeParse(equipped.project);
+        if (!parsed.success) {
+          return invalidCommand(
+            "Das Ausrüstungsteil kann diesem Projekt nicht zugewiesen werden.",
+            validationIssues(parsed.error.issues)
+          );
+        }
+        const updated = updateActiveProject(parsed.data);
+        if (updated.status !== "ok") return updated;
+        return {
+          status: "ok",
+          value: Object.freeze({
+            project: updated.value,
+            partAsset: candidate.value,
+            replacedAssetIds: equipped.replacedAssetIds as readonly StableId[],
+            defaultLayerGroup: equipped.defaultLayerGroup
+          })
+        };
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [loadPartAssets, now, repository, unavailableMessage, updateActiveProject]
+  );
+
+  const removeEquippedPartAsset = useCallback(
+    (assetId: StableId): AnimationProjectCommandResult<AnimationProject> => {
+      const project = stateRef.current.activeProject;
+      if (!project) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt für die Ausrüstung geöffnet."
+        };
+      }
+      if (!project.parts.some((assignment) => assignment.assetId === assetId)) {
+        return {
+          status: "notFound",
+          message: "Das Ausrüstungsteil ist dem Projekt nicht zugewiesen."
+        };
+      }
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      return updateActiveProject(
+        removeCharacterPart(project, assetId, timestamp)
+      );
+    },
+    [now, updateActiveProject]
+  );
+
   const clearRawProjectError = useCallback(() => {
     dispatchState({ type: "rawProjectErrorCleared" });
   }, [dispatchState]);
@@ -1459,7 +2005,11 @@ export function AnimationProjectProvider({
       canSaveProject: selectAnimationProjectCanSave(state),
       canUndoProject: state.historyPast.length > 0,
       canRedoProject: state.historyFuture.length > 0,
+      characterKits: characterKitState.kits,
+      characterKitListStatus: characterKitState.status,
+      characterKitListError: characterKitState.error,
       refreshProjects,
+      refreshCharacterKits,
       createProject,
       openProject,
       updateActiveProject,
@@ -1474,28 +2024,50 @@ export function AnimationProjectProvider({
       confirmDirectionMirrorReview,
       saveActiveProject,
       loadPartAssets,
+      loadReusablePartAssets,
       importPartAsset,
       loadPartImageBlob,
+      loadCharacterKitPreview,
       configurePartAsset,
       renameProject,
       duplicateProject,
       deleteProject,
+      saveActiveProjectAsKit,
+      loadCharacterKit,
+      duplicateCharacterKit,
+      renameCharacterKit,
+      deleteCharacterKit,
+      applyCharacterKit,
+      equipPartAsset,
+      removeEquippedPartAsset,
       clearRawProjectError
     }),
     [
       clearRawProjectError,
+      applyCharacterKit,
+      characterKitState,
       createProject,
+      deleteCharacterKit,
       deleteProject,
+      duplicateCharacterKit,
       duplicateProject,
+      equipPartAsset,
       imageDecoder,
       openProject,
       importPartAsset,
       configurePartAsset,
+      loadCharacterKit,
+      loadCharacterKitPreview,
       loadPartImageBlob,
       loadPartAssets,
+      loadReusablePartAssets,
       projectDirty,
+      refreshCharacterKits,
       refreshProjects,
+      removeEquippedPartAsset,
+      renameCharacterKit,
       renameProject,
+      saveActiveProjectAsKit,
       saveActiveProject,
       state,
       updateActiveProject,

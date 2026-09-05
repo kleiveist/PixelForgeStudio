@@ -24,14 +24,18 @@ export function AnimationWorkspaceLifecycleView({
     canRedoProject,
     canSaveProject,
     canUndoProject,
+    characterKitListStatus,
     confirmDirectionMirrorReview,
     configurePartAsset,
     imageDecoder,
     importPartAsset,
+    equipPartAsset,
     loadPartImageBlob,
     loadPartAssets,
+    loadReusablePartAssets,
     openProject,
     redoActiveProject,
+    removeEquippedPartAsset,
     removeActiveFrameOverride,
     resetActiveDirectionOverrides,
     rawProjectError,
@@ -53,6 +57,11 @@ export function AnimationWorkspaceLifecycleView({
     missingAssetIds: readonly StableId[];
     error: string | null;
   }>>({ status: "idle", assets: [], missingAssetIds: [], error: null });
+  const [librarySources, setLibrarySources] = useState<Readonly<{
+    status: "idle" | "loading" | "ready" | "failed";
+    assets: readonly AnimationPartAsset[];
+    error: string | null;
+  }>>({ status: "idle", assets: [], error: null });
 
   useEffect(() => {
     if (!projectId) {
@@ -105,6 +114,33 @@ export function AnimationWorkspaceLifecycleView({
     };
   }, [activeLoadStatus, activeProject, loadPartAssets]);
 
+  useEffect(() => {
+    if (activeLoadStatus !== "ready" || characterKitListStatus !== "ready") {
+      setLibrarySources({ status: "idle", assets: [], error: null });
+      return undefined;
+    }
+    let cancelled = false;
+    setLibrarySources({ status: "loading", assets: [], error: null });
+    void loadReusablePartAssets().then((result) => {
+      if (cancelled) return;
+      if (result.status === "ok") {
+        setLibrarySources({
+          status: "ready",
+          assets: result.value.assets,
+          error:
+            result.value.missingAssetIds.length > 0
+              ? `Fehlende Bibliotheksreferenzen: ${result.value.missingAssetIds.join(", ")}`
+              : null
+        });
+      } else {
+        setLibrarySources({ status: "failed", assets: [], error: result.message });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLoadStatus, characterKitListStatus, loadReusablePartAssets]);
+
   const explicitSave = async () => {
     setCommandError(null);
     const result = await saveActiveProject();
@@ -133,6 +169,24 @@ export function AnimationWorkspaceLifecycleView({
     const result = await configurePartAsset(definition);
     return result.status === "ok"
       ? { status: "ok" as const, partAsset: result.value.partAsset }
+      : { status: "error" as const, message: result.message };
+  };
+
+  const commitEquipPart: NonNullable<
+    ComponentProps<typeof AnimationWorkspace>["onEquipPartAsset"]
+  > = async (assetId) => {
+    const result = await equipPartAsset(assetId);
+    return result.status === "ok"
+      ? { status: "ok" as const }
+      : { status: "error" as const, message: result.message };
+  };
+
+  const commitRemovePart: NonNullable<
+    ComponentProps<typeof AnimationWorkspace>["onRemovePartAsset"]
+  > = async (assetId) => {
+    const result = removeEquippedPartAsset(assetId);
+    return result.status === "ok"
+      ? { status: "ok" as const }
       : { status: "error" as const, message: result.message };
   };
 
@@ -288,10 +342,15 @@ export function AnimationWorkspaceLifecycleView({
       missingPartAssetIds={partSources.missingAssetIds}
       partAssetLoadError={partSources.error}
       partAssetsLoading={partSources.status === "loading"}
+      libraryPartAssets={librarySources.assets}
+      libraryPartAssetsLoading={librarySources.status === "loading"}
+      libraryPartAssetError={librarySources.error}
       imageDecoder={imageDecoder}
       onImportPart={commitPartImport}
       onLoadPartBlob={loadPartBlob}
       onConfigurePart={commitPartSetup}
+      onEquipPartAsset={commitEquipPart}
+      onRemovePartAsset={commitRemovePart}
       onSetPartLayerOffset={commitPartLayerOffset}
       onSetProjectMirrorPolicy={commitProjectMirrorPolicy}
       onSetPartMirrorPolicy={commitPartMirrorPolicy}

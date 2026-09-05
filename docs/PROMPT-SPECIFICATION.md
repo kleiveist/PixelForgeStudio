@@ -245,7 +245,11 @@ Der derzeit implementierte V3-Ausbaustand umfasst:
     sowie
 13. die rekonstruierbare South-Laufvorlage `walk-humanoid-8-v1` mit acht
     Phasen, 10 FPS Default, normierten Gegenphasenkanälen, Groundline-
-    Kontaktkorrektur und acht flüchtig gerenderten Frames.
+    Kontaktkorrektur und acht flüchtig gerenderten Frames,
+14. kontrollierte Acht-Richtungs-Coverage und exakt 64 reproduzierbare Frames,
+15. sparse Framekorrekturen sowie eine begrenzte Metadaten-History und
+16. lokale Character Kits mit referenzgeteiltem Ausrüstungsinventar,
+    Compatibility-Grenze und kontrollierter Overridebereinigung.
 
 Im Workspace liest das Rig-SVG Bones, Joints, Groundline und Pflichtslotlabels
 direkt aus den versionierten Produktionsdaten. Schachbrett, Raster,
@@ -255,9 +259,9 @@ die Anzeige; Projekt- und Exportkoordinaten bleiben unverändert. Nicht
 aufgelöste PartAsset-/Blob-Referenzen werden sichtbar als fehlende Quelle
 behandelt, ohne Dummybilder oder scheinpräzise Anker zu erzeugen.
 
-Die V3-Implementierung befindet sich nach Prompt 42 in Phase D und ist noch
-nicht releasevollständig. Playback, Korrektur-History, Character Kits,
-Sprite-Sheet-/Godot-Export und die explizite Prompt→Animation-Übergabe gehören
-zu den noch offenen Prompts 43–51. Der
+Die V3-Implementierung hat mit Prompt 47 Phase E abgeschlossen und ist noch
+nicht releasevollständig. SpriteSheet-/Godot-Export, die explizite
+Prompt→Animation-Übergabe und Release 3.0 gehören zu den offenen Prompts
+48–51. Der
 verbindliche Ausführungsstand und die Reihenfolge stehen unter
 `aufgaben/pixelforge-studio-v3/START_HERE.md` und in `../PLANS.md`.

@@ -100,8 +100,19 @@ export function createCharacterKitInput(
     name: "Waldwächter",
     description: "Modulares Production-Humanoid-Kit.",
     rigTemplateId: "humanoid-80-v1",
-    rigCompatibilityKey: "humanoid-80-v1__frame-128x128__contracts-1-1-1",
+    rigCompatibilityKey:
+      "humanoid-80-v1__frame-128x128__char-80__foot-64-112__contracts-1-1-1",
     directionSourceMode: "fiveAuthoredPlusMirror",
+    coverage: {
+      requiredCellCount: 120,
+      resolvedRequiredCellCount: 1,
+      authoredRequiredCellCount: 1,
+      mirroredRequiredCellCount: 0,
+      anchorsIncompleteCount: 0,
+      mirrorReviewCount: 0,
+      mirrorForbiddenCount: 0,
+      productionReady: false
+    },
     partAssetIds: ["part_head_south_001"],
     previewBlobId: "preview_guard_walk_001",
     createdAt: ANIMATION_FIXTURE_TIMESTAMP,

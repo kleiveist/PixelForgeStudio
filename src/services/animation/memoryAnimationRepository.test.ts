@@ -111,6 +111,30 @@ describe("MemoryAnimationRepository", () => {
     });
   });
 
+  it("never deletes a project-shared PartAsset blob when its Character Kit is deleted", async () => {
+    const repository = new MemoryAnimationRepository();
+    const part = createAnimationPartAssetInput();
+    const blob = pngBlob("shared project and kit pixels");
+    const project = createAnimationProjectInput({
+      parts: [{ assetId: part.assetId }]
+    });
+    const kit = createCharacterKitInput({ partAssetIds: [part.assetId] });
+    await repository.writePartAsset(part, blob);
+    await repository.createProject(project);
+    await repository.writeKit(kit);
+
+    expect(await repository.deleteKit(kit.kitId)).toEqual({ status: "ok" });
+    expect(await repository.collectGarbage()).toMatchObject({ status: "ok" });
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { parts: [{ assetId: part.assetId }] }
+    });
+    expect(await repository.readBlob(part.blobId)).toEqual({
+      status: "ok",
+      value: blob
+    });
+  });
+
   it("validates project metadata before writing and preserves the previous value", async () => {
     const repository = new MemoryAnimationRepository();
     const validProject = createAnimationProjectInput();

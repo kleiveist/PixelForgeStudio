@@ -9,6 +9,7 @@ import {
   AnimationProjectsView,
   AnimationWorkspaceLifecycleView
 } from "../features/animation-projects";
+import { CharacterKitLibraryView } from "../features/animation-kits";
 import shellStyles from "./AppShell.module.css";
 import styles from "./StudioPlaceholderViews.module.css";
 import { ANIMATION_STUDIO_VIEW_DEFINITIONS } from "./studioViewConfig";
@@ -67,7 +68,8 @@ export function AnimationStudioShell({
           {...(route.projectId ? { projectId: route.projectId } : {})}
         />
       ) : null}
-      {route.view === "library" || route.view === "rigs" ? (
+      {route.view === "library" ? <CharacterKitLibraryView /> : null}
+      {route.view === "rigs" ? (
         <div className={styles.view}>
           <p className={styles.eyebrow}>{definition.eyebrow}</p>
           <h1 id={`animation-${route.view}-view-title`}>{definition.title}</h1>

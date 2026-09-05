@@ -361,6 +361,77 @@
   font-size: var(--font-size-sm);
 }
 
+.equipmentLibrary {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-panel-soft);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.equipmentHeading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.equipmentHeading h3,
+.equipmentLibrary p {
+  margin: 0;
+}
+
+.equipmentLibrary > p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+}
+
+.equipmentLibrary ul {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.equipmentLibrary li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-panel-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+
+.equipmentLibrary li > div {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.equipmentLibrary li span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.removeEquipmentButton {
+  justify-self: start;
+  color: var(--color-danger-text) !important;
+  border-color: var(--color-danger-line) !important;
+}
+
+.equipmentError {
+  color: var(--color-danger-text) !important;
+}
+
 .slotGroups {
   min-width: 0;
   display: grid;

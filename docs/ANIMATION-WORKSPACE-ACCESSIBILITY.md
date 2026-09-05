@@ -45,6 +45,20 @@ Rückgängig und Wiederholen zeigen ihren Verfügbarkeitszustand in der Toolbar.
 innerhalb des Workspace abgefangen; außerhalb bleibt das Browserverhalten
 unverändert.
 
+## Character Kits und Ausrüstung
+
+Suche, Rig- und Coveragefilter der Kit-Bibliothek sind beschriftete native
+Eingabeelemente. Öffnen, Anwenden, Duplizieren, Umbenennen und die zweistufige
+Löschung besitzen native Buttons; Kompatibilität, Mirrorstand und Coverage
+werden zusätzlich als Text und nicht nur als Farbe vermittelt. Ein
+Overridekonflikt verlangt eine fokussierbare Entscheidung zwischen Abbruch und
+gezielter Bereinigung.
+
+Im Workspace wird zuerst eine reguläre Slotkarte gewählt. Danach erscheinen
+kompatible Bibliotheksteile mit benannten Buttons für Einsetzen oder Ersetzen;
+das aktuell zugewiesene Teil besitzt einen eigenen Entfernen-Button. Damit ist
+keine Inventaraktion von Pointerziehen oder Drag & Drop abhängig.
+
 ## Prüfabdeckung
 
 RTL-Tests decken zugängliche Namen, Status, Sperrzustand, Klick/Pointer,

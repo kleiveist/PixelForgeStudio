@@ -1,5 +1,14 @@
-import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
-import type { Direction, PartSlot, Rect, Size } from "../../domain/animation";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import {
+  DEFAULT_FREE_ACCESSORY_LAYER_GROUP,
+  JOINT_IDS,
+  isFreeAccessorySlot,
+  type Direction,
+  type JointId,
+  type PartSlot,
+  type Rect,
+  type Size
+} from "../../domain/animation";
 import type { AnimationPartAsset, StableId } from "../../schemas";
 import type { ImageDecoder } from "../../services";
 import {
@@ -17,6 +26,7 @@ export interface PartImportCommitDefinition {
   readonly direction: Direction;
   readonly sourceSize: Size;
   readonly trimRect: Rect;
+  readonly attachmentJointId?: JointId;
   readonly replacedAssetId?: StableId;
 }
 
@@ -52,12 +62,18 @@ export function PartImportPanel({
   const [phase, setPhase] = useState<ImportPhase>("idle");
   const [draft, setDraft] = useState<PreparedAnimationPartImport | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [attachmentJointId, setAttachmentJointId] = useState<JointId | "">("");
   const requestRevision = useRef(0);
   const objectUrl = useObjectUrl(
     draft?.originalBlob ?? null,
     objectUrlFactory
   );
   const controlsDisabled = !selectedSlot || !decoder || phase === "saving";
+  const freeAccessory = selectedSlot ? isFreeAccessorySlot(selectedSlot) : false;
+
+  useEffect(() => {
+    setAttachmentJointId("");
+  }, [selectedSlot]);
 
   const prepareFile = async (input: unknown) => {
     if (!selectedSlot) {
@@ -106,6 +122,10 @@ export function PartImportPanel({
 
   const confirm = async () => {
     if (!draft || !selectedSlot) return;
+    if (freeAccessory && !attachmentJointId) {
+      setMessage("Wähle für das freie Accessoire einen Attachment-Joint.");
+      return;
+    }
     setMessage(null);
     setPhase("saving");
     const result = await onCommit({
@@ -115,6 +135,7 @@ export function PartImportPanel({
       direction,
       sourceSize: draft.sourceSize,
       trimRect: draft.trimRect,
+      ...(attachmentJointId ? { attachmentJointId } : {}),
       ...(existingPart ? { replacedAssetId: existingPart.assetId } : {})
     });
     if (result.status === "error") {
@@ -155,6 +176,26 @@ export function PartImportPanel({
       </div>
       {!selectedSlot ? (
         <p className={styles.hint}>Wähle zuerst einen Slot; die Toolbar-Richtung bleibt das Importziel.</p>
+      ) : null}
+      {freeAccessory ? (
+        <div className={styles.attachmentFields}>
+          <label>
+            <span>Attachment-Joint</span>
+            <select
+              value={attachmentJointId}
+              onChange={(event) =>
+                setAttachmentJointId(event.currentTarget.value as JointId | "")
+              }
+              required
+            >
+              <option value="">Joint auswählen</option>
+              {JOINT_IDS.map((jointId) => (
+                <option key={jointId} value={jointId}>{jointId}</option>
+              ))}
+            </select>
+          </label>
+          <span>Default-LayerGroup: {DEFAULT_FREE_ACCESSORY_LAYER_GROUP}</span>
+        </div>
       ) : null}
       {phase === "decoding" ? <p role="status">PNG wird geprüft und decodiert …</p> : null}
       {draft ? (

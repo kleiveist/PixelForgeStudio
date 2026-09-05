@@ -43,6 +43,33 @@ export const OPTIONAL_PART_SLOT_IDS = Object.freeze([
   "accessory.4"
 ] as const);
 
+/** Optional slots exposed by the reusable equipment inventory. */
+export const EQUIPMENT_PART_SLOT_IDS = Object.freeze([
+  "armor.torso",
+  "armor.shoulder.left",
+  "armor.shoulder.right",
+  "glove.left",
+  "glove.right",
+  "boot.left",
+  "boot.right",
+  "hair.back",
+  "hair.front",
+  "headwear",
+  "cape.back",
+  "cape.front",
+  "weapon.left",
+  "weapon.right",
+  "shield.left",
+  "shield.right",
+  "back.item",
+  "waist.item.left",
+  "waist.item.right",
+  "accessory.1",
+  "accessory.2",
+  "accessory.3",
+  "accessory.4"
+] as const satisfies readonly OptionalPartSlot[]);
+
 export const PART_SLOT_IDS = Object.freeze([
   ...REQUIRED_PART_SLOT_IDS,
   ...OPTIONAL_PART_SLOT_IDS

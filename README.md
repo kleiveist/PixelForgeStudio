@@ -73,7 +73,10 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   Frame-/Richtungsreset sowie eine auf 100 Metadatenstände begrenzte
   Undo-/Redo-History sind unter
   [Framekorrekturen und History](docs/ANIMATION-FRAME-CORRECTIONS.md)
-  beschrieben.
+  beschrieben. Die lokale Character-Kit-Bibliothek speichert vollständige
+  Partsets referenzbasiert, blockiert inkompatible Rigs und verbindet das
+  Slotinventar mit Einsetzen, Ersetzen und Entfernen von Ausrüstung. Details:
+  [Character Kits und Ausrüstungsinventar](docs/ANIMATION-CHARACTER-KITS.md).
 
 ## Einstiegspunkte
 

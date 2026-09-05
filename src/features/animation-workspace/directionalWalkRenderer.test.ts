@@ -4,14 +4,20 @@ import {
   HUMANOID_80_RIG_TEMPLATE,
   HUMANOID_WALK_FRAME_COUNT,
   REQUIRED_PART_SLOT_IDS,
+  applyCharacterKitToProject,
+  createRigCompatibilityKey,
   findAlphaBounds,
   type Direction
 } from "../../domain/animation";
 import {
   parseAnimationPartAsset,
-  parseAnimationProject
+  parseAnimationProject,
+  parseCharacterKit
 } from "../../schemas";
-import { createAnimationPartAssetInput } from "../../test/animationSchemaFixtures";
+import {
+  createAnimationPartAssetInput,
+  createCharacterKitInput
+} from "../../test/animationSchemaFixtures";
 import {
   SYNTHETIC_AUTHORED_DIRECTIONS,
   createSyntheticEightDirectionWalkFixture,
@@ -98,6 +104,90 @@ describe("eight-direction walk generation", () => {
     expect(
       first.diagnostics.filter(({ code }) => code === "emptySilhouette")
     ).toEqual([]);
+  }, 20_000);
+
+  it("closes Phase E with two NPC kits sharing one clip but producing distinct valid 64-frame sets", () => {
+    const firstFixture = createSyntheticEightDirectionWalkFixture();
+    const secondAssets = firstFixture.assets.map((asset) =>
+      parseAnimationPartAsset({
+        ...asset,
+        assetId: `${asset.assetId}_npc_b`,
+        blobId: `${asset.blobId}_npc_b`,
+        label: `${asset.label} NPC B`
+      })
+    );
+    const secondDecoded = secondAssets.map((asset, index) => ({
+      assetId: asset.assetId,
+      image: createSyntheticWalkPartImage(index + 17)
+    }));
+    const compatibilityKey = createRigCompatibilityKey(HUMANOID_80_RIG_TEMPLATE);
+    const coverage = {
+      requiredCellCount: 120,
+      resolvedRequiredCellCount: 120,
+      authoredRequiredCellCount: 75,
+      mirroredRequiredCellCount: 45,
+      anchorsIncompleteCount: 0,
+      mirrorReviewCount: 0,
+      mirrorForbiddenCount: 0,
+      productionReady: true
+    } as const;
+    const firstKit = parseCharacterKit(createCharacterKitInput({
+      kitId: "kit_npc_phase_e_a",
+      name: "NPC A",
+      rigCompatibilityKey: compatibilityKey,
+      partAssetIds: firstFixture.assets.map(({ assetId }) => assetId),
+      coverage
+    }));
+    const secondKit = parseCharacterKit(createCharacterKitInput({
+      kitId: "kit_npc_phase_e_b",
+      name: "NPC B",
+      rigCompatibilityKey: compatibilityKey,
+      partAssetIds: secondAssets.map(({ assetId }) => assetId),
+      coverage
+    }));
+    const firstApplication = applyCharacterKitToProject({
+      kit: firstKit,
+      project: firstFixture.project,
+      template: HUMANOID_80_RIG_TEMPLATE,
+      assets: firstFixture.assets,
+      timestamp: "2026-09-05T08:00:00.000Z",
+      overrideResolution: "abort"
+    });
+    const secondApplication = applyCharacterKitToProject({
+      kit: secondKit,
+      project: firstFixture.project,
+      template: HUMANOID_80_RIG_TEMPLATE,
+      assets: secondAssets,
+      timestamp: "2026-09-05T08:00:00.000Z",
+      overrideResolution: "abort"
+    });
+    expect(firstApplication.status).toBe("ok");
+    expect(secondApplication.status).toBe("ok");
+    if (firstApplication.status !== "ok" || secondApplication.status !== "ok") return;
+    expect(firstApplication.project.clips[0]?.clipId).toBe(
+      secondApplication.project.clips[0]?.clipId
+    );
+
+    const first = generateEightDirectionWalkSet(
+      firstApplication.project,
+      HUMANOID_80_RIG_TEMPLATE,
+      firstFixture.assets,
+      firstFixture.decoded
+    );
+    const second = generateEightDirectionWalkSet(
+      secondApplication.project,
+      HUMANOID_80_RIG_TEMPLATE,
+      secondAssets,
+      secondDecoded
+    );
+    expect(first.status).toBe("ok");
+    expect(second.status).toBe("ok");
+    if (first.status !== "ok" || second.status !== "ok") return;
+    expect(first.frames).toHaveLength(64);
+    expect(second.frames).toHaveLength(64);
+    expect(second.frames[0]?.frame.pixels).not.toEqual(first.frames[0]?.frame.pixels);
+    expect(first.frames.every(({ frame }) => frame.renderedPartIds.length === 15)).toBe(true);
+    expect(second.frames.every(({ frame }) => frame.renderedPartIds.length === 15)).toBe(true);
   }, 20_000);
 
   it("fails closed without returning partial frames for missing parts or blobs", () => {

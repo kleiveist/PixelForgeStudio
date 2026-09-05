@@ -2,20 +2,80 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 46 — Framekorrekturen und History
+- **Aktuelle Aufgabe:** Prompt 47 — Character Kits und Wiederverwendung
   (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 47 — Character Kits und Wiederverwendung
+- **Nächste Aufgabe:** Prompt 48 — SpriteSheet-Export
   (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
-  Phase C mit Prompts 36–39 und Phase D mit Prompts 40–43 abgeschlossen;
-  Prompts 44–46 sind abgeschlossen; Prompts 47–51 bleiben offen unter
+  Phase C mit Prompts 36–39, Phase D mit Prompts 40–43 und Phase E mit
+  Prompts 44–47 abgeschlossen; die Prompts 48–51 bleiben offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 - **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 47 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `31ba466`; Repository und Schema kennen bereits minimale
+  Character-Kit-Metadaten, die Library-Route ist jedoch noch ein Platzhalter
+  und das Workspace-Inventar kann nur neue Dateien importieren.
+- Abnahme: vollständiger Kitvertrag mit stabiler ID, Referenzen, Coverage,
+  Direction-/Mirror-Modus und Zeitstempeln; ein deterministischer,
+  namensunabhängiger Compatibility Key verwendet ausschließlich Rig-ID,
+  Frameprofil, Charakterhöhe und Contract-Versionen.
+- Lifecycle: Provider/Controller speichern das aktive Projekt als Kit, laden,
+  duplizieren, benennen um, löschen und wenden Kits referenzbasiert an. Das
+  Projekt bleibt Eigentümer von Rig und Clips; inkompatible Kits werden hart
+  blockiert und ungültige Part-Overrides nur nach sichtbarer Entscheidung
+  bereinigt.
+- Oberfläche: produktive Character-Kit-Library mit Suche, Rig-/Coveragefilter,
+  Preview- und Kompatibilitätsstatus sowie tastaturbedienbaren Aktionen;
+  Workspace-Inventar kann kompatible Bibliotheksteile einsetzen, ersetzen und
+  entfernen.
+- Sicherheit: freie Accessoires benötigen Attachment-Joint und Default-
+  LayerGroup; Kit-Löschung entfernt keine Projektblobs, Kit-Anwendung umgeht
+  weder Anchor- noch Mirrorstatus.
+- Nachweise: Schema-, Domain-, Repository-/Provider- und React-Tests sowie zwei
+  NPC-Kits mit demselben Walk-Clip und unterschiedlichen gültigen
+  64-Frame-Sätzen; anschließend `npm run verify`, `git diff --check`,
+  Dokumentationsindex und separater Commit.
+
+## Prompt 47 — Ergebnis
+
+1. Character Kit V1 besitzt stabile ID, Name/Beschreibung, Rig- und
+   Directionvertrag, Mirror-Default, eindeutige PartAsset-Referenzen,
+   Zeitstempel sowie eine validierte Coverage-Zusammenfassung. Ältere Kits
+   ohne Coverage bleiben über einen sichtbaren Draft-Default lesbar.
+2. Der pure Compatibility Key berücksichtigt ausschließlich RigTemplateId,
+   Framegröße, Charakterhöhe, Fußanker und Anchor-/Slot-/Direction-
+   Contract-Versionen. Namen, Posekoordinaten, Motion-Tuning und Assets ändern
+   ihn nicht; abweichende Keys oder Rig-IDs blockieren die Anwendung hart.
+3. Der Projektprovider verbindet Kit-CRUD, Previewladen und referenzbasiertes
+   Speichern/Anwenden mit dem vorhandenen Repository. Duplikate teilen
+   PartAssets und Bildblobs; Kitlöschung löst keine Garbage Collection aus und
+   schützt daher Projektblobs.
+4. Ein Kitwechsel behält Rig, Frameprofil und Clips des Projekts. Bestehende
+   Frame-Partdeltas werden gegen die neue Richtungsauflösung geprüft; bei
+   Konflikten bleibt das Projekt unverändert, bis ausdrücklich abgebrochen
+   oder nur die betroffenen Slotdeltas bereinigt werden.
+5. Die produktive Character-Kit-Bibliothek bietet lokale Suche, Rig- und
+   Coveragefilter, echte Previewauflösung, Compatibility-/Mirrorstatus sowie
+   Öffnen, Anwenden, Umbenennen, Duplizieren und bestätigt Löschen.
+6. Das Workspace-Inventar zeigt nach Slotwahl passende eigene oder vertraglich
+   gespiegelte Bibliotheksquellen und erlaubt per Tastatur Einsetzen, Ersetzen
+   und Entfernen. Alle geforderten Equipment-Slots sind katalogisiert; freie
+   Accessoires benötigen einen Attachment-Joint und `frontEquipment`.
+7. Der Phase-E-Regressionsnachweis wendet zwei verschiedene NPC-Kits auf
+   denselben Walk-Clip an und erzeugt zwei unterschiedliche, jeweils gültige
+   kanonische 64-Frame-Sätze. Domain-, Schema-, Provider-, Repository- und
+   React-Tests decken die übrigen Akzeptanzpfade ab.
+8. `npm run verify` bestand mit 165 Testdateien und 1038 Tests, Strict-
+   Typecheck und Produktionsbuild; `git diff --check` ist sauber. Die bekannte
+   Vite-Warnung zum über 500 kB großen Hauptchunk bleibt. Phase E ist
+   abgeschlossen; Prompt 48 wurde nicht vorgezogen.
 
 ## Prompt 46 — Ausgangsstand und Abnahme
 

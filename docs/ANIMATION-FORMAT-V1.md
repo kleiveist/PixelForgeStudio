@@ -55,8 +55,8 @@ PartAsset-Metadaten enthalten nur eine stabile `blobId`, niemals Blobbytes,
 PNG-Base64 oder Object URLs. Source-Anker beziehen sich auf das ungetrimmte
 Originalbild. Jeder Anker muss innerhalb von `sourceSize` liegen; `trimRect`
 muss vollständig darin enthalten sein. Bestehende Datensätze ohne
-`anchorStatus` werden kompatibel als `ready` gelesen. Ein neu importiertes
-Ein neuer PartAsset verwendet `anchorStatus: "anchorsPending"` ohne erfundene
+`anchorStatus` werden kompatibel als `ready` gelesen. Ein neuer PartAsset
+verwendet `anchorStatus: "anchorsPending"` ohne erfundene
 Ankerkoordinaten und bleibt dadurch sichtbar nicht produktionsreif. Ein
 gespeicherter, noch unvollständiger Ankerentwurf ist `invalidAnchors`; nur die
 slotabhängig vollständige Ein- oder Zweipunktbelegung ist `ready`.
@@ -73,6 +73,25 @@ Binärdaten werden seit Prompt 34 getrennt in IndexedDB gespeichert. Prompt 37
 schreibt Original-PNG, PartAsset-Metadaten und die aktualisierte
 Projektzuweisung gemeinsam transaktional. Die Schemaoberfläche führt
 ausschließlich Metadaten und Referenz-IDs.
+
+## Character Kits
+
+Ein Kit speichert stabile ID, Name/Beschreibung, Rig-ID, DirectionSourceMode,
+Mirror-Default, eine eindeutige Liste von PartAsset-Referenzen, Zeitstempel und
+eine kompakte Coverage-Zusammenfassung. Bestehende V1-Kits ohne Coverage
+werden additiv als Entwurf normalisiert. Die vollständige Coverage wird für
+Produktionsentscheidungen weiterhin aus aktuellen PartAssets aufgelöst.
+
+Der `rigCompatibilityKey` enthält nur RigTemplateId, vollständiges
+Frameprofil einschließlich Charakterhöhe/Fußanker und die versionierten
+Anchor-/Slot-/Direction-Verträge. Konkrete Posegeometrie, Name und Part-IDs
+gehören ausdrücklich nicht hinein. Projekt und Kit teilen PartAsset- und
+Blob-Referenzen; Duplikation oder Anwendung erzeugt keine Bildkopie.
+
+Beim Kitwechsel bleiben Rig, Frameprofil und Clips des Projekts unangetastet.
+Inkompatible Keys blockieren. Partbezogene FrameOverrides, deren Slot in der
+neuen Coverage nicht gültig auflösbar ist, erfordern vor der Anwendung eine
+explizite Abbruch- oder Bereinigungsentscheidung.
 
 ## Validierter Bundlegraph
 

@@ -1006,8 +1006,10 @@ controlled derivation phase.
 `validateRigTemplate()` returns structured code/path issues for invalid frame
 profiles, missing or out-of-frame joints, incomplete or cyclic bone graphs,
 zero-length limbs, invalid required-slot bindings and groundline violations.
-`createRigCompatibilityKey()` first validates and then fingerprints all
-contract-relevant fields in canonical catalog order. Vector, radian-angle and
+`createRigCompatibilityKey()` first validates the template and then serializes
+only RigTemplateId, frame size, character height, foot anchor and the
+Anchor-/Slot-/Direction-contract versions. Names, concrete joint geometry,
+motion tuning and assets are deliberately excluded. Vector, radian-angle and
 affine 2D matrix helpers remain deterministic pure functions; matrix
 composition uses `T × R × S` order and therefore applies the right-most
 transform first. Production files in this directory import neither React nor
@@ -1183,8 +1185,8 @@ direction coverage, controlled runtime mirroring and explicit asymmetric-part
 review. Prompt 45 projects the shared Walk contract over all target rigs and
 adds fail-closed 64-frame generation, per-direction playback and static
 all-direction review. Prompt 46 adds non-destructive frame corrections,
-metadata history and targeted cache invalidation. Prompt 47 remains the next
-separate task and owns Character Kits and reusable equipment.
+metadata history and targeted cache invalidation. Prompt 47 closes Phase E
+with reusable Character Kits, compatibility checks and inventory equipment.
 
 The draw-order domain in `domain/animation/layerOrder.ts` lists every required
 and optional slot for each target direction. It keeps anatomical side,
@@ -1291,3 +1293,26 @@ transient frames to a new project revision. `useNeutralPoseFrame()` compares
 the old and new override records and excludes only changed addresses; any
 other project metadata change retains the conservative full-revision prune.
 No cache entry, rendered frame, Blob or Object URL enters project history.
+
+`domain/animation/characterKits.ts` is the pure reference-package boundary.
+It summarizes live Slot×Direction coverage, compares a Kit against the
+project-owned Rig/frame contract, assesses every Part-frame-delta before a
+switch and applies only metadata references. An incompatible key or missing
+PartAsset fails closed. Invalid slot deltas return a structured conflict;
+only the explicit cleanup branch removes those individual deltas. Rig,
+FrameProfile and clip objects remain unchanged.
+
+`AnimationProjectProvider` adapts the existing Character-Kit repository CRUD
+to local list state and commands for save/load/duplicate/rename/delete/apply.
+Kit creation and duplication reuse PartAsset, image and preview IDs without
+copying blobs. Kit deletion deliberately does not invoke garbage collection.
+`features/animation-kits/CharacterKitLibraryView.tsx` displays the persisted
+coverage read model, preview and pure compatibility status before offering
+apply. Search and Rig/Coverage filters never mutate repository state.
+
+The Workspace receives reusable PartAssets through the Provider rather than
+reading IndexedDB. Selecting a slot reveals exact or contractually mirrored
+sources; equip replaces only the matching Slot+Direction assignment, remove
+only drops the project reference, and both remain ordinary history/autosave
+metadata edits. Free accessories require an explicit attachment joint and
+resolve to `frontEquipment`; every interaction has a native keyboard button.
