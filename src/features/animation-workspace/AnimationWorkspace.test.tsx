@@ -148,6 +148,24 @@ afterEach(() => {
 });
 
 describe("AnimationWorkspace", () => {
+  it("opens the export panel only for a complete eight-direction render set", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    mockCanvasDisplay();
+    renderReadyEightDirectionWorkspace();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Exportieren" })
+      ).toBeEnabled()
+    );
+    const trigger = screen.getByRole("button", { name: "Exportieren" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("heading", { level: 2, name: "Export" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Projektbundle .pfanim" })).toBeVisible();
+  });
+
   it("edits frame deltas by keyboard and scopes undo/redo shortcuts to the workspace", async () => {
     setViewportWidth(1440);
     const user = userEvent.setup();

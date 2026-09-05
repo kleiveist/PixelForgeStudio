@@ -194,6 +194,18 @@
   Attachment-Joint werden blockiert und geteilte Part-/Blobdaten nicht kopiert
 - Phase E durch zwei NPC-Kits abgeschlossen, die denselben Walk-Clip verwenden
   und zwei unterschiedliche gültige 64-Frame-Sätze erzeugen
+- pure kanonische 8×8-SpriteSheet-Geometrie, native RGBA-Komposition,
+  vollständiges `spriteSheetMetadata` V1 und stabile Einzelbildnamen ergänzt
+- Browser-PNG-Port ohne Skalierung/Glättung, bestätigungspflichtige
+  Exportwarnungen sowie ein sichtbares Status-, Fortschritts- und
+  Abbruchmodell mit kontrolliert widerrufenen Download-URLs eingeführt
+- `.pfanim`-ZIP-Export über `fflate` auf ausschließlich referenzierte
+  Part-Metadaten, Original-PNGs und optionale Preview begrenzt
+- Bundleimport mit Pfad-, Datei-/Größen-, Manifest-, Unknown-Schema-, PNG- und
+  vollständiger Graphprüfung vor einem atomaren Memory-/IndexedDB-Commit
+  abgesichert; ID-Ersetzung erfordert eine sichtbare Entscheidung
+- neutralen Export-Roundtrip für semantisch gleiche Projekte und pixelgleiche
+  Originalquellen nachgewiesen; der Workspace öffnet erst nach Importcommit
 
 ## 2.0.0 — 2026-09-03
 

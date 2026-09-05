@@ -104,6 +104,7 @@ import {
   useAnimationPlayback,
   type AnimationPlaybackController
 } from "./useAnimationPlayback";
+import { AnimationExportPanel } from "../animation-export";
 
 export type WorkspaceSaveStatus =
   | "idle"
@@ -145,6 +146,7 @@ export interface AnimationWorkspaceProps {
     definition: PartImportCommitDefinition
   ) => Promise<PartImportCommitResult>;
   readonly onLoadPartBlob?: (blobId: StableId) => Promise<PartBlobLoadResult>;
+  readonly onLoadPreviewBlob?: (previewId: StableId) => Promise<PartBlobLoadResult>;
   readonly onConfigurePart?: (
     definition: AnchorEditorCommitDefinition
   ) => Promise<AnchorEditorCommitResult>;
@@ -188,6 +190,25 @@ const DISCONNECTED_PART_IMPORT: NonNullable<
 });
 
 const EMPTY_PART_ASSETS: readonly AnimationPartAsset[] = Object.freeze([]);
+const EMPTY_EXPORT_FRAMES: readonly Readonly<{
+  direction: AnimationWorkspaceState["direction"];
+  frameIndex: number;
+  frame: RenderedFrame;
+}>[] = Object.freeze([]);
+
+function asExportFrames(
+  frames: readonly Readonly<{
+    direction: AnimationWorkspaceState["direction"];
+    frameIndex: number;
+    frame: RenderedFrame;
+  }>[]
+) {
+  return Object.freeze(
+    frames.map(({ direction, frameIndex, frame }) =>
+      Object.freeze({ direction, frameIndex, frame })
+    )
+  );
+}
 
 const DISCONNECTED_PART_BLOB_LOADER: NonNullable<
   AnimationWorkspaceProps["onLoadPartBlob"]
@@ -352,6 +373,9 @@ interface ToolbarProps {
   readonly playback: AnimationPlaybackController;
   readonly playbackEnabled: boolean;
   readonly playbackMessage: string;
+  readonly exportEnabled: boolean;
+  readonly exportExpanded: boolean;
+  readonly onToggleExport: () => void;
 }
 
 function WorkspaceToolbar({
@@ -369,7 +393,10 @@ function WorkspaceToolbar({
   onRedo,
   playback,
   playbackEnabled,
-  playbackMessage
+  playbackMessage,
+  exportEnabled,
+  exportExpanded,
+  onToggleExport
 }: ToolbarProps) {
   const directionOptions = useMemo(
     () => getWorkspaceDirectionOptions(project),
@@ -540,13 +567,18 @@ function WorkspaceToolbar({
           <button
             className={styles.secondaryButton}
             type="button"
-            disabled
+            disabled={!exportEnabled}
+            aria-expanded={exportExpanded}
+            aria-controls="animation-export-panel"
             aria-describedby="animation-export-unavailable"
+            onClick={onToggleExport}
           >
             Exportieren
           </button>
           <span id="animation-export-unavailable" className={styles.actionReason}>
-            Export bleibt bis zur Renderpipeline gesperrt.
+            {exportEnabled
+              ? "Alle 64 Produktionsframes sind für die Exportprüfung bereit."
+              : "Export bleibt bis zur Renderpipeline mit 64 validen Frames gesperrt."}
           </span>
         </div>
       </div>
@@ -2449,6 +2481,7 @@ export function AnimationWorkspace({
   imageDecoder = null,
   onImportPart = DISCONNECTED_PART_IMPORT,
   onLoadPartBlob = DISCONNECTED_PART_BLOB_LOADER,
+  onLoadPreviewBlob,
   onConfigurePart = DISCONNECTED_PART_CONFIGURATION,
   onEquipPartAsset = DISCONNECTED_EQUIPMENT,
   onRemovePartAsset = DISCONNECTED_EQUIPMENT,
@@ -2464,6 +2497,7 @@ export function AnimationWorkspace({
     project,
     createAnimationWorkspaceState
   );
+  const [exportExpanded, setExportExpanded] = useState(false);
   const layout = useWorkspaceLayout();
   const rootRef = useRef<HTMLDivElement>(null);
   const pendingPaneFocus = useRef<WorkspacePanel | null>(null);
@@ -2517,6 +2551,13 @@ export function AnimationWorkspace({
     playbackEnabled,
     playback.reducedMotion
   );
+  const completeDirectionSet =
+    renderState.directionWalkSet?.status === "ok"
+      ? renderState.directionWalkSet
+      : null;
+  const exportFrames = completeDirectionSet
+    ? asExportFrames(completeDirectionSet.frames)
+    : EMPTY_EXPORT_FRAMES;
 
   useEffect(() => {
     const panel = pendingPaneFocus.current;
@@ -2572,7 +2613,34 @@ export function AnimationWorkspace({
         playback={playback}
         playbackEnabled={playbackEnabled}
         playbackMessage={playbackMessage}
+        exportEnabled={completeDirectionSet !== null}
+        exportExpanded={exportExpanded}
+        onToggleExport={() => setExportExpanded((current) => !current)}
       />
+      {exportExpanded ? (
+        <AnimationExportPanel
+          project={project}
+          clip={activeClip}
+          frames={exportFrames}
+          productionDiagnostics={completeDirectionSet?.diagnostics ?? []}
+          missingBlobIds={effectiveMissingPartAssetIds}
+          partAssets={partAssets}
+          readImageBlob={async (blobId) => {
+            const result = await onLoadPartBlob(blobId);
+            if (result.status === "error") throw new Error(result.message);
+            return result.blob;
+          }}
+          {...(onLoadPreviewBlob
+            ? {
+                readPreviewBlob: async (previewId: StableId) => {
+                  const result = await onLoadPreviewBlob(previewId);
+                  if (result.status === "error") throw new Error(result.message);
+                  return result.blob;
+                }
+              }
+            : {})}
+        />
+      ) : null}
       <PaneNavigation
         layout={layout}
         state={state}

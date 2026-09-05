@@ -36,6 +36,7 @@
 
 ## Umsetzungsstand
 
-- Prompts 28–43 und damit die Phasen A bis D sind abgeschlossen.
-- Prompt 44 ist der nächste Auftrag und wurde noch nicht begonnen.
-- Prompts 45–51 sind ebenfalls offen.
+- Prompts 28–48 und damit die Phasen A bis E sowie der erste Auftrag aus
+  Phase F sind abgeschlossen.
+- Prompt 49 ist der nächste Auftrag.
+- Prompts 50–51 sind anschließend offen.

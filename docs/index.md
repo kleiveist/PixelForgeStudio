@@ -12,6 +12,7 @@
 - [Animation Studio — Character Kits und Ausrüstungsinventar](ANIMATION-CHARACTER-KITS.md)
 - [Animation Studio — Richtungsabdeckung und Spiegelprüfung](ANIMATION-DIRECTION-MIRRORING.md)
 - [Acht-Richtungs-Walk](ANIMATION-EIGHT-DIRECTION-WALK.md)
+- [Animation Studio — neutraler Produktions- und Projekt-Export](ANIMATION-EXPORT.md)
 - [Animation Studio — Metadatenformat V1](ANIMATION-FORMAT-V1.md)
 - [Animation Studio — Framekorrekturen und History](ANIMATION-FRAME-CORRECTIONS.md)
 - [Animation Studio — richtungsabhängige Ebenenreihenfolge](ANIMATION-LAYER-ORDER.md)

@@ -31,6 +31,7 @@ export function AnimationWorkspaceLifecycleView({
     importPartAsset,
     equipPartAsset,
     loadPartImageBlob,
+    loadCharacterKitPreview,
     loadPartAssets,
     loadReusablePartAssets,
     openProject,
@@ -160,6 +161,13 @@ export function AnimationWorkspaceLifecycleView({
 
   const loadPartBlob = async (blobId: StableId) => {
     const result = await loadPartImageBlob(blobId);
+    return result.status === "ok"
+      ? { status: "ok" as const, blob: result.value }
+      : { status: "error" as const, message: result.message };
+  };
+
+  const loadPreviewBlob = async (previewId: StableId) => {
+    const result = await loadCharacterKitPreview(previewId);
     return result.status === "ok"
       ? { status: "ok" as const, blob: result.value }
       : { status: "error" as const, message: result.message };
@@ -348,6 +356,7 @@ export function AnimationWorkspaceLifecycleView({
       imageDecoder={imageDecoder}
       onImportPart={commitPartImport}
       onLoadPartBlob={loadPartBlob}
+      onLoadPreviewBlob={loadPreviewBlob}
       onConfigurePart={commitPartSetup}
       onEquipPartAsset={commitEquipPart}
       onRemovePartAsset={commitRemovePart}

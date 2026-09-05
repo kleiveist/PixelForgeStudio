@@ -1,11 +1,13 @@
 import { z } from "zod";
 import {
+  AnimationProjectBundleSchema,
   AnimationPartAssetSchema,
   AnimationNameSchema,
   AnimationProjectSchema,
   IsoDateTimeSchema,
   StableIdSchema,
   type AnimationPartAsset,
+  type AnimationProjectBundle,
   type AnimationProject,
   type CharacterKit,
   type StableId
@@ -17,6 +19,25 @@ export type AnimationRepositoryEntity =
   | "imageBlob"
   | "preview"
   | "characterKit";
+
+export type AnimationBundleConflictResolution = "abort" | "replace";
+
+export interface AnimationProjectBundleImageBlob {
+  readonly blobId: StableId;
+  readonly blob: Blob;
+}
+
+export interface PersistAnimationProjectBundleInput {
+  readonly bundle: AnimationProjectBundle;
+  readonly imageBlobs: readonly AnimationProjectBundleImageBlob[];
+  readonly preview?: Readonly<{ previewId: StableId; blob: Blob }>;
+  readonly conflictResolution: AnimationBundleConflictResolution;
+}
+
+export interface PersistedAnimationProjectBundle {
+  readonly project: AnimationProject;
+  readonly replaced: boolean;
+}
 
 export interface AnimationRepositoryValidationIssue {
   readonly path: string;
@@ -212,6 +233,9 @@ export interface AnimationRepository {
   duplicateProject(
     input: unknown
   ): Promise<AnimationRepositoryValueMutationResult<AnimationProject>>;
+  importProjectBundle(
+    input: unknown
+  ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationProjectBundle>>;
 
   readPartAsset(
     assetId: unknown
@@ -248,6 +272,176 @@ export interface AnimationRepository {
   deleteKit(kitId: unknown): Promise<AnimationRepositoryMutationResult>;
 
   collectGarbage(): Promise<AnimationGarbageCollectionResult>;
+}
+
+function isBlob(value: unknown): value is Blob {
+  if (typeof Blob !== "undefined" && value instanceof Blob) return true;
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Partial<Blob>;
+  return (
+    typeof candidate.size === "number" &&
+    typeof candidate.type === "string" &&
+    typeof candidate.arrayBuffer === "function"
+  );
+}
+
+export function parseAnimationProjectBundleImport(input: unknown):
+  | Readonly<{ success: true; value: PersistAnimationProjectBundleInput }>
+  | Readonly<{ success: false; result: AnimationRepositoryInvalidResult }> {
+  if (typeof input !== "object" || input === null) {
+    return {
+      success: false,
+      result: {
+        status: "invalid",
+        reason: "schemaValidation",
+        message: "Das Projektbundle ist unvollständig.",
+        issues: [{ path: "", message: "Bundle import must be an object." }]
+      }
+    };
+  }
+  const candidate = input as Record<string, unknown>;
+  const parsedBundle = AnimationProjectBundleSchema.safeParse(candidate.bundle);
+  if (!parsedBundle.success) {
+    return {
+      success: false,
+      result: {
+        status: "invalid",
+        reason: "schemaValidation",
+        message: "Die Bundle-Metadaten sind ungültig.",
+        issues: parsedBundle.error.issues.map((issue) => ({
+          path: issue.path.map(String).join("."),
+          message: issue.message
+        }))
+      }
+    };
+  }
+  if (
+    candidate.conflictResolution !== "abort" &&
+    candidate.conflictResolution !== "replace"
+  ) {
+    return {
+      success: false,
+      result: {
+        status: "invalid",
+        reason: "schemaValidation",
+        message: "Die Konfliktentscheidung ist ungültig.",
+        issues: [{ path: "conflictResolution", message: "Use abort or replace." }]
+      }
+    };
+  }
+  if (!Array.isArray(candidate.imageBlobs)) {
+    return {
+      success: false,
+      result: {
+        status: "invalid",
+        reason: "schemaValidation",
+        message: "Die Originalbilder des Bundles fehlen.",
+        issues: [{ path: "imageBlobs", message: "Image blobs must be an array." }]
+      }
+    };
+  }
+
+  const expectedImageIds = new Set(
+    parsedBundle.data.partAssets.map(({ blobId }) => blobId)
+  );
+  const seenImageIds = new Set<StableId>();
+  const imageBlobs: AnimationProjectBundleImageBlob[] = [];
+  for (let index = 0; index < candidate.imageBlobs.length; index += 1) {
+    const entry = candidate.imageBlobs[index];
+    if (typeof entry !== "object" || entry === null) {
+      return invalidBundleBinary(index, "Binary entry must be an object.");
+    }
+    const record = entry as Record<string, unknown>;
+    const id = StableIdSchema.safeParse(record.blobId);
+    if (!id.success || !isBlob(record.blob)) {
+      return invalidBundleBinary(index, "Binary entry requires a valid ID and Blob.");
+    }
+    if (!expectedImageIds.has(id.data) || seenImageIds.has(id.data)) {
+      return invalidBundleBinary(
+        index,
+        "Binary entry is duplicate or not referenced by the project parts."
+      );
+    }
+    seenImageIds.add(id.data);
+    imageBlobs.push({ blobId: id.data, blob: record.blob });
+  }
+  if (
+    seenImageIds.size !== expectedImageIds.size ||
+    [...expectedImageIds].some((id) => !seenImageIds.has(id))
+  ) {
+    return invalidBundleBinary(-1, "A referenced original image Blob is missing.");
+  }
+
+  const expectedPreviewId = parsedBundle.data.project.previewBlobId;
+  let preview: PersistAnimationProjectBundleInput["preview"];
+  if (candidate.preview !== undefined) {
+    const entry = candidate.preview;
+    if (typeof entry !== "object" || entry === null) {
+      return invalidBundlePreview("Preview entry must be an object.");
+    }
+    const record = entry as Record<string, unknown>;
+    const id = StableIdSchema.safeParse(record.previewId);
+    if (
+      !id.success ||
+      !isBlob(record.blob) ||
+      id.data !== expectedPreviewId
+    ) {
+      return invalidBundlePreview("Preview ID/Blob does not match the project graph.");
+    }
+    preview = { previewId: id.data, blob: record.blob };
+  }
+  if (Boolean(expectedPreviewId) !== Boolean(preview)) {
+    return invalidBundlePreview("The referenced project preview is missing.");
+  }
+
+  const expectedAllBlobIds = new Set([
+    ...expectedImageIds,
+    ...(expectedPreviewId ? [expectedPreviewId] : [])
+  ]);
+  if (
+    parsedBundle.data.blobIds.length !== expectedAllBlobIds.size ||
+    parsedBundle.data.blobIds.some((id) => !expectedAllBlobIds.has(id))
+  ) {
+    return invalidBundleBinary(-1, "Bundle blobIds must exactly match referenced binaries.");
+  }
+  return {
+    success: true,
+    value: Object.freeze({
+      bundle: parsedBundle.data,
+      imageBlobs: Object.freeze(imageBlobs),
+      ...(preview ? { preview: Object.freeze(preview) } : {}),
+      conflictResolution: candidate.conflictResolution
+    })
+  };
+}
+
+function invalidBundleBinary(
+  index: number,
+  message: string
+): Readonly<{ success: false; result: AnimationRepositoryInvalidResult }> {
+  return {
+    success: false,
+    result: {
+      status: "invalid",
+      reason: "schemaValidation",
+      message: "Die Bundle-Bilddaten sind ungültig.",
+      issues: [{ path: index < 0 ? "imageBlobs" : `imageBlobs.${index}`, message }]
+    }
+  };
+}
+
+function invalidBundlePreview(
+  message: string
+): Readonly<{ success: false; result: AnimationRepositoryInvalidResult }> {
+  return {
+    success: false,
+    result: {
+      status: "invalid",
+      reason: "schemaValidation",
+      message: "Die Bundle-Vorschau ist ungültig.",
+      issues: [{ path: "preview", message }]
+    }
+  };
 }
 
 export type AnimationRepositoryFactoryResult =

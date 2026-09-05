@@ -17,13 +17,57 @@ export {
   type RgbaCanvasDisplayResult
 } from "./rgbaCanvasDisplay";
 export {
+  ANIMATION_EXPORT_ISSUE_CODES,
+  asSpriteSheetSourceFrames,
+  canRunAnimationExport,
+  createSpriteSheetMetadata,
+  validateAnimationExport,
+  type AnimationExportIssue,
+  type AnimationExportIssueCode,
+  type AnimationExportValidationResult,
+  type ValidateAnimationExportInput
+} from "./animationExport";
+export {
+  BrowserPngEncoder,
+  createBrowserPngEncoder,
+  type BrowserPngEncoderEnvironment,
+  type PngEncoder
+} from "./browserPngEncoder";
+export {
+  AnimationExportCancelledError,
+  createIndividualFrameArchive,
+  createMetadataJsonBlob,
+  createSpriteSheetPng,
+  type AnimationExportJobState,
+  type ExportedAnimationFile
+} from "./animationExportFiles";
+export {
+  downloadBlob,
+  type ControlledDownloadEnvironment
+} from "./controlledDownload";
+export {
+  PFANIM_BUNDLE_ERROR_CODES,
+  PFANIM_MIME_TYPE,
+  PfanimBundleError,
+  assertSafeBundlePath,
+  createPfanimArchive,
+  importPfanimArchive,
+  parsePfanimArchive,
+  type CreatePfanimArchiveInput,
+  type ParsedPfanimArchive,
+  type PfanimArchiveLimits,
+  type PfanimBundleErrorCode
+} from "./animationProjectBundleAdapter";
+export {
   DuplicateAnimationProjectInputSchema,
   PersistAnimationPartImportInputSchema,
   PersistAnimationPartSetupInputSchema,
+  parseAnimationProjectBundleImport,
   createAnimationProjectSummary,
   sortAnimationProjectSummaries,
   sortAnimationProjects,
   sortCharacterKits,
+  type AnimationBundleConflictResolution,
   type AnimationGarbageCollectionReport,
   type AnimationGarbageCollectionResult,
   type AnimationProjectSummary,
@@ -42,9 +86,12 @@ export {
   type AnimationRepositoryValueMutationResult,
   type DuplicateAnimationProjectInput,
   type PersistAnimationPartImportInput,
+  type AnimationProjectBundleImageBlob,
+  type PersistAnimationProjectBundleInput,
   type PersistAnimationPartSetupInput,
   type PersistedAnimationPartImport,
-  type PersistedAnimationPartSetup
+  type PersistedAnimationPartSetup,
+  type PersistedAnimationProjectBundle
 } from "./animationRepository";
 export {
   analyzeAnimationBinaryReferences,

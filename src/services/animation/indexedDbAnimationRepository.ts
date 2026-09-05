@@ -13,6 +13,7 @@ import {
 } from "./animationReferenceAnalysis";
 import {
   createAnimationProjectSummary,
+  parseAnimationProjectBundleImport,
   PersistAnimationPartImportInputSchema,
   PersistAnimationPartSetupInputSchema,
   sortAnimationProjects,
@@ -28,7 +29,8 @@ import {
   type AnimationRepositoryReadResult,
   type AnimationRepositoryValueMutationResult,
   type PersistedAnimationPartImport,
-  type PersistedAnimationPartSetup
+  type PersistedAnimationPartSetup,
+  type PersistedAnimationProjectBundle
 } from "./animationRepository";
 import {
   createDuplicatedProject,
@@ -574,6 +576,104 @@ export class IndexedDbAnimationRepository implements AnimationRepository {
       return isConstraintError(error)
         ? repositoryConflict("project", command.value.newProjectId)
         : repositoryTransactionFailed(error);
+    }
+  }
+
+  public async importProjectBundle(
+    input: unknown
+  ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationProjectBundle>> {
+    const command = parseAnimationProjectBundleImport(input);
+    if (!command.success) return command.result;
+    const database = await this.databaseOrUnavailable();
+    if (database.status !== "ok") return database;
+
+    const { bundle, imageBlobs, preview, conflictResolution } = command.value;
+    let transaction: IDBTransaction | undefined;
+    let completion: Promise<void> | undefined;
+    const pendingRequests: Promise<unknown>[] = [];
+    try {
+      transaction = database.value.transaction(
+        [
+          ANIMATION_DATABASE_STORES.projects,
+          ANIMATION_DATABASE_STORES.partAssets,
+          ANIMATION_DATABASE_STORES.imageBlobs,
+          ANIMATION_DATABASE_STORES.previews
+        ],
+        "readwrite"
+      );
+      completion = transactionDone(transaction);
+      const projects = transaction.objectStore(ANIMATION_DATABASE_STORES.projects);
+      const parts = transaction.objectStore(ANIMATION_DATABASE_STORES.partAssets);
+      const blobs = transaction.objectStore(ANIMATION_DATABASE_STORES.imageBlobs);
+      const previews = transaction.objectStore(ANIMATION_DATABASE_STORES.previews);
+
+      const projectRead = requestValue<unknown>(projects.get(bundle.project.projectId));
+      const partReads = bundle.partAssets.map((part) =>
+        requestValue<unknown>(parts.get(part.assetId))
+      );
+      const blobReads = imageBlobs.map((entry) =>
+        requestValue<unknown>(blobs.get(entry.blobId))
+      );
+      const previewRead = preview
+        ? requestValue<unknown>(previews.get(preview.previewId))
+        : Promise.resolve(undefined);
+      pendingRequests.push(projectRead, ...partReads, ...blobReads, previewRead);
+      const [existingProject, existingParts, existingBlobs, existingPreview] =
+        await Promise.all([
+          projectRead,
+          Promise.all(partReads),
+          Promise.all(blobReads),
+          previewRead
+        ]);
+      const replacing = existingProject !== undefined;
+
+      if (conflictResolution === "abort") {
+        let conflict: ReturnType<typeof repositoryConflict> | null = null;
+        if (replacing) {
+          conflict = repositoryConflict("project", bundle.project.projectId);
+        } else {
+          const partIndex = existingParts.findIndex((row) => row !== undefined);
+          const blobIndex = existingBlobs.findIndex((row) => row !== undefined);
+          if (partIndex >= 0) {
+            conflict = repositoryConflict(
+              "partAsset",
+              bundle.partAssets[partIndex]!.assetId
+            );
+          } else if (blobIndex >= 0) {
+            conflict = repositoryConflict("imageBlob", imageBlobs[blobIndex]!.blobId);
+          } else if (preview && existingPreview !== undefined) {
+            conflict = repositoryConflict("preview", preview.previewId);
+          }
+        }
+        if (conflict) {
+          abortQuietly(transaction);
+          await completion.catch(() => undefined);
+          return conflict;
+        }
+      }
+
+      const writes: Promise<unknown>[] = [requestValue(projects.put(bundle.project))];
+      for (const part of bundle.partAssets) writes.push(requestValue(parts.put(part)));
+      for (const entry of imageBlobs) {
+        const row: StoredImageBlob = { blobId: entry.blobId, blob: entry.blob };
+        writes.push(requestValue(blobs.put(row)));
+      }
+      if (preview) {
+        const row: StoredPreview = { previewId: preview.previewId, blob: preview.blob };
+        writes.push(requestValue(previews.put(row)));
+      }
+      pendingRequests.push(...writes);
+      await Promise.all([...writes, completion]);
+      return {
+        status: "ok",
+        value: Object.freeze({ project: bundle.project, replaced: replacing })
+      };
+    } catch (error) {
+      if (transaction) abortQuietly(transaction);
+      await Promise.allSettled(
+        completion ? [...pendingRequests, completion] : pendingRequests
+      );
+      return repositoryTransactionFailed(error);
     }
   }
 

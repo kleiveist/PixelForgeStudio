@@ -13,6 +13,7 @@ import {
 } from "./animationReferenceAnalysis";
 import {
   createAnimationProjectSummary,
+  parseAnimationProjectBundleImport,
   PersistAnimationPartImportInputSchema,
   PersistAnimationPartSetupInputSchema,
   sortAnimationProjects,
@@ -27,7 +28,8 @@ import {
   type AnimationRepositoryValueMutationResult,
   type AnimationProjectSummary,
   type PersistedAnimationPartImport,
-  type PersistedAnimationPartSetup
+  type PersistedAnimationPartSetup,
+  type PersistedAnimationProjectBundle
 } from "./animationRepository";
 import {
   createDuplicatedProject,
@@ -44,6 +46,7 @@ export type MemoryAnimationRepositoryOperation =
   | "writeProject"
   | "deleteProject"
   | "duplicateProject"
+  | "importProjectBundle"
   | "writePartAsset"
   | "writePartAssetToProject"
   | "writePartSetupToProject"
@@ -185,6 +188,52 @@ export class MemoryAnimationRepository implements AnimationRepository {
     });
     return committed.status === "ok"
       ? { status: "ok", value: duplicate.value }
+      : committed;
+  }
+
+  public async importProjectBundle(
+    input: unknown
+  ): Promise<AnimationRepositoryValueMutationResult<PersistedAnimationProjectBundle>> {
+    const command = parseAnimationProjectBundleImport(input);
+    if (!command.success) return command.result;
+    const { bundle, imageBlobs, preview, conflictResolution } = command.value;
+    const replacing = this.projects.has(bundle.project.projectId);
+    if (conflictResolution === "abort") {
+      if (replacing) return repositoryConflict("project", bundle.project.projectId);
+      for (const part of bundle.partAssets) {
+        if (this.partAssets.has(part.assetId)) {
+          return repositoryConflict("partAsset", part.assetId);
+        }
+      }
+      for (const entry of imageBlobs) {
+        if (this.imageBlobs.has(entry.blobId)) {
+          return repositoryConflict("imageBlob", entry.blobId);
+        }
+      }
+      if (preview && this.previews.has(preview.previewId)) {
+        return repositoryConflict("preview", preview.previewId);
+      }
+    }
+
+    const nextProjects = new Map(this.projects);
+    const nextPartAssets = new Map(this.partAssets);
+    const nextImageBlobs = new Map(this.imageBlobs);
+    const nextPreviews = new Map(this.previews);
+    nextProjects.set(bundle.project.projectId, bundle.project);
+    for (const part of bundle.partAssets) nextPartAssets.set(part.assetId, part);
+    for (const entry of imageBlobs) nextImageBlobs.set(entry.blobId, entry.blob);
+    if (preview) nextPreviews.set(preview.previewId, preview.blob);
+    const committed = await this.commit("importProjectBundle", () => {
+      this.projects = nextProjects;
+      this.partAssets = nextPartAssets;
+      this.imageBlobs = nextImageBlobs;
+      this.previews = nextPreviews;
+    });
+    return committed.status === "ok"
+      ? {
+          status: "ok",
+          value: Object.freeze({ project: bundle.project, replaced: replacing })
+        }
       : committed;
   }
 

@@ -53,7 +53,9 @@ import {
 import {
   createBrowserImageDecoder,
   createAnimationProjectSummary,
+  importPfanimArchive,
   sortCharacterKits,
+  type AnimationBundleConflictResolution,
   type AnimationRepository,
   type AnimationRepositoryValidationIssue,
   type ImageDecoder
@@ -191,6 +193,10 @@ export interface AnimationProjectContextValue extends AnimationProjectState {
   ) => Promise<AnimationProjectCommandResult<AnimationProject>>;
   readonly openProject: (
     projectId: StableId
+  ) => Promise<AnimationProjectCommandResult<AnimationProject>>;
+  readonly importProjectBundleArchive: (
+    archive: Blob,
+    conflictResolution?: AnimationBundleConflictResolution
   ) => Promise<AnimationProjectCommandResult<AnimationProject>>;
   readonly updateActiveProject: (
     input: unknown
@@ -786,6 +792,40 @@ export function AnimationProjectProvider({
       repository,
       unavailableMessage
     ]
+  );
+
+  const importProjectBundleArchive = useCallback(
+    async (
+      archive: Blob,
+      conflictResolution: AnimationBundleConflictResolution = "abort"
+    ): Promise<AnimationProjectCommandResult<AnimationProject>> => {
+      if (!repository) return unavailableCommand(unavailableMessage);
+      if (stateRef.current.activeProject && selectAnimationProjectDirty(stateRef.current)) {
+        const flush = await saveActiveProject();
+        if (flush.status !== "ok") return flush;
+      } else {
+        await saveQueueRef.current;
+      }
+      try {
+        const result = await importPfanimArchive(
+          repository,
+          archive,
+          conflictResolution
+        );
+        if (result.status !== "ok") return repositoryFailure(result);
+        listRequestRevisionRef.current += 1;
+        projectRequestRevisionRef.current += 1;
+        dispatchState({
+          type: "activeProjectLoaded",
+          project: result.value.project,
+          summary: createAnimationProjectSummary(result.value.project)
+        });
+        return { status: "ok", value: result.value.project };
+      } catch (error) {
+        return failedCommand(error);
+      }
+    },
+    [dispatchState, repository, saveActiveProject, unavailableMessage]
   );
 
   const updateActiveProject = useCallback(
@@ -2012,6 +2052,7 @@ export function AnimationProjectProvider({
       refreshCharacterKits,
       createProject,
       openProject,
+      importProjectBundleArchive,
       updateActiveProject,
       setActiveFrameOverride,
       removeActiveFrameOverride,
@@ -2053,6 +2094,7 @@ export function AnimationProjectProvider({
       duplicateProject,
       equipPartAsset,
       imageDecoder,
+      importProjectBundleArchive,
       openProject,
       importPartAsset,
       configurePartAsset,

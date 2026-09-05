@@ -1316,3 +1316,36 @@ sources; equip replaces only the matching Slot+Direction assignment, remove
 only drops the project reference, and both remain ordinary history/autosave
 metadata edits. Free accessories require an explicit attachment joint and
 resolve to `frontEquipment`; every interaction has a native keyboard button.
+
+`domain/animation/spriteSheet.ts` is the pure neutral export-layout boundary.
+It canonicalizes selected directions, calculates row/column cells, margins,
+spacing and sheet dimensions, and copies exactly one native RGBA frame into
+each addressed cell. The default 128 px production profile therefore yields
+64 regions on a 1024×1024 transparent surface. Stable frame and project-name
+normalization also lives at this framework-free boundary.
+
+`SpriteSheetMetadataSchema` owns the strict neutral V1 interchange document.
+It cross-validates the fixed eight direction rows, eight frame columns, sheet
+geometry, FootAnchor and every one of the 64 regions. `animationExport.ts`
+maps an Animation Project, active clip and the same layout into this schema and
+separates hard production errors from warnings requiring explicit consent.
+
+`BrowserPngEncoder` is the only Canvas encoding adapter. It transfers already
+rendered bytes through `ImageData`/`putImageData`, disables smoothing and
+performs no draw or scale operation. `animationExportFiles.ts` packages
+stable individual-frame names and exposes an abort-aware job boundary.
+`controlledDownload.ts` confines each Object URL to one click and revokes it
+unconditionally.
+
+`animationProjectBundleAdapter.ts` is the `.pfanim` ZIP boundary backed by the
+small `fflate` dependency. Export follows only Project→PartAsset→original Blob
+and optional Preview references. Import limits entry count and declared
+unpacked size before inflation, rejects unsafe or unexpected paths, parses the
+manifest first, validates every JSON value from `unknown`, verifies PNG
+signatures and closes the complete graph before persistence.
+
+`AnimationRepository.importProjectBundle()` is a single multi-store commit in
+both Memory and IndexedDB implementations. The caller must choose `abort` or
+`replace` for stable-ID conflicts. The Provider publishes the imported
+project to React state only after that commit succeeds; failed validation,
+conflict or transaction leaves the active Workspace untouched.

@@ -2,20 +2,73 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 47 — Character Kits und Wiederverwendung
+- **Aktuelle Aufgabe:** Prompt 48 — SpriteSheet- und Projekt-Export
   (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 48 — SpriteSheet-Export
-  (nicht begonnen)
+- **Nächste Aufgabe:** Prompt 49 — Godot-4-Export
+  (als Nächstes beauftragt)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
   Phase C mit Prompts 36–39, Phase D mit Prompts 40–43 und Phase E mit
-  Prompts 44–47 abgeschlossen; die Prompts 48–51 bleiben offen unter
+  Prompts 44–47 abgeschlossen; Prompt 48 ist abgeschlossen, die Prompts
+  49–51 folgen getrennt unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 - **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 48 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `b96fb12`; Phase E erzeugt exakt 64 flüchtige RGBA-Frames,
+  der Workspace-Exportbutton ist jedoch noch begründet gesperrt und es gibt
+  weder Sheetlayout noch PNG-/ZIP-Ausgabe oder Bundleimport.
+- Abnahme: pure 8×8-Sheetgeometrie mit Margin/Spacing, RGBA-Komposition,
+  vollständigem neutralem JSON-V1-Vertrag und stabilen Einzelbildnamen.
+- Browsergrenze: injizierbarer PNG-Encoding-Port über Canvas/OffscreenCanvas
+  ohne Skalierung/Glättung sowie kontrollierte, widerrufene Download-URLs.
+- Produktionsprüfung: harte Fehler blockieren, Warnungen verlangen vor Export
+  eine explizite Bestätigung; Status, Fortschritt und Cancel-Anschluss bleiben
+  sichtbar und erzeugen bei Abbruch keine Downloads.
+- Bundle: `.pfanim` enthält nur Manifest, validiertes Projekt, referenzierte
+  Part-Metadaten, Original-PNGs und optionale Preview. Import prüft ZIP-Pfade,
+  Datei-/Größenlimits, Manifest, Unknown-Schemas, Referenzgraph und ID-
+  Konfliktentscheidung vollständig vor einem atomaren Repository-Commit.
+- Nachweise: 1024×1024-Layout, 64 Rects, Pixelgrenzen/Transparenz, PNG-
+  Pixelroundtrip, Dateinamen, Fehler/Warnung, Zip-Slip/Limits, Blob-/ID-
+  Konflikte, atomarer Bundle-Roundtrip und Object-URL-Cleanup; anschließend
+  `npm run verify`, Dokumentations-/Checksumindex und separater Commit.
+
+## Prompt 48 — Ergebnis
+
+1. Die pure Sheetdomain erzwingt kanonische Richtungszeilen, acht Spalten,
+   vollständige Frameadressen und berechnet Margin, Spacing, Rects sowie
+   Gesamtgröße. 64 native 128er Frames ergeben exakt 1024×1024 RGBA-Pixel;
+   freie Flächen bleiben transparent.
+2. `spriteSheetMetadata` V1 validiert Application/Format/Kind, Projekt und
+   Clip, FPS/Loop, Größen, FootAnchor, alle Richtungen und sämtliche 64 Rects.
+   Einzelbilder verwenden stabil `walk_<direction>_<00-07>.png`.
+3. Der Browser-PNG-Port kopiert RGBA über `ImageData` ohne Skalierung oder
+   Glättung. SpriteSheet, JSON, ein 64-Bilder-ZIP und `.pfanim` sind im
+   Workspace-Exportpanel mit Fehlern, bestätigbaren Warnungen, Status,
+   Fortschritt und Abbruch erreichbar.
+4. Das `fflate`-Bundle enthält Manifest, Projekt, nur referenzierte
+   Part-Metadaten und Original-PNGs sowie optional die Preview. Es enthält
+   keine Base64-Daten, Object URLs, absoluten Pfade oder Bibliotheksreste.
+5. Import begrenzt Datei- und entpackte Größe vor Inflation, weist Zip-Slip,
+   unbekannte Pfade, ungültige JSON/PNG und offene Referenzen ab und schreibt
+   erst nach vollständiger Prüfung atomar in Memory oder IndexedDB.
+6. ID-Konflikte stoppen standardmäßig. Die Projektübersicht fordert eine
+   ausdrückliche Ersetzungsentscheidung; der Provider öffnet das Projekt erst
+   nach erfolgreichem Transaktionscommit.
+7. Domain-, Schema-, Service-, Repository-, Provider- und React-Tests decken
+   Layout/Pixel, Dateinamen, Warnungen/Fehler, PNG-RGBA, Limits, Zip-Slip,
+   fehlende Blobs, Konflikte, Rollback, Object-URL-Cleanup und Bundle-
+   Roundtrip ab.
+8. `npm run verify` bestand mit 173 Testdateien und 1063 Tests, Strict-
+   Typecheck und Produktionsbuild. `git diff --check`, PyGitIndex-Prüfmodus
+   und alle 43 Paketchecksummen sind sauber; lediglich die bekannte Vite-
+   Warnung zum über 500 kB großen Hauptchunk bleibt bis Prompt 50 sichtbar.
 
 ## Prompt 47 — Ausgangsstand und Abnahme
 

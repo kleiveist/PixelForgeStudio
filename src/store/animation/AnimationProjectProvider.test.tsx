@@ -7,8 +7,9 @@ import {
   parseCharacterKit,
   type AnimationProject
 } from "../../schemas";
-import { MemoryAnimationRepository } from "../../services";
+import { MemoryAnimationRepository, createPfanimArchive } from "../../services";
 import {
+  ANIMATION_FIXTURE_TIMESTAMP,
   createAnimationPartAssetInput,
   createAnimationProjectInput,
   createCharacterKitInput
@@ -90,6 +91,49 @@ afterEach(() => {
 });
 
 describe("AnimationProjectProvider", () => {
+  it("opens an imported .pfanim only after the atomic repository commit succeeds", async () => {
+    const part = parseAnimationPartAsset(createAnimationPartAssetInput());
+    const project = parseAnimationProject(
+      createAnimationProjectInput({ previewBlobId: undefined })
+    );
+    const png = new Blob([
+      Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1])
+    ], { type: "image/png" });
+    const archive = await createPfanimArchive({
+      project,
+      partAssets: [part],
+      exportedAt: ANIMATION_FIXTURE_TIMESTAMP,
+      readImageBlob: async () => png
+    });
+    const repository = new MemoryAnimationRepository();
+    const successfulProvider = renderProvider(repository);
+    await expectListReady();
+
+    await act(async () => {
+      expect(await context.importProjectBundleArchive(archive)).toMatchObject({
+        status: "ok",
+        value: { projectId: project.projectId }
+      });
+    });
+    expect(context.activeProject).toEqual(project);
+    expect(await repository.readBlob(part.blobId)).toMatchObject({ status: "ok" });
+    successfulProvider.unmount();
+
+    const failingRepository = new MemoryAnimationRepository({
+      beforeCommit(operation) {
+        if (operation === "importProjectBundle") throw new Error("atomic failure");
+      }
+    });
+    renderProvider(failingRepository);
+    await expectListReady();
+    await act(async () => {
+      expect(await context.importProjectBundleArchive(archive)).toMatchObject({
+        status: "failed"
+      });
+    });
+    expect(context.activeProject).toBeNull();
+  });
+
   it("hydrates the summary list and opens a project without writing", async () => {
     const repository = new MemoryAnimationRepository();
     const project = await seedProject(repository);

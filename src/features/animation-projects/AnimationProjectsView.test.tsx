@@ -2,12 +2,21 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "../../app/App";
-import { StableIdSchema, parseAnimationProject } from "../../schemas";
+import {
+  StableIdSchema,
+  parseAnimationPartAsset,
+  parseAnimationProject
+} from "../../schemas";
 import {
   MemoryAnimationRepository,
+  createPfanimArchive,
   createV2StorageAdapter
 } from "../../services";
-import { createAnimationProjectInput } from "../../test/animationSchemaFixtures";
+import {
+  ANIMATION_FIXTURE_TIMESTAMP,
+  createAnimationPartAssetInput,
+  createAnimationProjectInput
+} from "../../test/animationSchemaFixtures";
 import { MemoryNavigation } from "../../test/memoryNavigation";
 import { MemoryStorage } from "../../test/memoryStorage";
 
@@ -57,6 +66,44 @@ function projectCard(name: string): HTMLElement {
 }
 
 describe("AnimationProjectsView", () => {
+  it("asks before replacing a conflicting .pfanim and navigates only after commit", async () => {
+    const user = userEvent.setup();
+    const repository = new MemoryAnimationRepository();
+    const project = await seedProject(repository, { previewBlobId: undefined });
+    const part = parseAnimationPartAsset(createAnimationPartAssetInput());
+    const png = new Blob([
+      Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1])
+    ], { type: "image/png" });
+    const archive = await createPfanimArchive({
+      project,
+      partAssets: [part],
+      exportedAt: ANIMATION_FIXTURE_TIMESTAMP,
+      readImageBlob: async () => png
+    });
+    const navigation = new MemoryNavigation({
+      status: "valid",
+      route: { studio: "animation", view: "projects" }
+    });
+    renderProjects(repository, navigation);
+    await screen.findByRole("heading", { level: 3, name: project.name });
+
+    await user.upload(
+      screen.getByLabelText("PixelForge-Animationsbundle auswählen"),
+      new File([await archive.arrayBuffer()], "guard.pfanim", { type: archive.type })
+    );
+    expect(await screen.findByText("Vorhandene IDs bewusst ersetzen?")).toBeVisible();
+    expect(navigation.pushedRoutes).toEqual([]);
+    await user.click(
+      screen.getByRole("button", { name: "Vorhandenes Projekt ersetzen" })
+    );
+    expect(
+      await screen.findByRole("heading", { level: 1, name: project.name })
+    ).toBeVisible();
+    expect(navigation.pushedRoutes).toEqual([
+      { studio: "animation", view: "workspace", projectId: project.projectId }
+    ]);
+  });
+
   it("creates a project with validated defaults and navigates by stable ID", async () => {
     const user = userEvent.setup();
     const repository = new MemoryAnimationRepository();

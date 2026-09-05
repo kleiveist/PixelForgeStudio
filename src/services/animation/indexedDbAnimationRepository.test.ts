@@ -1,9 +1,11 @@
 import { IDBFactory as FakeIDBFactory } from "fake-indexeddb";
 import { Blob as NodeBlob } from "node:buffer";
 import { describe, expect, it } from "vitest";
+import { parseAnimationProjectBundle } from "../../schemas";
 import {
   ANIMATION_FIXTURE_TIMESTAMP,
   createAnimationPartAssetInput,
+  createAnimationProjectBundleInput,
   createAnimationProjectInput,
   createCharacterKitInput
 } from "../../test/animationSchemaFixtures";
@@ -70,6 +72,43 @@ describe("createBrowserAnimationRepository", () => {
 });
 
 describe("IndexedDbAnimationRepository", () => {
+  it("imports a complete bundle graph in one transaction with explicit conflict handling", async () => {
+    const repository = new IndexedDbAnimationRepository(createFactory());
+    const bundle = parseAnimationProjectBundle(createAnimationProjectBundleInput());
+    const image = pngBlob("part pixels");
+    const preview = pngBlob("preview pixels");
+    const input = {
+      bundle,
+      imageBlobs: [{ blobId: bundle.partAssets[0]!.blobId, blob: image }],
+      preview: { previewId: bundle.project.previewBlobId!, blob: preview },
+      conflictResolution: "abort" as const
+    };
+
+    expect(await repository.importProjectBundle(input)).toMatchObject({
+      status: "ok",
+      value: { project: { projectId: bundle.project.projectId }, replaced: false }
+    });
+    expect(await repository.readPartAsset(bundle.partAssets[0]!.assetId)).toMatchObject({
+      status: "ok"
+    });
+    expect(await repository.readBlob(bundle.partAssets[0]!.blobId)).toMatchObject({
+      status: "ok",
+      value: { size: image.size }
+    });
+    expect(await repository.readPreview(bundle.project.previewBlobId!)).toMatchObject({
+      status: "ok",
+      value: { size: preview.size }
+    });
+    expect(await repository.importProjectBundle(input)).toMatchObject({
+      status: "conflict",
+      entity: "project"
+    });
+    expect(
+      await repository.importProjectBundle({ ...input, conflictResolution: "replace" })
+    ).toMatchObject({ status: "ok", value: { replaced: true } });
+    await repository.close();
+  });
+
   it("creates the additive version-1 stores, key paths and indexes", async () => {
     const factory = createFactory();
     const repository = new IndexedDbAnimationRepository(factory);

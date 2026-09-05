@@ -342,6 +342,7 @@ export function AnimationProjectsView() {
     activeProjectId,
     deleteProject,
     duplicateProject,
+    importProjectBundleArchive,
     openProject,
     projectListError,
     projectListStatus,
@@ -358,8 +359,11 @@ export function AnimationProjectsView() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [restoreDialogFocus, setRestoreDialogFocus] = useState(false);
   const [focusResults, setFocusResults] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [pendingReplacement, setPendingReplacement] = useState<File | null>(null);
   const dialogTriggerRef = useRef<HTMLButtonElement | null>(null);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const visibleProjects = useMemo(
     () => filterAndSortAnimationProjects(projectSummaries, query, sort),
@@ -431,6 +435,36 @@ export function AnimationProjectsView() {
     setFocusResults(true);
   };
 
+  const importBundle = async (file: File, replace: boolean) => {
+    setNotice(null);
+    setMutationError(null);
+    setIsImporting(true);
+    const result = await importProjectBundleArchive(
+      file,
+      replace ? "replace" : "abort"
+    );
+    setIsImporting(false);
+    if (result.status === "conflict" && !replace) {
+      setPendingReplacement(file);
+      setMutationError(
+        "Mindestens eine Bundle-ID ist bereits vorhanden. Ersetzen muss ausdrücklich bestätigt werden."
+      );
+      return;
+    }
+    if (result.status !== "ok") {
+      setPendingReplacement(null);
+      setMutationError(result.message);
+      return;
+    }
+    setPendingReplacement(null);
+    setNotice(`„${result.value.name}“ wurde vollständig importiert.`);
+    navigateTo({
+      studio: "animation",
+      view: "workspace",
+      projectId: result.value.projectId
+    });
+  };
+
   const listUnavailable =
     projectListStatus === "invalid" ||
     projectListStatus === "unavailable" ||
@@ -447,13 +481,35 @@ export function AnimationProjectsView() {
             ihren stabil adressierten Workspace.
           </p>
         </div>
-        <button
-          className={styles.primaryButton}
-          type="button"
-          onClick={(event) => requestDialog({ type: "create" }, event.currentTarget)}
-        >
-          <span aria-hidden="true">+</span> Neues Projekt
-        </button>
+        <div className={styles.heroActions}>
+          <button
+            className={styles.primaryButton}
+            type="button"
+            onClick={(event) => requestDialog({ type: "create" }, event.currentTarget)}
+          >
+            <span aria-hidden="true">+</span> Neues Projekt
+          </button>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            disabled={isImporting || listUnavailable}
+            onClick={() => importInputRef.current?.click()}
+          >
+            {isImporting ? "Bundle wird geprüft …" : ".pfanim importieren"}
+          </button>
+          <input
+            ref={importInputRef}
+            className={styles.fileInput}
+            type="file"
+            accept=".pfanim,application/zip,application/vnd.pixelforge.animation+zip"
+            aria-label="PixelForge-Animationsbundle auswählen"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) void importBundle(file, false);
+            }}
+          />
+        </div>
       </header>
 
       <Surface as="section" tone="raised" className={styles.filterPanel} aria-labelledby="animation-project-filter-title">
@@ -486,6 +542,36 @@ export function AnimationProjectsView() {
       {notice ? <p className={styles.successNotice} role="status">{notice}</p> : null}
       {mutationError && dialog?.type !== "delete" ? (
         <p className={styles.errorNotice} role="alert">{mutationError}</p>
+      ) : null}
+      {pendingReplacement ? (
+        <Surface className={styles.importConflict} tone="soft" role="alert">
+          <strong>Vorhandene IDs bewusst ersetzen?</strong>
+          <p>
+            Erst die vollständige Bundleprüfung war erfolgreich. Mit Ersetzen werden
+            Projekt, referenzierte Parts und ihre Originalbilder in einer Transaktion
+            geschrieben.
+          </p>
+          <div className={styles.cardActions}>
+            <button
+              className={styles.dangerButton}
+              type="button"
+              disabled={isImporting}
+              onClick={() => void importBundle(pendingReplacement, true)}
+            >
+              Vorhandenes Projekt ersetzen
+            </button>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={() => {
+                setPendingReplacement(null);
+                setMutationError(null);
+              }}
+            >
+              Import abbrechen
+            </button>
+          </div>
+        </Surface>
       ) : null}
 
       <section className={styles.results} aria-labelledby="animation-project-results-title">

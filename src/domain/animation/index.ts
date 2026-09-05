@@ -54,6 +54,17 @@ export {
   type RgbaImage
 } from "./rgba";
 export {
+  DEFAULT_SPRITE_SHEET_FRAME_COUNT,
+  composeSpriteSheet,
+  createAnimationFrameFileName,
+  normalizeAnimationExportBaseName,
+  resolveSpriteSheetLayout,
+  type ResolveSpriteSheetLayoutInput,
+  type SpriteSheetLayout,
+  type SpriteSheetLayoutCell,
+  type SpriteSheetSourceFrame
+} from "./spriteSheet";
+export {
   ANIMATION_ACTION_IDS,
   MIRROR_POLICIES,
   RIG_TEMPLATE_IDS,

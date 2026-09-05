@@ -13,6 +13,15 @@ export {
   type AnimationProjectBundleManifest
 } from "./animationBundle.schema";
 export {
+  SpriteSheetAnimationSchema,
+  SpriteSheetFrameRegionSchema,
+  SpriteSheetMetadataSchema,
+  parseSpriteSheetMetadata,
+  type SpriteSheetAnimation,
+  type SpriteSheetFrameRegion,
+  type SpriteSheetMetadata
+} from "./spriteSheetMetadata.schema";
+export {
   CharacterKitCoverageSchema,
   CharacterKitSchema,
   EMPTY_CHARACTER_KIT_COVERAGE,
