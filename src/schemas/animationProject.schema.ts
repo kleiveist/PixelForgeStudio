@@ -9,6 +9,7 @@ import {
   AnimationDirectionSchema,
   AnimationDirectionSourceModeSchema,
   AnimationFrameProfileSchema,
+  AnimationFrameTransformDeltaSchema,
   AnimationJointIdSchema,
   AnimationMirrorPolicySchema,
   AnimationNameSchema,
@@ -17,7 +18,6 @@ import {
   AnimationProjectPartLayerOffsetSchema,
   AnimationRigTemplateIdSchema,
   AnimationSchemaVersionSchema,
-  AnimationTransformDeltaSchema,
   MAX_ANIMATION_CLIPS_PER_PROJECT,
   MAX_ANIMATION_FPS,
   MAX_ANIMATION_FRAMES_PER_CLIP,
@@ -56,10 +56,10 @@ export const AnimationClipSchema = z
   .readonly();
 
 const JointDeltaRecordSchema = z
-  .partialRecord(AnimationJointIdSchema, AnimationTransformDeltaSchema)
+  .partialRecord(AnimationJointIdSchema, AnimationFrameTransformDeltaSchema)
   .readonly();
 const PartDeltaRecordSchema = z
-  .partialRecord(AnimationPartSlotSchema, AnimationTransformDeltaSchema)
+  .partialRecord(AnimationPartSlotSchema, AnimationFrameTransformDeltaSchema)
   .readonly();
 
 const LayerOrderOverrideSchema = z
@@ -79,12 +79,47 @@ export const DirectionFrameOverrideSchema = z
       .int()
       .min(0)
       .max(MAX_ANIMATION_FRAMES_PER_CLIP - 1),
-    rootDelta: AnimationTransformDeltaSchema.optional(),
+    rootDelta: AnimationFrameTransformDeltaSchema.optional(),
     jointDeltas: JointDeltaRecordSchema.optional(),
     partDeltas: PartDeltaRecordSchema.optional(),
     layerOrderOverride: LayerOrderOverrideSchema.optional()
   })
   .superRefine((override, context) => {
+    const isNeutral = (delta: {
+      offsetX: number;
+      offsetY: number;
+      rotationDelta: number;
+      scaleMultiplier: number;
+    }) =>
+      delta.offsetX === 0 &&
+      delta.offsetY === 0 &&
+      delta.rotationDelta === 0 &&
+      delta.scaleMultiplier === 1;
+    if (override.rootDelta && isNeutral(override.rootDelta)) {
+      context.addIssue({
+        code: "custom",
+        path: ["rootDelta"],
+        message: "Neutral root deltas must be removed instead of persisted."
+      });
+    }
+    for (const [jointId, delta] of Object.entries(override.jointDeltas ?? {})) {
+      if (delta && isNeutral(delta)) {
+        context.addIssue({
+          code: "custom",
+          path: ["jointDeltas", jointId],
+          message: "Neutral joint deltas must be removed instead of persisted."
+        });
+      }
+    }
+    for (const [slot, delta] of Object.entries(override.partDeltas ?? {})) {
+      if (delta && isNeutral(delta)) {
+        context.addIssue({
+          code: "custom",
+          path: ["partDeltas", slot],
+          message: "Neutral part deltas must be removed instead of persisted."
+        });
+      }
+    }
     const hasJointDelta =
       override.jointDeltas !== undefined &&
       Object.keys(override.jointDeltas).length > 0;

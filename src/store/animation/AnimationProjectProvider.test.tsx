@@ -485,6 +485,62 @@ describe("AnimationProjectProvider", () => {
       value: originalBlob
     });
     expect(await repository.readPartAsset(existing.assetId)).toMatchObject({ status: "ok" });
+
+    act(() => {
+      expect(context.undoActiveProject()).toBe(true);
+    });
+    expect(context.activeProject?.parts).toEqual([{ assetId: existing.assetId }]);
+    expect(context.projectDirty).toBe(true);
+    expect(context.canRedoProject).toBe(true);
+    // Undo changes project metadata only; safe reference GC owns binary deletion.
+    expect(await repository.readBlob("blob_head_south_import_001")).toEqual({
+      status: "ok",
+      value: originalBlob
+    });
+  });
+
+  it("stores frame overrides in bounded project history and autosaves only present", async () => {
+    const repository = new MemoryAnimationRepository();
+    const project = await seedProject(repository, { overrides: [] });
+    renderProvider(repository);
+    await expectListReady();
+    await act(async () => {
+      await context.openProject(project.projectId);
+    });
+    vi.useFakeTimers();
+
+    act(() => {
+      expect(
+        context.setActiveFrameOverride({
+          clipId: project.clips[0]!.clipId,
+          direction: "south",
+          frameIndex: 0,
+          rootDelta: {
+            offsetX: 2,
+            offsetY: 0,
+            rotationDelta: 0,
+            scaleMultiplier: 1
+          }
+        })
+      ).toMatchObject({ status: "ok" });
+    });
+    expect(context.activeProject?.overrides).toHaveLength(1);
+    expect(context.canUndoProject).toBe(true);
+    act(() => {
+      context.undoActiveProject();
+      context.redoActiveProject();
+    });
+    expect(context.activeProject?.overrides).toHaveLength(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(await repository.readProject(project.projectId)).toMatchObject({
+      status: "ok",
+      value: { overrides: [expect.objectContaining({ frameIndex: 0 })] }
+    });
   });
 
   it("does not mutate provider state when the import transaction fails", async () => {

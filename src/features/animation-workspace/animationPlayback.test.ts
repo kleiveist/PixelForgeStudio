@@ -165,4 +165,25 @@ describe("RevisionBoundRenderedFrameCache", () => {
     expect(cache.get(key({ frameIndex: 1 }))).toBeNull();
     expect(cache.get(key({ frameIndex: 0 }))).not.toBeNull();
   });
+
+  it("rebases unaffected frames and invalidates only the corrected address", () => {
+    const cache = new RevisionBoundRenderedFrameCache(8);
+    const unchanged = frame(0);
+    cache.set(key({ projectRevision: 3, frameIndex: 0 }), unchanged);
+    cache.set(key({ projectRevision: 3, frameIndex: 1 }), frame(1));
+    cache.set(key({ projectRevision: 3, direction: "east", frameIndex: 1 }), frame(2));
+
+    expect(
+      cache.rebaseProjectRevision(
+        StableIdSchema.parse("project_walk_001"),
+        3,
+        4,
+        [{ clipId: StableIdSchema.parse("clip_walk_001"), direction: "south", frameIndex: 1 }]
+      )
+    ).toEqual({ carried: 2, invalidated: 1 });
+    expect(cache.get(key({ projectRevision: 4, frameIndex: 0 }))).toBe(unchanged);
+    expect(cache.get(key({ projectRevision: 4, frameIndex: 1 }))).toBeNull();
+    expect(cache.get(key({ projectRevision: 4, direction: "east", frameIndex: 1 }))).not.toBeNull();
+    expect(cache.get(key({ projectRevision: 3, frameIndex: 0 }))).toBeNull();
+  });
 });

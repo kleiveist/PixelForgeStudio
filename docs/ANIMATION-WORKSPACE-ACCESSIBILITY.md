@@ -32,6 +32,19 @@ Timeline-Thumbnails benannt sind und nicht als neue Bedienziele erscheinen.
 Farbe ist nicht die einzige Information: Der Modus steht stets als Text im
 Select.
 
+## Framekorrekturen und History
+
+Root, Joint, Part und Ansicht sind benannte Radiobuttons. Jeder Zielwert ist
+über ein beschriftetes Zahlenfeld mit eigenem Reset erreichbar; Positionen
+werden auf ganze Projektpixel gerundet. Pointerziehen ist deshalb keine
+Voraussetzung. Layerbewegung, Frame-Reset und Richtungsreset sind als benannte
+Button-Gruppen verfügbar, und extreme Korrekturen erscheinen als Textwarnung.
+
+Rückgängig und Wiederholen zeigen ihren Verfügbarkeitszustand in der Toolbar.
+`Strg/Cmd+Z` und `Strg/Cmd+Umschalt+Z` werden ausschließlich von Ereignissen
+innerhalb des Workspace abgefangen; außerhalb bleibt das Browserverhalten
+unverändert.
+
 ## Prüfabdeckung
 
 RTL-Tests decken zugängliche Namen, Status, Sperrzustand, Klick/Pointer,

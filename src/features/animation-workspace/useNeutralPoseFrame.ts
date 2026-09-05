@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { jsonValuesEqual } from "../../domain/json";
 import {
   DIRECTION_IDS,
   HUMANOID_WALK_CLIP_ID,
@@ -221,6 +222,10 @@ export function useNeutralPoseFrame(
     null
   );
   const cachedWalkMetadataRef = useRef<CachedWalkMetadata | null>(null);
+  const previousProjectRef = useRef<Readonly<{
+    project: AnimationProject;
+    revision: number;
+  }> | null>(null);
   if (!cacheRef.current) {
     cacheRef.current = new RevisionBoundDecodedSourceCache();
   }
@@ -239,14 +244,83 @@ export function useNeutralPoseFrame(
   );
 
   useEffect(() => {
-    renderedFrameCacheRef.current?.pruneProjectRevisions(
-      project.projectId,
-      projectRevision
-    );
+    const previous = previousProjectRef.current;
+    const cache = renderedFrameCacheRef.current;
+    let metadataRebased = false;
+    if (
+      cache &&
+      previous &&
+      previous.project.projectId === project.projectId &&
+      previous.revision !== projectRevision
+    ) {
+      const previousWithoutOverrides = {
+        ...previous.project,
+        updatedAt: "",
+        overrides: []
+      };
+      const currentWithoutOverrides = {
+        ...project,
+        updatedAt: "",
+        overrides: []
+      };
+      if (jsonValuesEqual(previousWithoutOverrides, currentWithoutOverrides)) {
+        const addresses = new Map<string, Readonly<{
+          clipId: StableId;
+          direction: Direction;
+          frameIndex: number;
+        }>>();
+        for (const override of [...previous.project.overrides, ...project.overrides]) {
+          const key = `${override.clipId}:${override.direction}:${override.frameIndex}`;
+          const before = previous.project.overrides.find(
+            (candidate) =>
+              candidate.clipId === override.clipId &&
+              candidate.direction === override.direction &&
+              candidate.frameIndex === override.frameIndex
+          );
+          const after = project.overrides.find(
+            (candidate) =>
+              candidate.clipId === override.clipId &&
+              candidate.direction === override.direction &&
+              candidate.frameIndex === override.frameIndex
+          );
+          if (!jsonValuesEqual(before ?? null, after ?? null)) {
+            addresses.set(key, {
+              clipId: override.clipId,
+              direction: override.direction,
+              frameIndex: override.frameIndex
+            });
+          }
+        }
+        cache.rebaseProjectRevision(
+          project.projectId,
+          previous.revision,
+          projectRevision,
+          [...addresses.values()]
+        );
+        const metadata = cachedWalkMetadataRef.current;
+        if (
+          metadata &&
+          metadata.projectId === project.projectId &&
+          metadata.projectRevision === previous.revision
+        ) {
+          cachedWalkMetadataRef.current = Object.freeze({
+            ...metadata,
+            projectRevision
+          });
+          metadataRebased = true;
+        }
+      } else {
+        cache.pruneProjectRevisions(project.projectId, projectRevision);
+      }
+    } else {
+      cache?.pruneProjectRevisions(project.projectId, projectRevision);
+    }
+    previousProjectRef.current = Object.freeze({ project, revision: projectRevision });
     if (
       cachedWalkMetadataRef.current &&
       (cachedWalkMetadataRef.current.projectId !== project.projectId ||
-        cachedWalkMetadataRef.current.projectRevision !== projectRevision)
+        (cachedWalkMetadataRef.current.projectRevision !== projectRevision &&
+          !metadataRebased))
     ) {
       cachedWalkMetadataRef.current = null;
     }

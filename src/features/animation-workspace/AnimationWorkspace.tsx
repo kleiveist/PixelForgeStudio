@@ -6,27 +6,39 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent
 } from "react";
 import { Badge, Surface } from "../../components/ui";
 import {
   HUMANOID_WALK_CLIP_ID,
   HUMANOID_WALK_FRAME_COUNT,
   HUMANOID_WALK_PHASES,
+  IDENTITY_FRAME_DELTA,
+  JOINT_IDS,
   MAX_PROJECT_LAYER_OFFSET,
   MIN_PROJECT_LAYER_OFFSET,
+  PART_SLOT_IDS,
+  applyFrameLayerOrder,
+  collectFrameOverrideWarnings,
+  findFrameOverride,
   getBuiltInRigTemplate,
   getDefaultLayerGroup,
   getDirectionDrawOrder,
   isDirection,
   resolveDirectionDrawOrder,
   resolveRuntimeDirectionRig,
+  normalizeFrameOverride,
   type FrameEdge,
+  type FrameOverride,
+  type FrameOverrideAddress,
+  type JointId,
   type LayerGroup,
   type MirrorPolicy,
   type PartSlot,
   type RenderDiagnostic,
-  type RenderedFrame
+  type RenderedFrame,
+  type TransformDelta
 } from "../../domain/animation";
 import {
   PartImportPanel,
@@ -103,6 +115,7 @@ export type PartLayerOffsetCommitResult =
   | Readonly<{ status: "error"; message: string }>;
 
 export type MirrorPolicyCommitResult = PartLayerOffsetCommitResult;
+export type FrameOverrideCommitResult = PartLayerOffsetCommitResult;
 
 export interface AnimationWorkspaceProps {
   readonly project: AnimationProject;
@@ -113,6 +126,10 @@ export interface AnimationWorkspaceProps {
   readonly projectRevision?: number;
   readonly playbackScheduler?: AnimationFrameScheduler;
   readonly onSave: () => void;
+  readonly canUndo?: boolean;
+  readonly canRedo?: boolean;
+  readonly onUndo?: () => void;
+  readonly onRedo?: () => void;
   readonly partAssets?: readonly AnimationPartAsset[];
   readonly missingPartAssetIds?: readonly StableId[];
   readonly partAssetLoadError?: string | null;
@@ -141,6 +158,14 @@ export interface AnimationWorkspaceProps {
     sourceUpdatedAt: string,
     targetDirection: AnimationWorkspaceState["direction"]
   ) => Promise<MirrorPolicyCommitResult>;
+  readonly onCommitFrameOverride?: (
+    address: FrameOverrideAddress,
+    override: FrameOverride | null
+  ) => Promise<FrameOverrideCommitResult>;
+  readonly onResetDirectionOverrides?: (
+    clipId: StableId,
+    direction: AnimationWorkspaceState["direction"]
+  ) => Promise<FrameOverrideCommitResult>;
 }
 
 const DISCONNECTED_PART_IMPORT: NonNullable<
@@ -176,6 +201,11 @@ const DISCONNECTED_LAYER_CONFIGURATION: NonNullable<
 const DISCONNECTED_MIRROR_CONFIGURATION = async (): Promise<MirrorPolicyCommitResult> => ({
   status: "error",
   message: "Die Spiegelentscheidung ist in dieser Ansicht nicht verbunden."
+});
+
+const DISCONNECTED_FRAME_OVERRIDE = async (): Promise<FrameOverrideCommitResult> => ({
+  status: "error",
+  message: "Die Framekorrekturen sind in dieser Ansicht nicht verbunden."
 });
 
 type ReadyWalkCycle = Extract<
@@ -298,6 +328,10 @@ interface ToolbarProps {
   readonly sourceError: string | null;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly onSave: () => void;
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  readonly onUndo: () => void;
+  readonly onRedo: () => void;
   readonly playback: AnimationPlaybackController;
   readonly playbackEnabled: boolean;
   readonly playbackMessage: string;
@@ -312,6 +346,10 @@ function WorkspaceToolbar({
   sourceError,
   dispatch,
   onSave,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   playback,
   playbackEnabled,
   playbackMessage
@@ -404,6 +442,28 @@ function WorkspaceToolbar({
         >
           Jetzt speichern
         </button>
+        <div className={styles.playbackButtons} role="group" aria-label="Projekt-History">
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            disabled={!canUndo}
+            aria-label="Letzte Projektänderung rückgängig machen"
+            aria-keyshortcuts="Control+Z Meta+Z"
+            onClick={onUndo}
+          >
+            Rückgängig
+          </button>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            disabled={!canRedo}
+            aria-label="Projektänderung wiederholen"
+            aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z"
+            onClick={onRedo}
+          >
+            Wiederholen
+          </button>
+        </div>
       </div>
 
       <div className={styles.futureActions}>
@@ -859,6 +919,9 @@ interface RigViewportProps {
   readonly onConfigurePart: (
     definition: AnchorEditorCommitDefinition
   ) => Promise<AnchorEditorCommitResult>;
+  readonly onCommitFrameOverride: NonNullable<
+    AnimationWorkspaceProps["onCommitFrameOverride"]
+  >;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
 }
@@ -874,10 +937,16 @@ function RigViewport({
   walkFrames,
   onLoadPartBlob,
   onConfigurePart,
+  onCommitFrameOverride,
   dispatch,
   layout
 }: RigViewportProps) {
   const [showAllDirections, setShowAllDirections] = useState(false);
+  const frameDragRef = useRef<Readonly<{
+    x: number;
+    y: number;
+    pointerId: number;
+  }> | null>(null);
   const rigTemplate = getBuiltInRigTemplate(project.rigTemplateId);
   const hasDirectionRig = rigTemplate
     ? resolveRuntimeDirectionRig(rigTemplate, state.direction) !== null
@@ -933,6 +1002,56 @@ function RigViewport({
       event.preventDefault();
       dispatch({ type: "panReset" });
     }
+  };
+
+  const frameTransformTarget = (): FrameTransformTarget | null => {
+    if (state.frameTransformMode === "root") return { kind: "root" };
+    if (state.frameTransformMode === "joint") {
+      return { kind: "joint", joint: state.selectedJoint };
+    }
+    if (state.frameTransformMode === "part" && state.selectedSlot) {
+      return { kind: "part", slot: state.selectedSlot };
+    }
+    return null;
+  };
+
+  const beginFrameDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!activeClip || !frameTransformTarget()) return;
+    frameDragRef.current = Object.freeze({
+      x: event.clientX,
+      y: event.clientY,
+      pointerId: event.pointerId
+    });
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const finishFrameDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = frameDragRef.current;
+    const target = frameTransformTarget();
+    frameDragRef.current = null;
+    if (!start || !activeClip || !target || start.pointerId !== event.pointerId) return;
+    const address = frameOverrideAddress(activeClip, state);
+    const current = findFrameOverride(project.overrides, address);
+    const delta = getTargetDelta(current, target);
+    const horizontal = (event.clientX - start.x) / state.zoom;
+    const vertical = (event.clientY - start.y) / state.zoom;
+    const nextDelta = event.shiftKey
+      ? Object.freeze({
+          ...delta,
+          rotationDelta: Math.max(
+            -Math.PI,
+            Math.min(Math.PI, delta.rotationDelta + horizontal * Math.PI / 180)
+          )
+        })
+      : Object.freeze({
+          ...delta,
+          offsetX: Math.max(-64, Math.min(64, delta.offsetX + Math.round(horizontal))),
+          offsetY: Math.max(-64, Math.min(64, delta.offsetY + Math.round(vertical)))
+        });
+    void onCommitFrameOverride(
+      address,
+      updateFrameTransformDelta(project, address, target, nextDelta)
+    );
   };
 
   return (
@@ -1041,6 +1160,9 @@ function RigViewport({
         aria-describedby="animation-viewport-keyboard-help animation-viewport-status"
         tabIndex={0}
         onKeyDown={handleViewportKeyDown}
+        onPointerDown={beginFrameDrag}
+        onPointerUp={finishFrameDrag}
+        data-transform-mode={state.frameTransformMode}
       >
         <div
           className={styles.pixelFrame}
@@ -1238,10 +1360,12 @@ function RigViewport({
       </div>
 
       <p id="animation-viewport-keyboard-help" className={styles.keyboardHelp}>
-        Tastatur: Pfeile verschieben um 8 px, Umschalt + Pfeil um 32 px, +/− zoomt, Pos1 zentriert.
+        Tastatur: Pfeile verschieben die Ansicht, +/− zoomt, Pos1 zentriert.
+        Im Root-, Joint- oder Partmodus verschiebt Ziehen in ganzen Projektpixeln;
+        Umschalt + Ziehen dreht. Alle Werte sind zusätzlich im Frameinspektor editierbar.
       </p>
       <p id="animation-viewport-status" className={styles.viewportStatus} role="status" aria-live="polite">
-        {project.frameProfile.frameSize.width} × {project.frameProfile.frameSize.height} Projektpixel · Zoom {state.zoom}× · Versatz X {state.pan.x}, Y {state.pan.y} · {DIRECTION_LABELS[state.direction]} · Frame {activeClip ? state.frameIndex + 1 : "–"}
+        {project.frameProfile.frameSize.width} × {project.frameProfile.frameSize.height} Projektpixel · Zoom {state.zoom}× · Versatz X {state.pan.x}, Y {state.pan.y} · {DIRECTION_LABELS[state.direction]} · Frame {activeClip ? state.frameIndex + 1 : "–"} · Modus {state.frameTransformMode}
       </p>
       <ul className={styles.domAlternative} aria-label="Aktueller Viewportzustand">
         {WORKSPACE_OVERLAY_IDS.map((overlay) => (
@@ -1274,6 +1398,344 @@ function RigViewport({
   );
 }
 
+type FrameTransformTarget =
+  | Readonly<{ kind: "root" }>
+  | Readonly<{ kind: "joint"; joint: JointId }>
+  | Readonly<{ kind: "part"; slot: PartSlot }>;
+
+function frameOverrideAddress(
+  clip: AnimationClip,
+  state: AnimationWorkspaceState
+): FrameOverrideAddress {
+  return Object.freeze({
+    clipId: clip.clipId,
+    direction: state.direction,
+    frameIndex: state.frameIndex
+  });
+}
+
+export function updateFrameTransformDelta(
+  project: AnimationProject,
+  address: FrameOverrideAddress,
+  target: FrameTransformTarget,
+  delta: TransformDelta
+): FrameOverride | null {
+  const existing = findFrameOverride(project.overrides, address);
+  const base: FrameOverride = existing ?? address;
+  if (target.kind === "root") {
+    return normalizeFrameOverride({ ...base, rootDelta: delta });
+  }
+  if (target.kind === "joint") {
+    return normalizeFrameOverride({
+      ...base,
+      jointDeltas: { ...base.jointDeltas, [target.joint]: delta }
+    });
+  }
+  return normalizeFrameOverride({
+    ...base,
+    partDeltas: { ...base.partDeltas, [target.slot]: delta }
+  });
+}
+
+function getTargetDelta(
+  override: FrameOverride | null,
+  target: FrameTransformTarget
+): TransformDelta {
+  if (target.kind === "root") return override?.rootDelta ?? IDENTITY_FRAME_DELTA;
+  if (target.kind === "joint") {
+    return override?.jointDeltas?.[target.joint] ?? IDENTITY_FRAME_DELTA;
+  }
+  return override?.partDeltas?.[target.slot] ?? IDENTITY_FRAME_DELTA;
+}
+
+interface DeltaNumberFieldProps {
+  readonly id: string;
+  readonly label: string;
+  readonly value: number;
+  readonly min: number;
+  readonly max: number;
+  readonly step: number;
+  readonly display?: (value: number) => number;
+  readonly parse?: (value: number) => number;
+  readonly onCommit: (value: number) => void;
+  readonly onReset: () => void;
+}
+
+function DeltaNumberField({
+  id,
+  label,
+  value,
+  min,
+  max,
+  step,
+  display = (current) => current,
+  parse = (current) => current,
+  onCommit,
+  onReset
+}: DeltaNumberFieldProps) {
+  const shown = display(value);
+  const [draft, setDraft] = useState(String(Number(shown.toFixed(3))));
+  useEffect(() => setDraft(String(Number(shown.toFixed(3)))), [shown]);
+  const commit = () => {
+    const numeric = Number(draft);
+    if (!Number.isFinite(numeric) || numeric < min || numeric > max) {
+      setDraft(String(Number(shown.toFixed(3))));
+      return;
+    }
+    onCommit(parse(numeric));
+  };
+  return (
+    <div className={styles.layerOffsetControl}>
+      <label htmlFor={id}>{label}</label>
+      <div>
+        <input
+          id={id}
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={draft}
+          onChange={(event) => setDraft(event.currentTarget.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+          }}
+        />
+        <button type="button" onClick={onReset} aria-label={`${label} zurücksetzen`}>
+          Reset
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface FrameCorrectionEditorProps {
+  readonly project: AnimationProject;
+  readonly state: AnimationWorkspaceState;
+  readonly activeClip: AnimationClip;
+  readonly dispatch: (action: AnimationWorkspaceAction) => void;
+  readonly onCommit: NonNullable<AnimationWorkspaceProps["onCommitFrameOverride"]>;
+  readonly onResetDirection: NonNullable<
+    AnimationWorkspaceProps["onResetDirectionOverrides"]
+  >;
+}
+
+function FrameCorrectionEditor({
+  project,
+  state,
+  activeClip,
+  dispatch,
+  onCommit,
+  onResetDirection
+}: FrameCorrectionEditorProps) {
+  const address = frameOverrideAddress(activeClip, state);
+  const current = findFrameOverride(project.overrides, address);
+  const target: FrameTransformTarget =
+    state.frameTransformMode === "joint"
+      ? { kind: "joint", joint: state.selectedJoint }
+      : state.frameTransformMode === "part" && state.selectedSlot
+        ? { kind: "part", slot: state.selectedSlot }
+        : { kind: "root" };
+  const delta = getTargetDelta(current, target);
+  const warnings = collectFrameOverrideWarnings(current);
+  const [message, setMessage] = useState<Readonly<{
+    tone: "status" | "alert";
+    text: string;
+  }> | null>(null);
+
+  const commit = (next: FrameOverride | null, success: string) => {
+    setMessage(null);
+    void onCommit(address, next).then((result) => {
+      setMessage(
+        result.status === "ok"
+          ? { tone: "status", text: success }
+          : { tone: "alert", text: result.message }
+      );
+    });
+  };
+  const commitDelta = (nextDelta: TransformDelta) => {
+    commit(
+      updateFrameTransformDelta(project, address, target, nextDelta),
+      "Framekorrektur übernommen."
+    );
+  };
+  const updateDeltaValue = (key: keyof TransformDelta, value: number) => {
+    commitDelta(Object.freeze({ ...delta, [key]: value }));
+  };
+  const baseLayerOrder =
+    getDirectionDrawOrder(state.direction)?.entries.map(({ slot }) => slot) ?? [];
+  const layerOrder = applyFrameLayerOrder(
+    baseLayerOrder,
+    current?.layerOrderOverride
+  );
+  const selectedLayerIndex = state.selectedSlot
+    ? layerOrder.indexOf(state.selectedSlot)
+    : -1;
+  const moveLayer = (step: -1 | 1) => {
+    if (!current && !state.selectedSlot) return;
+    const nextIndex = selectedLayerIndex + step;
+    if (selectedLayerIndex < 0 || nextIndex < 0 || nextIndex >= layerOrder.length) return;
+    const reordered = [...layerOrder];
+    [reordered[selectedLayerIndex], reordered[nextIndex]] = [
+      reordered[nextIndex]!,
+      reordered[selectedLayerIndex]!
+    ];
+    commit(
+      normalizeFrameOverride({ ...(current ?? address), layerOrderOverride: reordered }),
+      "Layerreihenfolge übernommen."
+    );
+  };
+  const resetLayerOrder = () => {
+    if (!current?.layerOrderOverride) return;
+    const { layerOrderOverride: _removed, ...rest } = current;
+    commit(normalizeFrameOverride(rest), "Layerreihenfolge zurückgesetzt.");
+  };
+
+  return (
+    <>
+      <dl className={styles.factList}>
+        <div><dt>Generated Baseline</dt><dd>rekonstruierbar, unverändert</dd></div>
+        <div><dt>Aktive Korrektur</dt><dd>{current ? "Delta aktiv" : "keine"}</dd></div>
+        <div><dt>Frame</dt><dd>{state.frameIndex + 1} von {activeClip.frameCount}</dd></div>
+        <div><dt>Richtung</dt><dd>{DIRECTION_LABELS[state.direction]}</dd></div>
+        <div><dt>Adresse</dt><dd>{activeClip.clipId} · {state.direction} · {state.frameIndex + 1}</dd></div>
+      </dl>
+
+      <fieldset className={styles.overlayControls}>
+        <legend>Transformmodus</legend>
+        {(["pan", "root", "joint", "part"] as const).map((mode) => (
+          <label key={mode}>
+            <input
+              type="radio"
+              name="frame-transform-mode"
+              checked={state.frameTransformMode === mode}
+              onChange={() => {
+                if (mode === "part" && !state.selectedSlot) {
+                  dispatch({ type: "framePartSelected", slot: PART_SLOT_IDS[0] });
+                } else {
+                  dispatch({ type: "frameTransformModeSelected", mode });
+                }
+              }}
+            />
+            <span>{mode === "pan" ? "Ansicht" : mode === "root" ? "Root" : mode === "joint" ? "Joint" : "Part"}</span>
+          </label>
+        ))}
+      </fieldset>
+
+      {state.frameTransformMode === "joint" ? (
+        <label className={styles.layerOffsetControl} htmlFor="frame-joint-target">
+          Joint
+          <select
+            id="frame-joint-target"
+            value={state.selectedJoint}
+            onChange={(event) =>
+              dispatch({ type: "frameJointSelected", joint: event.currentTarget.value as JointId })
+            }
+          >
+            {JOINT_IDS.map((joint) => <option key={joint} value={joint}>{joint}</option>)}
+          </select>
+        </label>
+      ) : null}
+      {state.frameTransformMode === "part" ? (
+        <label className={styles.layerOffsetControl} htmlFor="frame-part-target">
+          Part-Slot
+          <select
+            id="frame-part-target"
+            value={state.selectedSlot ?? PART_SLOT_IDS[0]}
+            onChange={(event) =>
+              dispatch({ type: "framePartSelected", slot: event.currentTarget.value as PartSlot })
+            }
+          >
+            {PART_SLOT_IDS.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
+          </select>
+        </label>
+      ) : null}
+
+      {state.frameTransformMode !== "pan" ? (
+        <div aria-label="Numerische Framekorrektur">
+          <DeltaNumberField
+            id="frame-delta-x"
+            label="Offset X (px)"
+            value={delta.offsetX}
+            min={-64}
+            max={64}
+            step={1}
+            onCommit={(value) => updateDeltaValue("offsetX", Math.round(value))}
+            onReset={() => updateDeltaValue("offsetX", 0)}
+          />
+          <DeltaNumberField
+            id="frame-delta-y"
+            label="Offset Y (px)"
+            value={delta.offsetY}
+            min={-64}
+            max={64}
+            step={1}
+            onCommit={(value) => updateDeltaValue("offsetY", Math.round(value))}
+            onReset={() => updateDeltaValue("offsetY", 0)}
+          />
+          <DeltaNumberField
+            id="frame-delta-rotation"
+            label="Drehung (Grad)"
+            value={delta.rotationDelta}
+            min={-180}
+            max={180}
+            step={1}
+            display={(value) => value * 180 / Math.PI}
+            parse={(value) => value * Math.PI / 180}
+            onCommit={(value) => updateDeltaValue("rotationDelta", value)}
+            onReset={() => updateDeltaValue("rotationDelta", 0)}
+          />
+          <DeltaNumberField
+            id="frame-delta-scale"
+            label="Skalierung"
+            value={delta.scaleMultiplier}
+            min={0.25}
+            max={4}
+            step={0.05}
+            onCommit={(value) => updateDeltaValue("scaleMultiplier", value)}
+            onReset={() => updateDeltaValue("scaleMultiplier", 1)}
+          />
+        </div>
+      ) : (
+        <p className={styles.emptyDetail}>Ansichtsmodus aktiv; der Pointer verschiebt nur den Workspace.</p>
+      )}
+
+      <div className={styles.layerOffsetControl}>
+        <strong>Layer-Override</strong>
+        <span>{current?.layerOrderOverride ? "Frame-Reihenfolge aktiv" : "Basisreihenfolge"}</span>
+        <div role="group" aria-label="Part in der Frame-Layerreihenfolge bewegen">
+          <button type="button" disabled={selectedLayerIndex <= 0} onClick={() => moveLayer(-1)}>Nach hinten</button>
+          <button type="button" disabled={selectedLayerIndex < 0 || selectedLayerIndex >= layerOrder.length - 1} onClick={() => moveLayer(1)}>Nach vorne</button>
+          <button type="button" disabled={!current?.layerOrderOverride} onClick={resetLayerOrder}>Layer-Reset</button>
+        </div>
+      </div>
+
+      <div className={styles.playbackButtons} role="group" aria-label="Framekorrekturen zurücksetzen">
+        <button type="button" disabled={!current} onClick={() => commit(null, "Frame auf Generated Baseline zurückgesetzt.")}>Frame zurücksetzen</button>
+        <button
+          type="button"
+          disabled={!project.overrides.some((entry) => entry.clipId === activeClip.clipId && entry.direction === state.direction)}
+          onClick={() => {
+            void onResetDirection(activeClip.clipId, state.direction).then((result) => {
+              setMessage(result.status === "ok"
+                ? { tone: "status", text: "Alle Korrekturen dieser Richtung wurden entfernt." }
+                : { tone: "alert", text: result.message });
+            });
+          }}
+        >
+          Richtung zurücksetzen
+        </button>
+      </div>
+      {warnings.length > 0 ? (
+        <ul role="alert" aria-label="Warnungen für extreme Framekorrekturen">
+          {warnings.map((warning) => <li key={warning}>{warning}</li>)}
+        </ul>
+      ) : null}
+      {message ? <p role={message.tone}>{message.text}</p> : null}
+    </>
+  );
+}
+
 interface InspectorProps {
   readonly project: AnimationProject;
   readonly state: AnimationWorkspaceState;
@@ -1289,6 +1751,12 @@ interface InspectorProps {
   >;
   readonly onSetPartMirrorPolicy: NonNullable<
     AnimationWorkspaceProps["onSetPartMirrorPolicy"]
+  >;
+  readonly onCommitFrameOverride: NonNullable<
+    AnimationWorkspaceProps["onCommitFrameOverride"]
+  >;
+  readonly onResetDirectionOverrides: NonNullable<
+    AnimationWorkspaceProps["onResetDirectionOverrides"]
   >;
   readonly dispatch: (action: AnimationWorkspaceAction) => void;
   readonly layout: WorkspaceLayout;
@@ -1440,6 +1908,8 @@ function Inspector({
   onSetPartLayerOffset,
   onSetProjectMirrorPolicy,
   onSetPartMirrorPolicy,
+  onCommitFrameOverride,
+  onResetDirectionOverrides,
   dispatch,
   layout
 }: InspectorProps) {
@@ -1603,19 +2073,14 @@ function Inspector({
         <div className={styles.inspectorContent}>
           <h3>Frame</h3>
           {activeClip ? (
-            <>
-              <dl className={styles.factList}>
-                <div><dt>Clip</dt><dd>{clipLabel(activeClip)}</dd></div>
-                <div><dt>Frame</dt><dd>{state.frameIndex + 1} von {activeClip.frameCount}</dd></div>
-                <div><dt>Richtung</dt><dd>{DIRECTION_LABELS[state.direction]}</dd></div>
-                <div><dt>Root-Offset</dt><dd>Noch nicht bearbeitbar</dd></div>
-                <div><dt>Joint-/Partkorrekturen</dt><dd>Noch nicht bearbeitbar</dd></div>
-                <div><dt>Layer-Override</dt><dd>Noch nicht bearbeitbar</dd></div>
-              </dl>
-              <p className={styles.emptyDetail}>
-                Die Timeline wählt bereits den Ziel-Frame; Rigänderungen folgen in einer eigenen Phase.
-              </p>
-            </>
+            <FrameCorrectionEditor
+              project={project}
+              state={state}
+              activeClip={activeClip}
+              dispatch={dispatch}
+              onCommit={onCommitFrameOverride}
+              onResetDirection={onResetDirectionOverrides}
+            />
           ) : (
             <p className={styles.emptyDetail} role="status">
               Das Projekt enthält keinen Clip. Frameeigenschaften sind daher nicht verfügbar.
@@ -1844,6 +2309,10 @@ export function AnimationWorkspace({
   saveError,
   sourceError,
   onSave,
+  canUndo = false,
+  canRedo = false,
+  onUndo = () => undefined,
+  onRedo = () => undefined,
   partAssets = EMPTY_PART_ASSETS,
   missingPartAssetIds,
   partAssetLoadError = null,
@@ -1855,7 +2324,9 @@ export function AnimationWorkspace({
   onSetPartLayerOffset = DISCONNECTED_LAYER_CONFIGURATION,
   onSetProjectMirrorPolicy = DISCONNECTED_MIRROR_CONFIGURATION,
   onSetPartMirrorPolicy = DISCONNECTED_MIRROR_CONFIGURATION,
-  onConfirmMirrorReview = DISCONNECTED_MIRROR_CONFIGURATION
+  onConfirmMirrorReview = DISCONNECTED_MIRROR_CONFIGURATION,
+  onCommitFrameOverride = DISCONNECTED_FRAME_OVERRIDE,
+  onResetDirectionOverrides = DISCONNECTED_FRAME_OVERRIDE
 }: AnimationWorkspaceProps) {
   const [state, dispatch] = useReducer(
     animationWorkspaceReducer,
@@ -1892,7 +2363,7 @@ export function AnimationWorkspace({
   const selectPlaybackFrame = useCallback(
     (frameIndex: number) => {
       dispatch({
-        type: "frameSelected",
+        type: "playbackFrameSelected",
         frameIndex,
         frameCount: activeClip?.frameCount ?? 1
       });
@@ -1937,8 +2408,23 @@ export function AnimationWorkspace({
     dispatch({ type: "sidePanelSelected", panel });
   };
 
+  const handleWorkspaceHistoryKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== "z") {
+      return;
+    }
+    if (event.shiftKey ? !canRedo : !canUndo) return;
+    event.preventDefault();
+    if (event.shiftKey) onRedo();
+    else onUndo();
+  };
+
   return (
-    <div ref={rootRef} className={styles.workspace} data-workspace-layout={layout}>
+    <div
+      ref={rootRef}
+      className={styles.workspace}
+      data-workspace-layout={layout}
+      onKeyDown={handleWorkspaceHistoryKeyDown}
+    >
       <WorkspaceToolbar
         project={project}
         state={state}
@@ -1948,6 +2434,10 @@ export function AnimationWorkspace({
         sourceError={sourceError}
         dispatch={dispatch}
         onSave={onSave}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={onUndo}
+        onRedo={onRedo}
         playback={playback}
         playbackEnabled={playbackEnabled}
         playbackMessage={playbackMessage}
@@ -1988,6 +2478,7 @@ export function AnimationWorkspace({
             walkFrames={walkFrames}
             onLoadPartBlob={onLoadPartBlob}
             onConfigurePart={onConfigurePart}
+            onCommitFrameOverride={onCommitFrameOverride}
             dispatch={dispatch}
             layout={layout}
           />
@@ -2002,6 +2493,8 @@ export function AnimationWorkspace({
             onSetPartLayerOffset={onSetPartLayerOffset}
             onSetProjectMirrorPolicy={onSetProjectMirrorPolicy}
             onSetPartMirrorPolicy={onSetPartMirrorPolicy}
+            onCommitFrameOverride={onCommitFrameOverride}
+            onResetDirectionOverrides={onResetDirectionOverrides}
             dispatch={dispatch}
             layout={layout}
           />

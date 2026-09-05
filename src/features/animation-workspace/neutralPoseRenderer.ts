@@ -1,5 +1,6 @@
 import {
   applyTransformDelta,
+  applyFrameLayerOrder,
   composeTransforms,
   createRotationTransform,
   createTranslationTransform,
@@ -19,6 +20,7 @@ import {
   resolvePartAttachmentJoint,
   type Direction,
   type LayeredPart,
+  type PartSlot,
   type RenderablePart,
   type RgbaImage,
   type DirectionRig,
@@ -172,6 +174,24 @@ export interface PartRuntimeProjection {
   readonly mirrored: boolean;
 }
 
+export interface FrameRenderCorrection {
+  readonly partDeltas?: Readonly<Partial<Record<PartSlot, TransformDelta>>>;
+  readonly layerOrderOverride?: readonly PartSlot[] | null;
+}
+
+function combineTransformDeltas(
+  base: TransformDelta,
+  frame: TransformDelta | undefined
+): TransformDelta {
+  if (!frame) return base;
+  return Object.freeze({
+    offsetX: base.offsetX + frame.offsetX,
+    offsetY: base.offsetY + frame.offsetY,
+    rotationDelta: base.rotationDelta + frame.rotationDelta,
+    scaleMultiplier: base.scaleMultiplier * frame.scaleMultiplier
+  });
+}
+
 /** Prepares renderer-ready parts against an already resolved authored pose. */
 export function prepareDirectionRigParts(
   project: AnimationProject,
@@ -179,7 +199,8 @@ export function prepareDirectionRigParts(
   directionRig: DirectionRig,
   partAssets: readonly AnimationPartAsset[],
   decodedSources: readonly DecodedPartSource[],
-  projections?: ReadonlyMap<string, PartRuntimeProjection>
+  projections?: ReadonlyMap<string, PartRuntimeProjection>,
+  frameCorrection?: FrameRenderCorrection
 ): NeutralPosePreparationResult {
   const direction = directionRig.direction;
 
@@ -263,7 +284,11 @@ export function prepareDirectionRigParts(
       continue;
     }
     const baseDelta = assignment.transformDelta ?? IDENTITY_DELTA;
-    const delta = mirrored ? mirrorTransformDelta(baseDelta) : baseDelta;
+    const projectedDelta = mirrored ? mirrorTransformDelta(baseDelta) : baseDelta;
+    const delta = combineTransformDeltas(
+      projectedDelta,
+      frameCorrection?.partDeltas?.[asset.slot]
+    );
     let placementTransform: Transform2D;
     if (isRequiredPartSlot(asset.slot)) {
       const binding = findSlotBinding(template, asset.slot);
@@ -385,7 +410,23 @@ export function prepareDirectionRigParts(
       issues: Object.freeze(issues)
     });
   }
-  const parts = ordered.parts.flatMap((part) => {
+  const baseSlotOrder = ordered.definition.entries.map(({ slot }) => slot);
+  const frameSlotOrder = applyFrameLayerOrder(
+    baseSlotOrder,
+    frameCorrection?.layerOrderOverride
+  );
+  const frameSlotIndex = new Map(
+    frameSlotOrder.map((slot, index) => [slot, index] as const)
+  );
+  const frameOrderedParts = frameCorrection?.layerOrderOverride
+    ? [...ordered.parts].sort(
+        (left, right) =>
+          (frameSlotIndex.get(left.slot) ?? left.effectiveIndex) -
+            (frameSlotIndex.get(right.slot) ?? right.effectiveIndex) ||
+          left.id.localeCompare(right.id)
+      )
+    : ordered.parts;
+  const parts = frameOrderedParts.flatMap((part) => {
     const renderable = renderableById.get(part.id);
     return renderable ? [renderable] : [];
   });

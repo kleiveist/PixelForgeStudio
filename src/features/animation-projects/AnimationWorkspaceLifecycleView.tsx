@@ -21,7 +21,9 @@ export function AnimationWorkspaceLifecycleView({
     activeProject,
     activeProjectId,
     activeProjectRevision,
+    canRedoProject,
     canSaveProject,
+    canUndoProject,
     confirmDirectionMirrorReview,
     configurePartAsset,
     imageDecoder,
@@ -29,13 +31,18 @@ export function AnimationWorkspaceLifecycleView({
     loadPartImageBlob,
     loadPartAssets,
     openProject,
+    redoActiveProject,
+    removeActiveFrameOverride,
+    resetActiveDirectionOverrides,
     rawProjectError,
     saveActiveProject,
     saveError,
     saveStatus,
+    setActiveFrameOverride,
     updatePartLayerOffset,
     updatePartMirrorPolicy,
-    updateProjectMirrorPolicy
+    updateProjectMirrorPolicy,
+    undoActiveProject
   } = useAnimationProject();
   const { navigateTo } = useNavigation();
   const attemptedProjectRef = useRef<StableId | null>(null);
@@ -170,6 +177,26 @@ export function AnimationWorkspaceLifecycleView({
       : { status: "error" as const, message: result.message };
   };
 
+  const commitFrameOverride: NonNullable<
+    ComponentProps<typeof AnimationWorkspace>["onCommitFrameOverride"]
+  > = async (address, override) => {
+    const result = override
+      ? setActiveFrameOverride(override)
+      : removeActiveFrameOverride(address);
+    return result.status === "ok"
+      ? { status: "ok" as const }
+      : { status: "error" as const, message: result.message };
+  };
+
+  const resetDirectionFrameOverrides: NonNullable<
+    ComponentProps<typeof AnimationWorkspace>["onResetDirectionOverrides"]
+  > = async (clipId, direction) => {
+    const result = resetActiveDirectionOverrides(clipId, direction);
+    return result.status === "ok"
+      ? { status: "ok" as const }
+      : { status: "error" as const, message: result.message };
+  };
+
   if (!projectId) {
     return (
       <div className={styles.view}>
@@ -253,6 +280,10 @@ export function AnimationWorkspaceLifecycleView({
       saveError={commandError ?? saveError}
       sourceError={rawProjectError?.message ?? null}
       onSave={() => void explicitSave()}
+      canUndo={canUndoProject}
+      canRedo={canRedoProject}
+      onUndo={() => undoActiveProject()}
+      onRedo={() => redoActiveProject()}
       partAssets={partSources.assets}
       missingPartAssetIds={partSources.missingAssetIds}
       partAssetLoadError={partSources.error}
@@ -265,6 +296,8 @@ export function AnimationWorkspaceLifecycleView({
       onSetProjectMirrorPolicy={commitProjectMirrorPolicy}
       onSetPartMirrorPolicy={commitPartMirrorPolicy}
       onConfirmMirrorReview={commitMirrorReview}
+      onCommitFrameOverride={commitFrameOverride}
+      onResetDirectionOverrides={resetDirectionFrameOverrides}
     />
   );
 }

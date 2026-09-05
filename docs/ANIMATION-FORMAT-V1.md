@@ -36,6 +36,14 @@ Die erste rekonstruierbare Produktionsvorlage ist
 nur Template-ID, Tempo und Overrides; die daraus erzeugten acht RGBA-Frames
 sind flüchtige Ergebnisse und werden nicht zum Metadatenvertrag hinzugefügt.
 
+Framekorrekturen verwenden ganzzahlige Offsets von -64 bis +64 px, eine
+finite Rotation von -π bis +π und einen uniformen Scale-Multiplikator von
+0,25 bis 4. Root-, Joint- und Partrecords enthalten keine neutralen Deltas.
+Der optionale Layeroverride akzeptiert ausschließlich bekannte, eindeutige
+Slots. Persistiert wird stets nur der Unterschied zur Generated Baseline;
+Details zu Reset und History stehen unter
+[Framekorrekturen und History](ANIMATION-FRAME-CORRECTIONS.md).
+
 Ein unvollständiges Projekt bleibt ein gültiger Draft. Die separate Funktion
 `validateAnimationProjectProductionSources()` meldet fehlende Pflichtslots je
 benötigter Quellrichtung, fehlende PartAsset-Metadaten und fehlende
@@ -92,5 +100,4 @@ vorgesehenen Persistenz- und Exportprompts.
 - einzelne Quelldatei: höchstens 16 MiB (für die spätere Binärgrenze)
 - entpacktes Bundle: höchstens 256 MiB (für den späteren Archivimport)
 
-Persistenz, IndexedDB, Canvas, konkrete Posen und Rendering sind nicht Teil
-dieses Formatschemas.
+Canvas, konkrete Posen und Rendering bleiben außerhalb dieses Formatschemas.

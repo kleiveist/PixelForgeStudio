@@ -598,6 +598,13 @@
   overscroll-behavior: contain;
 }
 
+.viewportStage[data-transform-mode="root"],
+.viewportStage[data-transform-mode="joint"],
+.viewportStage[data-transform-mode="part"] {
+  cursor: crosshair;
+  touch-action: none;
+}
+
 .pixelFrame {
   position: relative;
   flex: 0 0 auto;
@@ -908,6 +915,7 @@
 }
 
 .layerOffsetControl input,
+.layerOffsetControl select,
 .layerOffsetControl button {
   min-width: 0;
 }

@@ -160,6 +160,53 @@ describe("eight-direction walk generation", () => {
     }
   });
 
+  it("renders baseline plus the addressed delta and leaves other export frames unchanged", () => {
+    const fixture = createSyntheticEightDirectionWalkFixture();
+    const baseline = generateDirectionalFrames(
+      fixture.project,
+      HUMANOID_80_RIG_TEMPLATE,
+      "south",
+      fixture.assets,
+      fixture.decoded
+    );
+    const correctedProject = parseAnimationProject({
+      ...fixture.project,
+      overrides: [
+        {
+          clipId: fixture.project.clips[0]!.clipId,
+          direction: "south",
+          frameIndex: 0,
+          partDeltas: {
+            head: {
+              offsetX: 2,
+              offsetY: 0,
+              rotationDelta: 0,
+              scaleMultiplier: 1
+            }
+          }
+        }
+      ]
+    });
+    const corrected = generateDirectionalFrames(
+      correctedProject,
+      HUMANOID_80_RIG_TEMPLATE,
+      "south",
+      fixture.assets,
+      fixture.decoded
+    );
+
+    expect(baseline.status).toBe("ok");
+    expect(corrected.status).toBe("ok");
+    if (baseline.status !== "ok" || corrected.status !== "ok") return;
+    expect(corrected.frames[0]!.frame.pixels).not.toEqual(
+      baseline.frames[0]!.frame.pixels
+    );
+    expect(corrected.frames[1]!.frame.pixels).toEqual(
+      baseline.frames[1]!.frame.pixels
+    );
+    expect(fixture.project.overrides).toEqual([]);
+  });
+
   it("accepts eight explicitly authored direction sources", () => {
     const fixture = createSyntheticEightDirectionWalkFixture();
     const sourceByTarget = {

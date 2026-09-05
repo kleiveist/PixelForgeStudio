@@ -1,6 +1,8 @@
 export {
   AnimationWorkspace,
+  updateFrameTransformDelta,
   type AnimationWorkspaceProps,
+  type FrameOverrideCommitResult,
   type WorkspaceSaveStatus
 } from "./AnimationWorkspace";
 export { RigOverlay, type RigOverlayProps } from "./RigOverlay";
@@ -9,6 +11,7 @@ export {
   prepareDirectionRigParts,
   prepareNeutralPoseParts,
   type DecodedPartSource,
+  type FrameRenderCorrection,
   type NeutralPosePreparationIssue,
   type NeutralPosePreparationIssueCode,
   type NeutralPosePreparationResult
@@ -72,6 +75,7 @@ export {
   getWorkspaceLayout,
   type AnimationWorkspaceAction,
   type AnimationWorkspaceState,
+  type FrameTransformMode,
   type WorkspaceInspectorContext,
   type WorkspaceLayout,
   type WorkspaceOverlay,

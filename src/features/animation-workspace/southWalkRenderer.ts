@@ -3,8 +3,10 @@ import {
   HUMANOID_WALK_FRAME_COUNT,
   REQUIRED_PART_SLOT_IDS,
   applyPoseToDirectionRig,
+  findFrameOverride,
   renderFrame,
   resolveHumanoidWalkPose,
+  resolveEffectiveFramePose,
   validatePose,
   type RequiredPartSlot,
   type RenderedFrame,
@@ -239,12 +241,23 @@ export function generateSouthWalkFrames(
       );
       continue;
     }
+    const override = findFrameOverride(project.overrides, {
+      clipId: clip!.clipId,
+      direction: "south",
+      frameIndex
+    });
+    const effective = resolveEffectiveFramePose(applied.rig, override);
     const prepared = prepareDirectionRigParts(
       project,
       template,
-      applied.rig,
+      effective.rig,
       partAssets,
-      decodedSources
+      decodedSources,
+      undefined,
+      {
+        partDeltas: effective.partDeltas,
+        layerOrderOverride: effective.layerOrderOverride
+      }
     );
     diagnostics.push(
       ...prepared.issues.map((issue) =>

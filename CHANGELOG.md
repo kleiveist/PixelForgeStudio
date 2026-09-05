@@ -169,6 +169,17 @@
 - den begrenzten Renderframe-Cache für den vollständigen Satz über Projekt-ID,
   Projektrevision, Clip, Richtung und Frame genutzt; Teilfehler liefern nie
   einen vollständigen Produktionsstatus
+- validierte sparse Framekorrekturen für Root, Joint, Part und eindeutige
+  Layerreihenfolgen unter Clip-/Richtungs-/Frameadresse ergänzt; neutrale
+  Deltas werden entfernt und extreme Werte sichtbar gewarnt
+- Pointer- und numerische Tastaturbearbeitung samt Einzelwert-, Frame-,
+  Layer- und Richtungsreset in den Frameinspektor integriert
+- Metadaten-Undo/Redo mit 100-Stände-Limit, sauberer Hydrationsbaseline,
+  Redo-Branching und Autosave des aktuellen Stands eingeführt; Partimport-Undo
+  lässt Binärdaten bis zur referenzsicheren Garbage Collection unangetastet
+- Render- und künftigen Exportpfad auf Generated Baseline plus aktive Deltas
+  vereinheitlicht und Overrideänderungen auf zielgenaue Framecache-
+  Invalidierung begrenzt
 
 ## 2.0.0 — 2026-09-03
 

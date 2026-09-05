@@ -5,9 +5,11 @@ import {
   REQUIRED_PART_SLOT_IDS,
   applyPoseToDirectionRig,
   findAlphaBounds,
+  findFrameOverride,
   renderFrame,
   resolveDirectionRig,
   resolveDirectionalWalkPose,
+  resolveEffectiveFramePose,
   resolveProjectDirectionCoverage,
   validatePose,
   type Direction,
@@ -333,6 +335,7 @@ export function generateDirectionalFrames(
     });
   }
   const rig = resolveDirectionRig(template, direction)!;
+  const targetClipId = activeClip(project, clipId)!.clipId;
   const projections = sourceProjections(preflight.cells);
   const frames: DirectionalRenderedFrame[] = [];
   const diagnostics: DirectionalWalkDiagnostic[] = [];
@@ -350,13 +353,23 @@ export function generateDirectionalFrames(
       );
       continue;
     }
+    const override = findFrameOverride(project.overrides, {
+      clipId: targetClipId,
+      direction,
+      frameIndex
+    });
+    const effective = resolveEffectiveFramePose(applied.rig, override);
     const prepared = prepareDirectionRigParts(
       project,
       template,
-      applied.rig,
+      effective.rig,
       partAssets,
       decodedSources,
-      projections
+      projections,
+      {
+        partDeltas: effective.partDeltas,
+        layerOrderOverride: effective.layerOrderOverride
+      }
     );
     diagnostics.push(
       ...prepared.issues.map((preparationIssue) =>

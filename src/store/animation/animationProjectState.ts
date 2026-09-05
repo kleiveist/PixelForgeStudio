@@ -1,4 +1,5 @@
 import type { AnimationProject, StableId } from "../../schemas";
+import { jsonValuesEqual } from "../../domain/json";
 import type {
   AnimationProjectSummary,
   AnimationRepositoryValidationIssue
@@ -47,7 +48,13 @@ export interface AnimationProjectState {
   readonly persistedProjectRevision: number;
   readonly savingRevision: number | null;
   readonly rawProjectError: AnimationProjectRawError | null;
+  /** Metadata-only snapshots; binary assets live exclusively in the repository. */
+  readonly historyPast: readonly AnimationProject[];
+  readonly historyFuture: readonly AnimationProject[];
+  readonly persistedProject: AnimationProject | null;
 }
+
+export const ANIMATION_PROJECT_HISTORY_LIMIT = 100;
 
 export type AnimationProjectAction =
   | Readonly<{ type: "projectListLoadStarted" }>
@@ -77,6 +84,13 @@ export type AnimationProjectAction =
       project: AnimationProject;
       summary: AnimationProjectSummary;
     }>
+  | Readonly<{
+      type: "activeProjectPersistedEdit";
+      project: AnimationProject;
+      summary: AnimationProjectSummary;
+    }>
+  | Readonly<{ type: "activeProjectUndo" }>
+  | Readonly<{ type: "activeProjectRedo" }>
   | Readonly<{
       type: "rawProjectRejected";
       error: AnimationProjectRawError;
@@ -118,7 +132,10 @@ export const INITIAL_ANIMATION_PROJECT_STATE: AnimationProjectState =
     activeProjectRevision: 0,
     persistedProjectRevision: 0,
     savingRevision: null,
-    rawProjectError: null
+    rawProjectError: null,
+    historyPast: Object.freeze([]),
+    historyFuture: Object.freeze([]),
+    persistedProject: null
   });
 
 function sortSummaries(
@@ -157,7 +174,10 @@ function clearActiveProject(
     activeProjectRevision: 0,
     persistedProjectRevision: 0,
     savingRevision: null,
-    rawProjectError: null
+    rawProjectError: null,
+    historyPast: Object.freeze([]),
+    historyFuture: Object.freeze([]),
+    persistedProject: null
   };
 }
 
@@ -167,7 +187,8 @@ export function selectAnimationProjectDirty(
   return (
     state.activeProject !== null &&
     (state.rawProjectError !== null ||
-      state.activeProjectRevision !== state.persistedProjectRevision)
+      state.persistedProject === null ||
+      !jsonValuesEqual(state.activeProject, state.persistedProject))
   );
 }
 
@@ -177,7 +198,7 @@ export function selectAnimationProjectCanSave(
   return (
     state.activeProject !== null &&
     state.rawProjectError === null &&
-    state.activeProjectRevision !== state.persistedProjectRevision &&
+    selectAnimationProjectDirty(state) &&
     state.saveStatus !== "saving"
   );
 }
@@ -226,7 +247,10 @@ export function animationProjectReducer(
         activeProjectRevision: 0,
         persistedProjectRevision: 0,
         savingRevision: null,
-        rawProjectError: null
+        rawProjectError: null,
+        historyPast: Object.freeze([]),
+        historyFuture: Object.freeze([]),
+        persistedProject: null
       };
     case "activeProjectLoaded":
       return {
@@ -243,7 +267,10 @@ export function animationProjectReducer(
         activeProjectRevision: 0,
         persistedProjectRevision: 0,
         savingRevision: null,
-        rawProjectError: null
+        rawProjectError: null,
+        historyPast: Object.freeze([]),
+        historyFuture: Object.freeze([]),
+        persistedProject: action.project
       };
     case "activeProjectLoadFailed":
       return {
@@ -257,7 +284,10 @@ export function animationProjectReducer(
         activeProjectRevision: 0,
         persistedProjectRevision: 0,
         savingRevision: null,
-        rawProjectError: null
+        rawProjectError: null,
+        historyPast: Object.freeze([]),
+        historyFuture: Object.freeze([]),
+        persistedProject: null
       };
     case "activeProjectEdited":
       if (state.activeProjectId !== action.project.projectId) return state;
@@ -266,12 +296,105 @@ export function animationProjectReducer(
         projectSummaries: upsertSummary(state.projectSummaries, action.summary),
         activeProject: action.project,
         activeLoadStatus: "ready",
-        saveStatus: "dirty",
+        saveStatus:
+          state.persistedProject &&
+          jsonValuesEqual(action.project, state.persistedProject)
+            ? "saved"
+            : "dirty",
         saveError: null,
         activeProjectRevision: state.activeProjectRevision + 1,
         savingRevision: null,
-        rawProjectError: null
+        rawProjectError: null,
+        historyPast: Object.freeze(
+          [
+            ...state.historyPast,
+            ...(state.activeProject ? [state.activeProject] : [])
+          ].slice(-ANIMATION_PROJECT_HISTORY_LIMIT)
+        ),
+        historyFuture: Object.freeze([])
       };
+    case "activeProjectPersistedEdit":
+      if (state.activeProjectId !== action.project.projectId) return state;
+      return {
+        ...state,
+        projectSummaries: upsertSummary(state.projectSummaries, action.summary),
+        activeProject: action.project,
+        activeLoadStatus: "ready",
+        saveStatus: "saved",
+        saveError: null,
+        activeProjectRevision: state.activeProjectRevision + 1,
+        persistedProjectRevision: state.activeProjectRevision + 1,
+        savingRevision: null,
+        rawProjectError: null,
+        historyPast: Object.freeze(
+          [
+            ...state.historyPast,
+            ...(state.activeProject ? [state.activeProject] : [])
+          ].slice(-ANIMATION_PROJECT_HISTORY_LIMIT)
+        ),
+        historyFuture: Object.freeze([]),
+        persistedProject: action.project
+      };
+    case "activeProjectUndo": {
+      const previous = state.historyPast.at(-1);
+      if (!state.activeProject || !previous) return state;
+      const dirty =
+        state.persistedProject === null ||
+        !jsonValuesEqual(previous, state.persistedProject);
+      return {
+        ...state,
+        projectSummaries: upsertSummary(state.projectSummaries, {
+          projectId: previous.projectId,
+          name: previous.name,
+          updatedAt: previous.updatedAt,
+          rigTemplateId: previous.rigTemplateId,
+          directionSourceMode: previous.directionSourceMode,
+          partCount: previous.parts.length,
+          clipCount: previous.clips.length,
+          hasPreview: previous.previewBlobId !== undefined
+        }),
+        activeProject: previous,
+        saveStatus: dirty ? "dirty" : "saved",
+        saveError: null,
+        activeProjectRevision: state.activeProjectRevision + 1,
+        savingRevision: null,
+        rawProjectError: null,
+        historyPast: Object.freeze(state.historyPast.slice(0, -1)),
+        historyFuture: Object.freeze([state.activeProject, ...state.historyFuture])
+      };
+    }
+    case "activeProjectRedo": {
+      const next = state.historyFuture[0];
+      if (!state.activeProject || !next) return state;
+      const dirty =
+        state.persistedProject === null ||
+        !jsonValuesEqual(next, state.persistedProject);
+      return {
+        ...state,
+        projectSummaries: upsertSummary(state.projectSummaries, {
+          projectId: next.projectId,
+          name: next.name,
+          updatedAt: next.updatedAt,
+          rigTemplateId: next.rigTemplateId,
+          directionSourceMode: next.directionSourceMode,
+          partCount: next.parts.length,
+          clipCount: next.clips.length,
+          hasPreview: next.previewBlobId !== undefined
+        }),
+        activeProject: next,
+        saveStatus: dirty ? "dirty" : "saved",
+        saveError: null,
+        activeProjectRevision: state.activeProjectRevision + 1,
+        savingRevision: null,
+        rawProjectError: null,
+        historyPast: Object.freeze(
+          [...state.historyPast, state.activeProject].slice(
+            -ANIMATION_PROJECT_HISTORY_LIMIT
+          )
+        ),
+        historyFuture: Object.freeze(state.historyFuture.slice(1))
+      };
+    }
     case "rawProjectRejected":
       if (!state.activeProject) return state;
       return {
@@ -285,7 +408,9 @@ export function animationProjectReducer(
       return {
         ...state,
         saveStatus:
-          state.activeProjectRevision === state.persistedProjectRevision
+          state.persistedProject !== null &&
+          state.activeProject !== null &&
+          jsonValuesEqual(state.activeProject, state.persistedProject)
             ? "saved"
             : "dirty",
         rawProjectError: null
@@ -325,8 +450,11 @@ export function animationProjectReducer(
           state.persistedProjectRevision,
           action.revision
         ),
+        persistedProject: action.project,
         saveStatus:
-          currentRevisionWasSaved && state.rawProjectError === null
+          state.activeProject !== null &&
+          jsonValuesEqual(state.activeProject, action.project) &&
+          state.rawProjectError === null
             ? "saved"
             : "dirty",
         saveError: null,

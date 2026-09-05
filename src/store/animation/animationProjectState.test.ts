@@ -3,6 +3,7 @@ import { parseAnimationProject } from "../../schemas";
 import { createAnimationProjectSummary } from "../../services";
 import { createAnimationProjectInput } from "../../test/animationSchemaFixtures";
 import {
+  ANIMATION_PROJECT_HISTORY_LIMIT,
   INITIAL_ANIMATION_PROJECT_STATE,
   animationProjectReducer,
   selectAnimationProjectCanSave,
@@ -63,6 +64,80 @@ describe("animationProjectReducer", () => {
     });
     expect(selectAnimationProjectDirty(loaded)).toBe(false);
     expect(selectAnimationProjectCanSave(loaded)).toBe(false);
+    expect(loaded.historyPast).toEqual([]);
+    expect(loaded.historyFuture).toEqual([]);
+  });
+
+  it("undoes and redoes metadata, then clears the future after a new edit", () => {
+    const loaded = animationProjectReducer(INITIAL_ANIMATION_PROJECT_STATE, {
+      type: "activeProjectLoaded",
+      project,
+      summary
+    });
+    const first = parseAnimationProject({
+      ...project,
+      name: "Erste Änderung",
+      updatedAt: "2026-09-04T13:00:00.000Z"
+    });
+    const second = parseAnimationProject({
+      ...project,
+      name: "Zweite Änderung",
+      updatedAt: "2026-09-04T14:00:00.000Z"
+    });
+    const edited = animationProjectReducer(
+      animationProjectReducer(loaded, {
+        type: "activeProjectEdited",
+        project: first,
+        summary: createAnimationProjectSummary(first)
+      }),
+      {
+        type: "activeProjectEdited",
+        project: second,
+        summary: createAnimationProjectSummary(second)
+      }
+    );
+    const undone = animationProjectReducer(edited, { type: "activeProjectUndo" });
+    expect(undone.activeProject?.name).toBe("Erste Änderung");
+    expect(undone.historyFuture).toEqual([second]);
+    const redone = animationProjectReducer(undone, { type: "activeProjectRedo" });
+    expect(redone.activeProject?.name).toBe("Zweite Änderung");
+
+    const branch = animationProjectReducer(undone, {
+      type: "activeProjectEdited",
+      project: parseAnimationProject({
+        ...first,
+        name: "Neuer Zweig",
+        updatedAt: "2026-09-04T15:00:00.000Z"
+      }),
+      summary: createAnimationProjectSummary(first)
+    });
+    expect(branch.historyFuture).toEqual([]);
+  });
+
+  it("limits history to metadata-only present snapshots", () => {
+    let state = animationProjectReducer(INITIAL_ANIMATION_PROJECT_STATE, {
+      type: "activeProjectLoaded",
+      project,
+      summary
+    });
+    for (let index = 0; index < ANIMATION_PROJECT_HISTORY_LIMIT + 5; index += 1) {
+      const edited = parseAnimationProject({
+        ...project,
+        name: `Stand ${index}`,
+        updatedAt: `2026-09-04T${String(index % 24).padStart(2, "0")}:00:00.000Z`
+      });
+      state = animationProjectReducer(state, {
+        type: "activeProjectEdited",
+        project: edited,
+        summary: createAnimationProjectSummary(edited)
+      });
+    }
+    expect(state.historyPast).toHaveLength(ANIMATION_PROJECT_HISTORY_LIMIT);
+    expect(
+      state.historyPast.some((entry) =>
+        Object.values(entry).some((value) => value instanceof Blob)
+      )
+    ).toBe(false);
   });
 
   it("increments valid edits and keeps invalid raw errors outside the last valid project", () => {

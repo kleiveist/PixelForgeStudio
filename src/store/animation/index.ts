@@ -1,4 +1,5 @@
 export {
+  ANIMATION_PROJECT_HISTORY_LIMIT,
   INITIAL_ANIMATION_PROJECT_STATE,
   animationProjectReducer,
   selectAnimationProjectCanSave,

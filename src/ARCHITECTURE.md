@@ -1182,8 +1182,9 @@ controlled preview resource lifecycles. Prompt 44 starts Phase E with
 direction coverage, controlled runtime mirroring and explicit asymmetric-part
 review. Prompt 45 projects the shared Walk contract over all target rigs and
 adds fail-closed 64-frame generation, per-direction playback and static
-all-direction review. Prompt 46 remains the next separate task and owns
-non-destructive frame corrections and history.
+all-direction review. Prompt 46 adds non-destructive frame corrections,
+metadata history and targeted cache invalidation. Prompt 47 remains the next
+separate task and owns Character Kits and reusable equipment.
 
 The draw-order domain in `domain/animation/layerOrder.ts` lists every required
 and optional slot for each target direction. It keeps anatomical side,
@@ -1267,3 +1268,26 @@ the effective review. The Workspace is the UI adapter: it presents all eight
 columns with symbol plus text, exposes policy controls and writes review
 metadata only from the explicit confirmation action. Coverage selects source
 pixels; the target-direction draw-order still decides visual near/far layers.
+
+`domain/animation/frameOverrides.ts` is the pure Prompt-46 correction
+boundary. It canonicalizes the address `clipId + direction + frameIndex`,
+removes neutral transforms, sorts overrides deterministically and resolves
+Root, Joint-subtree, Part and Layer deltas against an immutable generated rig.
+Hard limits belong to the Animation-V1 Zod schema; lower thresholds produce
+non-blocking UI warnings. `directionalWalkRenderer.ts` and the retained
+single-direction generator both apply the same effective pose before part
+placement, so preview and later export cannot diverge.
+
+`animationProjectState.ts` owns a metadata-only Present/Past/Future history
+with a hard depth of 100. Hydration establishes `persistedProject` without a
+history event. Normal edits push Present and clear Future; Undo/Redo create a
+new monotonic render revision, while autosave persists only Present. Atomic
+Part imports use a persisted-edit event: undo can remove the assignment, but
+the repository remains the sole owner of the PartAsset and Blob until safe
+reference garbage collection.
+
+`RevisionBoundRenderedFrameCache.rebaseProjectRevision()` carries unchanged
+transient frames to a new project revision. `useNeutralPoseFrame()` compares
+the old and new override records and excludes only changed addresses; any
+other project metadata change retains the conservative full-revision prune.
+No cache entry, rendered frame, Blob or Object URL enters project history.

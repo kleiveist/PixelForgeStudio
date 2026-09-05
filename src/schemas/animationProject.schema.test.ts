@@ -326,6 +326,29 @@ describe("AnimationProjectSchema", () => {
         layerOrderOverride: ["head", "head"]
       }).success
     ).toBe(false);
+    expect(
+      DirectionFrameOverrideSchema.safeParse({
+        ...valid,
+        rootDelta: { ...transformDelta, offsetX: 1.5 }
+      }).success
+    ).toBe(false);
+    expect(
+      DirectionFrameOverrideSchema.safeParse({
+        ...valid,
+        rootDelta: {
+          offsetX: 0,
+          offsetY: 0,
+          rotationDelta: 0,
+          scaleMultiplier: 1
+        }
+      }).success
+    ).toBe(false);
+    expect(
+      DirectionFrameOverrideSchema.safeParse({
+        ...valid,
+        partDeltas: { head: { ...transformDelta, offsetX: 65 } }
+      }).success
+    ).toBe(false);
   });
 
   it("enforces documented text and collection limits at their boundaries", () => {

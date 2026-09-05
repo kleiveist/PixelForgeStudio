@@ -14,8 +14,12 @@ import {
   HUMANOID_80_RIG_TEMPLATE_ID,
   getBuiltInRigTemplate,
   isRequiredPartSlot,
+  removeFrameOverride as removeFrameOverrideFromList,
+  resetDirectionOverrides,
+  upsertFrameOverride,
   validateSourceAnchors,
   type Direction,
+  type FrameOverrideAddress,
   type DirectionSourceMode,
   type FrameProfile,
   type MirrorPolicy,
@@ -28,9 +32,11 @@ import {
 import {
   AnimationPartAssetSchema,
   AnimationProjectSchema,
+  DirectionFrameOverrideSchema,
   StableIdSchema,
   type AnimationPartAsset,
   type AnimationProject,
+  type DirectionFrameOverride,
   type StableId
 } from "../../schemas";
 import {
@@ -126,6 +132,8 @@ export interface AnimationProjectContextValue extends AnimationProjectState {
   readonly imageDecoder: ImageDecoder;
   readonly projectDirty: boolean;
   readonly canSaveProject: boolean;
+  readonly canUndoProject: boolean;
+  readonly canRedoProject: boolean;
   readonly refreshProjects: () => Promise<void>;
   readonly createProject: (
     definition: CreateAnimationProjectDefinition
@@ -136,6 +144,18 @@ export interface AnimationProjectContextValue extends AnimationProjectState {
   readonly updateActiveProject: (
     input: unknown
   ) => AnimationProjectCommandResult<AnimationProject>;
+  readonly setActiveFrameOverride: (
+    input: unknown
+  ) => AnimationProjectCommandResult<AnimationProject>;
+  readonly removeActiveFrameOverride: (
+    address: FrameOverrideAddress
+  ) => AnimationProjectCommandResult<AnimationProject>;
+  readonly resetActiveDirectionOverrides: (
+    clipId: StableId,
+    direction: Direction
+  ) => AnimationProjectCommandResult<AnimationProject>;
+  readonly undoActiveProject: () => boolean;
+  readonly redoActiveProject: () => boolean;
   readonly updatePartLayerOffset: (
     assetId: StableId,
     layerOffset: number
@@ -681,6 +701,107 @@ export function AnimationProjectProvider({
     [dispatchState]
   );
 
+  const commitOverrideList = useCallback(
+    (
+      overrides: readonly DirectionFrameOverride[]
+    ): AnimationProjectCommandResult<AnimationProject> => {
+      const current = stateRef.current.activeProject;
+      if (!current) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt zum Bearbeiten geöffnet."
+        };
+      }
+      if (jsonValuesEqual(overrides, current.overrides)) {
+        return { status: "ok", value: current };
+      }
+      let timestamp: string;
+      try {
+        timestamp = now();
+      } catch (error) {
+        return failedCommand(error);
+      }
+      return updateActiveProject({ ...current, overrides, updatedAt: timestamp });
+    },
+    [now, updateActiveProject]
+  );
+
+  const setActiveFrameOverride = useCallback(
+    (input: unknown): AnimationProjectCommandResult<AnimationProject> => {
+      const parsed = DirectionFrameOverrideSchema.safeParse(input);
+      if (!parsed.success) {
+        return invalidCommand(
+          "Die Framekorrektur ist ungültig und wurde nicht übernommen.",
+          validationIssues(parsed.error.issues)
+        );
+      }
+      const current = stateRef.current.activeProject;
+      if (!current) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt zum Bearbeiten geöffnet."
+        };
+      }
+      return commitOverrideList(
+        upsertFrameOverride(current.overrides, parsed.data)
+      );
+    },
+    [commitOverrideList]
+  );
+
+  const removeActiveFrameOverride = useCallback(
+    (
+      address: FrameOverrideAddress
+    ): AnimationProjectCommandResult<AnimationProject> => {
+      const current = stateRef.current.activeProject;
+      if (!current) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt zum Bearbeiten geöffnet."
+        };
+      }
+      return commitOverrideList(
+        removeFrameOverrideFromList(current.overrides, address)
+      );
+    },
+    [commitOverrideList]
+  );
+
+  const resetActiveDirectionOverrides = useCallback(
+    (
+      clipId: StableId,
+      direction: Direction
+    ): AnimationProjectCommandResult<AnimationProject> => {
+      const current = stateRef.current.activeProject;
+      if (!current) {
+        return {
+          status: "notFound",
+          message: "Es ist kein Animationsprojekt zum Bearbeiten geöffnet."
+        };
+      }
+      return commitOverrideList(
+        resetDirectionOverrides(current.overrides, clipId, direction)
+      );
+    },
+    [commitOverrideList]
+  );
+
+  const undoActiveProject = useCallback((): boolean => {
+    const current = stateRef.current;
+    if (current.historyPast.length === 0 || !current.activeProject) return false;
+    clearAutosaveTimer();
+    dispatchState({ type: "activeProjectUndo" });
+    return true;
+  }, [clearAutosaveTimer, dispatchState]);
+
+  const redoActiveProject = useCallback((): boolean => {
+    const current = stateRef.current;
+    if (current.historyFuture.length === 0 || !current.activeProject) return false;
+    clearAutosaveTimer();
+    dispatchState({ type: "activeProjectRedo" });
+    return true;
+  }, [clearAutosaveTimer, dispatchState]);
+
   const updatePartLayerOffset = useCallback(
     (
       assetId: StableId,
@@ -957,7 +1078,7 @@ export function AnimationProjectProvider({
         listRequestRevisionRef.current += 1;
         projectRequestRevisionRef.current += 1;
         dispatchState({
-          type: "activeProjectLoaded",
+          type: "activeProjectPersistedEdit",
           project: result.value.project,
           summary: createAnimationProjectSummary(result.value.project)
         });
@@ -1090,7 +1211,7 @@ export function AnimationProjectProvider({
         listRequestRevisionRef.current += 1;
         projectRequestRevisionRef.current += 1;
         dispatchState({
-          type: "activeProjectLoaded",
+          type: "activeProjectPersistedEdit",
           project: result.value.project,
           summary: createAnimationProjectSummary(result.value.project)
         });
@@ -1336,10 +1457,17 @@ export function AnimationProjectProvider({
       imageDecoder,
       projectDirty,
       canSaveProject: selectAnimationProjectCanSave(state),
+      canUndoProject: state.historyPast.length > 0,
+      canRedoProject: state.historyFuture.length > 0,
       refreshProjects,
       createProject,
       openProject,
       updateActiveProject,
+      setActiveFrameOverride,
+      removeActiveFrameOverride,
+      resetActiveDirectionOverrides,
+      undoActiveProject,
+      redoActiveProject,
       updatePartLayerOffset,
       updateProjectMirrorPolicy,
       updatePartMirrorPolicy,
@@ -1371,6 +1499,11 @@ export function AnimationProjectProvider({
       saveActiveProject,
       state,
       updateActiveProject,
+      setActiveFrameOverride,
+      removeActiveFrameOverride,
+      resetActiveDirectionOverrides,
+      undoActiveProject,
+      redoActiveProject,
       updatePartLayerOffset,
       updateProjectMirrorPolicy,
       updatePartMirrorPolicy,

@@ -20,6 +20,33 @@ export {
   type SourceAnchorValidationResult
 } from "./anchorPlacement";
 export {
+  FRAME_OVERRIDE_MAX_OFFSET,
+  FRAME_OVERRIDE_MAX_ROTATION,
+  FRAME_OVERRIDE_MAX_SCALE,
+  FRAME_OVERRIDE_MIN_SCALE,
+  FRAME_OVERRIDE_OFFSET_WARNING,
+  FRAME_OVERRIDE_ROTATION_WARNING,
+  FRAME_OVERRIDE_MAX_SCALE_WARNING,
+  FRAME_OVERRIDE_MIN_SCALE_WARNING,
+  IDENTITY_FRAME_DELTA,
+  applyFrameLayerOrder,
+  collectFrameOverrideWarnings,
+  diffFrameFromGeneratedBaseline,
+  findFrameOverride,
+  frameOverrideMatches,
+  isNeutralFrameDelta,
+  normalizeFrameOverride,
+  removeFrameOverride,
+  resetDirectionOverrides,
+  resetFrameOverride,
+  resolveEffectiveFramePose,
+  upsertFrameOverride,
+  type EffectiveFramePose,
+  type FrameOverride,
+  type FrameOverrideAddress,
+  type GeneratedFramePose
+} from "./frameOverrides";
+export {
   DEFAULT_ALPHA_THRESHOLD,
   cropRgba,
   findAlphaBounds,

@@ -148,6 +148,80 @@ afterEach(() => {
 });
 
 describe("AnimationWorkspace", () => {
+  it("edits frame deltas by keyboard and scopes undo/redo shortcuts to the workspace", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    const base = createAnimationProjectInput({ overrides: [] });
+    const project = parseAnimationProject({
+      ...base,
+      overrides: [
+        {
+          clipId: base.clips[0]!.clipId,
+          direction: "south",
+          frameIndex: 0,
+          rootDelta: {
+            offsetX: 1,
+            offsetY: 0,
+            rotationDelta: 0,
+            scaleMultiplier: 1
+          }
+        }
+      ]
+    });
+    const onCommitFrameOverride = vi.fn(async () => ({ status: "ok" as const }));
+    const onResetDirectionOverrides = vi.fn(async () => ({ status: "ok" as const }));
+    const onUndo = vi.fn();
+    const onRedo = vi.fn();
+    render(
+      <AnimationWorkspace
+        project={project}
+        canSave
+        canUndo
+        canRedo
+        saveStatus="dirty"
+        saveError={null}
+        sourceError={null}
+        onSave={vi.fn()}
+        onUndo={onUndo}
+        onRedo={onRedo}
+        onCommitFrameOverride={onCommitFrameOverride}
+        onResetDirectionOverrides={onResetDirectionOverrides}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Frame" }));
+    expect(screen.getByText("Generated Baseline")).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Root" }));
+    const offsetX = screen.getByRole("spinbutton", { name: "Offset X (px)" });
+    await user.clear(offsetX);
+    await user.type(offsetX, "4");
+    await user.tab();
+    await waitFor(() =>
+      expect(onCommitFrameOverride).toHaveBeenCalledWith(
+        expect.objectContaining({ direction: "south", frameIndex: 0 }),
+        expect.objectContaining({ rootDelta: expect.objectContaining({ offsetX: 4 }) })
+      )
+    );
+
+    fireEvent.keyDown(offsetX, { key: "z", ctrlKey: true });
+    fireEvent.keyDown(offsetX, { key: "Z", metaKey: true, shiftKey: true });
+    expect(onUndo).toHaveBeenCalledTimes(1);
+    expect(onRedo).toHaveBeenCalledTimes(1);
+
+    const viewport = screen.getByRole("region", {
+      name: "Verschiebbarer Projektframe"
+    });
+    fireEvent.pointerDown(viewport, { pointerId: 9, clientX: 20, clientY: 20 });
+    fireEvent.pointerUp(viewport, { pointerId: 9, clientX: 28, clientY: 24 });
+    await waitFor(() => expect(onCommitFrameOverride).toHaveBeenCalledTimes(2));
+
+    await user.click(screen.getByRole("button", { name: "Richtung zurücksetzen" }));
+    expect(onResetDirectionOverrides).toHaveBeenCalledWith(
+      base.clips[0]!.clipId,
+      "south"
+    );
+  });
+
   it("shows a ready part through the software-rendered canvas adapter", async () => {
     setViewportWidth(1440);
     const project = parseAnimationProject(

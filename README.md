@@ -68,6 +68,12 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   Renderzeit ab, blockiert verbotene Spiegelungen und verlangt für
   asymmetrische Parts eine ausdrückliche Reviewentscheidung. Details stehen
   unter [Acht-Richtungs-Walk](docs/ANIMATION-EIGHT-DIRECTION-WALK.md).
+  Der Frameinspektor legt Root-, Joint-, Part- und Layerkorrekturen als
+  rekonstruierbare Deltas ab; Pointer- und Zahlenfeldbearbeitung,
+  Frame-/Richtungsreset sowie eine auf 100 Metadatenstände begrenzte
+  Undo-/Redo-History sind unter
+  [Framekorrekturen und History](docs/ANIMATION-FRAME-CORRECTIONS.md)
+  beschrieben.
 
 ## Einstiegspunkte
 

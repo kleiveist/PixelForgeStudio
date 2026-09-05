@@ -5,6 +5,7 @@ import {
   getRequiredAuthoredDirections,
   getMirroredSourceDirection,
   type Direction,
+  type JointId,
   type PartSlot,
   type PartSlotDefinition,
   type PartSlotGroupDefinition
@@ -45,6 +46,7 @@ export type WorkspaceOverlay = (typeof WORKSPACE_OVERLAY_IDS)[number];
 export type WorkspacePanel = (typeof WORKSPACE_PANEL_IDS)[number];
 export type WorkspaceSidePanel = Extract<WorkspacePanel, "parts" | "inspector">;
 export type WorkspaceInspectorContext = "project" | "part" | "frame";
+export type FrameTransformMode = "pan" | "root" | "joint" | "part";
 export type WorkspaceLayout = "desktop" | "medium" | "small";
 
 export interface WorkspaceSlotGroup extends PartSlotGroupDefinition {
@@ -58,6 +60,8 @@ export interface AnimationWorkspaceState {
   readonly onionSkinMode: OnionSkinMode;
   readonly onionSkinOpacity: number;
   readonly selectedSlot: PartSlot | null;
+  readonly selectedJoint: JointId;
+  readonly frameTransformMode: FrameTransformMode;
   readonly activePanel: WorkspacePanel;
   readonly activeSidePanel: WorkspaceSidePanel;
   readonly inspectorContext: WorkspaceInspectorContext;
@@ -78,9 +82,17 @@ export type AnimationWorkspaceAction =
       frameIndex: number;
       frameCount: number;
     }>
+  | Readonly<{
+      type: "playbackFrameSelected";
+      frameIndex: number;
+      frameCount: number;
+    }>
   | Readonly<{ type: "onionSkinModeSelected"; mode: OnionSkinMode }>
   | Readonly<{ type: "onionSkinOpacitySelected"; opacity: number }>
   | Readonly<{ type: "slotSelected"; slot: PartSlot }>
+  | Readonly<{ type: "framePartSelected"; slot: PartSlot }>
+  | Readonly<{ type: "frameJointSelected"; joint: JointId }>
+  | Readonly<{ type: "frameTransformModeSelected"; mode: FrameTransformMode }>
   | Readonly<{ type: "panelSelected"; panel: WorkspacePanel }>
   | Readonly<{ type: "sidePanelSelected"; panel: WorkspaceSidePanel }>
   | Readonly<{
@@ -172,6 +184,8 @@ export function createAnimationWorkspaceState(
     onionSkinMode: "off",
     onionSkinOpacity: DEFAULT_ONION_SKIN_OPACITY,
     selectedSlot: null,
+    selectedJoint: "root",
+    frameTransformMode: "pan",
     activePanel: "viewport",
     activeSidePanel: "parts",
     inspectorContext: "project",
@@ -201,6 +215,11 @@ export function animationWorkspaceReducer(
         frameIndex: clampFrameIndex(action.frameIndex, action.frameCount),
         inspectorContext: "frame"
       });
+    case "playbackFrameSelected":
+      return Object.freeze({
+        ...state,
+        frameIndex: clampFrameIndex(action.frameIndex, action.frameCount)
+      });
     case "onionSkinModeSelected":
       return Object.freeze({ ...state, onionSkinMode: action.mode });
     case "onionSkinOpacitySelected":
@@ -213,6 +232,27 @@ export function animationWorkspaceReducer(
         ...state,
         selectedSlot: action.slot,
         inspectorContext: "part"
+      });
+    case "framePartSelected":
+      return Object.freeze({
+        ...state,
+        selectedSlot: action.slot,
+        inspectorContext: "frame",
+        frameTransformMode: "part"
+      });
+    case "frameJointSelected":
+      return Object.freeze({
+        ...state,
+        selectedJoint: action.joint,
+        inspectorContext: "frame",
+        frameTransformMode: "joint"
+      });
+    case "frameTransformModeSelected":
+      return Object.freeze({
+        ...state,
+        frameTransformMode: action.mode,
+        inspectorContext:
+          action.mode === "pan" ? state.inspectorContext : "frame"
       });
     case "panelSelected":
       return Object.freeze({ ...state, activePanel: action.panel });

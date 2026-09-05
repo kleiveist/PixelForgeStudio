@@ -4,6 +4,10 @@ import {
   ANIMATION_ACTION_IDS,
   DIRECTION_IDS,
   DIRECTION_SOURCE_MODES,
+  FRAME_OVERRIDE_MAX_OFFSET,
+  FRAME_OVERRIDE_MAX_ROTATION,
+  FRAME_OVERRIDE_MAX_SCALE,
+  FRAME_OVERRIDE_MIN_SCALE,
   JOINT_IDS,
   MAX_PROJECT_LAYER_OFFSET,
   MIN_PROJECT_LAYER_OFFSET,
@@ -158,6 +162,28 @@ export const AnimationTransformDeltaSchema = z
   })
   .readonly();
 
+/** Sparse per-frame correction. Positions snap to whole project pixels. */
+export const AnimationFrameTransformDeltaSchema = z
+  .strictObject({
+    offsetX: FinitePixelCoordinateSchema.int()
+      .min(-FRAME_OVERRIDE_MAX_OFFSET)
+      .max(FRAME_OVERRIDE_MAX_OFFSET),
+    offsetY: FinitePixelCoordinateSchema.int()
+      .min(-FRAME_OVERRIDE_MAX_OFFSET)
+      .max(FRAME_OVERRIDE_MAX_OFFSET),
+    rotationDelta: z
+      .number()
+      .finite()
+      .min(-FRAME_OVERRIDE_MAX_ROTATION)
+      .max(FRAME_OVERRIDE_MAX_ROTATION),
+    scaleMultiplier: z
+      .number()
+      .finite()
+      .min(FRAME_OVERRIDE_MIN_SCALE)
+      .max(FRAME_OVERRIDE_MAX_SCALE)
+  })
+  .readonly();
+
 export const MAX_PROJECT_PART_OFFSET = 32;
 export const MAX_PROJECT_PART_ROTATION_DELTA = Math.PI / 2;
 export const MIN_PROJECT_PART_SCALE_MULTIPLIER = 0.5;
@@ -207,6 +233,9 @@ export type ValidatedAnimationAnchorStatus = z.infer<
 >;
 export type ValidatedAnimationTransformDelta = z.infer<
   typeof AnimationTransformDeltaSchema
+>;
+export type ValidatedAnimationFrameTransformDelta = z.infer<
+  typeof AnimationFrameTransformDeltaSchema
 >;
 export type ValidatedAnimationProjectPartDelta = z.infer<
   typeof AnimationProjectPartDeltaSchema

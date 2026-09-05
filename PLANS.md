@@ -2,20 +2,77 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 45 — vollständige Acht-Richtungs-Walk-Generierung
+- **Aktuelle Aufgabe:** Prompt 46 — Framekorrekturen und History
   (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 46 — Framekorrekturen und History
+- **Nächste Aufgabe:** Prompt 47 — Character Kits und Wiederverwendung
   (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
   Phase C mit Prompts 36–39 und Phase D mit Prompts 40–43 abgeschlossen;
-  Prompts 44–45 sind abgeschlossen; Prompts 46–51 bleiben offen unter
+  Prompts 44–46 sind abgeschlossen; Prompts 47–51 bleiben offen unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 - **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 46 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `7772a19`; Prompt 45 erzeugt den vollständigen kanonischen
+  64-Frame-Walk, besitzt aber noch keine persistenten Framekorrekturen oder
+  Projekt-Metadaten-History.
+- Abnahme: validierte, sparse Korrekturen für Root, Gelenke, Parts und
+  Layerreihenfolge werden ausschließlich über Clip, Richtung und Frame
+  adressiert und immer auf die generierte Baseline angewendet.
+- Bearbeitung: Inspector und Viewport bieten Maus- sowie numerische
+  Tastaturalternativen, ganzzahlige Positionen, Rotation, gezielte Resets und
+  verständliche Warnungen für extreme Werte.
+- History: Undo/Redo umfasst höchstens 100 Projekt-Metadatenstände, trennt
+  Persistenzbaseline und Arbeitsstand, verwirft den Redo-Zweig bei neuer
+  Bearbeitung und bindet die üblichen Workspace-Tastenkürzel lokal ein.
+- Cache und Exportgrenze: eine Overrideänderung invalidiert nur den
+  adressierten Renderframe; Render-/Exportpfade berechnen stets Baseline plus
+  Deltas. Binärblobs und abgeleitete Frames werden weder in Overrides noch in
+  der History gespeichert.
+- Nachweise: pure Domain-, Schema-, Provider-, Cache-, Renderer- und
+  Workspace-Tests; anschließend `npm run verify`, `git diff --check`,
+  Dokumentationsindex und separater Prompt-Commit.
+
+## Prompt 46 — Ergebnis
+
+1. Der pure Overridevertrag adressiert Korrekturen über Clip, kanonische
+   Richtung und Frameindex, sortiert sie deterministisch und entfernt
+   vollständig neutrale Root-, Joint- und Partdeltas. Ganzzahlige Offsets,
+   finite Rotation, uniforme Skalierung sowie eindeutige bekannte Layerslots
+   werden an der Zod-Grenze hart begrenzt.
+2. `resolveEffectiveFramePose()` transformiert Root und Jointteilbäume ohne
+   Built-in-Rigmutation. Beide Walk-Generatoren wenden Part- und Layerdeltas
+   vor dem Software-Rasterizer an; ein Renderer-Nachweis vergleicht die
+   korrigierten Exportbytes mit unveränderten Nachbarframes.
+3. Der Frameinspektor zeigt Generated Baseline, aktive Korrektur und Adresse,
+   bietet Ansicht-, Root-, Joint- und Partmodus, beschriftete Zahlenfelder,
+   Einzelwert-/Layer-/Frame-/Richtungsreset sowie sichtbare Extremwarnungen.
+   Ziehen verschiebt in ganzen Projektpixeln, Umschalt-Ziehen dreht.
+4. Der Projektprovider besitzt eine auf 100 Metadatenstände begrenzte
+   Present/Past/Future-History. Hydration beginnt ohne künstlichen Eintrag,
+   neue Bearbeitung verwirft Future und Autosave schreibt nur Present.
+   Rückgängig gemachter Import entfernt die Zuweisung, lässt PartAsset und
+   Blob aber für die referenzsichere Garbage Collection bestehen.
+5. Toolbar und Workspacekontext verbinden Dirty/Save/Undo/Redo einschließlich
+   `Strg/Cmd+Z` und `Strg/Cmd+Umschalt+Z`. Ein programmgesteuerter
+   Playback-Reset ändert dabei nicht mehr unbeabsichtigt den Inspektorkontext.
+6. Der Render-LRU kann unveränderte Frames in eine neue Projektrevision
+   übernehmen und schließt nur geänderte Overrideadressen aus. Andere
+   Metadatenänderungen verwenden weiterhin die konservative vollständige
+   Projekt-Revisionsbereinigung.
+7. README, Nutzerhilfe, Formatdokumentation, Accessibility, Architektur,
+   Changelog und Aufgabenstatus beschreiben Ownership, Bedienung, Reset,
+   Cache und Exportpfad. PyGitIndex 2.1.0 nahm die neue Hilfeseite in den
+   Dokumentationsindex auf; die Paketchecksummen wurden nachgeführt.
+8. `npm run verify` bestand mit 162 Testdateien und 1020 Tests, Strict-
+   Typecheck und Produktionsbuild. Einzig die bekannte Vite-Warnung zum über
+   500 kB großen Hauptchunk bleibt; Prompt 47 wurde nicht vorgezogen.
 
 ## Prompt 45 — Ausgangsstand und Abnahme
 

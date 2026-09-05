@@ -228,6 +228,41 @@ export class RevisionBoundRenderedFrameCache {
     return removed;
   }
 
+  /**
+   * Carries unaffected transient frames into a new metadata revision and drops
+   * only explicitly changed frame addresses from the carried revision.
+   */
+  rebaseProjectRevision(
+    projectId: StableId,
+    fromRevision: number,
+    toRevision: number,
+    invalidated: readonly Omit<RenderedFrameCacheFilter, "projectId" | "projectRevision">[]
+  ): Readonly<{ carried: number; invalidated: number }> {
+    if (fromRevision === toRevision) {
+      return Object.freeze({ carried: 0, invalidated: 0 });
+    }
+    const sourceEntries = [...this.#entries.entries()].filter(
+      ([, entry]) =>
+        entry.key.projectId === projectId &&
+        entry.key.projectRevision === fromRevision
+    );
+    let carried = 0;
+    let invalidatedCount = 0;
+    for (const [serialized, entry] of sourceEntries) {
+      this.#entries.delete(serialized);
+      const changed = invalidated.some((filter) =>
+        matchesFilter(entry.key, { projectId, projectRevision: fromRevision, ...filter })
+      );
+      if (changed) {
+        invalidatedCount += 1;
+        continue;
+      }
+      this.set({ ...entry.key, projectRevision: toRevision }, entry.frame);
+      carried += 1;
+    }
+    return Object.freeze({ carried, invalidated: invalidatedCount });
+  }
+
   clear(): void {
     this.#entries.clear();
   }
