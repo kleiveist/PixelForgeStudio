@@ -128,6 +128,7 @@ export interface DashboardProfileSummary {
   readonly id: StableId;
   readonly name: string;
   readonly category: AssetProfile["category"];
+  readonly subtype: AssetProfile["subtype"];
   readonly categoryLabel: string;
   readonly subtypeLabel: string;
   readonly baseProfileName: string;
@@ -1486,6 +1487,7 @@ export function resolveProfileSummary(
     id: profile.id,
     name: profile.name,
     category: profile.category,
+    subtype: profile.subtype,
     categoryLabel: getDashboardCategory(profile.category).label,
     subtypeLabel: formatSubtypeLabel(profile.subtype),
     baseProfileName: baseProfile.name,

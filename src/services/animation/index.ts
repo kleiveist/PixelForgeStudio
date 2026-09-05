@@ -34,6 +34,23 @@ export {
   type PngEncoder
 } from "./browserPngEncoder";
 export {
+  AnimationExportWorkerController,
+  AnimationWorkerCancelledError,
+  StaleAnimationWorkerResultError,
+  createBrowserAnimationExportWorkerController,
+  type AnimationWorkerMessageEvent,
+  type AnimationWorkerPort,
+  type RunAnimationWorkerJobOptions
+} from "./animationExportWorkerController";
+export {
+  composeSpriteSheetForExport,
+  encodeImagesForExport,
+  packageFilesForExport,
+  type AnimationWorkerExportIdentity,
+  type AnimationWorkerExportProgress,
+  type PreparedBinaryFile
+} from "./animationWorkerExportAdapter";
+export {
   AnimationExportCancelledError,
   createIndividualFrameArchive,
   createMetadataJsonBlob,
@@ -51,10 +68,12 @@ export {
   PfanimBundleError,
   assertSafeBundlePath,
   createPfanimArchive,
+  preparePfanimArchive,
   importPfanimArchive,
   parsePfanimArchive,
   type CreatePfanimArchiveInput,
   type ParsedPfanimArchive,
+  type PreparedPfanimArchive,
   type PfanimArchiveLimits,
   type PfanimBundleErrorCode
 } from "./animationProjectBundleAdapter";
@@ -64,6 +83,7 @@ export {
   buildGodot4ExportModel,
   createGodot4ImportReadme,
   createGodot4Package,
+  prepareGodot4Package,
   escapeGodotString,
   generateGodot4SpriteFrames,
   type EngineExportTarget,
@@ -71,7 +91,8 @@ export {
   type Godot4AtlasFrame,
   type Godot4ExportModel,
   type Godot4PackageFileNames,
-  type Godot4PackageResult
+  type Godot4PackageResult,
+  type PreparedGodot4Package
 } from "./godot4Export";
 export {
   DuplicateAnimationProjectInputSchema,

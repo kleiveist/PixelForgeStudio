@@ -128,6 +128,7 @@ export interface AnimationWorkspaceProps {
   readonly saveError: string | null;
   readonly sourceError: string | null;
   readonly projectRevision?: number;
+  readonly sourcePromptStatus?: "none" | "resolved" | "unresolved" | "unknown";
   readonly playbackScheduler?: AnimationFrameScheduler;
   readonly onSave: () => void;
   readonly canUndo?: boolean;
@@ -1298,6 +1299,8 @@ function RigViewport({
         </strong>{" "}
         {renderState.status === "failed"
           ? renderState.message
+          : renderState.status === "loading" && renderState.message
+            ? renderState.message
           : renderedPartCount > 0
             ? `${renderedPartCount} Part-${renderedPartCount === 1 ? "Quelle wurde" : "Quellen wurden"} per inverser affiner Nearest-Neighbor-Abtastung zusammengesetzt.`
             : loadedPartCount > 0
@@ -2461,6 +2464,7 @@ function FrameTimeline({
 export function AnimationWorkspace({
   project,
   projectRevision = 0,
+  sourcePromptStatus = "none",
   playbackScheduler,
   canSave,
   saveStatus,
@@ -2617,9 +2621,30 @@ export function AnimationWorkspace({
         exportExpanded={exportExpanded}
         onToggleExport={() => setExportExpanded((current) => !current)}
       />
+      {project.sourcePrompt ? (
+        <Surface
+          as="section"
+          className={styles.handoffNotice}
+          tone="soft"
+          aria-label="Prompt-Studio-Übergabe"
+          role={sourcePromptStatus === "unresolved" ? "alert" : "status"}
+        >
+          <strong>
+            {sourcePromptStatus === "unresolved"
+              ? "Quellprofil nicht mehr verfügbar"
+              : `Vorbereitet aus Promptprofil „${project.sourcePrompt.profileName ?? project.sourcePrompt.assetProfileId}“`}
+          </strong>
+          <span>
+            {sourcePromptStatus === "unresolved"
+              ? "Die gespeicherte Referenz bleibt nachvollziehbar und das Animationsprojekt vollständig lesbar."
+              : "Als Nächstes die Körperteil-PNGs importieren; aus dem Textprompt wurde kein Bild erzeugt oder übertragen."}
+          </span>
+        </Surface>
+      ) : null}
       {exportExpanded ? (
         <AnimationExportPanel
           project={project}
+          projectRevision={projectRevision}
           clip={activeClip}
           frames={exportFrames}
           productionDiagnostics={completeDirectionSet?.diagnostics ?? []}

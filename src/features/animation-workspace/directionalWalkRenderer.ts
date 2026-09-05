@@ -429,7 +429,7 @@ export function generateDirectionalFrames(
   });
 }
 
-function consistencyDiagnostics(
+export function validateEightDirectionWalkConsistency(
   project: AnimationProject,
   frames: readonly DirectionalRenderedFrame[]
 ): readonly DirectionalWalkDiagnostic[] {
@@ -526,6 +526,14 @@ export function generateEightDirectionWalkSet(
       clipId
     )
   );
+  return finalizeEightDirectionWalkGeneration(project, generated);
+}
+
+/** Joins independently generated directions without accepting partial output. */
+export function finalizeEightDirectionWalkGeneration(
+  project: AnimationProject,
+  generated: readonly DirectionalFrameGenerationResult[]
+): EightDirectionWalkGenerationResult {
   const failures = generated.flatMap((result) =>
     result.status === "invalid" ? result.issues : []
   );
@@ -542,7 +550,7 @@ export function generateEightDirectionWalkSet(
       result.status === "ok"
   );
   const frames = Object.freeze(successes.flatMap((result) => result.frames));
-  const postflight = consistencyDiagnostics(project, frames);
+  const postflight = validateEightDirectionWalkConsistency(project, frames);
   if (postflight.some((entry) => entry.severity === "error")) {
     return Object.freeze({
       status: "invalid",

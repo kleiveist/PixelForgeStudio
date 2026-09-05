@@ -70,4 +70,21 @@ describe("animation export contracts", () => {
     expect(canRunAnimationExport(warning, false)).toBe(false);
     expect(canRunAnimationExport(warning, true)).toBe(true);
   });
+
+  it("never labels a retained four-direction requirement as an eight-direction export", () => {
+    const fourDirectionProject = parseAnimationProject({
+      ...createAnimationProjectInput({ sourcePrompt: undefined }),
+      directionRequirement: 4
+    });
+    const result = validateAnimationExport({
+      project: fourDirectionProject,
+      clip: fourDirectionProject.clips[0] ?? null,
+      frames: frames()
+    });
+    expect(result.hardErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "directionRequirementMismatch" })
+      ])
+    );
+  });
 });

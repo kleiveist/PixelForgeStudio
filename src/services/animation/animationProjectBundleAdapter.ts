@@ -62,6 +62,11 @@ export interface ParsedPfanimArchive {
   readonly preview?: Readonly<{ previewId: StableId; blob: Blob }>;
 }
 
+export interface PreparedPfanimArchive {
+  readonly mimeType: typeof PFANIM_MIME_TYPE;
+  readonly entries: readonly Readonly<{ path: string; bytes: Uint8Array }>[];
+}
+
 export interface PfanimArchiveLimits {
   readonly maxFiles?: number;
   readonly maxUnpackedBytes?: number;
@@ -101,9 +106,9 @@ function previewPath(previewId: StableId): string {
   return `preview/${previewId}.png`;
 }
 
-export async function createPfanimArchive(
+export async function preparePfanimArchive(
   input: CreatePfanimArchiveInput
-): Promise<Blob> {
+): Promise<PreparedPfanimArchive> {
   const parsedProject = AnimationProjectSchema.safeParse(input.project);
   if (!parsedProject.success) {
     throw new PfanimBundleError("invalidGraph", "Das Exportprojekt ist ungültig.");
@@ -171,8 +176,25 @@ export async function createPfanimArchive(
   if (totalBytes > MAX_ANIMATION_UNPACKED_BUNDLE_BYTES) {
     throw new PfanimBundleError("sizeLimit", "Das Bundle überschreitet das Größenlimit.");
   }
+  return Object.freeze({
+    mimeType: PFANIM_MIME_TYPE,
+    entries: Object.freeze(
+      Object.entries(entries).map(([path, bytes]) =>
+        Object.freeze({ path, bytes })
+      )
+    )
+  });
+}
+
+export async function createPfanimArchive(
+  input: CreatePfanimArchiveInput
+): Promise<Blob> {
+  const prepared = await preparePfanimArchive(input);
+  const entries = Object.fromEntries(
+    prepared.entries.map(({ path, bytes }) => [path, bytes])
+  );
   const archive = zipSync(entries, { level: 6, mtime: ZIP_TIMESTAMP });
-  return new Blob([archive], { type: PFANIM_MIME_TYPE });
+  return new Blob([archive], { type: prepared.mimeType });
 }
 
 export function assertSafeBundlePath(path: string): void {

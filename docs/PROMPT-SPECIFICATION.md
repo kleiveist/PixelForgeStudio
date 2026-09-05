@@ -259,9 +259,9 @@ die Anzeige; Projekt- und Exportkoordinaten bleiben unverändert. Nicht
 aufgelöste PartAsset-/Blob-Referenzen werden sichtbar als fehlende Quelle
 behandelt, ohne Dummybilder oder scheinpräzise Anker zu erzeugen.
 
-Die V3-Implementierung hat mit Prompt 47 Phase E abgeschlossen und ist noch
-nicht releasevollständig. SpriteSheet-/Godot-Export, die explizite
-Prompt→Animation-Übergabe und Release 3.0 gehören zu den offenen Prompts
-48–51. Der
+Die V3-Implementierung hat mit Prompt 47 Phase E und mit Prompt 50 die
+Implementierung der Phase F abgeschlossen; die Release-Abnahme ist noch offen.
+SpriteSheet-/Godot-Export und die explizite Prompt→Animation-Übergabe sind
+umgesetzt. Release 3.0 gehört zu Prompt 51. Der
 verbindliche Ausführungsstand und die Reihenfolge stehen unter
 `aufgaben/pixelforge-studio-v3/START_HERE.md` und in `../PLANS.md`.

@@ -1,5 +1,7 @@
 import { useId } from "react";
 import { Badge } from "../../components/ui";
+import { isHumanoidCharacterSubtype } from "../../domain/characters";
+import type { CharacterSubtype } from "../../domain/characters";
 import type { StableId } from "../../schemas";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import { MaterialBadge } from "../dashboard/MaterialBadge";
@@ -14,6 +16,7 @@ export interface ProfileLibraryCardProps {
   readonly onLoad: (profileId: StableId) => void;
   readonly onToggleFavorite: (profile: DashboardProfileSummary) => void;
   readonly onDuplicate: (profileId: StableId) => void;
+  readonly onUseInAnimation?: (profileId: StableId) => void;
   readonly onRequestDelete: (
     profile: DashboardProfileSummary,
     trigger: HTMLButtonElement
@@ -25,6 +28,7 @@ export function ProfileLibraryCard({
   onLoad,
   onToggleFavorite,
   onDuplicate,
+  onUseInAnimation,
   onRequestDelete
 }: ProfileLibraryCardProps) {
   const titleId = useId();
@@ -88,6 +92,17 @@ export function ProfileLibraryCard({
           Profil laden
           <span aria-hidden="true">→</span>
         </button>
+        {onUseInAnimation &&
+        profile.category === "character" &&
+        isHumanoidCharacterSubtype(profile.subtype as CharacterSubtype) ? (
+          <button
+            className={styles.action}
+            type="button"
+            onClick={() => onUseInAnimation(profile.id)}
+          >
+            Im Animation Studio verwenden
+          </button>
+        ) : null}
         <button
           className={styles.action}
           type="button"

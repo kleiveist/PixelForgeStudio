@@ -147,11 +147,32 @@ export const DirectionFrameOverrideSchema = z
 export const SourcePromptReferenceSchema = z
   .strictObject({
     assetProfileId: StableIdSchema,
+    profileName: AnimationNameSchema.optional(),
     compatibilityKey: z
       .string()
       .trim()
       .min(1)
-      .max(MAX_ANIMATION_COMPATIBILITY_KEY_LENGTH)
+      .max(MAX_ANIMATION_COMPATIBILITY_KEY_LENGTH),
+    requestedDirectionCount: z.union([z.literal(4), z.literal(8)]).optional(),
+    directionDecision: z
+      .enum([
+        "alreadyEightDirections",
+        "retainFourDirectionRequirement",
+        "upgradeToEightDirectionMvp"
+      ])
+      .optional(),
+    requestedActions: z
+      .array(
+        z
+          .strictObject({
+            action: z.string().trim().min(1).max(40),
+            frames: z.number().int().min(1).max(MAX_ANIMATION_FRAMES_PER_CLIP)
+          })
+          .readonly()
+      )
+      .max(32)
+      .optional()
+      .readonly()
   })
   .readonly();
 
@@ -201,6 +222,7 @@ const AnimationProjectObjectSchema = z.strictObject({
   rigTemplateId: AnimationRigTemplateIdSchema,
   frameProfile: AnimationFrameProfileSchema,
   directionSourceMode: AnimationDirectionSourceModeSchema,
+  directionRequirement: z.union([z.literal(4), z.literal(8)]).default(8),
   mirrorPolicy: AnimationMirrorPolicySchema.default("allow"),
   mirrorReviews: DirectionMirrorReviewsSchema.default([]),
   parts: ProjectPartAssignmentsSchema,
@@ -284,6 +306,44 @@ export const AnimationProjectSchema = AnimationProjectObjectSchema.superRefine(
       }
       mirrorReviewTargets.add(target);
     });
+
+    const sourcePrompt = project.sourcePrompt;
+    if (sourcePrompt?.directionDecision === "retainFourDirectionRequirement") {
+      if (sourcePrompt.requestedDirectionCount !== 4) {
+        context.addIssue({
+          code: "custom",
+          path: ["sourcePrompt", "requestedDirectionCount"],
+          message: "Retaining four directions requires an original 4-direction request."
+        });
+      }
+      if (project.directionRequirement !== 4) {
+        context.addIssue({
+          code: "custom",
+          path: ["directionRequirement"],
+          message: "A retained 4-direction handoff must remain marked as four directions."
+        });
+      }
+    }
+    if (
+      sourcePrompt?.directionDecision === "upgradeToEightDirectionMvp" &&
+      (sourcePrompt.requestedDirectionCount !== 4 || project.directionRequirement !== 8)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["sourcePrompt", "directionDecision"],
+        message: "An eight-direction MVP upgrade must originate at four and target eight directions."
+      });
+    }
+    if (
+      sourcePrompt?.directionDecision === "alreadyEightDirections" &&
+      (sourcePrompt.requestedDirectionCount !== 8 || project.directionRequirement !== 8)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["sourcePrompt", "directionDecision"],
+        message: "An already-eight-direction handoff must remain at eight directions."
+      });
+    }
   }
 ).readonly();
 

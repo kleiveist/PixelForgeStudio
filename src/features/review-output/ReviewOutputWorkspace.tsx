@@ -30,6 +30,8 @@ import {
   type ReviewOutputPreparation
 } from "./reviewOutputData";
 import { ProfileConversionWorkflow } from "./ProfileConversionWorkflow";
+import { isHumanoidCharacterSubtype } from "../../domain/characters";
+import { useAnimationHandoff } from "../studio-handoff";
 import styles from "./ReviewOutputWorkspace.module.css";
 
 export type ReviewOutputDraftStorage = Pick<
@@ -163,6 +165,7 @@ export function ReviewOutputWorkspace({
   now = currentIsoTimestamp
 }: ReviewOutputWorkspaceProps) {
   const definition = APP_VIEW_DEFINITIONS.output;
+  const { prepareResolvedProfile } = useAnimationHandoff();
   const { navigate } = useNavigation();
   const { settings } = useSettings();
   const { libraryResult, saveAssetProfile } = useProfileLibrary();
@@ -467,6 +470,15 @@ export function ReviewOutputWorkspace({
                 <button type="button" onClick={exportProfileJson}>
                   JSON exportieren
                 </button>
+                {ready.profile.categoryData.category === "character" &&
+                isHumanoidCharacterSubtype(ready.profile.categoryData.subtype) ? (
+                  <button
+                    type="button"
+                    onClick={() => prepareResolvedProfile(ready.profile)}
+                  >
+                    Animationsprojekt vorbereiten
+                  </button>
+                ) : null}
               </div>
             </Surface>
 

@@ -18,8 +18,11 @@ import type {
 } from "../../schemas";
 import {
   RevisionBoundDecodedSourceCache,
+  createBrowserAnimationExportWorkerController,
+  type AnimationExportWorkerController,
   type ImageDecoder
 } from "../../services";
+import { ANIMATION_EXPORT_WORKER_PROTOCOL_VERSION } from "../../workers/animationExportProtocol";
 import {
   prepareNeutralPoseParts,
   type NeutralPosePreparationIssue
@@ -78,6 +81,76 @@ const INITIAL_STATE: NeutralPoseFrameState = Object.freeze({
   directionWalkSet: null,
   message: null
 });
+
+let workerJobSequence = 0;
+
+function nextWorkerJobId(projectId: StableId, projectRevision: number): string {
+  workerJobSequence += 1;
+  return `render-${projectId}-${projectRevision}-${workerJobSequence}`;
+}
+
+async function generateEightDirections(
+  controller: AnimationExportWorkerController | null,
+  project: AnimationProject,
+  projectRevision: number,
+  template: NonNullable<ReturnType<typeof getBuiltInRigTemplate>>,
+  partAssets: readonly AnimationPartAsset[],
+  decodedSources: Parameters<typeof generateEightDirectionWalkSet>[3],
+  clipId: StableId,
+  signal: AbortSignal,
+  currentRevision: () => number,
+  onProgress: (completed: number) => void
+): Promise<EightDirectionWalkGenerationResult> {
+  if (!controller) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+    return generateEightDirectionWalkSet(
+      project,
+      template,
+      partAssets,
+      decodedSources,
+      clipId
+    );
+  }
+  const completed = await controller.run(
+    {
+      protocolVersion: ANIMATION_EXPORT_WORKER_PROTOCOL_VERSION,
+      type: "renderFrames",
+      jobId: nextWorkerJobId(project.projectId, projectRevision),
+      projectId: project.projectId,
+      projectRevision,
+      payload: { project, clipId, partAssets, decodedSources }
+    },
+    {
+      signal,
+      currentProjectRevision: currentRevision,
+      onProgress: (message) => {
+        if (message.stage === "rendering") onProgress(message.completed);
+      }
+    }
+  );
+  if (completed.result.kind !== "renderFrames") {
+    throw new Error("Der Worker lieferte ein unerwartetes Renderresultat.");
+  }
+  const frames: DirectionalRenderedFrame[] = completed.result.frames.map(
+    (entry) => Object.freeze(entry)
+  );
+  return Object.freeze({
+    status: "ok",
+    directions: Object.freeze(
+      DIRECTION_IDS.map((targetDirection) =>
+        Object.freeze({
+          direction: targetDirection,
+          frames: Object.freeze(
+            frames.filter(({ direction }) => direction === targetDirection)
+          )
+        })
+      )
+    ),
+    frames: Object.freeze(frames),
+    diagnostics: Object.freeze(completed.result.diagnostics)
+  });
+}
 
 type CachedWalkMetadata =
   | Readonly<{
@@ -218,6 +291,11 @@ export function useNeutralPoseFrame(
   loadBlob: (blobId: StableId) => Promise<WorkspacePartBlobLoadResult>
 ): NeutralPoseFrameState {
   const cacheRef = useRef<RevisionBoundDecodedSourceCache | null>(null);
+  const workerControllerRef = useRef<AnimationExportWorkerController | null | undefined>(
+    undefined
+  );
+  const currentRevisionRef = useRef(projectRevision);
+  currentRevisionRef.current = projectRevision;
   const renderedFrameCacheRef = useRef<RevisionBoundRenderedFrameCache | null>(
     null
   );
@@ -232,6 +310,9 @@ export function useNeutralPoseFrame(
   if (!renderedFrameCacheRef.current) {
     renderedFrameCacheRef.current = new RevisionBoundRenderedFrameCache();
   }
+  if (workerControllerRef.current === undefined) {
+    workerControllerRef.current = createBrowserAnimationExportWorkerController();
+  }
   const [state, setState] = useState<NeutralPoseFrameState>(INITIAL_STATE);
 
   useEffect(
@@ -239,6 +320,8 @@ export function useNeutralPoseFrame(
       cacheRef.current?.clear();
       renderedFrameCacheRef.current?.clear();
       cachedWalkMetadataRef.current = null;
+      workerControllerRef.current?.terminate();
+      workerControllerRef.current = null;
     },
     []
   );
@@ -247,6 +330,11 @@ export function useNeutralPoseFrame(
     const previous = previousProjectRef.current;
     const cache = renderedFrameCacheRef.current;
     let metadataRebased = false;
+    if (previous && previous.project.projectId !== project.projectId) {
+      cacheRef.current?.clear();
+      cache?.clear();
+      cachedWalkMetadataRef.current = null;
+    }
     if (
       cache &&
       previous &&
@@ -353,6 +441,7 @@ export function useNeutralPoseFrame(
     }
 
     let cancelled = false;
+    const renderAbort = new AbortController();
     setState(
       Object.freeze({
         status: "loading",
@@ -417,7 +506,7 @@ export function useNeutralPoseFrame(
         return Object.freeze({ assetId: asset.assetId, image });
       })
     )
-      .then((decodedSources) => {
+      .then(async (decodedSources) => {
         if (cancelled) return;
         const prepared = prepareNeutralPoseParts(
           project,
@@ -445,15 +534,36 @@ export function useNeutralPoseFrame(
                   clip.clipId
                 )
               : null;
-          directionWalkSet =
-            cachedSet ??
-            generateEightDirectionWalkSet(
-              project,
-              template,
-              partAssets,
-              decodedSources,
-              clipId
-            );
+          directionWalkSet = cachedSet ??
+            (clip
+              ? await generateEightDirections(
+                  workerControllerRef.current ?? null,
+                  project,
+                  projectRevision,
+                  template,
+                  partAssets,
+                  decodedSources,
+                  clip.clipId,
+                  renderAbort.signal,
+                  () => currentRevisionRef.current,
+                  (completed) => {
+                    if (cancelled) return;
+                    setState((current) =>
+                      Object.freeze({
+                        ...current,
+                        message: `64-Frame-Worker: ${completed} / 64`
+                      })
+                    );
+                  }
+                )
+              : generateEightDirectionWalkSet(
+                  project,
+                  template,
+                  partAssets,
+                  decodedSources,
+                  clipId
+                ));
+          if (cancelled) return;
           if (clip && !cachedSet && directionWalkSet.status === "ok") {
             for (const entry of directionWalkSet.frames) {
               renderedFrameCacheRef.current?.set(
@@ -572,6 +682,7 @@ export function useNeutralPoseFrame(
 
     return () => {
       cancelled = true;
+      renderAbort.abort();
     };
   }, [clipId, decoder, direction, loadBlob, partAssets, project, projectRevision]);
 

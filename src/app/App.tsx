@@ -27,6 +27,7 @@ import {
 } from "../store/animation";
 import { WizardSessionProvider } from "../store/wizard";
 import { StudioShell } from "./StudioShell";
+import { AnimationHandoffProvider } from "../features/studio-handoff";
 
 export interface AppProps {
   readonly navigationAdapter: NavigationAdapter;
@@ -92,14 +93,16 @@ function NavigationRoot({
       navigationAdapter={navigationAdapter}
     >
       <WizardSessionProvider>
-        <StudioShell
-          activeBaseProfileId={settings.activeBaseProfileId}
-          outputAdapter={outputAdapter}
-          startupMigration={startupMigration}
-          storageAdapter={storageAdapter}
-          {...(now ? { now } : {})}
-          {...(createDraftId ? { createDraftId } : {})}
-        />
+        <AnimationHandoffProvider>
+          <StudioShell
+            activeBaseProfileId={settings.activeBaseProfileId}
+            outputAdapter={outputAdapter}
+            startupMigration={startupMigration}
+            storageAdapter={storageAdapter}
+            {...(now ? { now } : {})}
+            {...(createDraftId ? { createDraftId } : {})}
+          />
+        </AnimationHandoffProvider>
       </WizardSessionProvider>
     </NavigationProvider>
   );

@@ -244,6 +244,11 @@ describe("V2 dashboard interactions", () => {
     const animationLink = within(studioLinks).getByRole("link", {
       name: /Animation Studio ansehen/
     });
+    expect(
+      within(studioLinks).getByRole("link", {
+        name: /Charakterprofil ins Animation Studio übertragen/
+      })
+    ).toHaveAttribute("href", "?studio=prompt&view=profiles");
 
     animationLink.focus();
     await user.keyboard("{Enter}");

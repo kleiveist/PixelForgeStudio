@@ -48,6 +48,7 @@ import {
   type AnimationProject,
   type CharacterKit,
   type DirectionFrameOverride,
+  type SourcePromptReference,
   type StableId
 } from "../../schemas";
 import {
@@ -75,6 +76,8 @@ export interface CreateAnimationProjectDefinition {
   readonly name: string;
   readonly frameProfile: FrameProfile;
   readonly directionSourceMode: DirectionSourceMode;
+  readonly directionRequirement?: 4 | 8;
+  readonly sourcePrompt?: SourcePromptReference;
   readonly walk: Readonly<{
     enabled: boolean;
     frameCount: number;
@@ -747,6 +750,7 @@ export function AnimationProjectProvider({
         rigTemplateId: HUMANOID_80_RIG_TEMPLATE_ID,
         frameProfile: definition.frameProfile,
         directionSourceMode: definition.directionSourceMode,
+        directionRequirement: definition.directionRequirement ?? 8,
         parts: [],
         clips: definition.walk.enabled
           ? [
@@ -760,7 +764,10 @@ export function AnimationProjectProvider({
               }
             ]
           : [],
-        overrides: []
+        overrides: [],
+        ...(definition.sourcePrompt
+          ? { sourcePrompt: definition.sourcePrompt }
+          : {})
       });
       if (!parsedProject.success) {
         return invalidCommand(

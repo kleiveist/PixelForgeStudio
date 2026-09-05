@@ -2,20 +2,86 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 49 — Godot-4-Export
+- **Aktuelle Aufgabe:** Prompt 50 — Prompt-Handoff und Workerexport
   (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 50 — Prompt-Handoff und Workerexport
-  (als Nächstes beauftragt)
+- **Nächste Aufgabe:** Prompt 51 — Release-Abnahme V3
+  (nicht begonnen)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
-- **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
-  Phase C mit Prompts 36–39, Phase D mit Prompts 40–43 und Phase E mit
-  Prompts 44–49 abgeschlossen; die Prompts 50–51 folgen getrennt unter
+- **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35,
+  Phase C mit Prompts 36–39, Phase D mit Prompts 40–43, Phase E mit Prompts
+  44–47 und Phase F mit Prompts 48–50 abgeschlossen; Prompt 51 folgt getrennt
+  unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 - **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 50 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `71b5d25`; Prompt- und Animation-Studio teilen Shell und
+  Navigation, besitzen jedoch absichtlich getrennte Datenprovider. Es gibt
+  noch kein kontrolliertes Profil→Projekt-Seed-Mapping; 64 Frames entstehen
+  im Workspace-Hook und Export-Encoding/-Packaging läuft asynchron, aber noch
+  ohne versioniertes Workerprotokoll.
+- Handoff-Abnahme: eine pure Resultunion akzeptiert nur erfolgreich aufgelöste
+  humanoide Character-Profile und überträgt ausschließlich Quell-ID, Name,
+  wirksame Figurenhöhe, Compatibility Key, Direction Count und konfigurierte
+  Animationsaktionen. Prompt-, Kleidungs- und Kategoriefremdtexte bleiben aus
+  Animationsprojekten ausgeschlossen.
+- Entscheidungen: Walk ungleich acht Frames und vier Richtungen erzeugen
+  strukturierte, bestätigungspflichtige Konflikte. Vier Richtungen bleiben
+  wahlweise als ehrliche Projektanforderung markiert oder werden bewusst auf
+  den Acht-Richtungs-MVP angehoben; keine Umwandlung erfolgt still.
+- Oberfläche: Profilbibliothek, Review/Ausgabe und Prompt-Dashboard besitzen
+  klare Handoff-Aktionen. Erst nach erforderlichen Bestätigungen legt der
+  AnimationProjectProvider das Projekt mit `sourcePrompt` an, navigiert in den
+  Workspace und erklärt den weiterhin notwendigen PNG-Partimport.
+- Worker-Abnahme: versionierte serialisierbare Nachrichten, Fake-Worker-
+  Controller, 0–64-Fortschritt, Cancel, Fehler und verworfene Resultate alter
+  Projektrevisionen. 64-Frame-Render/Sheet/Encoding/Packaging laufen im
+  Worker; ohne OffscreenCanvas greift ein kontrollierter asynchroner
+  Main-Thread-Encoderfallback ohne Teildownload.
+- Ressourcen: begrenzte revisionsgebundene Source-/Frame-Caches werden bei
+  Projektwechsel freigegeben. UI-Status folgt `validating → rendering n/64 →
+  encoding → packaging` und bleibt bedienbar.
+
+## Prompt 50 — Ergebnis
+
+1. Eine pure Resultunion überführt ausschließlich erfolgreich aufgelöste
+   humanoide Character-Profile in einen schmalen Animationsseed. Name,
+   Profil-ID, wirksame Höhe, Compatibility Key, Richtungsanforderung und
+   gewünschte Aktionen werden übertragen; Prompt-, Kleidungs- und sonstige
+   Kategoriedaten gelangen nicht in das Animationsprojekt.
+2. Abweichende Walk-Längen und Vier-Richtungs-Profile verlangen im
+   zugänglichen Handoff-Dialog eine ausdrückliche Entscheidung. Vier
+   Richtungen bleiben entweder als ehrliche Anforderung erhalten oder werden
+   bewusst auf den Acht-Richtungs-MVP angehoben.
+3. Profilbibliothek, Review/Ausgabe und Prompt-Dashboard bieten den Handoff an.
+   Erst nach erfolgreicher Auflösung und allen Bestätigungen persistiert der
+   AnimationProjectProvider den Seed und navigiert in den Workspace, der den
+   weiterhin erforderlichen PNG-Partimport erklärt.
+4. Gelöschte Prompt-Quellen beschädigen vorhandene Animationsprojekte nicht:
+   die gespeicherte Herkunft bleibt lesbar und der Workspace kennzeichnet die
+   fehlende Quelle ausdrücklich.
+5. Das serialisierbare Workerprotokoll V1 trennt Rendern, Sheetkomposition,
+   Exportvorbereitung, Paketbau und Cancel. Job-ID, Projekt-ID und Revision
+   verhindern die Annahme veralteter Resultate; Fortschritt, Fehler und
+   Abbruch werden kontrolliert in die UI zurückgeführt.
+6. Die 64 Richtungsframes entstehen inkrementell im Modulworker. Sheet-
+   Komposition, OffscreenCanvas-PNG und ZIP-Paketierung nutzen dieselbe
+   Grenze; Umgebungen ohne Worker oder OffscreenCanvas erhalten einen
+   expliziten asynchronen Fallback ohne Teildownload.
+7. Revisionsgebundene Source- und Frame-Caches sind als begrenzte LRU-Caches
+   ausgeführt und werden bei Projektwechsel freigegeben. Exportzustände sind
+   als `validating`, `rendering n/64`, `encoding` und `packaging` sichtbar.
+8. Pure Mapper-, Schema-, Cache-, Fake-Worker-, Fallback-, Provider- und
+   React-Integrationstests decken Erfolgs-, Konflikt-, Cancel-, Fehler-,
+   Stale-Revision- und Quelllöschpfade ab. `npm run verify` bestand mit 178
+   Testdateien und 1085 Tests, Strict-Typecheck sowie Produktionsbuild. Die
+   verbleibende Vite-Chunkwarnung wird im Release-Hardening von Prompt 51
+   bearbeitet.
 
 ## Prompt 49 — Ausgangsstand und Abnahme
 

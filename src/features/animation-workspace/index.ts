@@ -25,8 +25,10 @@ export {
 } from "./southWalkRenderer";
 export {
   DIRECTIONAL_WALK_DIAGNOSTIC_CODES,
+  finalizeEightDirectionWalkGeneration,
   generateDirectionalFrames,
   generateEightDirectionWalkSet,
+  validateEightDirectionWalkConsistency,
   type DirectionalFrameGenerationResult,
   type DirectionalRenderedFrame,
   type DirectionalWalkDiagnostic,

@@ -75,6 +75,12 @@ export interface Godot4PackageResult {
   readonly files: Godot4PackageFileNames;
 }
 
+export interface PreparedGodot4Package {
+  readonly model: Godot4ExportModel;
+  readonly files: Godot4PackageFileNames;
+  readonly entries: readonly Readonly<{ path: string; bytes: Uint8Array }>[];
+}
+
 function assertTarget(target: EngineExportTarget): void {
   if (target.engine !== "godot" || target.major !== 4) {
     throw new RangeError("Only the explicit Godot major-version 4 target is supported.");
@@ -230,12 +236,12 @@ function hasPngSignature(bytes: Uint8Array): boolean {
   );
 }
 
-export async function createGodot4Package(input: Readonly<{
+export async function prepareGodot4Package(input: Readonly<{
   metadata: unknown;
   sheetPng: Blob;
   packageName?: string;
   target?: EngineExportTarget;
-}>): Promise<Godot4PackageResult> {
+}>): Promise<PreparedGodot4Package> {
   const metadata = SpriteSheetMetadataSchema.parse(input.metadata);
   const model = buildGodot4ExportModel(metadata, {
     ...(input.packageName ? { packageName: input.packageName } : {}),
@@ -256,13 +262,13 @@ export async function createGodot4Package(input: Readonly<{
     ),
     [`${directory}/README_IMPORT.md`]: strToU8(createGodot4ImportReadme(model))
   };
-  const archive = zipSync(entries, {
-    level: 6,
-    mtime: new Date("1980-01-01T00:00:00.000Z")
-  });
   return Object.freeze({
-    blob: new Blob([archive], { type: "application/zip" }),
     model,
+    entries: Object.freeze(
+      Object.entries(entries).map(([path, bytes]) =>
+        Object.freeze({ path, bytes })
+      )
+    ),
     files: Object.freeze({
       directory,
       sheet: model.sheetFileName,
@@ -270,5 +276,28 @@ export async function createGodot4Package(input: Readonly<{
       resource: model.resourceFileName,
       readme: "README_IMPORT.md" as const
     })
+  });
+}
+
+export async function createGodot4Package(input: Readonly<{
+  metadata: unknown;
+  sheetPng: Blob;
+  packageName?: string;
+  target?: EngineExportTarget;
+}>): Promise<Godot4PackageResult> {
+  const prepared = await prepareGodot4Package(input);
+  const archive = zipSync(
+    Object.fromEntries(
+      prepared.entries.map(({ path, bytes }) => [path, bytes])
+    ),
+    {
+      level: 6,
+      mtime: new Date("1980-01-01T00:00:00.000Z")
+    }
+  );
+  return Object.freeze({
+    blob: new Blob([archive], { type: "application/zip" }),
+    model: prepared.model,
+    files: prepared.files
   });
 }

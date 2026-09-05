@@ -23,6 +23,7 @@
 - [Animation Studio — Timeline, Playback und Onion Skin](ANIMATION-TIMELINE-PLAYBACK.md)
 - [Animation Studio — South-Walk `walk-humanoid-8-v1`](ANIMATION-WALK-CLIP.md)
 - [Animation Workspace — Accessibility](ANIMATION-WORKSPACE-ACCESSIBILITY.md)
+- [Prompt Studio Animation Studio und Workerexport](PROMPT-ANIMATION-HANDOFF-AND-WORKERS.md)
 - [Technische Prompt-Spezifikation](PROMPT-SPECIFICATION.md)
 - [PixelForge Prompt Studio V2 — verbindlicher Technologie-Stack](TECHNOLOGIE-STACK-V2.md)
 - [PixelForge Prompt Studio V2 — Abfragekatalog und Profilmodell](V2-ABFRAGEKATALOG-UND-PROFILMODELL.md)

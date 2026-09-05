@@ -80,6 +80,10 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   Der vollständige Walk lässt sich neutral oder als versioniertes Godot-4-ZIP
   exportieren; Paketstruktur und Import stehen unter
   [Godot-4-Export](docs/ANIMATION-GODOT-4-EXPORT.md).
+  Humanoide Promptprofile lassen sich nach sichtbarer Frame-/Richtungsprüfung
+  als schmaler Projektseed übergeben; 64-Frame-Rendering, PNG-Vorbereitung und
+  Packaging laufen abbrechbar und revisionsgebunden über einen Worker. Details:
+  [Studio-Übergabe und Workerexport](docs/PROMPT-ANIMATION-HANDOFF-AND-WORKERS.md).
 
 ## Einstiegspunkte
 

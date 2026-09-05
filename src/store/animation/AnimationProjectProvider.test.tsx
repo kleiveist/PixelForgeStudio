@@ -193,6 +193,7 @@ describe("AnimationProjectProvider", () => {
           footAnchor: { x: 64, y: 112 }
         },
         directionSourceMode: "fiveAuthoredPlusMirror",
+        directionRequirement: 8,
         mirrorPolicy: "allow",
         mirrorReviews: [],
         parts: [],

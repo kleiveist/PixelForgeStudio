@@ -86,4 +86,28 @@ describe("RevisionBoundDecodedSourceCache", () => {
     cache.clear();
     expect(cache.size).toBe(0);
   });
+
+  it("bounds decoded revisions with LRU eviction", async () => {
+    const cache = new RevisionBoundDecodedSourceCache(2);
+    await cache.load(
+      { sourceId: "part-1", blobId: "blob-1", revision: "r1" },
+      async () => image(1)
+    );
+    await cache.load(
+      { sourceId: "part-2", blobId: "blob-2", revision: "r1" },
+      async () => image(2)
+    );
+    await cache.load(
+      { sourceId: "part-3", blobId: "blob-3", revision: "r1" },
+      async () => image(3)
+    );
+    expect(cache.size).toBe(2);
+    const reloaded = vi.fn(async () => image(1));
+    await cache.load(
+      { sourceId: "part-1", blobId: "blob-1", revision: "r1" },
+      reloaded
+    );
+    expect(reloaded).toHaveBeenCalledOnce();
+    expect(() => new RevisionBoundDecodedSourceCache(0)).toThrow(/positive/);
+  });
 });

@@ -11,7 +11,10 @@ and Canvas. A complete five- or eight-source partset produces 64 transient
 frames while the project stores only template ID, FPS, loop and later
 overrides. Timeline, manual playback, Onion Skin and the static eight-direction
 review consume these values without becoming a second project source; export
-remains an explicit later boundary.
+is exported through a versioned worker boundary. Prompt 50 adds a one-way,
+pure Prompt-profile-to-animation-seed integration; it copies only production
+identifiers and resolved animation requirements and never copies prompt text
+or PNG data.
 Both modules share one route source, settings source, theme, skip target,
 title and focus boundary.
 
@@ -25,6 +28,9 @@ title and focus boundary.
   Prompt-Modul und Animationsmodul, daraus abgeleitete Moduldefinitionen sowie
   getrennte, bewusst stabile Exportformat-Identifier
 - `domain/`: frameworkfreie, pure TypeScript-Fachlogik
+  - `studio-handoff/`: one-way result union from a resolved humanoid Prompt
+    profile to the deliberately narrow animation seed, including explicit
+    5→8-frame and 4→8-direction decisions
   - `animation/`: stable direction/source-mode contracts, complete Production-
     Humanoid slot metadata, the immutable five-pose `humanoid-80-v1` rig,
     validated joint/bone/slot hierarchy and compatibility key, versioned frame
@@ -94,7 +100,10 @@ title and focus boundary.
   Importentwurf, kurzlebige Object-URL-Vorschau und pure Coverage-Projektion;
   `animation-anchor-editor/` besitzt Originalbild-Eingabe, Zoom/Pan, zugängliche
   Koordinatenfelder, Live-Placement-Anzeigeadapter und projektweite
-  Delta-Bedienung
+  Delta-Bedienung; `studio-handoff/` is the sole cross-provider UI bridge. It
+  resolves a profile, owns the accessible confirmation dialog, asks the
+  Animation provider to persist the final seed and then performs typed
+  navigation; neither provider imports the other
 - `schemas/`: Zod-Schemas und daraus abgeleitete Typen
   - `common.schema.ts`: schema version, stable IDs, profile values, locks, and
     reusable validated primitives
@@ -121,7 +130,13 @@ title and focus boundary.
   `animation/` owns the `ImageDecoder` port plus browser implementation, the
   native IndexedDB and full Memory adapters, pure binary reference analysis,
   the revision-bound decoded RGBA cache, the Canvas display-only adapter and
-  browser factories; public exports live in `services/index.ts`
+  browser factories; `animationExportWorkerController.ts` owns version,
+  cancellation and revision acceptance while `animationWorkerExportAdapter.ts`
+  owns OffscreenCanvas/fallback orchestration and all-or-nothing packaging;
+  public exports live in `services/index.ts`
+- `workers/`: serializable protocol V1 plus the module worker for incremental
+  0–64 frame generation, pure Sheet composition, PNG preparation and ZIP
+  packaging; it receives no React values, Blobs or Object URLs
 - `store/`: Contexts, pure Reducer, Actions und Selectors; `settings/` owns the
   complete validated app-settings envelope, all three start decisions and
   effective theme state;

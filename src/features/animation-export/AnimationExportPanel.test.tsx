@@ -10,6 +10,7 @@ import {
   createAnimationPartAssetInput,
   createAnimationProjectInput
 } from "../../test/animationSchemaFixtures";
+import type { PngEncoder } from "../../services";
 import { AnimationExportPanel } from "./AnimationExportPanel";
 
 function exportFrames(opaqueEdge = false) {
@@ -22,7 +23,11 @@ function exportFrames(opaqueEdge = false) {
   );
 }
 
-function renderPanel(options: Readonly<{ opaqueEdge?: boolean; frameCount?: number }> = {}) {
+function renderPanel(options: Readonly<{
+  opaqueEdge?: boolean;
+  frameCount?: number;
+  pngEncoder?: PngEncoder;
+}> = {}) {
   const project = parseAnimationProject(createAnimationProjectInput());
   const part = parseAnimationPartAsset(createAnimationPartAssetInput());
   const download = vi.fn();
@@ -38,7 +43,7 @@ function renderPanel(options: Readonly<{ opaqueEdge?: boolean; frameCount?: numb
       frames={exportFrames(options.opaqueEdge).slice(0, options.frameCount)}
       partAssets={[part]}
       readImageBlob={async () => new Blob()}
-      pngEncoder={{ encode }}
+      pngEncoder={options.pngEncoder ?? { encode }}
       onDownload={download}
     />
   );
@@ -85,5 +90,42 @@ describe("AnimationExportPanel", () => {
     await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
     expect(download.mock.calls[0]?.[1]).toBe("waldwachter-walk_godot4.zip");
     expect(screen.getByText("Export abgeschlossen")).toBeVisible();
+  });
+
+  it("shows adapter failures without starting a partial download", async () => {
+    const user = userEvent.setup();
+    const pngEncoder = {
+      encode: vi.fn(async () => {
+        throw new Error("PNG worker failed");
+      })
+    };
+    const { download } = renderPanel({ pngEncoder });
+    await user.click(screen.getByRole("button", { name: "SpriteSheet PNG" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent("PNG worker failed")
+    );
+    expect(download).not.toHaveBeenCalled();
+  });
+
+  it("cancels an active export before any download is exposed", async () => {
+    const user = userEvent.setup();
+    let finishEncoding: ((blob: Blob) => void) | undefined;
+    const pngEncoder = {
+      encode: vi.fn(
+        () =>
+          new Promise<Blob>((resolve) => {
+            finishEncoding = resolve;
+          })
+      )
+    };
+    const { download } = renderPanel({ pngEncoder });
+    await user.click(screen.getByRole("button", { name: "SpriteSheet PNG" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Export abbrechen" })).toBeVisible()
+    );
+    await user.click(screen.getByRole("button", { name: "Export abbrechen" }));
+    finishEncoding?.(new Blob([Uint8Array.from([1]).buffer], { type: "image/png" }));
+    await waitFor(() => expect(screen.getByText("Export abgebrochen")).toBeVisible());
+    expect(download).not.toHaveBeenCalled();
   });
 });

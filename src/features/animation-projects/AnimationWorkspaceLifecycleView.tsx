@@ -5,6 +5,7 @@ import type { PartImportCommitDefinition } from "../animation-part-import";
 import type { AnchorEditorCommitDefinition } from "../animation-anchor-editor";
 import { useAnimationProject } from "../../store/animation";
 import { useNavigation } from "../../store/navigation";
+import { useProfileLibrary } from "../../store/profiles";
 import { AnimationWorkspace } from "../animation-workspace";
 import styles from "./AnimationProjectsView.module.css";
 
@@ -50,6 +51,7 @@ export function AnimationWorkspaceLifecycleView({
     undoActiveProject
   } = useAnimationProject();
   const { navigateTo } = useNavigation();
+  const { libraryResult } = useProfileLibrary();
   const attemptedProjectRef = useRef<StableId | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
   const [partSources, setPartSources] = useState<Readonly<{
@@ -337,6 +339,17 @@ export function AnimationWorkspaceLifecycleView({
       key={activeProject.projectId}
       project={activeProject}
       projectRevision={activeProjectRevision}
+      sourcePromptStatus={
+        !activeProject.sourcePrompt
+          ? "none"
+          : libraryResult.status === "valid"
+            ? libraryResult.value.assetProfiles.some(
+                ({ id }) => id === activeProject.sourcePrompt?.assetProfileId
+              )
+              ? "resolved"
+              : "unresolved"
+            : "unknown"
+      }
       canSave={canSaveProject}
       saveStatus={saveStatus}
       saveError={commandError ?? saveError}

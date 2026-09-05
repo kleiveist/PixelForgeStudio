@@ -45,6 +45,12 @@ export class RevisionBoundDecodedSourceCache {
   private readonly entries = new Map<string, Promise<RgbaImage>>();
   private readonly currentKeyBySourceId = new Map<string, string>();
 
+  public constructor(private readonly maximumEntries = 128) {
+    if (!Number.isInteger(maximumEntries) || maximumEntries <= 0) {
+      throw new RangeError("Decoded-source cache size must be positive.");
+    }
+  }
+
   public get size(): number {
     return this.entries.size;
   }
@@ -57,7 +63,11 @@ export class RevisionBoundDecodedSourceCache {
     const currentKey = this.currentKeyBySourceId.get(source.sourceId);
     if (currentKey === key) {
       const cached = this.entries.get(key);
-      if (cached) return cached;
+      if (cached) {
+        this.entries.delete(key);
+        this.entries.set(key, cached);
+        return cached;
+      }
     }
     if (currentKey && currentKey !== key) this.entries.delete(currentKey);
 
@@ -73,6 +83,16 @@ export class RevisionBoundDecodedSourceCache {
       });
     this.currentKeyBySourceId.set(source.sourceId, key);
     this.entries.set(key, pending);
+    while (this.entries.size > this.maximumEntries) {
+      const oldest = this.entries.keys().next().value as string | undefined;
+      if (!oldest) break;
+      this.entries.delete(oldest);
+      for (const [sourceId, currentSourceKey] of this.currentKeyBySourceId) {
+        if (currentSourceKey !== oldest) continue;
+        this.currentKeyBySourceId.delete(sourceId);
+        break;
+      }
+    }
     return pending;
   }
 

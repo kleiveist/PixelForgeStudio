@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- pure Prompt-zu-Animation-Seed-Abbildung für konfliktfrei aufgelöste
+  humanoide Character-Profile ergänzt, die ausschließlich ID, Name,
+  Figurenhöhe, Compatibility Key, Richtungszahl und Aktions-/Framewünsche
+  überträgt und keinerlei Prompt-, Kleidungs- oder PNG-Inhalte übernimmt
+- bestätigungspflichtige Walk-5→8- und Richtungs-4→8-Entscheidungen sowie eine
+  ehrliche exportblockierende 4-Richtungsanforderung in Projekt und UI ergänzt
+- Profilbibliothek, Review/Ausgabe und Prompt-Dashboard mit dem kontrollierten
+  Cross-Studio-Einstieg verbunden; gelöschte Quellprofile bleiben als
+  unaufgelöste Referenz sichtbar, ohne das Animationsprojekt zu beschädigen
+- versioniertes, serialisierbares Workerprotokoll für 64-Frame-Rendering,
+  Sheetkomposition, Offscreen-PNG-Vorbereitung, ZIP-Packaging, Fortschritt,
+  Abbruch, Fehler und revisionsalte Resultate eingeführt
+- dekodierte Quellen und Renderframes als begrenzte revisionsgebundene
+  LRU-Caches bei Projektwechsel freigegeben sowie kontrollierten asynchronen
+  PNG-/Workerfallback ohne Teildownload ergänzt
+
 - doppelte Prompt-Studio-Prüfungsansicht entfernt und historische `review`-
   Links sowie AppSettings V2 kompatibel auf die einzige Ausgabe kanonisiert
 - Prompt-Downloads von TXT auf strukturierte Markdown-Dateien mit Titel,

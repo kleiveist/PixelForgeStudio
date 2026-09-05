@@ -1,7 +1,10 @@
-import { useMemo, useRef, useState } from "react";
+import { strToU8 } from "fflate";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Surface } from "../../components/ui";
 import {
   normalizeAnimationExportBaseName,
+  createAnimationFrameFileName,
+  DIRECTION_IDS,
   resolveSpriteSheetLayout,
   type SpriteSheetSourceFrame
 } from "../../domain/animation";
@@ -13,18 +16,24 @@ import type {
 } from "../../schemas";
 import {
   AnimationExportCancelledError,
+  AnimationWorkerCancelledError,
   asSpriteSheetSourceFrames,
   canRunAnimationExport,
   createBrowserPngEncoder,
-  createIndividualFrameArchive,
-  createGodot4Package,
   createMetadataJsonBlob,
-  createPfanimArchive,
+  composeSpriteSheetForExport,
+  createBrowserAnimationExportWorkerController,
   createSpriteSheetMetadata,
-  createSpriteSheetPng,
   downloadBlob,
+  encodeImagesForExport,
+  packageFilesForExport,
+  prepareGodot4Package,
+  preparePfanimArchive,
   validateAnimationExport,
+  type AnimationExportWorkerController,
   type AnimationExportJobState,
+  type AnimationWorkerExportIdentity,
+  type AnimationWorkerExportProgress,
   type PngEncoder
 } from "../../services";
 import styles from "./AnimationExportPanel.module.css";
@@ -38,6 +47,7 @@ export type AnimationExportKind =
 
 export interface AnimationExportPanelProps {
   readonly project: AnimationProject;
+  readonly projectRevision?: number;
   readonly clip: AnimationClip | null;
   readonly frames: readonly SpriteSheetSourceFrame[];
   readonly productionDiagnostics?: readonly Readonly<{
@@ -72,6 +82,7 @@ function defaultNow(): string {
 
 export function AnimationExportPanel({
   project,
+  projectRevision = 0,
   clip,
   frames,
   productionDiagnostics = [],
@@ -86,6 +97,34 @@ export function AnimationExportPanel({
   const [warningsConfirmed, setWarningsConfirmed] = useState(false);
   const [job, setJob] = useState<AnimationExportJobState>({ status: "idle" });
   const activeAbortRef = useRef<AbortController | null>(null);
+  const previousIdentityRef = useRef<string | null>(null);
+  const workerRef = useRef<AnimationExportWorkerController | null | undefined>(
+    undefined
+  );
+  const jobSequenceRef = useRef(0);
+  const currentRevisionRef = useRef(projectRevision);
+  currentRevisionRef.current = projectRevision;
+  if (workerRef.current === undefined) {
+    workerRef.current = createBrowserAnimationExportWorkerController();
+  }
+  useEffect(
+    () => () => {
+      activeAbortRef.current?.abort();
+      workerRef.current?.terminate();
+      workerRef.current = null;
+    },
+    []
+  );
+  useEffect(() => {
+    const identity = `${project.projectId}:${projectRevision}`;
+    if (
+      previousIdentityRef.current !== null &&
+      previousIdentityRef.current !== identity
+    ) {
+      activeAbortRef.current?.abort();
+    }
+    previousIdentityRef.current = identity;
+  }, [project.projectId, projectRevision]);
   const sourceFrames = useMemo(() => asSpriteSheetSourceFrames(frames), [frames]);
   const validation = useMemo(
     () =>
@@ -104,6 +143,29 @@ export function AnimationExportPanel({
   const canExport = canRunAnimationExport(validation, warningsConfirmed) && !isRunning;
   const baseName = normalizeAnimationExportBaseName(project.name, project.projectId);
 
+  const workerIdentity = (): AnimationWorkerExportIdentity => ({
+    projectId: project.projectId,
+    projectRevision,
+    currentProjectRevision: () => currentRevisionRef.current,
+    nextJobId: (operation) => {
+      jobSequenceRef.current += 1;
+      return `${operation}-${project.projectId}-${projectRevision}-${jobSequenceRef.current}`;
+    }
+  });
+
+  const reportProgress = ({
+    stage,
+    completed,
+    total
+  }: AnimationWorkerExportProgress) => {
+    if (stage === "validating") setJob({ status: "validating" });
+    else if (stage === "rendering") {
+      setJob({ status: "rendering", completed, total });
+    } else if (stage === "encoding") {
+      setJob({ status: "encoding", completed, total });
+    } else setJob({ status: "packaging" });
+  };
+
   const runExport = async (kind: AnimationExportKind) => {
     if (!clip || !canRunAnimationExport(validation, warningsConfirmed)) return;
     const abort = new AbortController();
@@ -115,18 +177,30 @@ export function AnimationExportPanel({
         frameCount: clip.frameCount
       });
       const metadata = createSpriteSheetMetadata({ project, clip, layout });
+      const operationOptions = {
+        controller: workerRef.current ?? null,
+        identity: workerIdentity(),
+        signal: abort.signal,
+        onProgress: reportProgress
+      } as const;
       let file: Readonly<{ name: string; blob: Blob }>;
       if (kind === "sheet") {
-        setJob({ status: "rendering", completed: 64, total: 64 });
-        setJob({ status: "encoding", completed: 0, total: 1 });
+        const sheet = await composeSpriteSheetForExport(
+          layout,
+          sourceFrames,
+          operationOptions
+        );
+        const [encoded] = await encodeImagesForExport(
+          [{ name: `${baseName}_walk.png`, image: sheet }],
+          pngEncoder,
+          operationOptions
+        );
+        if (!encoded) throw new Error("Das SpriteSheet wurde nicht kodiert.");
         file = {
-          name: `${baseName}_walk.png`,
-          blob: await createSpriteSheetPng(
-            layout,
-            sourceFrames,
-            pngEncoder,
-            abort.signal
-          )
+          name: encoded.name,
+          blob: new Blob([Uint8Array.from(encoded.bytes).buffer], {
+            type: encoded.mimeType
+          })
         };
       } else if (kind === "metadata") {
         setJob({ status: "packaging" });
@@ -135,55 +209,99 @@ export function AnimationExportPanel({
           blob: createMetadataJsonBlob(metadata)
         };
       } else if (kind === "frames") {
-        setJob({ status: "encoding", completed: 0, total: 64 });
+        setJob({ status: "rendering", completed: 64, total: 64 });
+        const ordered = [...sourceFrames].sort(
+          (left, right) =>
+            DIRECTION_IDS.indexOf(left.direction) -
+              DIRECTION_IDS.indexOf(right.direction) ||
+            left.frameIndex - right.frameIndex
+        );
+        const encoded = await encodeImagesForExport(
+          ordered.map((source) => ({
+            name: createAnimationFrameFileName(
+              source.direction,
+              source.frameIndex
+            ),
+            image: source.frame
+          })),
+          pngEncoder,
+          operationOptions
+        );
+        const archive = await packageFilesForExport(
+          [
+            ...encoded.map(({ name, bytes }) => ({
+              path: `frames/${name}`,
+              bytes
+            })),
+            {
+              path: "frames/metadata.json",
+              bytes: strToU8(`${JSON.stringify(metadata, null, 2)}\n`)
+            }
+          ],
+          "application/zip",
+          operationOptions
+        );
         file = {
           name: `${baseName}_frames.zip`,
-          blob: await createIndividualFrameArchive({
-            frames: sourceFrames,
-            metadata,
-            encoder: pngEncoder,
-            signal: abort.signal,
-            onProgress: (completed, total) =>
-              setJob({ status: "encoding", completed, total })
-          })
+          blob: archive
         };
       } else if (kind === "project") {
         setJob({ status: "packaging" });
+        const prepared = await preparePfanimArchive({
+          project,
+          partAssets,
+          exportedAt: now(),
+          readImageBlob,
+          ...(readPreviewBlob ? { readPreviewBlob } : {})
+        });
         file = {
           name: `${baseName}.pfanim`,
-          blob: await createPfanimArchive({
-            project,
-            partAssets,
-            exportedAt: now(),
-            readImageBlob,
-            ...(readPreviewBlob ? { readPreviewBlob } : {})
-          })
+          blob: await packageFilesForExport(
+            prepared.entries,
+            prepared.mimeType,
+            operationOptions
+          )
         };
       } else {
-        setJob({ status: "encoding", completed: 0, total: 1 });
-        const sheetPng = await createSpriteSheetPng(
+        const sheet = await composeSpriteSheetForExport(
           layout,
           sourceFrames,
-          pngEncoder,
-          abort.signal
+          operationOptions
         );
+        const [encoded] = await encodeImagesForExport(
+          [{ name: `${baseName}_walk.png`, image: sheet }],
+          pngEncoder,
+          operationOptions
+        );
+        if (!encoded) throw new Error("Das Godot-SpriteSheet wurde nicht kodiert.");
+        const sheetPng = new Blob([Uint8Array.from(encoded.bytes).buffer], {
+          type: encoded.mimeType
+        });
         if (abort.signal.aborted) throw new AnimationExportCancelledError();
         setJob({ status: "packaging" });
-        const godotPackage = await createGodot4Package({
+        const godotPackage = await prepareGodot4Package({
           metadata,
           sheetPng,
           packageName: baseName
         });
         file = {
           name: `${baseName}_godot4.zip`,
-          blob: godotPackage.blob
+          blob: await packageFilesForExport(
+            godotPackage.entries,
+            "application/zip",
+            operationOptions
+          )
         };
       }
       if (abort.signal.aborted) throw new AnimationExportCancelledError();
       onDownload(file.blob, file.name);
       setJob({ status: "completed", files: Object.freeze([file]) });
     } catch (error) {
-      if (error instanceof AnimationExportCancelledError || abort.signal.aborted) {
+      if (
+        error instanceof AnimationExportCancelledError ||
+        error instanceof AnimationWorkerCancelledError ||
+        abort.signal.aborted
+      ) {
         setJob({ status: "cancelled" });
       } else {
         setJob({

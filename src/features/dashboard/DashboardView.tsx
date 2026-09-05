@@ -278,6 +278,9 @@ export function DashboardView({
           <StudioLink route={{ studio: "animation", view: "projects" }}>
             Animation Studio ansehen →
           </StudioLink>
+          <ViewLink view="profiles">
+            Charakterprofil ins Animation Studio übertragen →
+          </ViewLink>
         </nav>
       </Surface>
 

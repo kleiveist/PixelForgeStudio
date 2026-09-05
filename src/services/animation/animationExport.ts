@@ -19,6 +19,7 @@ export const ANIMATION_EXPORT_ISSUE_CODES = Object.freeze([
   "duplicateFrame",
   "invalidFrameSize",
   "invalidClip",
+  "directionRequirementMismatch",
   "invalidBlobReference",
   "productionError",
   "renderWarning",
@@ -69,6 +70,15 @@ export function validateAnimationExport(
 ): AnimationExportValidationResult {
   const errors: AnimationExportIssue[] = [];
   const warnings: AnimationExportIssue[] = [];
+  if (input.project.directionRequirement === 4) {
+    errors.push(
+      exportIssue(
+        "directionRequirementMismatch",
+        "error",
+        "Das Projekt ist ausdrücklich als 4-Richtungsanforderung markiert. Vor einem 8-Richtungs-Export muss es bewusst hochgestuft werden."
+      )
+    );
+  }
   if (
     !input.clip ||
     input.clip.action !== "walk" ||

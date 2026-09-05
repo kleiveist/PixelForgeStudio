@@ -125,6 +125,7 @@ function renderWorkspace(
     saveStatus?: "idle" | "dirty" | "saving" | "saved" | "failed";
     saveError?: string | null;
     sourceError?: string | null;
+    sourcePromptStatus?: "none" | "resolved" | "unresolved" | "unknown";
     onSave?: () => void;
   }> = {}
 ) {
@@ -137,6 +138,7 @@ function renderWorkspace(
       saveStatus={options.saveStatus ?? "saved"}
       saveError={options.saveError ?? null}
       sourceError={options.sourceError ?? null}
+      sourcePromptStatus={options.sourcePromptStatus ?? "none"}
       onSave={onSave}
     />
   );
@@ -148,6 +150,16 @@ afterEach(() => {
 });
 
 describe("AnimationWorkspace", () => {
+  it("keeps a project readable when its Prompt Studio source was deleted", () => {
+    renderWorkspace({}, { sourcePromptStatus: "unresolved" });
+    const notice = screen.getByRole("alert", {
+      name: "Prompt-Studio-Übergabe"
+    });
+    expect(notice).toHaveTextContent("Quellprofil nicht mehr verfügbar");
+    expect(notice).toHaveTextContent("Animationsprojekt vollständig lesbar");
+    expect(screen.getByRole("heading", { level: 1, name: "Waldwächter Walk" })).toBeVisible();
+  });
+
   it("opens the export panel only for a complete eight-direction render set", async () => {
     setViewportWidth(1440);
     const user = userEvent.setup();

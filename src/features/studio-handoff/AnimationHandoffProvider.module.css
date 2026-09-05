@@ -1,0 +1,71 @@
+.dialog {
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  color: var(--color-text);
+  background: var(--color-panel-raised);
+  box-shadow: var(--shadow-panel);
+}
+
+.dialog::backdrop {
+  background: rgb(7 10 18 / 68%);
+}
+
+.content {
+  display: grid;
+  gap: var(--space-5);
+  padding: clamp(var(--space-5), 4vw, var(--space-8));
+}
+
+.content h2,
+.content p {
+  margin: 0;
+}
+
+.choices,
+.actions,
+.blockers {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.choice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.choice input {
+  margin-top: 0.2rem;
+}
+
+.actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.actions button {
+  min-height: 2.75rem;
+}
+
+.primary {
+  border-color: var(--color-accent);
+  color: var(--color-ink-inverse);
+  background: var(--color-accent);
+}
+
+.error {
+  color: var(--color-danger-text);
+}
+
+@media (max-width: 34rem) {
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}

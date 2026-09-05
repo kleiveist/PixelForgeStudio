@@ -174,6 +174,9 @@ describe("ReviewOutputWorkspace", () => {
     expect(screen.getByText("Dorfschmied mit Lederschürze")).toBeVisible();
     expect(screen.getByText("Charakter / Figur · NPC")).toBeVisible();
     expect(screen.queryByText("Compatibility Key")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Animationsprojekt vorbereiten" })
+    ).toBeVisible();
 
     const tablist = screen.getByRole("tablist", {
       name: "Prompt-Ausgabeart"

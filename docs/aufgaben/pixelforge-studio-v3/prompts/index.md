@@ -36,7 +36,6 @@
 
 ## Umsetzungsstand
 
-- Prompts 28–49 und damit die Phasen A bis E sowie die ersten zwei Aufträge aus
+- Prompts 28–50 und damit die Phasen A bis E sowie die Implementierung der
   Phase F sind abgeschlossen.
-- Prompt 50 ist der nächste Auftrag.
-- Prompt 51 ist anschließend offen.
+- Prompt 51 ist der nächste und letzte Auftrag der V3-Serie.

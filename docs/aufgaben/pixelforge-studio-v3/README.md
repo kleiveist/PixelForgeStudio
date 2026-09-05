@@ -31,12 +31,12 @@ Sie sind deshalb als **Prompt 28 bis Prompt 51** nummeriert.
 
 ## Umsetzungsstand
 
-- Prompts 28–49: abgeschlossen
+- Prompts 28–50: abgeschlossen
 - Phasen A–E: abgeschlossen
 - Phase E: mit Prompt 47 abgeschlossen
 - Phase F: mit Prompt 48 begonnen
-- Prompt 49: abgeschlossen
-- Prompts 50–51: noch offen
+- Prompts 49–50: abgeschlossen
+- Prompt 51: noch offen
 
 ## Empfohlener Zielname
 
