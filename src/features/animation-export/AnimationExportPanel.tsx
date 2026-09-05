@@ -17,6 +17,7 @@ import {
   canRunAnimationExport,
   createBrowserPngEncoder,
   createIndividualFrameArchive,
+  createGodot4Package,
   createMetadataJsonBlob,
   createPfanimArchive,
   createSpriteSheetMetadata,
@@ -28,7 +29,12 @@ import {
 } from "../../services";
 import styles from "./AnimationExportPanel.module.css";
 
-export type AnimationExportKind = "sheet" | "metadata" | "frames" | "project";
+export type AnimationExportKind =
+  | "sheet"
+  | "metadata"
+  | "frames"
+  | "project"
+  | "godot4";
 
 export interface AnimationExportPanelProps {
   readonly project: AnimationProject;
@@ -141,7 +147,7 @@ export function AnimationExportPanel({
               setJob({ status: "encoding", completed, total })
           })
         };
-      } else {
+      } else if (kind === "project") {
         setJob({ status: "packaging" });
         file = {
           name: `${baseName}.pfanim`,
@@ -152,6 +158,25 @@ export function AnimationExportPanel({
             readImageBlob,
             ...(readPreviewBlob ? { readPreviewBlob } : {})
           })
+        };
+      } else {
+        setJob({ status: "encoding", completed: 0, total: 1 });
+        const sheetPng = await createSpriteSheetPng(
+          layout,
+          sourceFrames,
+          pngEncoder,
+          abort.signal
+        );
+        if (abort.signal.aborted) throw new AnimationExportCancelledError();
+        setJob({ status: "packaging" });
+        const godotPackage = await createGodot4Package({
+          metadata,
+          sheetPng,
+          packageName: baseName
+        });
+        file = {
+          name: `${baseName}_godot4.zip`,
+          blob: godotPackage.blob
         };
       }
       if (abort.signal.aborted) throw new AnimationExportCancelledError();
@@ -226,6 +251,9 @@ export function AnimationExportPanel({
         </button>
         <button type="button" disabled={!canExport} onClick={() => void runExport("project")}>
           Projektbundle .pfanim
+        </button>
+        <button type="button" disabled={!canExport} onClick={() => void runExport("godot4")}>
+          Godot 4 Paket
         </button>
       </div>
 

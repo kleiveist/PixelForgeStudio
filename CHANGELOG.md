@@ -206,6 +206,17 @@
   abgesichert; ID-Ersetzung erfordert eine sichtbare Entscheidung
 - neutralen Export-Roundtrip für semantisch gleiche Projekte und pixelgleiche
   Originalquellen nachgewiesen; der Workspace öffnet erst nach Importcommit
+- expliziten `{ engine: "godot", major: 4 }`-Zielvertrag und einen
+  frameworkfreien Adapter vom unveränderten neutralen Sheetmodell auf acht
+  stabile Godot-Animationsnamen ergänzt
+- deterministische Godot-4-`SpriteFrames`-Ressource mit 64 AtlasTexture-
+  Subresources, exakten JSON-Regionen, Projekt-FPS, Loop und relativer
+  SpriteSheet-Referenz erzeugt
+- Godot-4-ZIP aus PNG, JSON, `.tres` und ausführlicher Importanleitung als
+  fünfte Workspace-Exportoption ergänzt; Dateipfade werden sicher normalisiert
+- reviewbare vollständige `.tres`-Fixture eingecheckt; da in der Docker-
+  Sitzung kein Godot-Binary verfügbar ist, bleibt der echte Engineimport als
+  transparenter manueller Releasepunkt offen
 
 ## 2.0.0 — 2026-09-03
 

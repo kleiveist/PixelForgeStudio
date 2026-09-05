@@ -77,6 +77,9 @@ Vite zeigt anschließend die lokale Entwicklungsadresse im Terminal an.
   Partsets referenzbasiert, blockiert inkompatible Rigs und verbindet das
   Slotinventar mit Einsetzen, Ersetzen und Entfernen von Ausrüstung. Details:
   [Character Kits und Ausrüstungsinventar](docs/ANIMATION-CHARACTER-KITS.md).
+  Der vollständige Walk lässt sich neutral oder als versioniertes Godot-4-ZIP
+  exportieren; Paketstruktur und Import stehen unter
+  [Godot-4-Export](docs/ANIMATION-GODOT-4-EXPORT.md).
 
 ## Einstiegspunkte
 

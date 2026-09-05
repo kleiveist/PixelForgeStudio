@@ -2,21 +2,68 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt 48 — SpriteSheet- und Projekt-Export
+- **Aktuelle Aufgabe:** Prompt 49 — Godot-4-Export
   (abgeschlossen)
-- **Nächste Aufgabe:** Prompt 49 — Godot-4-Export
+- **Nächste Aufgabe:** Prompt 50 — Prompt-Handoff und Workerexport
   (als Nächstes beauftragt)
 - **Abgeschlossene V2-Serie:** Prompts 00–27; archiviert unter `docs/erledigt/`
 - **Aktive Serie:** Phase A mit Prompts 28–31, Phase B mit Prompts 32–35 und
   Phase C mit Prompts 36–39, Phase D mit Prompts 40–43 und Phase E mit
-  Prompts 44–47 abgeschlossen; Prompt 48 ist abgeschlossen, die Prompts
-  49–51 folgen getrennt unter
+  Prompts 44–49 abgeschlossen; die Prompts 50–51 folgen getrennt unter
   `docs/aufgaben/pixelforge-studio-v3/prompts/`
 - **Arbeitsregel:** genau eine beauftragte Phase umsetzen, prüfen und getrennt committen
 - **Zusätzliche Wizard-Korrektur:** auswahlorientierte Antworten für alle neun
   Fachbereiche und bestätigtes, referenzsicheres Löschen von
   Produktionsfamilien umgesetzt; Prompt 39 blieb davon unberührt und ist
   separat abgeschlossen
+
+## Prompt 49 — Ausgangsstand und Abnahme
+
+- Ausgangs-HEAD: `abfc3fa`; Prompt 48 liefert das unveränderte neutrale
+  `spriteSheetMetadata` V1, native Sheet-PNG und ein Exportpanel, aber noch
+  keine engine-spezifische Projektion.
+- Abnahme: ein expliziter `{ engine: "godot", major: 4 }`-Vertrag und ein
+  frameworkfreier Builder projizieren alle 64 neutralen Rects deterministisch
+  auf acht Godot-Namen mit je acht AtlasTexture-Frames, Projekt-FPS und Loop.
+- Ausgabe: relative, sicher normalisierte Sheetreferenz, stabile Ext-/Sub-
+  Resource-IDs, exakte `.tres`-Fixture und ZIP aus PNG, unverändertem JSON,
+  SpriteFrames-Ressource sowie vollständiger deutscher Importanleitung.
+- Integration: Godot 4 erscheint als fünfte Auswahl im bestehenden Panel;
+  Warnungs-, Fehler-, Fortschritts-, Cancel- und URL-Cleanup-Regeln bleiben
+  identisch zum neutralen Export.
+- Nachweise: Namen, Frames, FPS/Loop, 64 Regionen, Escaping, Struktur, README,
+  relative ZIP-Pfade, unveränderter neutraler Vertrag und – falls lokal
+  verfügbar – echter Godot-4-Import. Andernfalls bleibt die Engineprüfung
+  ausdrücklich als manueller Releasepunkt offen.
+
+## Prompt 49 — Ergebnis
+
+1. Der öffentliche Enginezielvertrag enthält ausschließlich `godot` und Major
+   4. Weder `AnimationProject` noch Metadaten speichern eine Patchversion oder
+   Godot-spezifischen Zustand.
+2. Der frameworkfreie Builder liest eine erneut validierte neutrale
+   `spriteSheetMetadata`-Kopie und projiziert alle acht Richtungen auf stabile
+   snake_case-Namen. Je Animation bleiben acht Frames, Projekt-FPS und Loop
+   erhalten; das Eingabe-JSON wird nicht verändert.
+3. Der Textadapter erzeugt deterministisch 64 stabil benannte AtlasTexture-
+   Subresources mit exakt denselben Rects und einer projektrelativen
+   `res://<name>/<name>_walk.png`-Referenz.
+4. Das Download-ZIP enthält in einem sicher normalisierten relativen Ordner
+   Sheet-PNG, neutrales JSON, SpriteFrames-`.tres` und `README_IMPORT.md` mit
+   Kopier-, Import-, AnimatedSprite2D-, Richtungs- und FootAnchor-Anleitung.
+5. Das vorhandene Exportpanel bietet „Godot 4 Paket“ als fünfte Auswahl und
+   übernimmt unverändert Fehler-/Warnungsbestätigung, Status, Abbruch und
+   kontrollierten Download.
+6. Eine vollständige synthetische `.tres`-Fixture macht Namen, IDs, FPS/Loop
+   und alle 64 Regionen reviewbar. Paket- und React-Tests sichern zusätzlich
+   Pfadescaping, README, ZIP-Struktur und neutrales JSON.
+7. `command -v godot4` und `command -v godot` fanden in der Docker-Sitzung
+   keine Engine. Deshalb wird kein echter Godot-Import behauptet; er bleibt
+   ausdrücklich für die manuelle Releaseprüfung offen.
+8. `npm run verify` bestand mit 174 Testdateien und 1068 Tests, Strict-
+   Typecheck sowie Produktionsbuild. PyGitIndex, alle Paketchecksummen und
+   `git diff --check` werden vor dem Einzelcommit abschließend geprüft. Die
+   bekannte Vite-Chunkwarnung bleibt bis Prompt 50 bestehen.
 
 ## Prompt 48 — Ausgangsstand und Abnahme
 

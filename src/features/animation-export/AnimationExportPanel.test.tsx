@@ -26,7 +26,11 @@ function renderPanel(options: Readonly<{ opaqueEdge?: boolean; frameCount?: numb
   const project = parseAnimationProject(createAnimationProjectInput());
   const part = parseAnimationPartAsset(createAnimationPartAssetInput());
   const download = vi.fn();
-  const encode = vi.fn(async () => new Blob(["png"], { type: "image/png" }));
+  const encode = vi.fn(async () =>
+    new Blob([Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1])], {
+      type: "image/png"
+    })
+  );
   render(
     <AnimationExportPanel
       project={project}
@@ -72,5 +76,14 @@ describe("AnimationExportPanel", () => {
     );
     expect(sheet).toBeEnabled();
     expect(warning.download).not.toHaveBeenCalled();
+  });
+
+  it("offers the versioned Godot 4 ZIP through the same controlled download", async () => {
+    const user = userEvent.setup();
+    const { download } = renderPanel();
+    await user.click(screen.getByRole("button", { name: "Godot 4 Paket" }));
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
+    expect(download.mock.calls[0]?.[1]).toBe("waldwachter-walk_godot4.zip");
+    expect(screen.getByText("Export abgeschlossen")).toBeVisible();
   });
 });

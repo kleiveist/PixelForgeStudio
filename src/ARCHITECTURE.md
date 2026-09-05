@@ -1349,3 +1349,19 @@ both Memory and IndexedDB implementations. The caller must choose `abort` or
 `replace` for stable-ID conflicts. The Provider publishes the imported
 project to React state only after that commit succeeds; failed validation,
 conflict or transaction leaves the active Workspace untouched.
+
+`services/animation/godot4Export.ts` is a pure engine-adapter boundary over
+the parsed neutral `SpriteSheetMetadata`; it never reads React or project
+storage. Its stable target is `{ engine: "godot", major: 4 }`. The builder
+maps the canonical direction IDs to eight snake_case engine names and all 64
+neutral Rects to deterministic `AtlasTexture` subresources without mutating
+the JSON source.
+
+The text generator emits a Godot-4 `SpriteFrames` resource with one
+project-relative `res://` sheet reference, eight ordered looping animations,
+project FPS and eight frames each. Package-name normalization makes ZIP and
+resource paths safe; string escaping remains explicit at the text boundary.
+The package adapter groups the native Sheet PNG, unchanged neutral JSON,
+`.tres` and generated import README under one relative directory. No Godot
+state enters `AnimationProject`, and no patch release is encoded as a lasting
+contract.

@@ -59,6 +59,21 @@ export {
   type PfanimBundleErrorCode
 } from "./animationProjectBundleAdapter";
 export {
+  GODOT_4_ANIMATION_NAMES,
+  GODOT_4_EXPORT_TARGET,
+  buildGodot4ExportModel,
+  createGodot4ImportReadme,
+  createGodot4Package,
+  escapeGodotString,
+  generateGodot4SpriteFrames,
+  type EngineExportTarget,
+  type Godot4Animation,
+  type Godot4AtlasFrame,
+  type Godot4ExportModel,
+  type Godot4PackageFileNames,
+  type Godot4PackageResult
+} from "./godot4Export";
+export {
   DuplicateAnimationProjectInputSchema,
   PersistAnimationPartImportInputSchema,
   PersistAnimationPartSetupInputSchema,

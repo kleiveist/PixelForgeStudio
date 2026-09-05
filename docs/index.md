@@ -15,6 +15,7 @@
 - [Animation Studio — neutraler Produktions- und Projekt-Export](ANIMATION-EXPORT.md)
 - [Animation Studio — Metadatenformat V1](ANIMATION-FORMAT-V1.md)
 - [Animation Studio — Framekorrekturen und History](ANIMATION-FRAME-CORRECTIONS.md)
+- [Animation Studio — Godot-4-Export](ANIMATION-GODOT-4-EXPORT.md)
 - [Animation Studio — richtungsabhängige Ebenenreihenfolge](ANIMATION-LAYER-ORDER.md)
 - [Animation Studio — PNG-Teile importieren](ANIMATION-PART-IMPORT.md)
 - [Animation Studio — deterministischer Pixelrenderer](ANIMATION-RENDERER.md)

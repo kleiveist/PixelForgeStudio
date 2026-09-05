@@ -164,6 +164,7 @@ describe("AnimationWorkspace", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("heading", { level: 2, name: "Export" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Projektbundle .pfanim" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Godot 4 Paket" })).toBeVisible();
   });
 
   it("edits frame deltas by keyboard and scopes undo/redo shortcuts to the workspace", async () => {
