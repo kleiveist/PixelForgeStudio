@@ -1,10 +1,5 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent
-} from "react";
+import { useI18n } from "../../i18n";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ASSET_CATEGORY_IDS } from "../../domain/assets";
 import type { StableId } from "../../schemas";
 import { useProfileLibrary } from "../../store/profiles";
@@ -51,17 +46,22 @@ function mutationMessage(
 function LibraryUnavailableState({
   status
 }: Readonly<{ status: "invalid" | "unavailable" }>) {
+  const { t } = useI18n();
   return (
     <Surface className={styles.statePanel} tone="soft" role="alert">
       <strong>
         {status === "invalid"
-          ? "Profilbibliothek ist beschädigt"
-          : "Lokaler Profilspeicher ist nicht verfügbar"}
+          ? t("Profilbibliothek ist beschädigt")
+          : t("Lokaler Profilspeicher ist nicht verfügbar")}
       </strong>
       <p>
         {status === "invalid"
-          ? "Die gespeicherten Daten bleiben unangetastet. Korrigiere oder importiere sie später über einen kontrollierten Profilworkflow."
-          : "Profile können in dieser Sitzung nicht gelesen oder verändert werden."}
+          ? t(
+              "Die gespeicherten Daten bleiben unangetastet. Korrigiere oder importiere sie später über einen kontrollierten Profilworkflow."
+            )
+          : t(
+              "Profile können in dieser Sitzung nicht gelesen oder verändert werden."
+            )}
       </p>
     </Surface>
   );
@@ -72,6 +72,7 @@ export function ProfileLibraryView({
   onProfileDeleted,
   onStartNewAsset
 }: ProfileLibraryViewProps) {
+  const { t, tx } = useI18n();
   const {
     libraryResult,
     filters,
@@ -158,11 +159,14 @@ export function ProfileLibraryView({
     <div className={styles.view}>
       <header className={styles.hero}>
         <div>
-          <span className={styles.eyebrow}>Profilbibliothek</span>
-          <h1 id="profiles-view-title">Produktionsprofile sicher organisieren.</h1>
+          <span className={styles.eyebrow}>{t("Profilbibliothek")}</span>
+          <h1 id="profiles-view-title">
+            {t("Produktionsprofile sicher organisieren.")}
+          </h1>
           <p>
-            Finde kompatible Assetprofile, verwalte Favoriten und starte exakt
-            die richtige Konfiguration im geführten Wizard.
+            {t(
+              "Finde kompatible Assetprofile, verwalte Favoriten und starte exakt die richtige Konfiguration im geführten Wizard."
+            )}
           </p>
         </div>
         <button
@@ -171,15 +175,20 @@ export function ProfileLibraryView({
           onClick={onStartNewAsset}
         >
           <span aria-hidden="true">+</span>
-          Neues Asset
+          {t("Neues Asset")}
         </button>
       </header>
 
-      <Surface as="section" className={styles.filterPanel} tone="raised" aria-labelledby="profile-filter-title">
+      <Surface
+        as="section"
+        className={styles.filterPanel}
+        tone="raised"
+        aria-labelledby="profile-filter-title"
+      >
         <div className={styles.filterHeading}>
           <div>
-            <span className={styles.sectionIndex}>01 · Auswahl</span>
-            <h2 id="profile-filter-title">Bibliothek eingrenzen</h2>
+            <span className={styles.sectionIndex}>{t("01 · Auswahl")}</span>
+            <h2 id="profile-filter-title">{t("Bibliothek eingrenzen")}</h2>
           </div>
           <button
             className={styles.resetButton}
@@ -187,13 +196,13 @@ export function ProfileLibraryView({
             disabled={!hasActiveFilters}
             onClick={resetFilters}
           >
-            Alle Filter zurücksetzen
+            {t("Alle Filter zurücksetzen")}
           </button>
         </div>
 
         <form className={styles.filters} role="search" onSubmit={preventSubmit}>
           <label className={styles.searchField}>
-            <span>Profile durchsuchen</span>
+            <span>{t("Profile durchsuchen")}</span>
             <select
               value={filters.profileId ?? ""}
               onChange={(event) => {
@@ -203,17 +212,18 @@ export function ProfileLibraryView({
                 setProfile(profile?.id ?? null);
               }}
             >
-              <option value="">Alle Profile</option>
+              <option value="">{t("Alle Profile")}</option>
               {data.profileOptions.map((profile) => (
                 <option key={profile.id} value={profile.id}>
-                  {profile.name} · {profile.categoryLabel} / {profile.subtypeLabel}
+                  {profile.name} · {tx(profile.categoryLabel)} /{" "}
+                  {tx(profile.subtypeLabel)}
                 </option>
               ))}
             </select>
           </label>
 
           <label>
-            <span>Kategorie</span>
+            <span>{t("Kategorie")}</span>
             <select
               value={filters.category ?? "all"}
               onChange={(event) => {
@@ -223,17 +233,17 @@ export function ProfileLibraryView({
                 setCategory(category ?? null);
               }}
             >
-              <option value="all">Alle Kategorien</option>
+              <option value="all">{t("Alle Kategorien")}</option>
               {ASSET_CATEGORY_IDS.map((category) => (
                 <option key={category} value={category}>
-                  {categoryFilterLabel(category)}
+                  {tx(categoryFilterLabel(category))}
                 </option>
               ))}
             </select>
           </label>
 
           <label>
-            <span>Basisprofil</span>
+            <span>{t("Basisprofil")}</span>
             <select
               value={filters.baseProfileId ?? ""}
               onChange={(event) => {
@@ -243,7 +253,7 @@ export function ProfileLibraryView({
                 setBaseProfile(baseProfile?.id ?? null);
               }}
             >
-              <option value="">Alle Basisprofile</option>
+              <option value="">{t("Alle Basisprofile")}</option>
               {data.baseOptions.map((baseProfile) => (
                 <option key={baseProfile.id} value={baseProfile.id}>
                   {baseProfile.name} ({baseProfile.profileCount})
@@ -253,7 +263,7 @@ export function ProfileLibraryView({
           </label>
 
           <label>
-            <span>Gruppierung</span>
+            <span>{t("Gruppierung")}</span>
             <select
               value={filters.groupBy}
               onChange={(event) =>
@@ -264,9 +274,9 @@ export function ProfileLibraryView({
                 )
               }
             >
-              <option value="category">Nach Kategorie</option>
+              <option value="category">{t("Nach Kategorie")}</option>
               <option value="compatibility">
-                Nach technischer Kompatibilität
+                {t("Nach technischer Kompatibilität")}
               </option>
             </select>
           </label>
@@ -275,9 +285,11 @@ export function ProfileLibraryView({
             <input
               type="checkbox"
               checked={filters.favoritesOnly}
-              onChange={(event) => setFavoritesOnly(event.currentTarget.checked)}
+              onChange={(event) =>
+                setFavoritesOnly(event.currentTarget.checked)
+              }
             />
-            <span>Nur Favoriten</span>
+            <span>{t("Nur Favoriten")}</span>
           </label>
         </form>
       </Surface>
@@ -292,10 +304,10 @@ export function ProfileLibraryView({
           role={mutation.status === "saved" ? "status" : "alert"}
           aria-live={mutation.status === "saved" ? "polite" : undefined}
         >
-          <span>{message}</span>
+          <span>{tx(message)}</span>
           <button
             type="button"
-            aria-label="Profilmeldung schließen"
+            aria-label={t("Profilmeldung schließen")}
             onClick={dismissMutation}
           >
             ×
@@ -303,24 +315,33 @@ export function ProfileLibraryView({
         </div>
       ) : null}
 
-      <section className={styles.results} aria-labelledby="profile-results-title">
+      <section
+        className={styles.results}
+        aria-labelledby="profile-results-title"
+      >
         <div className={styles.resultsHeading}>
           <div>
-            <span className={styles.sectionIndex}>02 · Bibliothek</span>
-            <h2 ref={resultsHeadingRef} id="profile-results-title" tabIndex={-1}>
-              Gespeicherte Assetprofile
+            <span className={styles.sectionIndex}>{t("02 · Bibliothek")}</span>
+            <h2
+              ref={resultsHeadingRef}
+              id="profile-results-title"
+              tabIndex={-1}
+            >
+              {t("Gespeicherte Assetprofile")}
             </h2>
           </div>
           <p role="status" aria-live="polite" aria-atomic="true">
-            {data.visibleProfileCount} von {data.totalProfileCount}{" "}
-            {data.totalProfileCount === 1 ? "Profil" : "Profilen"}
+            {data.visibleProfileCount} {t("von")} {data.totalProfileCount}{" "}
+            {data.totalProfileCount === 1 ? t("Profil") : t("Profilen")}
           </p>
         </div>
 
         {data.skippedProfileCount > 0 ? (
           <p className={styles.warning} role="note">
-            {data.skippedProfileCount} inkonsistente Profile wurden nicht als
-            Arbeitsgrundlage angezeigt.
+            {data.skippedProfileCount}{" "}
+            {t(
+              "inkonsistente Profile wurden nicht als Arbeitsgrundlage angezeigt."
+            )}
           </p>
         ) : null}
 
@@ -329,29 +350,32 @@ export function ProfileLibraryView({
           <LibraryUnavailableState status={data.collectionStatus} />
         ) : data.collectionStatus === "empty" ? (
           <Surface className={styles.statePanel} tone="soft" role="note">
-            <strong>Noch keine Assetprofile gespeichert</strong>
+            <strong>{t("Noch keine Assetprofile gespeichert")}</strong>
             <p>
-              Starte ein neues Asset. Gespeicherte Ergebnisse erscheinen danach
-              kategorisiert in dieser Bibliothek.
+              {t(
+                "Starte ein neues Asset. Gespeicherte Ergebnisse erscheinen danach kategorisiert in dieser Bibliothek."
+              )}
             </p>
             <button
               className={styles.primaryButton}
               type="button"
               onClick={onStartNewAsset}
             >
-              Erstes Asset erstellen
+              {t("Erstes Asset erstellen")}
             </button>
           </Surface>
         ) : data.groups.length === 0 ? (
           <Surface className={styles.statePanel} tone="soft" role="note">
-            <strong>Keine Profile entsprechen diesen Filtern</strong>
-            <p>Die Bibliothek bleibt unverändert. Passe die Auswahl an.</p>
+            <strong>{t("Keine Profile entsprechen diesen Filtern")}</strong>
+            <p>
+              {t("Die Bibliothek bleibt unverändert. Passe die Auswahl an.")}
+            </p>
             <button
               className={styles.secondaryButton}
               type="button"
               onClick={resetFilters}
             >
-              Filter zurücksetzen
+              {t("Filter zurücksetzen")}
             </button>
           </Surface>
         ) : (
@@ -365,8 +389,8 @@ export function ProfileLibraryView({
                   aria-labelledby={headingId}
                 >
                   <div className={styles.groupHeading}>
-                    <h3 id={headingId}>{group.label}</h3>
-                    <p>{group.description}</p>
+                    <h3 id={headingId}>{tx(group.label)}</h3>
+                    <p>{tx(group.description)}</p>
                   </div>
                   <ul className={styles.cards}>
                     {group.profiles.map((profile) => (

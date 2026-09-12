@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import {
   useEffect,
   useMemo,
@@ -6,12 +7,12 @@ import {
   type KeyboardEvent
 } from "react";
 import { Badge, Surface } from "../../components/ui";
-import type { PromptLanguage, PromptStyleVariant } from "../../domain/prompt-engine";
-import { parseWizardDraft } from "../../schemas";
 import type {
-  OutputWorkspaceAdapter,
-  V2StorageAdapter
-} from "../../services";
+  PromptLanguage,
+  PromptStyleVariant
+} from "../../domain/prompt-engine";
+import { parseWizardDraft } from "../../schemas";
+import type { OutputWorkspaceAdapter, V2StorageAdapter } from "../../services";
 import { useNavigation } from "../../store/navigation";
 import { useProfileLibrary } from "../../store/profiles";
 import { useSettings } from "../../store/settings";
@@ -63,16 +64,18 @@ function WorkspaceState({
   >;
   onOpenWizard: () => void;
 }>) {
+  const { t, tx } = useI18n();
   if (preparation.status === "missingDraft") {
     return (
       <Surface as="section" className={styles.statePanel} tone="soft">
-        <strong>Noch kein Asset für die Ausgabe</strong>
+        <strong>{t("Noch kein Asset für die Ausgabe")}</strong>
         <p>
-          Starte oder öffne zuerst einen Wizard-Entwurf. Danach werden hier
-          Zusammenfassung und Prompt-Paket aufgebaut.
+          {t(
+            "Starte oder öffne zuerst einen Wizard-Entwurf. Danach werden hier Zusammenfassung und Prompt-Paket aufgebaut."
+          )}
         </p>
         <button type="button" onClick={onOpenWizard}>
-          Wizard öffnen
+          {t("Wizard öffnen")}
         </button>
       </Surface>
     );
@@ -85,14 +88,14 @@ function WorkspaceState({
       tone="soft"
       role="alert"
     >
-      <strong>Entwurf noch nicht ausgabebereit</strong>
+      <strong>{t("Entwurf noch nicht ausgabebereit")}</strong>
       <ul>
         {preparation.reasons.map((reason) => (
-          <li key={reason}>{reason}</li>
+          <li key={reason}>{tx(reason)}</li>
         ))}
       </ul>
       <button type="button" onClick={onOpenWizard}>
-        Im Wizard vervollständigen
+        {t("Im Wizard vervollständigen")}
       </button>
     </Surface>
   );
@@ -101,6 +104,7 @@ function WorkspaceState({
 function LibraryState({
   status
 }: Readonly<{ status: "invalid" | "unavailable" }>) {
+  const { t } = useI18n();
   return (
     <Surface
       as="section"
@@ -110,13 +114,17 @@ function LibraryState({
     >
       <strong>
         {status === "invalid"
-          ? "Profilbibliothek ist ungültig"
-          : "Profilspeicher ist nicht verfügbar"}
+          ? t("Profilbibliothek ist ungültig")
+          : t("Profilspeicher ist nicht verfügbar")}
       </strong>
       <p>
         {status === "invalid"
-          ? "Die gespeicherten Daten bleiben unangetastet. Ausgabe und Export sind bis zu einer gültigen Profilkette gesperrt."
-          : "Ohne die lokale Profilbibliothek kann der Entwurf nicht sicher aufgelöst werden."}
+          ? t(
+              "Die gespeicherten Daten bleiben unangetastet. Ausgabe und Export sind bis zu einer gültigen Profilkette gesperrt."
+            )
+          : t(
+              "Ohne die lokale Profilbibliothek kann der Entwurf nicht sicher aufgelöst werden."
+            )}
       </p>
     </Surface>
   );
@@ -125,6 +133,7 @@ function LibraryState({
 function DraftStorageState({
   status
 }: Readonly<{ status: "invalid" | "unavailable" }>) {
+  const { t } = useI18n();
   return (
     <Surface
       as="section"
@@ -134,13 +143,17 @@ function DraftStorageState({
     >
       <strong>
         {status === "invalid"
-          ? "Gespeicherter Entwurf ist ungültig"
-          : "Gespeicherter Entwurf ist nicht erreichbar"}
+          ? t("Gespeicherter Entwurf ist ungültig")
+          : t("Gespeicherter Entwurf ist nicht erreichbar")}
       </strong>
       <p>
         {status === "invalid"
-          ? "Die Entwurfsdaten bleiben unangetastet. Öffne den Wizard, um kontrolliert einen neuen gültigen Stand zu erstellen."
-          : "Der Ausgabebereich kann ohne aktive Sitzung nicht auf den lokalen Entwurf zugreifen."}
+          ? t(
+              "Die Entwurfsdaten bleiben unangetastet. Öffne den Wizard, um kontrolliert einen neuen gültigen Stand zu erstellen."
+            )
+          : t(
+              "Der Ausgabebereich kann ohne aktive Sitzung nicht auf den lokalen Entwurf zugreifen."
+            )}
       </p>
     </Surface>
   );
@@ -162,15 +175,12 @@ export function ReviewOutputWorkspace({
   storageAdapter,
   now = currentIsoTimestamp
 }: ReviewOutputWorkspaceProps) {
+  const { t, tx } = useI18n();
   const definition = APP_VIEW_DEFINITIONS.output;
   const { navigate } = useNavigation();
   const { settings } = useSettings();
   const { libraryResult, saveAssetProfile } = useProfileLibrary();
-  const {
-    activeDraft,
-    activateDraft,
-    draftDirty
-  } = useWizardSession();
+  const { activeDraft, activateDraft, draftDirty } = useWizardSession();
   const [selectedLanguage, setSelectedLanguage] = useState<PromptLanguage>(
     settings.locale
   );
@@ -208,13 +218,21 @@ export function ReviewOutputWorkspace({
   );
   const ready = preparation?.status === "ready" ? preparation : null;
   const availableLanguages = ready
-    ? [...new Set(ready.packages.map((promptPackage) => promptPackage.language))]
+    ? [
+        ...new Set(
+          ready.packages.map((promptPackage) => promptPackage.language)
+        )
+      ]
     : [];
   const availableStyles = ready
-    ? [...new Set(ready.packages.map((promptPackage) => promptPackage.styleProfile))]
+    ? [
+        ...new Set(
+          ready.packages.map((promptPackage) => promptPackage.styleProfile)
+        )
+      ]
     : [];
   const activePackage = ready
-    ? ready.packages.find(
+    ? (ready.packages.find(
         (promptPackage) =>
           promptPackage.language === selectedLanguage &&
           promptPackage.styleProfile === selectedStyle
@@ -222,7 +240,7 @@ export function ReviewOutputWorkspace({
       ready.packages.find(
         (promptPackage) => promptPackage.language === selectedLanguage
       ) ??
-      ready.packages[0]
+      ready.packages[0])
     : undefined;
 
   useEffect(() => {
@@ -353,10 +371,10 @@ export function ReviewOutputWorkspace({
     <div className={styles.view}>
       <header className={styles.hero}>
         <div>
-          <Badge tone="accent">Produktionsarbeitsfläche</Badge>
-          <p className={styles.eyebrow}>{definition.eyebrow}</p>
-          <h1 id="output-view-title">{definition.title}</h1>
-          <p className={styles.description}>{definition.description}</p>
+          <Badge tone="accent">{t("Produktionsarbeitsfläche")}</Badge>
+          <p className={styles.eyebrow}>{tx(definition.eyebrow)}</p>
+          <h1 id="output-view-title">{tx(definition.title)}</h1>
+          <p className={styles.description}>{tx(definition.description)}</p>
         </div>
       </header>
 
@@ -388,9 +406,9 @@ export function ReviewOutputWorkspace({
         />
       ) : ready && activePackage ? (
         <>
-          {(draftDirty ||
-            ready.draft.validation.warnings.length > 0 ||
-            ready.notices.length > 0) ? (
+          {draftDirty ||
+          ready.draft.validation.warnings.length > 0 ||
+          ready.notices.length > 0 ? (
             <Surface
               as="section"
               className={styles.warningPanel}
@@ -398,20 +416,21 @@ export function ReviewOutputWorkspace({
               role="status"
               aria-labelledby="review-warning-title"
             >
-              <h2 id="review-warning-title">Hinweise vor der Ausgabe</h2>
+              <h2 id="review-warning-title">{t("Hinweise vor der Ausgabe")}</h2>
               <ul>
                 {draftDirty ? (
                   <li>
-                    Es gibt ungesicherte Wizard-Eingaben. Die Ausgabe verwendet
-                    den letzten vollständig validierten Entwurfsstand.
+                    {t(
+                      "Es gibt ungesicherte Wizard-Eingaben. Die Ausgabe verwendet den letzten vollständig validierten Entwurfsstand."
+                    )}
                   </li>
                 ) : null}
                 {ready.draft.validation.warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
+                  <li key={warning}>{tx(warning)}</li>
                 ))}
                 {ready.notices.map((notice, index) => (
                   <li key={`${notice.code}-${index}`}>
-                    {formatResolutionNotice(notice)}
+                    {tx(formatResolutionNotice(notice))}
                   </li>
                 ))}
               </ul>
@@ -427,45 +446,56 @@ export function ReviewOutputWorkspace({
             >
               <div className={styles.sectionHeading}>
                 <div>
-                  <span className={styles.sectionIndex}>01 · Zusammenfassung</span>
+                  <span className={styles.sectionIndex}>
+                    {t("01 · Zusammenfassung")}
+                  </span>
                   <h2
                     ref={summaryHeadingRef}
                     id="review-summary-title"
                     tabIndex={-1}
                   >
-                    Produktionszusammenfassung
+                    {t("Produktionszusammenfassung")}
                   </h2>
                 </div>
-                <Badge tone="success">Konfliktfrei</Badge>
+                <Badge tone="success">{t("Konfliktfrei")}</Badge>
               </div>
 
               <dl className={styles.summaryGrid}>
                 {ready.summary.rows.map((row) => (
                   <div key={row.label}>
-                    <dt>{row.label}</dt>
+                    <dt>{tx(row.label)}</dt>
                     <dd>
-                      <span>{row.value}</span>
-                      {row.meta ? <small>{row.meta}</small> : null}
+                      <span>
+                        {[
+                          "Projekt",
+                          "Basisprofil",
+                          "Kategorieprofil",
+                          "Asset"
+                        ].includes(row.label)
+                          ? row.value
+                          : tx(row.value)}
+                      </span>
+                      {row.meta ? <small>{tx(row.meta)}</small> : null}
                     </dd>
                   </div>
                 ))}
               </dl>
 
               <div className={styles.capabilities}>
-                <h3>Aktive Fähigkeiten</h3>
+                <h3>{t("Aktive Fähigkeiten")}</h3>
                 <ul>
                   {ready.summary.capabilities.map((capability) => (
-                    <li key={capability}>{capability}</li>
+                    <li key={capability}>{tx(capability)}</li>
                   ))}
                 </ul>
               </div>
 
               <div className={styles.profileActions}>
                 <button type="button" onClick={saveProfile}>
-                  Profil speichern
+                  {t("Profil speichern")}
                 </button>
                 <button type="button" onClick={exportProfileJson}>
-                  JSON exportieren
+                  {t("JSON exportieren")}
                 </button>
               </div>
             </Surface>
@@ -478,20 +508,21 @@ export function ReviewOutputWorkspace({
             >
               <div className={styles.sectionHeading}>
                 <div>
-                  <span className={styles.sectionIndex}>02 · Output</span>
-                  <h2
-                    id="prompt-output-title"
-                    tabIndex={-1}
-                  >
-                    Prompt-Paket
+                  <span className={styles.sectionIndex}>
+                    {t("02 · Output")}
+                  </span>
+                  <h2 id="prompt-output-title" tabIndex={-1}>
+                    {t("Prompt-Paket")}
                   </h2>
                 </div>
-                <Badge tone="accent">{activePackage.styleProfileLabel}</Badge>
+                <Badge tone="accent">
+                  {tx(activePackage.styleProfileLabel)}
+                </Badge>
               </div>
 
               <div className={styles.packageControls}>
                 <label>
-                  <span>Sprache</span>
+                  <span>{t("Sprache")}</span>
                   <select
                     value={activePackage.language}
                     onChange={(event) =>
@@ -502,13 +533,13 @@ export function ReviewOutputWorkspace({
                   >
                     {availableLanguages.map((language) => (
                       <option key={language} value={language}>
-                        {language === "de" ? "Deutsch" : "English"}
+                        {language === "de" ? t("Deutsch") : t("English")}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  <span>Stilvariante</span>
+                  <span>{t("Stilvariante")}</span>
                   <select
                     value={activePackage.styleProfile}
                     onChange={(event) =>
@@ -525,7 +556,7 @@ export function ReviewOutputWorkspace({
                       );
                       return (
                         <option key={styleProfile} value={styleProfile}>
-                          {optionPackage?.styleProfileLabel ?? styleProfile}
+                          {tx(optionPackage?.styleProfileLabel ?? styleProfile)}
                         </option>
                       );
                     })}
@@ -536,7 +567,7 @@ export function ReviewOutputWorkspace({
               <div
                 className={styles.outputTabs}
                 role="tablist"
-                aria-label="Prompt-Ausgabeart"
+                aria-label={t("Prompt-Ausgabeart")}
               >
                 {REVIEW_OUTPUT_IDS.map((outputId, index) => (
                   <button
@@ -553,7 +584,7 @@ export function ReviewOutputWorkspace({
                     onClick={() => setSelectedOutput(outputId)}
                     onKeyDown={(event) => handleTabKeys(event, index)}
                   >
-                    {REVIEW_OUTPUT_LABELS[outputId]}
+                    {tx(REVIEW_OUTPUT_LABELS[outputId])}
                   </button>
                 ))}
               </div>
@@ -566,9 +597,10 @@ export function ReviewOutputWorkspace({
                 tabIndex={0}
               >
                 <div className={styles.outputHeading}>
-                  <h3>{REVIEW_OUTPUT_LABELS[selectedOutput]}</h3>
+                  <h3>{tx(REVIEW_OUTPUT_LABELS[selectedOutput])}</h3>
                   <span>
-                    {activePackage.languageLabel} · {activePackage.styleProfileLabel}
+                    {tx(activePackage.languageLabel)} ·{" "}
+                    {tx(activePackage.styleProfileLabel)}
                   </span>
                 </div>
                 <pre>{promptPackageText(activePackage, selectedOutput)}</pre>
@@ -576,10 +608,10 @@ export function ReviewOutputWorkspace({
 
               <div className={styles.outputActions}>
                 <button type="button" onClick={() => void copyActiveOutput()}>
-                  Kopieren
+                  {t("Kopieren")}
                 </button>
                 <button type="button" onClick={exportActiveOutput}>
-                  MD exportieren
+                  {t("MD exportieren")}
                 </button>
               </div>
             </Surface>
@@ -594,7 +626,7 @@ export function ReviewOutputWorkspace({
               }
               role={actionStatus.kind === "error" ? "alert" : "status"}
             >
-              {actionStatus.message}
+              {tx(actionStatus.message)}
             </p>
           ) : null}
         </>

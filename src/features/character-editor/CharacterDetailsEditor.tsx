@@ -1,3 +1,4 @@
+import { useI18n, translateText } from "../../i18n";
 import { useState, type ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import {
@@ -79,7 +80,9 @@ const AGE_LABELS: Readonly<Record<CharacterAge, string>> = {
   veryOld: "Sehr alt"
 };
 
-const RELATIVE_HEIGHT_LABELS: Readonly<Record<CharacterRelativeHeight, string>> = {
+const RELATIVE_HEIGHT_LABELS: Readonly<
+  Record<CharacterRelativeHeight, string>
+> = {
   short: "Klein",
   average: "Durchschnittlich",
   tall: "Groß"
@@ -99,11 +102,12 @@ const POSTURE_LABELS: Readonly<Record<CharacterPosture, string>> = {
   dynamic: "Dynamisch"
 };
 
-const EYE_VISIBILITY_LABELS: Readonly<Record<CharacterEyeVisibility, string>> = {
-  clear: "Klar lesbar",
-  subtle: "Dezent angedeutet",
-  obscured: "Verdeckt"
-};
+const EYE_VISIBILITY_LABELS: Readonly<Record<CharacterEyeVisibility, string>> =
+  {
+    clear: "Klar lesbar",
+    subtle: "Dezent angedeutet",
+    obscured: "Verdeckt"
+  };
 
 const HEADWEAR_CONDITION_LABELS: Readonly<
   Record<CharacterHeadwearCondition, string>
@@ -129,10 +133,11 @@ const EXPRESSION_LABELS: Readonly<Record<CharacterExpression, string>> = {
   mysterious: "Geheimnisvoll"
 };
 
-const PALETTE_SOURCE_LABELS: Readonly<Record<CharacterPaletteSource, string>> = {
-  profile: "Aus dem Farbprofil ableiten",
-  local: "Lokale Figurenpalette"
-};
+const PALETTE_SOURCE_LABELS: Readonly<Record<CharacterPaletteSource, string>> =
+  {
+    profile: "Aus dem Farbprofil ableiten",
+    local: "Lokale Figurenpalette"
+  };
 
 const WEALTH_LABELS: Readonly<Record<CharacterWealth, string>> = {
   poor: "Arm",
@@ -391,7 +396,10 @@ function optionalBooleanValue(value: unknown): boolean | undefined {
   return undefined;
 }
 
-function fieldError(form: CharacterForm, field: keyof WizardCoreFormValues): string | null {
+function fieldError(
+  form: CharacterForm,
+  field: keyof WizardCoreFormValues
+): string | null {
   const error = form.formState.errors[field];
   return typeof error?.message === "string" ? error.message : null;
 }
@@ -411,16 +419,19 @@ function FieldShell({
   label: string;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   return (
-    <div className={wide ? `${styles.field} ${styles.wideField}` : styles.field}>
-      <label htmlFor={id}>{label}</label>
+    <div
+      className={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+    >
+      <label htmlFor={id}>{tx(label)}</label>
       {children}
       <p id={`${id}-help`} className={styles.help}>
-        {help}
+        {tx(help)}
       </p>
       {error ? (
         <p id={`${id}-error`} className={styles.error}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -436,6 +447,7 @@ function TextField({
   form: CharacterForm;
   notifyProgrammaticChange: () => void;
 }>) {
+  const { t, tx } = useI18n();
   const { help, label, name } = definition;
   const id = `character-${name}`;
   const error = fieldError(form, name);
@@ -443,7 +455,11 @@ function TextField({
   const presets: readonly string[] = CHARACTER_TEXT_PRESETS_DE[name];
   const watchedValue = useWatch({ control: form.control, name });
   const currentValue = typeof watchedValue === "string" ? watchedValue : "";
-  const matchesPreset = presets.includes(currentValue);
+  const matchedPreset = presets.find(
+    (preset) =>
+      preset === currentValue || translateText("en", preset) === currentValue
+  );
+  const matchesPreset = matchedPreset !== undefined;
   const [customRequested, setCustomRequested] = useState(
     () => currentValue !== "" && !matchesPreset
   );
@@ -452,7 +468,7 @@ function TextField({
   const selectedValue = customActive
     ? CUSTOM_TEXT_PRESET_VALUE
     : matchesPreset
-      ? currentValue
+      ? matchedPreset
       : "";
 
   function updateValue(value: string | undefined): void {
@@ -471,16 +487,16 @@ function TextField({
     }
 
     setCustomRequested(false);
-    const nextValue = optionalTextValue(value);
+    const nextValue = optionalTextValue(tx(value));
     if (nextValue !== currentValue) updateValue(nextValue);
   }
 
   return (
     <FieldShell
       error={error}
-      help={help}
+      help={tx(help)}
       id={id}
-      label={label}
+      label={tx(label)}
       {...(definition.wide === undefined ? {} : { wide: definition.wide })}
     >
       <select
@@ -490,17 +506,19 @@ function TextField({
         aria-invalid={error ? "true" : "false"}
         onChange={(event) => choosePreset(event.currentTarget.value)}
       >
-        <option value="">Nicht festgelegt</option>
+        <option value="">{t("Nicht festgelegt")}</option>
         {presets.map((preset) => (
           <option key={preset} value={preset}>
-            {preset}
+            {tx(preset)}
           </option>
         ))}
-        <option value={CUSTOM_TEXT_PRESET_VALUE}>Eigene Eingabe</option>
+        <option value={CUSTOM_TEXT_PRESET_VALUE}>{t("Eigene Eingabe")}</option>
       </select>
       {customActive ? (
         <div className={styles.customInput}>
-          <label htmlFor={`${id}-custom`}>Eigene Eingabe für {label}</label>
+          <label htmlFor={`${id}-custom`}>
+            {t("Eigene Eingabe für")} {tx(label)}
+          </label>
           {definition.multiline ? (
             <textarea
               id={`${id}-custom`}
@@ -560,22 +578,23 @@ function SelectField({
   name: CharacterSelectFieldName;
   options: readonly SelectOption[];
 }>) {
+  const { t, tx } = useI18n();
   const id = `character-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <select
         id={id}
         aria-describedby={describedBy}
         aria-invalid={error ? "true" : "false"}
         {...form.register(name, { setValueAs: optionalSelectValue })}
       >
-        <option value="">Nicht festgelegt</option>
+        <option value="">{t("Nicht festgelegt")}</option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
-            {option.label}
+            {tx(option.label)}
           </option>
         ))}
       </select>
@@ -584,6 +603,7 @@ function SelectField({
 }
 
 function VariantCountField({ form }: Readonly<{ form: CharacterForm }>) {
+  const { t } = useI18n();
   const id = "character-variantCount";
   const error = fieldError(form, "variantCount");
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
@@ -591,9 +611,11 @@ function VariantCountField({ form }: Readonly<{ form: CharacterForm }>) {
   return (
     <FieldShell
       error={error}
-      help="Anzahl eng zusammengehöriger Figurenvarianten von eins bis fünf."
+      help={t(
+        "Anzahl eng zusammengehöriger Figurenvarianten von eins bis fünf."
+      )}
       id={id}
-      label="Figurenvarianten"
+      label={t("Figurenvarianten")}
     >
       <select
         id={id}
@@ -601,7 +623,7 @@ function VariantCountField({ form }: Readonly<{ form: CharacterForm }>) {
         aria-invalid={error ? "true" : "false"}
         {...form.register("variantCount", { setValueAs: optionalNumberValue })}
       >
-        <option value="">Nicht festgelegt</option>
+        <option value="">{t("Nicht festgelegt")}</option>
         {[1, 2, 3, 4, 5].map((count) => (
           <option key={count} value={count}>
             {count}
@@ -613,6 +635,7 @@ function VariantCountField({ form }: Readonly<{ form: CharacterForm }>) {
 }
 
 function ProfessionReadableField({ form }: Readonly<{ form: CharacterForm }>) {
+  const { t } = useI18n();
   const id = "character-professionReadable";
   const error = fieldError(form, "professionReadable");
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
@@ -620,9 +643,11 @@ function ProfessionReadableField({ form }: Readonly<{ form: CharacterForm }>) {
   return (
     <FieldShell
       error={error}
-      help="Lege fest, ob Kleidung, Werkzeug und Silhouette den Beruf unmittelbar zeigen sollen."
+      help={t(
+        "Lege fest, ob Kleidung, Werkzeug und Silhouette den Beruf unmittelbar zeigen sollen."
+      )}
       id={id}
-      label="Beruf sofort lesbar?"
+      label={t("Beruf sofort lesbar?")}
     >
       <select
         id={id}
@@ -632,9 +657,9 @@ function ProfessionReadableField({ form }: Readonly<{ form: CharacterForm }>) {
           setValueAs: optionalBooleanValue
         })}
       >
-        <option value="">Nicht festgelegt</option>
-        <option value="true">Ja</option>
-        <option value="false">Nein</option>
+        <option value="">{t("Nicht festgelegt")}</option>
+        <option value="true">{t("Ja")}</option>
+        <option value="false">{t("Nein")}</option>
       </select>
     </FieldShell>
   );
@@ -664,6 +689,7 @@ export function CharacterDetailsEditor({
   notifyProgrammaticChange,
   subtype
 }: CharacterDetailsEditorProps) {
+  const { t, tx } = useI18n();
   const showHumanoidWardrobe = isHumanoidCharacterSubtype(subtype);
   const showNpcContext = isNpcContextSubtype(subtype);
 
@@ -674,11 +700,12 @@ export function CharacterDetailsEditor({
         aria-labelledby="character-height-title"
       >
         <div>
-          <p className={styles.eyebrow}>Vererbter Produktionsmaßstab</p>
-          <h3 id="character-height-title">Figurenhöhe</h3>
+          <p className={styles.eyebrow}>{t("Vererbter Produktionsmaßstab")}</p>
+          <h3 id="character-height-title">{t("Figurenhöhe")}</h3>
           <p className={styles.scaleHelp}>
-            Dieser technische Wert kommt aus der Profilkette und wird nicht als
-            Figurenantwort dupliziert.
+            {t(
+              "Dieser technische Wert kommt aus der Profilkette und wird nicht als Figurenantwort dupliziert."
+            )}
           </p>
         </div>
         <div className={styles.scaleValue}>
@@ -686,27 +713,30 @@ export function CharacterDetailsEditor({
             {characterHeight} px
           </output>
           <span
-            className={heightLocked ? styles.lockedBadge : styles.inheritedBadge}
+            className={
+              heightLocked ? styles.lockedBadge : styles.inheritedBadge
+            }
           >
-            {heightLocked ? "Gesperrt" : "Im Basisprofil änderbar"}
+            {heightLocked ? t("Gesperrt") : t("Im Basisprofil änderbar")}
           </span>
           <small>
-            Quelle: {heightSource} · {heightSourceName}
+            {t("Quelle:")} {tx(heightSource)} · {heightSourceName}
           </small>
         </div>
       </section>
 
       <p className={styles.logicNote} role="note">
-        Deutsche Vorlagen stehen bei allen Freitextangaben an erster Stelle.
-        Wähle „Eigene Eingabe“, wenn du stattdessen einen individuellen Text
-        eintragen möchtest.
+        {t(
+          "Vorlagen stehen bei allen Freitextangaben an erster Stelle. Wähle „Eigene Eingabe“, wenn du stattdessen einen individuellen Text eintragen möchtest."
+        )}
       </p>
 
       <fieldset className={styles.group}>
-        <legend>Identität und Varianten</legend>
+        <legend>{t("Identität und Varianten")}</legend>
         <p className={styles.groupIntro}>
-          Verankere Rolle und Motiv, ohne technische Profilwerte im Asset zu
-          wiederholen.
+          {t(
+            "Verankere Rolle und Motiv, ohne technische Profilwerte im Asset zu wiederholen."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <TextFields
@@ -718,46 +748,55 @@ export function CharacterDetailsEditor({
           <SelectField
             form={form}
             name="genderPresentation"
-            label="Geschlechtswirkung"
-            help="Die sichtbare Wirkung der Figur; eine Festlegung ist optional."
+            label={t("Geschlechtswirkung")}
+            help={t(
+              "Die sichtbare Wirkung der Figur; eine Festlegung ist optional."
+            )}
             options={GENDER_PRESENTATION_OPTIONS}
           />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Körper, Gesicht und Ausdruck</legend>
+        <legend>{t("Körper, Gesicht und Ausdruck")}</legend>
         <p className={styles.groupIntro}>
-          Halte Formen auf Gameplay-Größe eindeutig und vermeide porträthafte
-          Übertreibung.
+          {t(
+            "Halte Formen auf Gameplay-Größe eindeutig und vermeide porträthafte Übertreibung."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="age"
-            label="Alterswirkung"
-            help="Wie jung oder alt die Figur visuell gelesen werden soll."
+            label={t("Alterswirkung")}
+            help={t("Wie jung oder alt die Figur visuell gelesen werden soll.")}
             options={AGE_OPTIONS}
           />
           <SelectField
             form={form}
             name="relativeHeight"
-            label="Relative Größe"
-            help="Proportion relativ zu anderen Figuren; die Pixelhöhe bleibt geerbt."
+            label={t("Relative Größe")}
+            help={t(
+              "Proportion relativ zu anderen Figuren; die Pixelhöhe bleibt geerbt."
+            )}
             options={RELATIVE_HEIGHT_OPTIONS}
           />
           <SelectField
             form={form}
             name="bodyBuild"
-            label="Körperbau"
-            help="Grundform des Körpers und ihre Wirkung in der Silhouette."
+            label={t("Körperbau")}
+            help={t(
+              "Grundform des Körpers und ihre Wirkung in der Silhouette."
+            )}
             options={BODY_BUILD_OPTIONS}
           />
           <SelectField
             form={form}
             name="posture"
-            label="Haltung"
-            help="Grundhaltung unabhängig von einer späteren Animationsaktion."
+            label={t("Haltung")}
+            help={t(
+              "Grundhaltung unabhängig von einer späteren Animationsaktion."
+            )}
             options={POSTURE_OPTIONS}
           />
           <TextFields
@@ -768,15 +807,19 @@ export function CharacterDetailsEditor({
           <SelectField
             form={form}
             name="eyeVisibility"
-            label="Augenlesbarkeit"
-            help="Wie deutlich die Augen in der nativen Zielgröße sichtbar sind."
+            label={t("Augenlesbarkeit")}
+            help={t(
+              "Wie deutlich die Augen in der nativen Zielgröße sichtbar sind."
+            )}
             options={EYE_VISIBILITY_OPTIONS}
           />
           <SelectField
             form={form}
             name="expression"
-            label="Ausdruck"
-            help="Zurückhaltender Ausdruck, der auch in kleiner Darstellung lesbar bleibt."
+            label={t("Ausdruck")}
+            help={t(
+              "Zurückhaltender Ausdruck, der auch in kleiner Darstellung lesbar bleibt."
+            )}
             options={EXPRESSION_OPTIONS}
           />
           <TextFields
@@ -789,10 +832,11 @@ export function CharacterDetailsEditor({
 
       {showHumanoidWardrobe ? (
         <fieldset className={styles.group}>
-          <legend>Kopfbedeckung und Kleidung</legend>
+          <legend>{t("Kopfbedeckung und Kleidung")}</legend>
           <p className={styles.groupIntro}>
-            Trenne Kleidungsschichten und asymmetrische Details eindeutig für
-            Vorder-, Seiten- und Rückansichten.
+            {t(
+              "Trenne Kleidungsschichten und asymmetrische Details eindeutig für Vorder-, Seiten- und Rückansichten."
+            )}
           </p>
           <div className={styles.fieldGrid}>
             <TextFields
@@ -803,8 +847,10 @@ export function CharacterDetailsEditor({
             <SelectField
               form={form}
               name="headwearCondition"
-              label="Zustand der Kopfbedeckung"
-              help="Abnutzung und Materialwirkung der gewählten Kopfbedeckung."
+              label={t("Zustand der Kopfbedeckung")}
+              help={t(
+                "Abnutzung und Materialwirkung der gewählten Kopfbedeckung."
+              )}
               options={HEADWEAR_CONDITION_OPTIONS}
             />
             <TextFields
@@ -816,17 +862,18 @@ export function CharacterDetailsEditor({
         </fieldset>
       ) : (
         <p className={styles.logicNote} role="note">
-          Humanoide Kleidungsfragen sind für Tier und Kreatur ausgeblendet.
-          Körper-, Material-, Accessoire- und Ausrüstungsdetails bleiben
-          verfügbar.
+          {t(
+            "Humanoide Kleidungsfragen sind für Tier und Kreatur ausgeblendet. Körper-, Material-, Accessoire- und Ausrüstungsdetails bleiben verfügbar."
+          )}
         </p>
       )}
 
       <fieldset className={styles.group}>
-        <legend>Accessoires, Ausrüstung und Material</legend>
+        <legend>{t("Accessoires, Ausrüstung und Material")}</legend>
         <p className={styles.groupIntro}>
-          Beschreibe nur Elemente, die konsistent in allen benötigten Ansichten
-          erhalten bleiben sollen.
+          {t(
+            "Beschreibe nur Elemente, die konsistent in allen benötigten Ansichten erhalten bleiben sollen."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <TextFields
@@ -837,25 +884,30 @@ export function CharacterDetailsEditor({
           <SelectField
             form={form}
             name="condition"
-            label="Gesamtzustand"
-            help="Abnutzung der Kleidung, Ausrüstung und sichtbaren Materialien."
+            label={t("Gesamtzustand")}
+            help={t(
+              "Abnutzung der Kleidung, Ausrüstung und sichtbaren Materialien."
+            )}
             options={CONDITION_OPTIONS}
           />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Figurenpalette</legend>
+        <legend>{t("Figurenpalette")}</legend>
         <p className={styles.groupIntro}>
-          Lokale Farben ergänzen das geerbte Farbprofil; sie ersetzen keine
-          gesperrte globale Palettenregel.
+          {t(
+            "Lokale Farben ergänzen das geerbte Farbprofil; sie ersetzen keine gesperrte globale Palettenregel."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="characterPaletteSource"
-            label="Palettenquelle"
-            help="Vom Basisprofil ableiten oder konkrete lokale Farben angeben."
+            label={t("Palettenquelle")}
+            help={t(
+              "Vom Basisprofil ableiten oder konkrete lokale Farben angeben."
+            )}
             options={PALETTE_SOURCE_OPTIONS}
           />
           <TextField
@@ -890,18 +942,21 @@ export function CharacterDetailsEditor({
 
       {showNpcContext ? (
         <fieldset className={styles.group}>
-          <legend>NPC-Kontext</legend>
+          <legend>{t("NPC-Kontext")}</legend>
           <p className={styles.groupIntro}>
-            Diese optionalen Angaben verbinden Beruf, soziale Funktion und
-            typische Alltagsdarstellung.
+            {t(
+              "Diese optionalen Angaben verbinden Beruf, soziale Funktion und typische Alltagsdarstellung."
+            )}
           </p>
           <div className={styles.fieldGrid}>
             <ProfessionReadableField form={form} />
             <SelectField
               form={form}
               name="wealth"
-              label="Wohlstandsstufe"
-              help="Sichtbarer materieller Status ohne moderne Markenmerkmale."
+              label={t("Wohlstandsstufe")}
+              help={t(
+                "Sichtbarer materieller Status ohne moderne Markenmerkmale."
+              )}
               options={WEALTH_OPTIONS}
             />
             <TextFields

@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import { resolveCapabilities } from "../../domain/assets";
@@ -130,15 +131,14 @@ const CONDITION_LABELS: Readonly<Record<MovingObjectCondition, string>> = {
   improvised: "Provisorisch"
 };
 
-const LIGHTING_LABELS: Readonly<
-  Record<MovingObjectLightingBehavior, string>
-> = {
-  neutral: "Neutral",
-  emissive: "Emissiv",
-  warm: "Warm",
-  cool: "Kühl",
-  diffuse: "Diffus"
-};
+const LIGHTING_LABELS: Readonly<Record<MovingObjectLightingBehavior, string>> =
+  {
+    neutral: "Neutral",
+    emissive: "Emissiv",
+    warm: "Warm",
+    cool: "Kühl",
+    diffuse: "Diffus"
+  };
 
 const SHADOW_LABELS: Readonly<Record<MovingObjectShadowMode, string>> = {
   none: "Keiner",
@@ -244,16 +244,19 @@ function FieldShell({
   label: string;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   return (
-    <div className={wide ? `${styles.field} ${styles.wideField}` : styles.field}>
-      <label htmlFor={id}>{label}</label>
+    <div
+      className={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+    >
+      <label htmlFor={id}>{tx(label)}</label>
       {children}
       <p id={`${id}-help`} className={styles.help}>
-        {help}
+        {tx(help)}
       </p>
       {error ? (
         <p id={`${id}-error`} className={styles.error}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -269,6 +272,7 @@ function TextField({
   form: MovingObjectForm;
   notifyProgrammaticChange: () => void;
 }>) {
+  const { tx } = useI18n();
   const { help, label, maxLength, name } = definition;
   const id = `moving-object-${name}`;
   const error = fieldError(form, name);
@@ -282,14 +286,12 @@ function TextField({
       error={error}
       errorClassName={styles.error}
       fieldClassName={
-        definition.wide
-          ? `${styles.field} ${styles.wideField}`
-          : styles.field
+        definition.wide ? `${styles.field} ${styles.wideField}` : styles.field
       }
-      help={help}
+      help={tx(help)}
       helpClassName={styles.help}
       id={id}
-      label={label}
+      label={tx(label)}
       maxLength={maxLength}
       {...(definition.multiline === undefined
         ? {}
@@ -322,22 +324,23 @@ function SelectField({
   name: MovingObjectSelectFieldName;
   options: readonly SelectOption[];
 }>) {
+  const { t, tx } = useI18n();
   const id = `moving-object-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <select
         id={id}
         aria-describedby={describedBy}
         aria-invalid={error ? "true" : "false"}
         {...form.register(name, { setValueAs: optionalSelectValue })}
       >
-        <option value="">Nicht festgelegt</option>
+        <option value="">{t("Nicht festgelegt")}</option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
-            {option.label}
+            {tx(option.label)}
           </option>
         ))}
       </select>
@@ -360,12 +363,13 @@ function NumberField({
   min: number;
   name: MovingObjectNumberFieldName;
 }>) {
+  const { tx } = useI18n();
   const id = `moving-object-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <input
         id={id}
         type="number"
@@ -390,21 +394,23 @@ function DerivedObjectClass({
   form: MovingObjectForm;
   subtype: MovingObjectSubtype;
 }>) {
+  const { t, tx } = useI18n();
   return (
     <div className={styles.field}>
       <span id="moving-object-class-label" className={styles.fieldLabel}>
-        Objektklasse
+        {t("Objektklasse")}
       </span>
       <output
         className={styles.derivedValue}
         aria-labelledby="moving-object-class-label"
         aria-describedby="moving-object-class-help"
       >
-        {CLASS_LABELS[defaultClass]}
+        {tx(CLASS_LABELS[defaultClass])}
       </output>
       <input type="hidden" {...form.register("movingObjectClass")} />
       <p id="moving-object-class-help" className={styles.help}>
-        Aus dem Untertyp {SUBTYPE_LABELS[subtype]} eindeutig abgeleitet.
+        {t("Aus dem Untertyp")} {tx(SUBTYPE_LABELS[subtype])}{" "}
+        {t("eindeutig abgeleitet.")}
       </p>
     </div>
   );
@@ -421,6 +427,7 @@ export function MovingObjectDetailsEditor({
   notifyProgrammaticChange,
   subtype
 }: MovingObjectDetailsEditorProps) {
+  const { t, tx } = useI18n();
   const capabilities = resolveCapabilities("movingObject", subtype);
   const defaultClass = getDefaultMovingObjectClass(subtype);
 
@@ -431,29 +438,31 @@ export function MovingObjectDetailsEditor({
         aria-labelledby="moving-object-context-title"
       >
         <div>
-          <p className={styles.eyebrow}>Capability aus dem Untertyp</p>
-          <h3 id="moving-object-context-title">Objektlogik</h3>
+          <p className={styles.eyebrow}>{t("Capability aus dem Untertyp")}</p>
+          <h3 id="moving-object-context-title">{t("Objektlogik")}</h3>
           <p className={styles.contextHelp}>
-            {SUBTYPE_LABELS[subtype]} bestimmt die technische Richtungslogik.
-            Die Objektklasse beschreibt das Motiv und ändert diese Capability
-            nicht.
+            {tx(SUBTYPE_LABELS[subtype])}{" "}
+            {t(
+              "bestimmt die technische Richtungslogik. Die Objektklasse beschreibt das Motiv und ändert diese Capability nicht."
+            )}
           </p>
         </div>
-        <ul className={styles.statusList} aria-label="Objekt-Capabilities">
+        <ul className={styles.statusList} aria-label={t("Objekt-Capabilities")}>
           <li className={styles.statusBadge}>
             {capabilities.directional
-              ? "Richtungsset verfügbar"
-              : "Keine Richtungsansichten"}
+              ? t("Richtungsset verfügbar")
+              : t("Keine Richtungsansichten")}
           </li>
-          <li className={styles.statusBadge}>Animation verfügbar</li>
+          <li className={styles.statusBadge}>{t("Animation verfügbar")}</li>
         </ul>
       </section>
 
       <fieldset className={styles.group}>
-        <legend>Objektkern</legend>
+        <legend>{t("Objektkern")}</legend>
         <p className={styles.groupIntro}>
-          Definiere Funktion und große Formmassen, bevor Mechanik und Material
-          ergänzt werden.
+          {t(
+            "Definiere Funktion und große Formmassen, bevor Mechanik und Material ergänzt werden."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <DerivedObjectClass
@@ -473,89 +482,102 @@ export function MovingObjectDetailsEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Maßstab und Anker</legend>
+        <legend>{t("Maßstab und Anker")}</legend>
         <p className={styles.groupIntro}>
-          Die Standfläche verwendet das geerbte Tile-Raster. Breite und Tiefe
-          bilden gemeinsam einen optionalen Footprint.
+          {t(
+            "Die Standfläche verwendet das geerbte Tile-Raster. Breite und Tiefe bilden gemeinsam einen optionalen Footprint."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <NumberField
             form={form}
             name="movingObjectFootprintWidthTiles"
-            label="Standfläche · Breite in Tiles"
-            help="Ganzzahlig von 1 bis 64; zusammen mit der Tiefe angeben."
+            label={t("Standfläche · Breite in Tiles")}
+            help={t("Ganzzahlig von 1 bis 64; zusammen mit der Tiefe angeben.")}
             min={1}
             max={64}
           />
           <NumberField
             form={form}
             name="movingObjectFootprintDepthTiles"
-            label="Standfläche · Tiefe in Tiles"
-            help="Ganzzahlig von 1 bis 64; zusammen mit der Breite angeben."
+            label={t("Standfläche · Tiefe in Tiles")}
+            help={t(
+              "Ganzzahlig von 1 bis 64; zusammen mit der Breite angeben."
+            )}
             min={1}
             max={64}
           />
           <NumberField
             form={form}
             name="movingObjectHeightPixels"
-            label="Objekthöhe in Pixel"
-            help="Asset-spezifische Höhe von 16 bis 2048 px; kein Figurenmaßstab."
+            label={t("Objekthöhe in Pixel")}
+            help={t(
+              "Asset-spezifische Höhe von 16 bis 2048 px; kein Figurenmaßstab."
+            )}
             min={16}
             max={2048}
           />
           <SelectField
             form={form}
             name="movingObjectAnchorMode"
-            label="Ausrichtungsanker"
-            help="Die Mitte der Standfläche ist der empfohlene Ausgangspunkt für bewegliche Objekte."
+            label={t("Ausrichtungsanker")}
+            help={t(
+              "Die Mitte der Standfläche ist der empfohlene Ausgangspunkt für bewegliche Objekte."
+            )}
             options={ANCHOR_OPTIONS}
           />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Bewegung und Mechanik</legend>
+        <legend>{t("Bewegung und Mechanik")}</legend>
         <p className={styles.groupIntro}>
-          Bewegungsart und sichtbarer Antrieb müssen in jeder Ansicht
-          konstruktiv zusammenpassen.
+          {t(
+            "Bewegungsart und sichtbarer Antrieb müssen in jeder Ansicht konstruktiv zusammenpassen."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="movementType"
-            label="Bewegungsart"
-            help="Die Fortbewegungslogik ist unabhängig von einer zeitlichen Animation."
+            label={t("Bewegungsart")}
+            help={t(
+              "Die Fortbewegungslogik ist unabhängig von einer zeitlichen Animation."
+            )}
             options={MOVEMENT_OPTIONS}
           />
           <SelectField
             form={form}
             name="movingObjectMechanism"
-            label="Mechanik / Antrieb"
-            help="Wähle das sichtbar tragende Bewegungsprinzip."
+            label={t("Mechanik / Antrieb")}
+            help={t("Wähle das sichtbar tragende Bewegungsprinzip.")}
             options={MECHANISM_OPTIONS}
           />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Material und Zustand</legend>
+        <legend>{t("Material und Zustand")}</legend>
         <p className={styles.groupIntro}>
-          Lege Materialgruppen und Abnutzung so fest, dass sie über alle Frames
-          konsistent bleiben.
+          {t(
+            "Lege Materialgruppen und Abnutzung so fest, dass sie über alle Frames konsistent bleiben."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="movingObjectMaterial"
-            label="Hauptmaterial"
-            help="Dominantes Material oder klar getrennte Mischung."
+            label={t("Hauptmaterial")}
+            help={t("Dominantes Material oder klar getrennte Mischung.")}
             options={MATERIAL_OPTIONS}
           />
           <SelectField
             form={form}
             name="movingObjectCondition"
-            label="Zustand"
-            help="Gesamtwirkung von Konstruktion, Material und Reparaturen."
+            label={t("Zustand")}
+            help={t(
+              "Gesamtwirkung von Konstruktion, Material und Reparaturen."
+            )}
             options={CONDITION_OPTIONS}
           />
           <TextField
@@ -574,31 +596,36 @@ export function MovingObjectDetailsEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Licht und Bodenkontakt</legend>
+        <legend>{t("Licht und Bodenkontakt")}</legend>
         <p className={styles.groupIntro}>
-          Lokales Leuchtverhalten ergänzt die geerbte Weltbeleuchtung, ohne die
-          feste Lichtseite zu ersetzen.
+          {t(
+            "Lokales Leuchtverhalten ergänzt die geerbte Weltbeleuchtung, ohne die feste Lichtseite zu ersetzen."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="movingObjectLightingBehavior"
-            label="Lichtverhalten"
-            help="Emissive Akzente bleiben begrenzt und ändern nicht die Weltlichtseite."
+            label={t("Lichtverhalten")}
+            help={t(
+              "Emissive Akzente bleiben begrenzt und ändern nicht die Weltlichtseite."
+            )}
             options={LIGHTING_OPTIONS}
           />
           <SelectField
             form={form}
             name="movingObjectShadowMode"
-            label="Bodenschatten"
-            help="Eine bewegungsabhängige Anpassung bleibt klein und am Anker gebunden."
+            label={t("Bodenschatten")}
+            help={t(
+              "Eine bewegungsabhängige Anpassung bleibt klein und am Anker gebunden."
+            )}
             options={SHADOW_OPTIONS}
           />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Weitere Produktionsdetails</legend>
+        <legend>{t("Weitere Produktionsdetails")}</legend>
         <div className={styles.fieldGrid}>
           <TextField
             form={form}

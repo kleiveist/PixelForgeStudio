@@ -11,16 +11,14 @@ import {
   type ReactNode
 } from "react";
 import type { PromptStudioView } from "../../domain/navigation";
+import { LocaleProvider, type Locale } from "../../i18n";
 import {
   DARK_THEME_MEDIA_QUERY,
   type ResolvedTheme,
   type ThemePreference
 } from "../../domain/theme";
 import type { AppSettings, StableId } from "../../schemas";
-import type {
-  StorageMutationResult,
-  V2StorageAdapter
-} from "../../services";
+import type { StorageMutationResult, V2StorageAdapter } from "../../services";
 import {
   createDefaultAppSettings,
   selectResolvedTheme,
@@ -38,6 +36,7 @@ export interface SettingsContextValue {
   readonly resolvedTheme: ResolvedTheme;
   readonly persistence: SettingsPersistence;
   readonly setThemePreference: (theme: ThemePreference) => void;
+  readonly setLocale: (locale: Locale) => StorageMutationResult;
   readonly setPromptStartView: (
     view: PromptStudioView
   ) => StorageMutationResult;
@@ -69,7 +68,10 @@ function resolvedSystemTheme(mediaQuery: MediaQueryList | null): ResolvedTheme {
 }
 
 function getSystemThemeMediaQuery(): MediaQueryList | null {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
     return null;
   }
   try {
@@ -102,7 +104,8 @@ function loadInitialState(
       systemTheme,
       persistence: {
         status: "invalid",
-        message: "Die gespeicherten Einstellungen sind ungültig. Standardwerte sind aktiv."
+        message:
+          "Die gespeicherten Einstellungen sind ungültig. Standardwerte sind aktiv."
       }
     };
   }
@@ -112,7 +115,8 @@ function loadInitialState(
       systemTheme,
       persistence: {
         status: "unavailable",
-        message: "Lokales Speichern ist nicht verfügbar. Änderungen gelten für diese Sitzung."
+        message:
+          "Lokales Speichern ist nicht verfügbar. Änderungen gelten für diese Sitzung."
       }
     };
   }
@@ -127,12 +131,14 @@ function persistenceFromMutation(
   if (result.status === "invalid") {
     return {
       status: "invalid",
-      message: "Die Darstellung konnte nicht als gültige Einstellung gespeichert werden."
+      message:
+        "Die Darstellung konnte nicht als gültige Einstellung gespeichert werden."
     };
   }
   return {
     status: "unavailable",
-    message: "Lokales Speichern ist nicht verfügbar. Änderungen gelten für diese Sitzung."
+    message:
+      "Lokales Speichern ist nicht verfügbar. Änderungen gelten für diese Sitzung."
   };
 }
 
@@ -171,6 +177,14 @@ export function SettingsProvider({
     root.setAttribute("data-theme", resolvedTheme);
   }, [resolvedTheme]);
 
+  useLayoutEffect(() => {
+    const previous = document.documentElement.lang;
+    document.documentElement.lang = state.settings.locale;
+    return () => {
+      document.documentElement.lang = previous;
+    };
+  }, [state.settings.locale]);
+
   useEffect(() => {
     if (!mediaQuery || state.settings.theme !== "system") return undefined;
 
@@ -186,7 +200,8 @@ export function SettingsProvider({
       systemTheme: resolvedSystemTheme(mediaQuery)
     });
     mediaQuery.addEventListener("change", handleSystemThemeChange);
-    return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
+    return () =>
+      mediaQuery.removeEventListener("change", handleSystemThemeChange);
   }, [mediaQuery, state.settings.theme]);
 
   const setThemePreference = useCallback(
@@ -243,13 +258,23 @@ export function SettingsProvider({
     [storageAdapter]
   );
 
+  const setLocale = useCallback(
+    (locale: Locale): StorageMutationResult => {
+      if (locale === settingsRef.current.locale) return { status: "ok" };
+      return commitSettings({
+        ...settingsRef.current,
+        locale,
+        updatedAt: now()
+      });
+    },
+    [commitSettings, now]
+  );
+
   const setPromptStartView = useCallback(
     (view: PromptStudioView): StorageMutationResult => {
       const currentSettings = settingsRef.current;
       if (view === currentSettings.startView) return { status: "ok" };
-      return commitSettings(
-        withPromptStartView(currentSettings, view, now())
-      );
+      return commitSettings(withPromptStartView(currentSettings, view, now()));
     },
     [commitSettings, now]
   );
@@ -274,6 +299,7 @@ export function SettingsProvider({
       persistence: state.persistence,
       restoreSettings,
       setActiveBaseProfile,
+      setLocale,
       setPromptStartView,
       setThemePreference
     }),
@@ -281,6 +307,7 @@ export function SettingsProvider({
       resolvedTheme,
       restoreSettings,
       setActiveBaseProfile,
+      setLocale,
       setPromptStartView,
       setThemePreference,
       state.persistence,
@@ -289,7 +316,9 @@ export function SettingsProvider({
   );
 
   return (
-    <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
+    <SettingsContext.Provider value={value}>
+      <LocaleProvider locale={state.settings.locale}>{children}</LocaleProvider>
+    </SettingsContext.Provider>
   );
 }
 

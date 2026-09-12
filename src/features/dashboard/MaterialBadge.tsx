@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import type { SVGProps } from "react";
 import {
   ClothIcon,
@@ -32,11 +33,12 @@ export interface MaterialBadgeProps {
 }
 
 export function MaterialBadge({ material }: MaterialBadgeProps) {
+  const { tx } = useI18n();
   const Icon = materialIcons[material];
   return (
     <span className={styles.badge} data-material={material}>
       <Icon className={styles.icon} />
-      {MATERIAL_BADGE_LABELS[material]}
+      {tx(MATERIAL_BADGE_LABELS[material])}
     </span>
   );
 }

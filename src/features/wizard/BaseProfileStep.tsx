@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useCallback,
@@ -250,7 +251,10 @@ function numberOrUndefined(value: string): number | undefined {
 
 function compactLocks(locks: BaseProfileLocks): BaseProfileLocks {
   return Object.fromEntries(
-    BASE_VALUE_KEYS.filter((key) => locks[key] === true).map((key) => [key, true])
+    BASE_VALUE_KEYS.filter((key) => locks[key] === true).map((key) => [
+      key,
+      true
+    ])
   ) as BaseProfileLocks;
 }
 
@@ -273,6 +277,7 @@ function MainField({
   source: string;
   value: string;
 }>) {
+  const { t, tx } = useI18n();
   const labelId = `${controlId}-label`;
   const sourceId = `${controlId}-source`;
   const errorId = `${controlId}-error`;
@@ -281,27 +286,34 @@ function MainField({
     <div className={styles.effectiveField}>
       <div className={styles.fieldHeading}>
         <span id={labelId} className={styles.fieldLabel}>
-          {label}
+          {tx(label)}
         </span>
         <span
           className={locked ? styles.lockedBadge : styles.openBadge}
-          aria-label={locked ? "Gesperrter Basiswert" : "Überschreibbarer Basiswert"}
+          aria-label={
+            locked ? t("Gesperrter Basiswert") : t("Überschreibbarer Basiswert")
+          }
         >
-          {locked ? "Gesperrt" : "Überschreibbar"}
+          {locked ? t("Gesperrt") : t("Überschreibbar")}
         </span>
       </div>
 
       {locked ? (
         <div className={styles.readonlyControl}>
           <output aria-labelledby={labelId} aria-describedby={sourceId}>
-            {value}
+            {controlId === "base-value-lighting-policy"
+              ? value
+                  .split(": ")
+                  .map((part, index) => (index === 0 ? tx(part) : part))
+                  .join(": ")
+              : tx(value)}
           </output>
           <button
             type="button"
             className={styles.textButton}
             onClick={(event) => onConflict(event.currentTarget)}
           >
-            Anderen Wert verwenden …
+            {t("Anderen Wert verwenden …")}
           </button>
         </div>
       ) : (
@@ -309,11 +321,11 @@ function MainField({
       )}
 
       <p id={sourceId} className={styles.sourceLabel}>
-        Quelle: {source}
+        {t("Quelle:")} {tx(source)}
       </p>
       {error ? (
         <p id={errorId} className={styles.fieldError}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -333,14 +345,15 @@ function EditorField({
   label: string;
   lockControl?: ReactNode;
 }>) {
+  const { tx } = useI18n();
   return (
     <div className={styles.editorField}>
-      <label htmlFor={controlId}>{label}</label>
+      <label htmlFor={controlId}>{tx(label)}</label>
       {children}
       {lockControl}
       {error ? (
         <p id={`${controlId}-error`} className={styles.fieldError}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -352,12 +365,17 @@ function LockControl({
   registration
 }: Readonly<{
   label: string;
-  registration: ReturnType<ReturnType<typeof useForm<BaseProfileEditorValues>>["register"]>;
+  registration: ReturnType<
+    ReturnType<typeof useForm<BaseProfileEditorValues>>["register"]
+  >;
 }>) {
+  const { t, tx } = useI18n();
   return (
     <label className={styles.lockControl}>
       <input type="checkbox" {...registration} />
-      <span>{label} für Kindprofile sperren</span>
+      <span>
+        {tx(label)} {t("für Kindprofile sperren")}
+      </span>
     </label>
   );
 }
@@ -371,6 +389,7 @@ export function BaseProfileStep({
   WizardCoreFormValues,
   WizardCoreFlowContext
 >) {
+  const { t, tx } = useI18n();
   const {
     createBaseProfile,
     deleteBaseProfile,
@@ -387,9 +406,10 @@ export function BaseProfileStep({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pendingCreatedBase, setPendingCreatedBase] =
     useState<BaseProfile | null>(null);
-  const [localNotice, setLocalNotice] = useState<
-    Readonly<{ kind: "error" | "success"; message: string }> | null
-  >(null);
+  const [localNotice, setLocalNotice] = useState<Readonly<{
+    kind: "error" | "success";
+    message: string;
+  }> | null>(null);
   const chooserRef = useRef<HTMLFieldSetElement>(null);
   const conflictHeadingRef = useRef<HTMLHeadingElement>(null);
   const switchHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -482,25 +502,21 @@ export function BaseProfileStep({
       pixelDensity: pixelDensity ?? selectedBase.values.pixelDensity,
       styleProfile: styleProfile ?? selectedBase.values.styleProfile,
       tileSize: tileSize ?? selectedBase.values.tileSize,
-      ...(characterHeight ?? selectedBase.values.characterHeight) === undefined
+      ...((characterHeight ?? selectedBase.values.characterHeight) === undefined
         ? {}
         : {
             characterHeight:
               characterHeight ?? selectedBase.values.characterHeight
-          },
-      perspectiveType:
-        perspectiveType ?? selectedBase.values.perspectiveType,
+          }),
+      perspectiveType: perspectiveType ?? selectedBase.values.perspectiveType,
       cameraAngle: cameraAngle ?? selectedBase.values.cameraAngle,
-      cameraDirection:
-        cameraDirection ?? selectedBase.values.cameraDirection,
-      projectionType:
-        projectionType ?? selectedBase.values.projectionType,
+      cameraDirection: cameraDirection ?? selectedBase.values.cameraDirection,
+      projectionType: projectionType ?? selectedBase.values.projectionType,
       outlineStyle: outlineStyle ?? selectedBase.values.outlineStyle,
       paletteMode: paletteMode ?? selectedBase.values.paletteMode,
       backgroundMode: backgroundMode ?? selectedBase.values.backgroundMode,
       alphaPadding: alphaPadding ?? selectedBase.values.alphaPadding,
-      nearestNeighbor:
-        nearestNeighbor ?? selectedBase.values.nearestNeighbor,
+      nearestNeighbor: nearestNeighbor ?? selectedBase.values.nearestNeighbor,
       lightingDefaults: {
         policy: lightingPolicy ?? selectedBase.values.lightingDefaults.policy,
         notes: lightingNotes ?? selectedBase.values.lightingDefaults.notes
@@ -528,11 +544,11 @@ export function BaseProfileStep({
 
   const categoryProfile =
     library && "categoryProfileId" in draft && draft.categoryProfileId
-      ? library.categoryProfiles.find(
+      ? (library.categoryProfiles.find(
           (profile) =>
             profile.id === draft.categoryProfileId &&
             profile.baseProfileId === selectedBase?.id
-        ) ?? null
+        ) ?? null)
       : null;
 
   const sourceFor = useCallback(
@@ -820,11 +836,11 @@ export function BaseProfileStep({
   if (libraryResult.status === "invalid") {
     return (
       <section className={styles.blockingState} role="alert">
-        <h3>Basisprofile konnten nicht sicher gelesen werden</h3>
+        <h3>{t("Basisprofile konnten nicht sicher gelesen werden")}</h3>
         <p>
-          Die gespeicherte Profilbibliothek ist ungültig. Sie wurde nicht
-          verändert; Auswahl und Anlage bleiben gesperrt, bis sie
-          wiederhergestellt wurde.
+          {t(
+            "Die gespeicherte Profilbibliothek ist ungültig. Sie wurde nicht verändert; Auswahl und Anlage bleiben gesperrt, bis sie wiederhergestellt wurde."
+          )}
         </p>
       </section>
     );
@@ -833,10 +849,11 @@ export function BaseProfileStep({
   if (libraryResult.status === "unavailable") {
     return (
       <section className={styles.blockingState} role="alert">
-        <h3>Lokaler Profilspeicher ist nicht verfügbar</h3>
+        <h3>{t("Lokaler Profilspeicher ist nicht verfügbar")}</h3>
         <p>
-          Basisprofile können gerade weder zuverlässig gewählt noch angelegt
-          werden. Der aktuelle Entwurf bleibt unverändert.
+          {t(
+            "Basisprofile können gerade weder zuverlässig gewählt noch angelegt werden. Der aktuelle Entwurf bleibt unverändert."
+          )}
         </p>
       </section>
     );
@@ -851,10 +868,11 @@ export function BaseProfileStep({
           mainError("baseProfileId") ? "base-profile-choice-error" : undefined
         }
       >
-        <legend>Produktionsfamilie auswählen</legend>
+        <legend>{t("Produktionsfamilie auswählen")}</legend>
         <p className={styles.intro}>
-          Das Basisprofil verankert Stil, Maßstab, Kamera und Licht. Gesperrte
-          Regeln bleiben für alle Kindprofile verbindlich.
+          {t(
+            "Das Basisprofil verankert Stil, Maßstab, Kamera und Licht. Gesperrte Regeln bleiben für alle Kindprofile verbindlich."
+          )}
         </p>
 
         {baseProfiles.length > 0 ? (
@@ -894,26 +912,33 @@ export function BaseProfileStep({
                     <span>
                       <strong>{profile.name}</strong>
                       <small>
-                        {formatProfileValue(
-                          "pixelDensity",
-                          profile.values.pixelDensity
+                        {tx(
+                          formatProfileValue(
+                            "pixelDensity",
+                            profile.values.pixelDensity
+                          )
                         )}
                         {showWorldGeometry
-                          ? ` · ${profile.values.tileSize} px`
+                          ? t("· {0} px", profile.values.tileSize)
                           : ""}
                         {capabilities?.scaledCharacter &&
                         profile.values.characterHeight !== undefined
-                          ? ` · Figuren ${profile.values.characterHeight} px`
+                          ? t(
+                              "· Figuren {0} px",
+                              profile.values.characterHeight
+                            )
                           : ""}
                       </small>
                       <span className={styles.choiceMeta}>
                         {Object.values(profile.locks).filter(Boolean).length}{" "}
-                        gesperrte Regeln
-                        {selected ? " · Im Entwurf ausgewählt" : ""}
+                        {t("gesperrte Regeln")}
+                        {selected ? t("· Im Entwurf ausgewählt") : ""}
                         {missingCharacterHeight
                           ? compatible
-                            ? " · Figurenhöhe im Entwurf ergänzen"
-                            : " · Nicht kompatibel: gesperrte Figurenhöhe fehlt"
+                            ? t("· Figurenhöhe im Entwurf ergänzen")
+                            : t(
+                                "· Nicht kompatibel: gesperrte Figurenhöhe fehlt"
+                              )
                           : ""}
                       </span>
                     </span>
@@ -921,14 +946,19 @@ export function BaseProfileStep({
                   <button
                     type="button"
                     className={styles.deleteChoiceButton}
-                    aria-label={`Produktionsfamilie „${profile.name}“ löschen`}
-                    title="Löschen (auch mit Entf bei fokussierter Auswahl)"
+                    aria-label={t(
+                      "Produktionsfamilie „{0}“ löschen",
+                      profile.name
+                    )}
+                    title={t(
+                      "Löschen (auch mit Entf bei fokussierter Auswahl)"
+                    )}
                     onClick={(event) =>
                       requestBaseDeletion(profile, event.currentTarget)
                     }
                   >
                     <span aria-hidden="true">×</span>
-                    Löschen
+                    {t("Löschen")}
                   </button>
                 </div>
               );
@@ -936,14 +966,14 @@ export function BaseProfileStep({
           </div>
         ) : (
           <div className={styles.emptyState} role="note">
-            <strong>Noch keine Produktionsfamilie</strong>
-            <p>Lege ein kanonisches Basisprofil an, um fortzufahren.</p>
+            <strong>{t("Noch keine Produktionsfamilie")}</strong>
+            <p>{t("Lege ein kanonisches Basisprofil an, um fortzufahren.")}</p>
           </div>
         )}
 
         {mainError("baseProfileId") ? (
           <p id="base-profile-choice-error" className={styles.fieldError}>
-            {mainError("baseProfileId")}
+            {tx(mainError("baseProfileId") ?? "")}
           </p>
         ) : null}
 
@@ -956,7 +986,7 @@ export function BaseProfileStep({
               beginEditor({ kind: "new" }, event.currentTarget)
             }
           >
-            Neue kanonische Familie
+            {t("Neue kanonische Familie")}
           </button>
           {selectedBase ? (
             <button
@@ -969,7 +999,7 @@ export function BaseProfileStep({
                 )
               }
             >
-              Ausgewähltes Basisprofil duplizieren
+              {t("Ausgewähltes Basisprofil duplizieren")}
             </button>
           ) : null}
         </div>
@@ -981,13 +1011,19 @@ export function BaseProfileStep({
           role="alert"
           aria-labelledby="base-profile-switch-title"
         >
-          <h3 id="base-profile-switch-title" ref={switchHeadingRef} tabIndex={-1}>
-            Produktionsfamilie wechseln?
+          <h3
+            id="base-profile-switch-title"
+            ref={switchHeadingRef}
+            tabIndex={-1}
+          >
+            {t("Produktionsfamilie wechseln?")}
           </h3>
           <p>
-            Beim Wechsel zu „{pendingBase.name}“ werden die sichtbaren
-            technischen Werte auf dieses Basisprofil gesetzt. Vorhandene
-            technische Abweichungen werden dadurch ersetzt.
+            {t("Beim Wechsel zu „")}
+            {pendingBase.name}
+            {t(
+              "“ werden die sichtbaren technischen Werte auf dieses Basisprofil gesetzt. Vorhandene technische Abweichungen werden dadurch ersetzt."
+            )}
           </p>
           <div className={styles.actions}>
             <button
@@ -995,14 +1031,16 @@ export function BaseProfileStep({
               className={styles.secondaryButton}
               onClick={cancelProfileSwitch}
             >
-              Abbrechen
+              {t("Abbrechen")}
             </button>
             <button
               type="button"
               className={styles.primaryButton}
               onClick={confirmProfileSwitch}
             >
-              Zu „{pendingBase.name}“ wechseln
+              {t("Zu „")}
+              {pendingBase.name}
+              {t("“ wechseln")}
             </button>
           </div>
         </section>
@@ -1020,16 +1058,17 @@ export function BaseProfileStep({
             ref={deleteHeadingRef}
             tabIndex={-1}
           >
-            Produktionsfamilie löschen?
+            {t("Produktionsfamilie löschen?")}
           </h3>
           <p id="base-profile-delete-description">
-            „{pendingDeleteBase.name}“ wird nur gelöscht, wenn kein Kategorie-
-            oder Assetprofil mehr davon abhängt. Abhängige Profile werden nie
-            automatisch mitgelöscht oder umgehängt.
+            „{pendingDeleteBase.name}
+            {t(
+              "“ wird nur gelöscht, wenn kein Kategorie- oder Assetprofil mehr davon abhängt. Abhängige Profile werden nie automatisch mitgelöscht oder umgehängt."
+            )}
           </p>
           {deleteError ? (
             <p className={styles.errorNotice} role="alert">
-              {deleteError}
+              {tx(deleteError)}
             </p>
           ) : null}
           <div className={styles.actions}>
@@ -1038,14 +1077,14 @@ export function BaseProfileStep({
               className={styles.secondaryButton}
               onClick={cancelBaseDeletion}
             >
-              Abbrechen
+              {t("Abbrechen")}
             </button>
             <button
               type="button"
               className={styles.dangerButton}
               onClick={confirmBaseDeletion}
             >
-              Produktionsfamilie endgültig löschen
+              {t("Produktionsfamilie endgültig löschen")}
             </button>
           </div>
         </section>
@@ -1057,14 +1096,18 @@ export function BaseProfileStep({
           role="alert"
           aria-labelledby="base-lock-conflict-title"
         >
-          <h3 id="base-lock-conflict-title" ref={conflictHeadingRef} tabIndex={-1}>
-            {BASE_FIELD_LABELS[lockedConflict]} ist gesperrt
+          <h3
+            id="base-lock-conflict-title"
+            ref={conflictHeadingRef}
+            tabIndex={-1}
+          >
+            {tx(BASE_FIELD_LABELS[lockedConflict])} {t("ist gesperrt")}
           </h3>
           <p>
-            „{selectedBase.name}“ vererbt diesen Wert verbindlich. Das
-            bestehende Profil und seine Kinder werden hier nicht still
-            verändert. Wähle eine andere Familie oder arbeite mit einer
-            eigenständigen Kopie.
+            „{selectedBase.name}
+            {t(
+              "“ vererbt diesen Wert verbindlich. Das bestehende Profil und seine Kinder werden hier nicht still verändert. Wähle eine andere Familie oder arbeite mit einer eigenständigen Kopie."
+            )}
           </p>
           <div className={styles.actions}>
             <button
@@ -1072,14 +1115,14 @@ export function BaseProfileStep({
               className={styles.secondaryButton}
               onClick={closeConflict}
             >
-              Abbrechen
+              {t("Abbrechen")}
             </button>
             <button
               type="button"
               className={styles.secondaryButton}
               onClick={focusOtherProfile}
             >
-              Anderes Profil wählen
+              {t("Anderes Profil wählen")}
             </button>
             <button
               type="button"
@@ -1088,14 +1131,14 @@ export function BaseProfileStep({
                 beginEditor({ kind: "duplicate", source: selectedBase })
               }
             >
-              Basisprofil duplizieren
+              {t("Basisprofil duplizieren")}
             </button>
             <button
               type="button"
               className={styles.secondaryButton}
               onClick={() => beginEditor({ kind: "new" })}
             >
-              Neue kanonische Familie
+              {t("Neue kanonische Familie")}
             </button>
           </div>
         </section>
@@ -1109,30 +1152,33 @@ export function BaseProfileStep({
           <header className={styles.editorHeader}>
             <div>
               <p className={styles.eyebrow}>
-                {editorMode.kind === "duplicate" ? "Eigenständige Kopie" : "Neue Familie"}
+                {editorMode.kind === "duplicate"
+                  ? t("Eigenständige Kopie")
+                  : t("Neue Familie")}
               </p>
               <h3 id="base-profile-editor-title">
                 {editorMode.kind === "duplicate"
-                  ? `„${editorMode.source.name}“ duplizieren`
-                  : "Kanonisches Basisprofil anlegen"}
+                  ? t("„{0}“ duplizieren", editorMode.source.name)
+                  : t("Kanonisches Basisprofil anlegen")}
               </h3>
             </div>
             <p>
-              Werte und Sperren werden erst mit „Basisprofil anlegen“ lokal
-              gespeichert. Der aktuelle Entwurf bleibt bis dahin unverändert.
+              {t(
+                "Werte und Sperren werden erst mit „Basisprofil anlegen“ lokal gespeichert. Der aktuelle Entwurf bleibt bis dahin unverändert."
+              )}
             </p>
           </header>
 
           {localNotice?.kind === "error" ? (
             <p className={styles.errorNotice} role="alert">
-              {localNotice.message}
+              {tx(localNotice.message)}
             </p>
           ) : null}
 
           <div className={styles.editorGrid}>
             <EditorField
               controlId="base-editor-name"
-              label="Name der Produktionsfamilie"
+              label={t("Name der Produktionsfamilie")}
               error={fieldErrorMessage(editorForm.formState.errors.name)}
             >
               <input
@@ -1153,13 +1199,13 @@ export function BaseProfileStep({
 
             <EditorField
               controlId="base-editor-pixel-density"
-              label="Pixelstil"
+              label={t("Pixelstil")}
               error={fieldErrorMessage(
                 editorForm.formState.errors.values?.pixelDensity
               )}
               lockControl={
                 <LockControl
-                  label="Pixelstil"
+                  label={t("Pixelstil")}
                   registration={editorForm.register("locks.pixelDensity")}
                 />
               }
@@ -1169,20 +1215,22 @@ export function BaseProfileStep({
                 {...editorForm.register("values.pixelDensity")}
               >
                 {PIXEL_DENSITY_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </EditorField>
 
             <EditorField
               controlId="base-editor-style-profile"
-              label="Stilprofil"
+              label={t("Stilprofil")}
               error={fieldErrorMessage(
                 editorForm.formState.errors.values?.styleProfile
               )}
               lockControl={
                 <LockControl
-                  label="Stilprofil"
+                  label={t("Stilprofil")}
                   registration={editorForm.register("locks.styleProfile")}
                 />
               }
@@ -1192,7 +1240,9 @@ export function BaseProfileStep({
                 {...editorForm.register("values.styleProfile")}
               >
                 {STYLE_PROFILE_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </EditorField>
@@ -1201,13 +1251,13 @@ export function BaseProfileStep({
               <>
                 <EditorField
                   controlId="base-editor-tile-size"
-                  label="Tilegröße in Pixeln"
+                  label={t("Tilegröße in Pixeln")}
                   error={fieldErrorMessage(
                     editorForm.formState.errors.values?.tileSize
                   )}
                   lockControl={
                     <LockControl
-                      label="Tilegröße"
+                      label={t("Tilegröße")}
                       registration={editorForm.register("locks.tileSize")}
                     />
                   }
@@ -1218,7 +1268,9 @@ export function BaseProfileStep({
                     min={8}
                     max={512}
                     inputMode="numeric"
-                    aria-invalid={Boolean(editorForm.formState.errors.values?.tileSize)}
+                    aria-invalid={Boolean(
+                      editorForm.formState.errors.values?.tileSize
+                    )}
                     {...editorForm.register("values.tileSize", {
                       setValueAs: numberOrUndefined
                     })}
@@ -1227,14 +1279,16 @@ export function BaseProfileStep({
 
                 <EditorField
                   controlId="base-editor-perspective"
-                  label="Perspektive"
+                  label={t("Perspektive")}
                   error={fieldErrorMessage(
                     editorForm.formState.errors.values?.perspectiveType
                   )}
                   lockControl={
                     <LockControl
-                      label="Perspektive"
-                      registration={editorForm.register("locks.perspectiveType")}
+                      label={t("Perspektive")}
+                      registration={editorForm.register(
+                        "locks.perspectiveType"
+                      )}
                     />
                   }
                 >
@@ -1243,20 +1297,22 @@ export function BaseProfileStep({
                     {...editorForm.register("values.perspectiveType")}
                   >
                     {PERSPECTIVE_OPTIONS.map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {tx(label)}
+                      </option>
                     ))}
                   </select>
                 </EditorField>
 
                 <EditorField
                   controlId="base-editor-camera-angle"
-                  label="Kamerawinkel"
+                  label={t("Kamerawinkel")}
                   error={fieldErrorMessage(
                     editorForm.formState.errors.values?.cameraAngle
                   )}
                   lockControl={
                     <LockControl
-                      label="Kamerawinkel"
+                      label={t("Kamerawinkel")}
                       registration={editorForm.register("locks.cameraAngle")}
                     />
                   }
@@ -1275,14 +1331,16 @@ export function BaseProfileStep({
 
                 <EditorField
                   controlId="base-editor-camera-direction"
-                  label="Kamerarichtung"
+                  label={t("Kamerarichtung")}
                   error={fieldErrorMessage(
                     editorForm.formState.errors.values?.cameraDirection
                   )}
                   lockControl={
                     <LockControl
-                      label="Kamerarichtung"
-                      registration={editorForm.register("locks.cameraDirection")}
+                      label={t("Kamerarichtung")}
+                      registration={editorForm.register(
+                        "locks.cameraDirection"
+                      )}
                     />
                   }
                 >
@@ -1291,20 +1349,22 @@ export function BaseProfileStep({
                     {...editorForm.register("values.cameraDirection")}
                   >
                     {CAMERA_DIRECTION_OPTIONS.map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {tx(label)}
+                      </option>
                     ))}
                   </select>
                 </EditorField>
 
                 <EditorField
                   controlId="base-editor-projection"
-                  label="Projektion"
+                  label={t("Projektion")}
                   error={fieldErrorMessage(
                     editorForm.formState.errors.values?.projectionType
                   )}
                   lockControl={
                     <LockControl
-                      label="Projektion"
+                      label={t("Projektion")}
                       registration={editorForm.register("locks.projectionType")}
                     />
                   }
@@ -1314,7 +1374,9 @@ export function BaseProfileStep({
                     {...editorForm.register("values.projectionType")}
                   >
                     {PROJECTION_OPTIONS.map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {tx(label)}
+                      </option>
                     ))}
                   </select>
                 </EditorField>
@@ -1324,13 +1386,13 @@ export function BaseProfileStep({
             {showCharacterHeight ? (
               <EditorField
                 controlId="base-editor-character-height"
-                label="Figurenhöhe in Pixeln"
+                label={t("Figurenhöhe in Pixeln")}
                 error={fieldErrorMessage(
                   editorForm.formState.errors.values?.characterHeight
                 )}
                 lockControl={
                   <LockControl
-                    label="Figurenhöhe"
+                    label={t("Figurenhöhe")}
                     registration={editorForm.register("locks.characterHeight")}
                   />
                 }
@@ -1353,13 +1415,13 @@ export function BaseProfileStep({
 
             <EditorField
               controlId="base-editor-outline"
-              label="Outline"
+              label={t("Outline")}
               error={fieldErrorMessage(
                 editorForm.formState.errors.values?.outlineStyle
               )}
               lockControl={
                 <LockControl
-                  label="Outline"
+                  label={t("Outline")}
                   registration={editorForm.register("locks.outlineStyle")}
                 />
               }
@@ -1369,20 +1431,22 @@ export function BaseProfileStep({
                 {...editorForm.register("values.outlineStyle")}
               >
                 {OUTLINE_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </EditorField>
 
             <EditorField
               controlId="base-editor-palette"
-              label="Farbprofil"
+              label={t("Farbprofil")}
               error={fieldErrorMessage(
                 editorForm.formState.errors.values?.paletteMode
               )}
               lockControl={
                 <LockControl
-                  label="Farbprofil"
+                  label={t("Farbprofil")}
                   registration={editorForm.register("locks.paletteMode")}
                 />
               }
@@ -1392,20 +1456,22 @@ export function BaseProfileStep({
                 {...editorForm.register("values.paletteMode")}
               >
                 {PALETTE_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </EditorField>
 
             <EditorField
               controlId="base-editor-background"
-              label="Hintergrund"
+              label={t("Hintergrund")}
               error={fieldErrorMessage(
                 editorForm.formState.errors.values?.backgroundMode
               )}
               lockControl={
                 <LockControl
-                  label="Hintergrund"
+                  label={t("Hintergrund")}
                   registration={editorForm.register("locks.backgroundMode")}
                 />
               }
@@ -1415,7 +1481,9 @@ export function BaseProfileStep({
                 {...editorForm.register("values.backgroundMode")}
               >
                 {BACKGROUND_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </EditorField>
@@ -1424,13 +1492,13 @@ export function BaseProfileStep({
             editorBackgroundMode === "transparent" ? (
               <EditorField
                 controlId="base-editor-alpha-padding"
-                label="Transparenter Sicherheitsrand in Pixeln"
+                label={t("Transparenter Sicherheitsrand in Pixeln")}
                 error={fieldErrorMessage(
                   editorForm.formState.errors.values?.alphaPadding
                 )}
                 lockControl={
                   <LockControl
-                    label="Transparenter Sicherheitsrand"
+                    label={t("Transparenter Sicherheitsrand")}
                     registration={editorForm.register("locks.alphaPadding")}
                   />
                 }
@@ -1453,13 +1521,13 @@ export function BaseProfileStep({
 
             <EditorField
               controlId="base-editor-nearest-neighbor"
-              label="Skalierung"
+              label={t("Skalierung")}
               error={fieldErrorMessage(
                 editorForm.formState.errors.values?.nearestNeighbor
               )}
               lockControl={
                 <LockControl
-                  label="Nearest-Neighbor-Skalierung"
+                  label={t("Nearest-Neighbor-Skalierung")}
                   registration={editorForm.register("locks.nearestNeighbor")}
                 />
               }
@@ -1470,20 +1538,20 @@ export function BaseProfileStep({
                   type="checkbox"
                   {...editorForm.register("values.nearestNeighbor")}
                 />
-                <span>Nearest Neighbor erzwingen</span>
+                <span>{t("Nearest Neighbor erzwingen")}</span>
               </label>
             </EditorField>
 
             <div className={styles.wideField}>
               <EditorField
                 controlId="base-editor-lighting-policy"
-                label="Lichtgrundregel"
+                label={t("Lichtgrundregel")}
                 error={fieldErrorMessage(
                   editorForm.formState.errors.values?.lightingDefaults?.policy
                 )}
                 lockControl={
                   <LockControl
-                    label="Lichtgrundregeln"
+                    label={t("Lichtgrundregeln")}
                     registration={editorForm.register("locks.lightingDefaults")}
                   />
                 }
@@ -1493,13 +1561,15 @@ export function BaseProfileStep({
                   {...editorForm.register("values.lightingDefaults.policy")}
                 >
                   {LIGHTING_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
+                    <option key={value} value={value}>
+                      {tx(label)}
+                    </option>
                   ))}
                 </select>
               </EditorField>
               <EditorField
                 controlId="base-editor-lighting-notes"
-                label="Zusätzliche Lichtnotizen"
+                label={t("Zusätzliche Lichtnotizen")}
                 error={fieldErrorMessage(
                   editorForm.formState.errors.values?.lightingDefaults?.notes
                 )}
@@ -1531,21 +1601,20 @@ export function BaseProfileStep({
                 });
               }}
             >
-              Abbrechen
+              {t("Abbrechen")}
             </button>
             <button
               type="button"
               className={styles.primaryButton}
               onClick={() => void saveEditor()}
             >
-              Basisprofil anlegen
+              {t("Basisprofil anlegen")}
             </button>
           </div>
         </section>
       ) : null}
 
-      {localNotice &&
-      !(editorMode !== null && localNotice.kind === "error") ? (
+      {localNotice && !(editorMode !== null && localNotice.kind === "error") ? (
         <p
           className={
             localNotice.kind === "error"
@@ -1554,7 +1623,7 @@ export function BaseProfileStep({
           }
           role={localNotice.kind === "error" ? "alert" : "status"}
         >
-          {localNotice.message}
+          {tx(localNotice.message)}
         </p>
       ) : null}
 
@@ -1565,22 +1634,26 @@ export function BaseProfileStep({
         >
           <header className={styles.valuesHeader}>
             <div>
-              <p className={styles.eyebrow}>Wirksame Produktionswerte</p>
+              <p className={styles.eyebrow}>{t("Wirksame Produktionswerte")}</p>
               <h3 id="effective-base-values-title">{selectedBase.name}</h3>
             </div>
             <p>
-              Quelle und Sperrstatus bleiben an jedem Wert sichtbar. Änderungen
-              an überschreibbaren Feldern gelten nur für diesen Entwurf.
+              {t(
+                "Quelle und Sperrstatus bleiben an jedem Wert sichtbar. Änderungen an überschreibbaren Feldern gelten nur für diesen Entwurf."
+              )}
             </p>
           </header>
 
           <div className={styles.effectiveGrid}>
             <MainField
               controlId="base-value-pixel-density"
-              label="Pixelstil"
+              label={t("Pixelstil")}
               locked={selectedBase.locks.pixelDensity === true}
               source={sourceFor("pixelDensity")}
-              value={formatProfileValue("pixelDensity", currentValues.pixelDensity)}
+              value={formatProfileValue(
+                "pixelDensity",
+                currentValues.pixelDensity
+              )}
               error={mainError("pixelDensity")}
               onConflict={(trigger) => openConflict("pixelDensity", trigger)}
             >
@@ -1595,17 +1668,22 @@ export function BaseProfileStep({
                 {...form.register("pixelDensity")}
               >
                 {PIXEL_DENSITY_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </MainField>
 
             <MainField
               controlId="base-value-style-profile"
-              label="Stilprofil"
+              label={t("Stilprofil")}
               locked={selectedBase.locks.styleProfile === true}
               source={sourceFor("styleProfile")}
-              value={formatProfileValue("styleProfile", currentValues.styleProfile)}
+              value={formatProfileValue(
+                "styleProfile",
+                currentValues.styleProfile
+              )}
               error={mainError("styleProfile")}
               onConflict={(trigger) => openConflict("styleProfile", trigger)}
             >
@@ -1620,7 +1698,9 @@ export function BaseProfileStep({
                 {...form.register("styleProfile")}
               >
                 {STYLE_PROFILE_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </MainField>
@@ -1629,7 +1709,7 @@ export function BaseProfileStep({
               <>
                 <MainField
                   controlId="base-value-tile-size"
-                  label="Tilegröße"
+                  label={t("Tilegröße")}
                   locked={selectedBase.locks.tileSize === true}
                   source={sourceFor("tileSize")}
                   value={formatProfileValue("tileSize", currentValues.tileSize)}
@@ -1656,7 +1736,7 @@ export function BaseProfileStep({
 
                 <MainField
                   controlId="base-value-perspective"
-                  label="Perspektive"
+                  label={t("Perspektive")}
                   locked={selectedBase.locks.perspectiveType === true}
                   source={sourceFor("perspectiveType")}
                   value={formatProfileValue(
@@ -1679,17 +1759,22 @@ export function BaseProfileStep({
                     {...form.register("perspectiveType")}
                   >
                     {PERSPECTIVE_OPTIONS.map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {tx(label)}
+                      </option>
                     ))}
                   </select>
                 </MainField>
 
                 <MainField
                   controlId="base-value-camera-angle"
-                  label="Kamerawinkel"
+                  label={t("Kamerawinkel")}
                   locked={selectedBase.locks.cameraAngle === true}
                   source={sourceFor("cameraAngle")}
-                  value={formatProfileValue("cameraAngle", currentValues.cameraAngle)}
+                  value={formatProfileValue(
+                    "cameraAngle",
+                    currentValues.cameraAngle
+                  )}
                   error={mainError("cameraAngle")}
                   onConflict={(trigger) => openConflict("cameraAngle", trigger)}
                 >
@@ -1711,7 +1796,7 @@ export function BaseProfileStep({
 
                 <MainField
                   controlId="base-value-camera-direction"
-                  label="Kamerarichtung"
+                  label={t("Kamerarichtung")}
                   locked={selectedBase.locks.cameraDirection === true}
                   source={sourceFor("cameraDirection")}
                   value={formatProfileValue(
@@ -1734,14 +1819,16 @@ export function BaseProfileStep({
                     {...form.register("cameraDirection")}
                   >
                     {CAMERA_DIRECTION_OPTIONS.map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {tx(label)}
+                      </option>
                     ))}
                   </select>
                 </MainField>
 
                 <MainField
                   controlId="base-value-projection"
-                  label="Projektion"
+                  label={t("Projektion")}
                   locked={selectedBase.locks.projectionType === true}
                   source={sourceFor("projectionType")}
                   value={formatProfileValue(
@@ -1764,7 +1851,9 @@ export function BaseProfileStep({
                     {...form.register("projectionType")}
                   >
                     {PROJECTION_OPTIONS.map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {tx(label)}
+                      </option>
                     ))}
                   </select>
                 </MainField>
@@ -1774,7 +1863,7 @@ export function BaseProfileStep({
             {showCharacterHeight ? (
               <MainField
                 controlId="base-value-character-height"
-                label="Figurenhöhe"
+                label={t("Figurenhöhe")}
                 locked={selectedBase.locks.characterHeight === true}
                 source={sourceFor("characterHeight")}
                 value={formatProfileValue(
@@ -1807,10 +1896,13 @@ export function BaseProfileStep({
 
             <MainField
               controlId="base-value-outline"
-              label="Outline"
+              label={t("Outline")}
               locked={selectedBase.locks.outlineStyle === true}
               source={sourceFor("outlineStyle")}
-              value={formatProfileValue("outlineStyle", currentValues.outlineStyle)}
+              value={formatProfileValue(
+                "outlineStyle",
+                currentValues.outlineStyle
+              )}
               error={mainError("outlineStyle")}
               onConflict={(trigger) => openConflict("outlineStyle", trigger)}
             >
@@ -1825,17 +1917,22 @@ export function BaseProfileStep({
                 {...form.register("outlineStyle")}
               >
                 {OUTLINE_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </MainField>
 
             <MainField
               controlId="base-value-palette"
-              label="Farbprofil"
+              label={t("Farbprofil")}
               locked={selectedBase.locks.paletteMode === true}
               source={sourceFor("paletteMode")}
-              value={formatProfileValue("paletteMode", currentValues.paletteMode)}
+              value={formatProfileValue(
+                "paletteMode",
+                currentValues.paletteMode
+              )}
               error={mainError("paletteMode")}
               onConflict={(trigger) => openConflict("paletteMode", trigger)}
             >
@@ -1850,14 +1947,16 @@ export function BaseProfileStep({
                 {...form.register("paletteMode")}
               >
                 {PALETTE_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </MainField>
 
             <MainField
               controlId="base-value-background"
-              label="Hintergrund"
+              label={t("Hintergrund")}
               locked={selectedBase.locks.backgroundMode === true}
               source={sourceFor("backgroundMode")}
               value={formatProfileValue(
@@ -1878,7 +1977,9 @@ export function BaseProfileStep({
                 {...form.register("backgroundMode")}
               >
                 {BACKGROUND_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {tx(label)}
+                  </option>
                 ))}
               </select>
             </MainField>
@@ -1886,10 +1987,13 @@ export function BaseProfileStep({
             {showAlphaPadding ? (
               <MainField
                 controlId="base-value-alpha-padding"
-                label="Transparenter Sicherheitsrand"
+                label={t("Transparenter Sicherheitsrand")}
                 locked={selectedBase.locks.alphaPadding === true}
                 source={sourceFor("alphaPadding")}
-                value={formatProfileValue("alphaPadding", currentValues.alphaPadding)}
+                value={formatProfileValue(
+                  "alphaPadding",
+                  currentValues.alphaPadding
+                )}
                 error={mainError("alphaPadding")}
                 onConflict={(trigger) => openConflict("alphaPadding", trigger)}
               >
@@ -1914,7 +2018,7 @@ export function BaseProfileStep({
 
             <MainField
               controlId="base-value-nearest-neighbor"
-              label="Skalierung"
+              label={t("Skalierung")}
               locked={selectedBase.locks.nearestNeighbor === true}
               source={sourceFor("nearestNeighbor")}
               value={formatProfileValue(
@@ -1922,9 +2026,7 @@ export function BaseProfileStep({
                 currentValues.nearestNeighbor
               )}
               error={mainError("nearestNeighbor")}
-              onConflict={(trigger) =>
-                openConflict("nearestNeighbor", trigger)
-              }
+              onConflict={(trigger) => openConflict("nearestNeighbor", trigger)}
             >
               <label className={styles.booleanControl}>
                 <input
@@ -1938,14 +2040,14 @@ export function BaseProfileStep({
                   aria-invalid={Boolean(mainError("nearestNeighbor"))}
                   {...form.register("nearestNeighbor")}
                 />
-                <span>Nearest Neighbor erzwingen</span>
+                <span>{t("Nearest Neighbor erzwingen")}</span>
               </label>
             </MainField>
 
             <div className={styles.wideField}>
               <MainField
                 controlId="base-value-lighting-policy"
-                label="Lichtgrundregel"
+                label={t("Lichtgrundregel")}
                 locked={selectedBase.locks.lightingDefaults === true}
                 source={sourceFor("lightingDefaults")}
                 value={formatProfileValue(
@@ -1971,11 +2073,13 @@ export function BaseProfileStep({
                     {...form.register("lightingPolicy")}
                   >
                     {LIGHTING_OPTIONS.map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value}>
+                        {tx(label)}
+                      </option>
                     ))}
                   </select>
                   <label htmlFor="base-value-lighting-notes">
-                    Zusätzliche Lichtnotizen
+                    {t("Zusätzliche Lichtnotizen")}
                   </label>
                   <textarea
                     id="base-value-lighting-notes"
@@ -1994,7 +2098,7 @@ export function BaseProfileStep({
                       id="base-value-lighting-notes-error"
                       className={styles.fieldError}
                     >
-                      {mainError("lightingNotes")}
+                      {tx(mainError("lightingNotes") ?? "")}
                     </p>
                   ) : null}
                 </div>
@@ -2004,11 +2108,11 @@ export function BaseProfileStep({
         </section>
       ) : baseProfileId ? (
         <section className={styles.blockingState} role="alert">
-          <h3>Ausgewähltes Basisprofil fehlt</h3>
+          <h3>{t("Ausgewähltes Basisprofil fehlt")}</h3>
           <p>
-            Die gespeicherte Referenz ist nicht mehr in der Profilbibliothek
-            vorhanden. Wähle eine verfügbare Familie; der fehlende Verweis wird
-            nicht automatisch ersetzt.
+            {t(
+              "Die gespeicherte Referenz ist nicht mehr in der Profilbibliothek vorhanden. Wähle eine verfügbare Familie; der fehlende Verweis wird nicht automatisch ersetzt."
+            )}
           </p>
         </section>
       ) : null}

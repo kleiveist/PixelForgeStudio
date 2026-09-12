@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useState } from "react";
 import { ForgeMarkIcon } from "../../components/icons";
 import { ViewLink } from "../../components/navigation";
@@ -15,7 +16,6 @@ import {
   getDashboardCategory
 } from "./dashboardCatalog";
 import {
-  formatDashboardDate,
   readDashboardData,
   type DashboardCollectionStatus,
   type DashboardStorage
@@ -28,9 +28,7 @@ export interface DashboardViewProps {
   readonly onStartNewAsset: (category: AssetCategory | null) => void;
   readonly onOpenProfile: (profileId: StableId) => void;
   readonly onResumeDraft: (draftId: StableId) => void;
-  readonly onSelectBaseProfile: (
-    profileId: StableId
-  ) => StorageMutationResult;
+  readonly onSelectBaseProfile: (profileId: StableId) => StorageMutationResult;
 }
 
 const collectionMessages: Record<
@@ -57,31 +55,35 @@ const collectionMessages: Record<
 function ProfileCollectionState({
   status
 }: Readonly<{ status: DashboardCollectionStatus }>) {
+  const { t, tx } = useI18n();
   if (status === "ready") return null;
   const message = collectionMessages[status];
   return (
     <Surface className={styles.emptyState} tone="soft" role="note">
-      <strong>{message.title}</strong>
-      <p>{message.description}</p>
-      <ViewLink view="profiles">Profilverwaltung öffnen</ViewLink>
+      <strong>{tx(message.title)}</strong>
+      <p>{tx(message.description)}</p>
+      <ViewLink view="profiles">{t("Profilverwaltung öffnen")}</ViewLink>
     </Surface>
   );
 }
 
 function NoResolvedProfilesState() {
+  const { t } = useI18n();
   return (
     <Surface className={styles.emptyState} tone="soft" role="note">
-      <strong>Keine kompatiblen Profile für den Schnellzugriff</strong>
+      <strong>{t("Keine kompatiblen Profile für den Schnellzugriff")}</strong>
       <p>
-        Vorhandene inkonsistente Profile bleiben gespeichert und können in der
-        Profilverwaltung geprüft werden.
+        {t(
+          "Vorhandene inkonsistente Profile bleiben gespeichert und können in der Profilverwaltung geprüft werden."
+        )}
       </p>
-      <ViewLink view="profiles">Profile prüfen</ViewLink>
+      <ViewLink view="profiles">{t("Profile prüfen")}</ViewLink>
     </Surface>
   );
 }
 
 function DraftSummary({ draft }: Readonly<{ draft: WizardDraft }>) {
+  const { date, t, tx } = useI18n();
   const category =
     "category" in draft ? getDashboardCategory(draft.category) : null;
   return (
@@ -90,14 +92,14 @@ function DraftSummary({ draft }: Readonly<{ draft: WizardDraft }>) {
         ↗
       </span>
       <span className={styles.draftCopy}>
-        <span className={styles.eyebrow}>Letzter Entwurf</span>
-        <strong>{draft.projectName || "Unbenanntes Projekt"}</strong>
+        <span className={styles.eyebrow}>{t("Letzter Entwurf")}</span>
+        <strong>{draft.projectName || t("Unbenanntes Projekt")}</strong>
         <span>
-          {category ? `${category.label} · ` : ""}
-          Schritt {draft.currentStep}
+          {category ? `${tx(category.label)} · ` : ""}
+          {t("Schritt")} {tx(draft.currentStep)}
         </span>
         <time dateTime={draft.savedAt}>
-          Gesichert {formatDashboardDate(draft.savedAt)}
+          {t("Gesichert")} {date(draft.savedAt)}
         </time>
       </span>
     </>
@@ -112,6 +114,7 @@ export function DashboardView({
   onResumeDraft,
   onSelectBaseProfile
 }: DashboardViewProps) {
+  const { date, t, tx } = useI18n();
   const [baseSelectionStatus, setBaseSelectionStatus] = useState<
     "saved" | "session" | "invalid" | null
   >(null);
@@ -137,14 +140,18 @@ export function DashboardView({
         aria-labelledby="dashboard-view-title"
       >
         <div className={styles.heroCopy}>
-          <Badge tone="accent">Produktionszentrale · {BRAND.versionLabel}</Badge>
-          <p className={styles.eyebrow}>Asset zuerst. Prompt danach.</p>
+          <Badge tone="accent">
+            {t("Produktionszentrale ·")} {BRAND.versionLabel}
+          </Badge>
+          <p className={styles.eyebrow}>{t("Asset zuerst. Prompt danach.")}</p>
           <h1 id="dashboard-view-title">
-            Pixelart-Produktion beginnt mit der richtigen Asset-Art.
+            {t("Pixelart-Produktion beginnt mit der richtigen Asset-Art.")}
           </h1>
           <p className={styles.intro}>
-            {BRAND.tagline}. Wähle zuerst, was du bauen möchtest – das Studio
-            öffnet anschließend nur die passenden Regeln und Fragen.
+            {tx(BRAND.tagline)}
+            {t(
+              ". Wähle zuerst, was du bauen möchtest – das Studio öffnet anschließend nur die passenden Regeln und Fragen."
+            )}
           </p>
           <div className={styles.heroActions}>
             <button
@@ -153,24 +160,27 @@ export function DashboardView({
               onClick={() => onStartNewAsset(null)}
             >
               <span aria-hidden="true">+</span>
-              Neues Asset
+              {t("Neues Asset")}
             </button>
             <ViewLink className={styles.secondaryAction} view="profiles">
-              Profil laden
+              {t("Profil laden")}
             </ViewLink>
           </div>
-          <dl className={styles.heroFacts} aria-label="Studio-Leistungsumfang">
+          <dl
+            className={styles.heroFacts}
+            aria-label={t("Studio-Leistungsumfang")}
+          >
             <div>
               <dt>9</dt>
-              <dd>Asset-Kategorien</dd>
+              <dd>{t("Asset-Kategorien")}</dd>
             </div>
             <div>
               <dt>4</dt>
-              <dd>Prompt-Ausgaben</dd>
+              <dd>{t("Prompt-Ausgaben")}</dd>
             </div>
             <div>
-              <dt>Lokal</dt>
-              <dd>Profile &amp; Entwürfe</dd>
+              <dt>{t("Lokal")}</dt>
+              <dd>{t("Profile & Entwürfe")}</dd>
             </div>
           </dl>
         </div>
@@ -180,7 +190,9 @@ export function DashboardView({
           <span className={styles.heroMark}>
             <ForgeMarkIcon />
           </span>
-          <span className={styles.heroLabel}>CHOOSE · SHAPE · FORGE</span>
+          <span className={styles.heroLabel}>
+            {t("CHOOSE · SHAPE · FORGE")}
+          </span>
         </div>
       </Surface>
 
@@ -191,25 +203,35 @@ export function DashboardView({
           onClick={() => onResumeDraft(data.draft!.draftId)}
         >
           <DraftSummary draft={data.draft} />
-          <span className={styles.draftAction}>Entwurf fortsetzen →</span>
+          <span className={styles.draftAction}>
+            {t("Entwurf fortsetzen →")}
+          </span>
         </button>
       ) : data.draftStatus === "invalid" ||
         data.draftStatus === "unavailable" ? (
         <p className={styles.storageNotice} role="note">
           {data.draftStatus === "invalid"
-            ? "Der lokale Entwurf ist beschädigt und wurde nicht automatisch geöffnet."
-            : "Ein lokaler Entwurf kann derzeit nicht gelesen werden."}
+            ? t(
+                "Der lokale Entwurf ist beschädigt und wurde nicht automatisch geöffnet."
+              )
+            : t("Ein lokaler Entwurf kann derzeit nicht gelesen werden.")}
         </p>
       ) : null}
 
-      <section className={styles.section} aria-labelledby="asset-categories-title">
+      <section
+        className={styles.section}
+        aria-labelledby="asset-categories-title"
+      >
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>Neues Asset</p>
-            <h2 id="asset-categories-title">Was möchtest du erschaffen?</h2>
+            <p className={styles.eyebrow}>{t("Neues Asset")}</p>
+            <h2 id="asset-categories-title">
+              {t("Was möchtest du erschaffen?")}
+            </h2>
             <p>
-              Jede Auswahl startet den Wizard direkt mit der passenden
-              Kategorie – ohne fachfremde Formularfelder.
+              {t(
+                "Jede Auswahl startet den Wizard direkt mit der passenden Kategorie – ohne fachfremde Formularfelder."
+              )}
             </p>
           </div>
         </div>
@@ -229,23 +251,23 @@ export function DashboardView({
                   className={styles.visuallyHidden}
                   id={`dashboard-category-${category.id}-title`}
                 >
-                  {`${category.label} als neues Asset erstellen`}
+                  {t("{0} als neues Asset erstellen", tx(category.label))}
                 </span>
                 <span className={styles.categoryIcon}>
                   <CategoryIcon category={category.id} />
                 </span>
                 <span className={styles.categoryCopy}>
-                  <strong>{category.label}</strong>
+                  <strong>{tx(category.label)}</strong>
                   <span id={`dashboard-category-${category.id}-description`}>
-                    {category.shortDescription}
+                    {tx(category.shortDescription)}
                   </span>
                 </span>
                 <span
                   className={styles.categoryMeta}
                   id={`dashboard-category-${category.id}-meta`}
                 >
-                  <span>{category.examples}</span>
-                  <Badge>{category.capabilityLabel}</Badge>
+                  <span>{tx(category.examples)}</span>
+                  <Badge>{tx(category.capabilityLabel)}</Badge>
                 </span>
                 <span className={styles.categoryArrow} aria-hidden="true">
                   →
@@ -263,17 +285,18 @@ export function DashboardView({
         aria-labelledby="materials-title"
       >
         <div>
-          <p className={styles.eyebrow}>Materialsprache</p>
-          <h2 id="materials-title">Vom Werkstoff zum präzisen Preset</h2>
+          <p className={styles.eyebrow}>{t("Materialsprache")}</p>
+          <h2 id="materials-title">{t("Vom Werkstoff zum präzisen Preset")}</h2>
           <p>
-            Materialangaben werden im passenden Textur- oder Asset-Editor
-            konkretisiert und bleiben auf Profilkarten sofort erkennbar.
+            {t(
+              "Materialangaben werden im passenden Textur- oder Asset-Editor konkretisiert und bleiben auf Profilkarten sofort erkennbar."
+            )}
           </p>
         </div>
         <div
           className={styles.materialBadges}
           role="group"
-          aria-label="Unterstützte Materialien"
+          aria-label={t("Unterstützte Materialien")}
         >
           {MATERIAL_BADGE_IDS.map((material) => (
             <MaterialBadge key={material} material={material} />
@@ -281,15 +304,18 @@ export function DashboardView({
         </div>
       </Surface>
 
-      <section className={styles.section} aria-labelledby="recent-profiles-title">
+      <section
+        className={styles.section}
+        aria-labelledby="recent-profiles-title"
+      >
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>Direkt weiterarbeiten</p>
-            <h2 id="recent-profiles-title">Letzte Profile</h2>
-            <p>Zuletzt geänderte, kompatibel aufgelöste Assetprofile.</p>
+            <p className={styles.eyebrow}>{t("Direkt weiterarbeiten")}</p>
+            <h2 id="recent-profiles-title">{t("Letzte Profile")}</h2>
+            <p>{t("Zuletzt geänderte, kompatibel aufgelöste Assetprofile.")}</p>
           </div>
           <ViewLink className={styles.textLink} view="profiles">
-            Profile durchsuchen &amp; filtern →
+            {t("Profile durchsuchen & filtern →")}
           </ViewLink>
         </div>
 
@@ -308,8 +334,10 @@ export function DashboardView({
         )}
         {data.skippedProfileCount > 0 ? (
           <p className={styles.storageNotice} role="note">
-            {data.skippedProfileCount} inkonsistente Profile wurden aus der
-            Schnellansicht ausgeblendet und nicht verändert.
+            {data.skippedProfileCount}{" "}
+            {t(
+              "inkonsistente Profile wurden aus der Schnellansicht ausgeblendet und nicht verändert."
+            )}
           </p>
         ) : null}
       </section>
@@ -320,9 +348,11 @@ export function DashboardView({
       >
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>Schnellzugriff</p>
-            <h2 id="favorite-profiles-title">Favoriten</h2>
-            <p>Deine markierten Profile für den direkten Wiedereinstieg.</p>
+            <p className={styles.eyebrow}>{t("Schnellzugriff")}</p>
+            <h2 id="favorite-profiles-title">{t("Favoriten")}</h2>
+            <p>
+              {t("Deine markierten Profile für den direkten Wiedereinstieg.")}
+            </p>
           </div>
         </div>
 
@@ -339,12 +369,13 @@ export function DashboardView({
           <ProfileCollectionState status={data.collectionStatus} />
         ) : (
           <Surface className={styles.emptyState} tone="soft" role="note">
-            <strong>Noch keine Favoriten</strong>
+            <strong>{t("Noch keine Favoriten")}</strong>
             <p>
-              Favorisierte Profile erscheinen hier, sobald sie in der
-              Profilbibliothek markiert wurden.
+              {t(
+                "Favorisierte Profile erscheinen hier, sobald sie in der Profilbibliothek markiert wurden."
+              )}
             </p>
-            <ViewLink view="profiles">Zur Profilbibliothek</ViewLink>
+            <ViewLink view="profiles">{t("Zur Profilbibliothek")}</ViewLink>
           </Surface>
         )}
       </section>
@@ -352,15 +383,16 @@ export function DashboardView({
       <section className={styles.section} aria-labelledby="base-profiles-title">
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>Vererbte Produktionsregeln</p>
-            <h2 id="base-profiles-title">Basisprofile im Überblick</h2>
+            <p className={styles.eyebrow}>{t("Vererbte Produktionsregeln")}</p>
+            <h2 id="base-profiles-title">{t("Basisprofile im Überblick")}</h2>
             <p>
-              Wähle hier das aktive Produktionsfundament. Bearbeitung und neue
-              Profile bleiben in der Profilverwaltung gebündelt.
+              {t(
+                "Wähle hier das aktive Produktionsfundament. Bearbeitung und neue Profile bleiben in der Profilverwaltung gebündelt."
+              )}
             </p>
           </div>
           <ViewLink className={styles.textLink} view="profiles">
-            Basisprofile verwalten →
+            {t("Basisprofile verwalten →")}
           </ViewLink>
         </div>
 
@@ -382,14 +414,16 @@ export function DashboardView({
                     id={`dashboard-base-${profile.id}-title`}
                   >
                     {profile.active
-                      ? `${profile.name}, aktives Basisprofil`
-                      : `${profile.name} als Basisprofil verwenden`}
+                      ? t("{0}, aktives Basisprofil", profile.name)
+                      : t("{0} als Basisprofil verwenden", profile.name)}
                   </span>
                   <span className={styles.baseTopline}>
                     <span className={styles.baseMonogram} aria-hidden="true">
                       BP
                     </span>
-                    {profile.active ? <Badge tone="success">Aktiv</Badge> : null}
+                    {profile.active ? (
+                      <Badge tone="success">{t("Aktiv")}</Badge>
+                    ) : null}
                   </span>
                   <strong>{profile.name}</strong>
                   <span
@@ -397,14 +431,16 @@ export function DashboardView({
                     id={`dashboard-base-${profile.id}-description`}
                   >
                     <span className={styles.baseFacts}>
-                      {profile.facts.join(" · ")}
+                      {profile.facts.map(tx).join(" · ")}
                     </span>
                     <time dateTime={profile.updatedAt}>
-                      Aktualisiert {formatDashboardDate(profile.updatedAt)}
+                      {t("Aktualisiert")} {date(profile.updatedAt)}
                     </time>
                   </span>
                   <span className={styles.baseAction} aria-hidden="true">
-                    {profile.active ? "Aktives Profil" : "Als Basis verwenden →"}
+                    {profile.active
+                      ? t("Aktives Profil")
+                      : t("Als Basis verwenden →")}
                   </span>
                 </button>
               </li>
@@ -415,21 +451,26 @@ export function DashboardView({
           <ProfileCollectionState status={data.collectionStatus} />
         ) : (
           <Surface className={styles.emptyState} tone="soft" role="note">
-            <strong>Kein Basisprofil verfügbar</strong>
+            <strong>{t("Kein Basisprofil verfügbar")}</strong>
             <p>
-              Lege in der Profilverwaltung ein technisches Fundament für Tile,
-              Perspektive und Pixelstil an.
+              {t(
+                "Lege in der Profilverwaltung ein technisches Fundament für Tile, Perspektive und Pixelstil an."
+              )}
             </p>
-            <ViewLink view="profiles">Basisprofil anlegen</ViewLink>
+            <ViewLink view="profiles">{t("Basisprofil anlegen")}</ViewLink>
           </Surface>
         )}
         {baseSelectionStatus ? (
           <p className={styles.storageNotice} role="status">
             {baseSelectionStatus === "saved"
-              ? "Basisprofil aktiviert und lokal gespeichert."
+              ? t("Basisprofil aktiviert und lokal gespeichert.")
               : baseSelectionStatus === "session"
-                ? "Basisprofil ist für diese Sitzung aktiv; lokales Speichern ist nicht verfügbar."
-                : "Basisprofil konnte wegen ungültiger Einstellungen nicht aktiviert werden."}
+                ? t(
+                    "Basisprofil ist für diese Sitzung aktiv; lokales Speichern ist nicht verfügbar."
+                  )
+                : t(
+                    "Basisprofil konnte wegen ungültiger Einstellungen nicht aktiviert werden."
+                  )}
           </p>
         ) : null}
       </section>

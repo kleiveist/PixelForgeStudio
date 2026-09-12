@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "../../components/ui";
 import type { AssetCategory } from "../../domain/assets";
@@ -27,10 +28,7 @@ import {
 import { WizardEngine } from "./WizardEngine";
 import styles from "./WizardView.module.css";
 
-export type WizardStorage = Pick<
-  V2StorageAdapter,
-  "readDraft" | "writeDraft"
->;
+export type WizardStorage = Pick<V2StorageAdapter, "readDraft" | "writeDraft">;
 
 type RecoveryReason =
   | "draftMissing"
@@ -161,7 +159,10 @@ function resumeDraft(
     selectedDraft &&
     (("baseProfileId" in draft && draft.baseProfileId !== undefined) ||
       ("categoryProfileId" in draft && draft.categoryProfileId !== undefined));
-  if (selectedDraftNeedsProfileLibrary && input.libraryResult.status !== "valid") {
+  if (
+    selectedDraftNeedsProfileLibrary &&
+    input.libraryResult.status !== "valid"
+  ) {
     return recovery(
       "profileLibraryUnavailable",
       "Profilreferenzen können nicht geprüft werden",
@@ -210,7 +211,9 @@ function resumeDraft(
   };
 }
 
-function initializeWizard(input: InitializeWizardInput): WizardInitializationState {
+function initializeWizard(
+  input: InitializeWizardInput
+): WizardInitializationState {
   if (input.activeDraft) {
     return resumeDraft(
       input,
@@ -393,6 +396,7 @@ export function WizardView({
   now = currentIsoTimestamp,
   storageAdapter
 }: WizardViewProps) {
+  const { t, tx } = useI18n();
   const {
     activeDraft,
     activateDraft,
@@ -452,22 +456,22 @@ export function WizardView({
     <div className={styles.wizard}>
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Geführter Abfragekatalog</p>
-          <h1 id="wizard-view-title">Neue Assets geführt aufsetzen.</h1>
+          <p className={styles.eyebrow}>{t("Geführter Abfragekatalog")}</p>
+          <h1 id="wizard-view-title">{t("Neue Assets geführt aufsetzen.")}</h1>
           <p className={styles.heroDescription}>
-            Ein wiederaufnehmbarer Arbeitsfluss führt von der Projektbasis zur
-            passenden Asset-Logik. Gespeichert wird lokal und nur nach einer
-            gültigen Änderung oder bewussten Navigation.
+            {t(
+              "Ein wiederaufnehmbarer Arbeitsfluss führt von der Projektbasis zur passenden Asset-Logik. Gespeichert wird lokal und nur nach einer gültigen Änderung oder bewussten Navigation."
+            )}
           </p>
         </div>
         {initialization.status === "ready" ? (
           <div className={styles.sessionBadge}>
-            <Badge tone="accent">Wizard-Sitzung</Badge>
-            <strong>{initialization.sessionLabel}</strong>
+            <Badge tone="accent">{t("Wizard-Sitzung")}</Badge>
+            <strong>{tx(initialization.sessionLabel)}</strong>
             <span>
               {(activeDraft ? draftPersisted : initialization.draftPersisted)
-                ? "Lokal gespeichert"
-                : "Noch nicht lokal gespeichert"}
+                ? t("Lokal gespeichert")
+                : t("Noch nicht lokal gespeichert")}
             </span>
           </div>
         ) : null}
@@ -479,13 +483,13 @@ export function WizardView({
           aria-labelledby="wizard-recovery-title"
           data-recovery-reason={initialization.reason}
         >
-          <p className={styles.eyebrow}>Sichere Wiederherstellung</p>
-          <h2 id="wizard-recovery-title">{initialization.title}</h2>
-          <p>{initialization.message}</p>
+          <p className={styles.eyebrow}>{t("Sichere Wiederherstellung")}</p>
+          <h2 id="wizard-recovery-title">{tx(initialization.title)}</h2>
+          <p>{tx(initialization.message)}</p>
           {initialization.details.length > 0 ? (
             <ul className={styles.recoveryDetails}>
               {initialization.details.map((detail, index) => (
-                <li key={`${index}-${detail}`}>{detail}</li>
+                <li key={`${index}-${detail}`}>{tx(detail)}</li>
               ))}
             </ul>
           ) : null}
@@ -494,7 +498,7 @@ export function WizardView({
             type="button"
             onClick={() => requestNewAsset(null)}
           >
-            Neuen flüchtigen Entwurf beginnen
+            {t("Neuen flüchtigen Entwurf beginnen")}
           </button>
         </section>
       ) : (
@@ -503,8 +507,8 @@ export function WizardView({
             <div key={notice} className={styles.notice} role="note">
               <span aria-hidden="true">i</span>
               <div>
-                <strong>Entwurf sicher eingeordnet</strong>
-                <span>{notice}</span>
+                <strong>{t("Entwurf sicher eingeordnet")}</strong>
+                <span>{tx(notice)}</span>
               </div>
             </div>
           ))}

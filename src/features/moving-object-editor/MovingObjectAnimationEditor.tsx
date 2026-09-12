@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import { resolveCapabilities } from "../../domain/assets";
 import {
@@ -30,9 +31,8 @@ function frameError(
   form: MovingObjectForm,
   animationType: MovingObjectAnimationType
 ): string | null {
-  const error = form.formState.errors.movingObjectAnimationFrames?.[
-    animationType
-  ];
+  const error =
+    form.formState.errors.movingObjectAnimationFrames?.[animationType];
   return typeof error?.message === "string" ? error.message : null;
 }
 
@@ -47,6 +47,7 @@ export function MovingObjectAnimationEditor({
   notifyProgrammaticChange,
   subtype
 }: MovingObjectAnimationEditorProps) {
+  const { t, tx } = useI18n();
   const animationFrames = useWatch({
     control: form.control,
     name: "movingObjectAnimationFrames"
@@ -82,22 +83,29 @@ export function MovingObjectAnimationEditor({
   return (
     <div className={styles.animationEditor}>
       <div className={styles.logicNote} role="note">
-        <strong>Animation und Richtungsset bleiben getrennt.</strong>
+        <strong>{t("Animation und Richtungsset bleiben getrennt.")}</strong>
         <span>
           {capabilities.directional && directionCount !== undefined
-            ? `Jede Sequenz verwendet ihre Frames in allen ${directionCount} gewählten Richtungen.`
+            ? t(
+                "Jede Sequenz verwendet ihre Frames in allen {0} gewählten Richtungen.",
+                directionCount
+              )
             : capabilities.directional
-              ? "Sequenzen erhalten eigene Frames; ein Richtungsset ist noch nicht ausgewählt."
-              : "Sequenzen erhalten eigene Frames, ohne Richtungsansichten zu erzeugen."}
+              ? t(
+                  "Sequenzen erhalten eigene Frames; ein Richtungsset ist noch nicht ausgewählt."
+                )
+              : t(
+                  "Sequenzen erhalten eigene Frames, ohne Richtungsansichten zu erzeugen."
+                )}
         </span>
       </div>
 
       <fieldset className={styles.group}>
-        <legend>Animationssequenzen und Frames</legend>
+        <legend>{t("Animationssequenzen und Frames")}</legend>
         <p className={styles.groupIntro}>
-          Aktiviere nur benötigte Sequenzen. Jede aktive Sequenz erhält ein bis
-          sechzehn Frames und startet mit vier Frames. Keine Auswahl bedeutet,
-          dass keine Animation angefordert wird.
+          {t(
+            "Aktiviere nur benötigte Sequenzen. Jede aktive Sequenz erhält ein bis sechzehn Frames und startet mit vier Frames. Keine Auswahl bedeutet, dass keine Animation angefordert wird."
+          )}
         </p>
         <div className={styles.actionGrid}>
           {MOVING_OBJECT_ANIMATION_TYPE_IDS.map((animationType) => {
@@ -122,7 +130,7 @@ export function MovingObjectAnimationEditor({
                   <input
                     id={inputId}
                     type="checkbox"
-                    aria-label={`${label} aktivieren`}
+                    aria-label={t("{0} aktivieren", tx(label))}
                     checked={enabled}
                     onChange={(event) =>
                       toggleAnimation(
@@ -132,14 +140,18 @@ export function MovingObjectAnimationEditor({
                     }
                   />
                   <span>
-                    <strong>{label}</strong>
-                    <small>{enabled ? "Aktiv" : "Nicht ausgewählt"}</small>
+                    <strong>{tx(label)}</strong>
+                    <small>
+                      {enabled ? t("Aktiv") : t("Nicht ausgewählt")}
+                    </small>
                   </span>
                 </label>
 
                 {enabled ? (
                   <div className={styles.frameField}>
-                    <label htmlFor={frameId}>Frames für {label}</label>
+                    <label htmlFor={frameId}>
+                      {t("Frames für")} {tx(label)}
+                    </label>
                     <input
                       id={frameId}
                       type="number"
@@ -155,11 +167,11 @@ export function MovingObjectAnimationEditor({
                       )}
                     />
                     <p id={helpId} className={styles.help}>
-                      1 bis 16 Frames
+                      {t("1 bis 16 Frames")}
                     </p>
                     {error ? (
                       <p id={errorId} className={styles.error}>
-                        {error}
+                        {tx(error)}
                       </p>
                     ) : null}
                   </div>
@@ -175,25 +187,33 @@ export function MovingObjectAnimationEditor({
         aria-labelledby="moving-object-animation-rules-title"
       >
         <h3 id="moving-object-animation-rules-title">
-          Verbindliche Konsistenzregeln
+          {t("Verbindliche Konsistenzregeln")}
         </h3>
         <ul>
-          <li>Die Kamera und die Weltlichtseite bleiben in allen Frames fest.</li>
           <li>
-            Anker, Footprint und Objektproportionen bleiben über alle Frames
-            identisch.
+            {t(
+              "Die Kamera und die Weltlichtseite bleiben in allen Frames fest."
+            )}
           </li>
           <li>
-            Mechanik, Materialaufteilung und Bauteile wechseln nicht zwischen
-            Ansichten.
+            {t(
+              "Anker, Footprint und Objektproportionen bleiben über alle Frames identisch."
+            )}
           </li>
           <li>
-            Richtungsansichten werden logisch neu gezeichnet und nicht blind
-            gespiegelt.
+            {t(
+              "Mechanik, Materialaufteilung und Bauteile wechseln nicht zwischen Ansichten."
+            )}
           </li>
           <li>
-            Kontakt- oder Bewegungsschatten bleiben klein und folgen dem
-            festgelegten Anker.
+            {t(
+              "Richtungsansichten werden logisch neu gezeichnet und nicht blind gespiegelt."
+            )}
+          </li>
+          <li>
+            {t(
+              "Kontakt- oder Bewegungsschatten bleiben klein und folgen dem festgelegten Anker."
+            )}
           </li>
         </ul>
       </section>

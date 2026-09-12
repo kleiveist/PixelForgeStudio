@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n";
 import { useEffect, useRef } from "react";
 import { ForgeMarkIcon } from "../components/icons/ForgeMarkIcon";
 import { ViewLink } from "../components/navigation";
@@ -14,10 +15,7 @@ import type {
 } from "../services";
 import { useNavigation } from "../store/navigation";
 import { useWizardSession } from "../store/wizard";
-import {
-  PromptStudioNavigation,
-  PromptStudioShell
-} from "./AppShell";
+import { PromptStudioNavigation, PromptStudioShell } from "./AppShell";
 import styles from "./AppShell.module.css";
 import {
   studioRouteContextLabel,
@@ -42,6 +40,7 @@ export function StudioShell({
   startupMigration,
   storageAdapter
 }: StudioShellProps) {
+  const { t, tx } = useI18n();
   const { activeRoute } = useNavigation();
   const { sessionRevision } = useWizardSession();
   const mainRef = useRef<HTMLElement>(null);
@@ -56,7 +55,10 @@ export function StudioShell({
   }, []);
 
   useEffect(() => {
-    document.title = studioRouteTitle(activeRoute);
+    document.title = studioRouteTitle(activeRoute)
+      .split(" · ")
+      .map(tx)
+      .join(" · ");
     const routeChanged = !studioRoutesEqual(
       previousRouteRef.current,
       activeRoute
@@ -70,7 +72,7 @@ export function StudioShell({
     }
     previousRouteRef.current = activeRoute;
     previousWizardSessionRevisionRef.current = sessionRevision;
-  }, [activeRoute, sessionRevision]);
+  }, [activeRoute, sessionRevision, tx]);
 
   return (
     <>
@@ -79,7 +81,7 @@ export function StudioShell({
         href="#main-content"
         onClick={() => mainRef.current?.focus()}
       >
-        Zum Inhalt springen
+        {t("Zum Inhalt springen")}
       </a>
 
       <div
@@ -90,7 +92,7 @@ export function StudioShell({
         <header className={styles.header}>
           <div className={styles.topbar}>
             <ViewLink
-              aria-label={`${BRAND.productName} – Dashboard`}
+              aria-label={t("{0} – Dashboard", BRAND.productName)}
               className={styles.brand}
               view="dashboard"
             >
@@ -99,13 +101,14 @@ export function StudioShell({
               </span>
               <span>
                 <strong>{BRAND.shortName}</strong>
-                <small>Prompt Studio</small>
+                <small>{t("Prompt Studio")}</small>
               </span>
             </ViewLink>
 
             <div className={styles.headerTools}>
               <Badge tone="accent">
-                {studioRouteContextLabel(activeRoute)} · {BRAND.versionLabel}
+                {tx(studioRouteContextLabel(activeRoute))} ·{" "}
+                {BRAND.versionLabel}
               </Badge>
               <ThemeSwitcher />
             </div>
@@ -134,7 +137,7 @@ export function StudioShell({
 
         <footer className={styles.footer}>
           <span>{BRAND.productName}</span>
-          <span>Local-first · Keine Cloud erforderlich</span>
+          <span>{t("Local-first · Keine Cloud erforderlich")}</span>
         </footer>
       </div>
     </>

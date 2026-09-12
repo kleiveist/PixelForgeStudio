@@ -1,10 +1,10 @@
+import { useI18n } from "../../i18n";
 import { useId } from "react";
 import { Badge } from "../../components/ui";
 import type { StableId } from "../../schemas";
 import { CategoryIcon } from "./CategoryIcon";
 import { MaterialBadge } from "./MaterialBadge";
 import type { DashboardProfileSummary } from "./dashboardData";
-import { formatDashboardDate } from "./dashboardData";
 import styles from "./ProfileCard.module.css";
 
 export interface ProfileCardProps {
@@ -13,6 +13,7 @@ export interface ProfileCardProps {
 }
 
 export function ProfileCard({ profile, onOpen }: ProfileCardProps) {
+  const { date, t, tx } = useI18n();
   const titleId = useId();
   const descriptionId = useId();
 
@@ -25,16 +26,16 @@ export function ProfileCard({ profile, onOpen }: ProfileCardProps) {
       aria-describedby={descriptionId}
     >
       <span id={titleId} className={styles.visuallyHidden}>
-        {`Profil ${profile.name} im Wizard öffnen`}
+        {t("Profil {0} im Wizard öffnen", profile.name)}
       </span>
       <span className={styles.headingRow}>
         <span className={styles.icon} aria-hidden="true">
           <CategoryIcon category={profile.category} />
         </span>
         <span className={styles.headingCopy}>
-          <span className={styles.category}>{profile.categoryLabel}</span>
+          <span className={styles.category}>{tx(profile.categoryLabel)}</span>
           <strong>{profile.name}</strong>
-          <span className={styles.subtype}>{profile.subtypeLabel}</span>
+          <span className={styles.subtype}>{tx(profile.subtypeLabel)}</span>
         </span>
         {profile.favorite ? (
           <span className={styles.favorite} aria-hidden="true">
@@ -45,27 +46,31 @@ export function ProfileCard({ profile, onOpen }: ProfileCardProps) {
 
       <span id={descriptionId} className={styles.description}>
         <span className={styles.metadata}>
-          <span>Basis: {profile.baseProfileName}</span>
+          <span>
+            {t("Basis:")} {profile.baseProfileName}
+          </span>
           <time dateTime={profile.updatedAt}>
-            Aktualisiert {formatDashboardDate(profile.updatedAt)}
+            {t("Aktualisiert")} {date(profile.updatedAt)}
           </time>
         </span>
         {profile.favorite ? (
-          <span className={styles.visuallyHidden}>Favorit. </span>
+          <span className={styles.visuallyHidden}>{t("Favorit.")} </span>
         ) : null}
 
         {profile.facts.length > 0 ? (
           <span className={styles.badges}>
-            <span className={styles.visuallyHidden}>Technische Merkmale: </span>
+            <span className={styles.visuallyHidden}>
+              {t("Technische Merkmale:")}{" "}
+            </span>
             {profile.facts.map((fact, index) => (
-              <Badge key={`${fact}-${index}`}>{fact}</Badge>
+              <Badge key={`${fact}-${index}`}>{tx(fact)}</Badge>
             ))}
           </span>
         ) : null}
 
         {profile.materials.length > 0 ? (
           <span className={styles.badges}>
-            <span className={styles.visuallyHidden}>Materialien: </span>
+            <span className={styles.visuallyHidden}>{t("Materialien:")} </span>
             {profile.materials.map((material) => (
               <MaterialBadge key={material} material={material} />
             ))}
@@ -74,7 +79,7 @@ export function ProfileCard({ profile, onOpen }: ProfileCardProps) {
 
         {profile.tags.length > 0 ? (
           <span className={styles.tags}>
-            <span className={styles.visuallyHidden}>Schlagwörter: </span>
+            <span className={styles.visuallyHidden}>{t("Schlagwörter:")} </span>
             {profile.tags.map((tag, index) => (
               <span key={`${tag}-${index}`}>#{tag}</span>
             ))}
@@ -83,7 +88,7 @@ export function ProfileCard({ profile, onOpen }: ProfileCardProps) {
       </span>
 
       <span className={styles.openHint} aria-hidden="true">
-        Profil öffnen <span aria-hidden="true">→</span>
+        {t("Profil öffnen")} <span aria-hidden="true">→</span>
       </span>
     </button>
   );

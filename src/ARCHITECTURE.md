@@ -178,6 +178,11 @@ Migrationsdiagnostik und den vollständigen Workspace-JSON-Transfer.
 
 ## Öffentliche Modulgrenzen
 
+`i18n/index.ts` veröffentlicht `LocaleProvider`, `useI18n`, die puren
+Übersetzungsfunktionen und `Locale`/`MessageKey`. Settings liefert den Locale-
+Context. React verwendet explizite Übersetzungsaufrufe; Domain und Persistenz
+bleiben sprachunabhängig. Vertrag: [Lokalisierung](../docs/LOCALIZATION.md).
+
 Neue Aufrufer importieren nach Möglichkeit aus den jeweiligen `index.ts`:
 
 - `domain/<bereich>/index.ts` für pure Fachlogik,

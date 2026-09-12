@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
@@ -160,36 +161,52 @@ function FieldShell({
   label: string;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   return (
     <div className={`${styles.field}${wide ? ` ${styles.wideField}` : ""}`}>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{tx(label)}</label>
       {children}
-      <p id={`${id}-help`} className={styles.help}>{help}</p>
-      {error ? <p id={`${id}-error`} className={styles.error}>{error}</p> : null}
+      <p id={`${id}-help`} className={styles.help}>
+        {tx(help)}
+      </p>
+      {error ? (
+        <p id={`${id}-error`} className={styles.error}>
+          {tx(error)}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function SelectField({ form, help, label, name, options }: Readonly<{
+function SelectField({
+  form,
+  help,
+  label,
+  name,
+  options
+}: Readonly<{
   form: ArtworkForm;
   help: string;
   label: string;
   name: ArtworkSelectFieldName;
   options: readonly SelectOption[];
 }>) {
+  const { t, tx } = useI18n();
   const id = `artwork-${name}`;
   const error = fieldError(form, name);
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <select
         id={id}
         aria-describedby={`${id}-help${error ? ` ${id}-error` : ""}`}
         aria-invalid={error ? "true" : "false"}
         {...form.register(name, { setValueAs: optionalSelectValue })}
       >
-        <option value="">Noch nicht festgelegt</option>
+        <option value="">{t("Noch nicht festgelegt")}</option>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
+          <option key={option.value} value={option.value}>
+            {tx(option.label)}
+          </option>
         ))}
       </select>
     </FieldShell>
@@ -213,6 +230,7 @@ function TextField({
   notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   const id = `artwork-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
@@ -222,11 +240,13 @@ function TextField({
       describedBy={describedBy}
       error={error}
       errorClassName={styles.error}
-      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
-      help={help}
+      fieldClassName={
+        wide ? `${styles.field} ${styles.wideField}` : styles.field
+      }
+      help={tx(help)}
       helpClassName={styles.help}
       id={id}
-      label={label}
+      label={tx(label)}
       maxLength={maxLength}
       multiline
       onChoose={(nextValue) => {
@@ -244,17 +264,33 @@ function TextField({
   );
 }
 
-function DerivedField({ help, id, label, value }: Readonly<{
+function DerivedField({
+  help,
+  id,
+  label,
+  value
+}: Readonly<{
   help: string;
   id: string;
   label: string;
   value: string;
 }>) {
+  const { tx } = useI18n();
   return (
     <div className={styles.field}>
-      <span id={`${id}-label`} className={styles.fieldLabel}>{label}</span>
-      <output className={styles.derivedValue} aria-labelledby={`${id}-label`} aria-describedby={`${id}-help`}>{value}</output>
-      <p id={`${id}-help`} className={styles.help}>{help}</p>
+      <span id={`${id}-label`} className={styles.fieldLabel}>
+        {tx(label)}
+      </span>
+      <output
+        className={styles.derivedValue}
+        aria-labelledby={`${id}-label`}
+        aria-describedby={`${id}-help`}
+      >
+        {tx(value)}
+      </output>
+      <p id={`${id}-help`} className={styles.help}>
+        {tx(help)}
+      </p>
     </div>
   );
 }
@@ -275,10 +311,7 @@ const LIGHTING_OPTIONS = optionsFromIds(
   ARTWORK_LIGHTING_DRAMA_IDS,
   LIGHTING_LABELS
 );
-const DETAIL_OPTIONS = optionsFromIds(
-  ARTWORK_DETAIL_LEVEL_IDS,
-  DETAIL_LABELS
-);
+const DETAIL_OPTIONS = optionsFromIds(ARTWORK_DETAIL_LEVEL_IDS, DETAIL_LABELS);
 
 export interface ArtworkConceptEditorProps {
   readonly form: ArtworkForm;
@@ -291,79 +324,225 @@ export function ArtworkConceptEditor({
   notifyProgrammaticChange,
   subtype
 }: ArtworkConceptEditorProps) {
-  const pixelDensity = useWatch({ control: form.control, name: "pixelDensity" });
-  const styleProfile = useWatch({ control: form.control, name: "styleProfile" });
-  const outlineStyle = useWatch({ control: form.control, name: "outlineStyle" });
-  const artDirection = [
-    ...(pixelDensity === undefined ? [] : [PIXEL_DENSITY_LABELS[pixelDensity]]),
-    ...(styleProfile === undefined ? [] : [STYLE_PROFILE_LABELS[styleProfile]]),
-    ...(outlineStyle === undefined ? [] : [OUTLINE_LABELS[outlineStyle]])
-  ].join(" · ") ||
-    "Nach Basisprofil";
+  const { t, tx } = useI18n();
+  const pixelDensity = useWatch({
+    control: form.control,
+    name: "pixelDensity"
+  });
+  const styleProfile = useWatch({
+    control: form.control,
+    name: "styleProfile"
+  });
+  const outlineStyle = useWatch({
+    control: form.control,
+    name: "outlineStyle"
+  });
+  const artDirection =
+    [
+      ...(pixelDensity === undefined
+        ? []
+        : [PIXEL_DENSITY_LABELS[pixelDensity]]),
+      ...(styleProfile === undefined
+        ? []
+        : [STYLE_PROFILE_LABELS[styleProfile]]),
+      ...(outlineStyle === undefined ? [] : [OUTLINE_LABELS[outlineStyle]])
+    ].join(" · ") || "Nach Basisprofil";
 
   return (
     <div className={styles.editor}>
-      <section className={styles.contextCard} aria-labelledby="artwork-context-title">
+      <section
+        className={styles.contextCard}
+        aria-labelledby="artwork-context-title"
+      >
         <div>
-          <p className={styles.eyebrow}>Freie Bildkomposition</p>
-          <h3 id="artwork-context-title">{TYPE_LABELS[getDefaultArtworkType(subtype)]}</h3>
+          <p className={styles.eyebrow}>{t("Freie Bildkomposition")}</p>
+          <h3 id="artwork-context-title">
+            {tx(TYPE_LABELS[getDefaultArtworkType(subtype)])}
+          </h3>
           <p className={styles.contextHelp}>
-            Komposition und Bilddramaturgie folgen dem Konzeptziel statt einem
-            Gameplay-Raster.
+            {t(
+              "Komposition und Bilddramaturgie folgen dem Konzeptziel statt einem Gameplay-Raster."
+            )}
           </p>
         </div>
         <ul className={styles.statusList}>
-          <li>kein Tile-/Sprite-Raster</li>
-          <li>keine Richtungsansichten</li>
-          <li>keine Animation</li>
+          <li>{t("kein Tile-/Sprite-Raster")}</li>
+          <li>{t("keine Richtungsansichten")}</li>
+          <li>{t("keine Animation")}</li>
         </ul>
       </section>
 
       <fieldset className={styles.group}>
-        <legend>Artwork-Ziel und Motiv</legend>
+        <legend>{t("Artwork-Ziel und Motiv")}</legend>
         <p className={styles.groupIntro}>
-          Der Artworktyp folgt dem gewählten Untertyp; Zweck und Motiv bleiben
-          frei beschreibbar.
+          {t(
+            "Der Artworktyp folgt dem gewählten Untertyp; Zweck und Motiv bleiben frei beschreibbar."
+          )}
         </p>
         <div className={styles.fieldGrid}>
-          <DerivedField id="artwork-type" label="Artworktyp" value={TYPE_LABELS[getDefaultArtworkType(subtype)]} help="Aus dem Untertyp abgeleitet und nicht separat überschreibbar." />
-          <SelectField form={form} name="artworkPurpose" label="Zweck" help="Konzept, Präsentation oder belastbare Produktionsreferenz." options={PURPOSE_OPTIONS} />
-          <SelectField form={form} name="artworkMotif" label="Motivart" help="Legt die zentrale Bildidee fest, ohne ein Asset-Raster zu erzwingen." options={MOTIF_OPTIONS} />
-          <DerivedField id="artwork-direction" label="Geerbte Art Direction" value={artDirection} help="Stilwerte stammen aus dem Basisprofil; Weltkamera und Tilegröße gelten hier nicht." />
-          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkDescription" label="Motivbeschreibung" help="Konkretes Hauptmotiv, Formensprache und erzählerische Identität." maxLength={4000} wide />
+          <DerivedField
+            id="artwork-type"
+            label={t("Artworktyp")}
+            value={TYPE_LABELS[getDefaultArtworkType(subtype)]}
+            help={t(
+              "Aus dem Untertyp abgeleitet und nicht separat überschreibbar."
+            )}
+          />
+          <SelectField
+            form={form}
+            name="artworkPurpose"
+            label={t("Zweck")}
+            help={t(
+              "Konzept, Präsentation oder belastbare Produktionsreferenz."
+            )}
+            options={PURPOSE_OPTIONS}
+          />
+          <SelectField
+            form={form}
+            name="artworkMotif"
+            label={t("Motivart")}
+            help={t(
+              "Legt die zentrale Bildidee fest, ohne ein Asset-Raster zu erzwingen."
+            )}
+            options={MOTIF_OPTIONS}
+          />
+          <DerivedField
+            id="artwork-direction"
+            label={t("Geerbte Art Direction")}
+            value={artDirection}
+            help={t(
+              "Stilwerte stammen aus dem Basisprofil; Weltkamera und Tilegröße gelten hier nicht."
+            )}
+          />
+          <TextField
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+            name="artworkDescription"
+            label={t("Motivbeschreibung")}
+            help={t(
+              "Konkretes Hauptmotiv, Formensprache und erzählerische Identität."
+            )}
+            maxLength={4000}
+            wide
+          />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Szene und Komposition</legend>
+        <legend>{t("Szene und Komposition")}</legend>
         <p className={styles.groupIntro}>
-          Beschreibe Bildraum und Blickführung unabhängig von Sprite- oder
-          Richtungslayouts.
+          {t(
+            "Beschreibe Bildraum und Blickführung unabhängig von Sprite- oder Richtungslayouts."
+          )}
         </p>
         <div className={styles.fieldGrid}>
-          <SelectField form={form} name="artworkComposition" label="Komposition" help="Einzelmotiv, Gruppe oder gestaffelte Szene." options={COMPOSITION_OPTIONS} />
-          <SelectField form={form} name="artworkFocus" label="Fokus" help="Form, Material, Stimmung, Geschichte oder Maßstab als Hauptaussage." options={FOCUS_OPTIONS} />
-          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkSceneDescription" label="Szene" help="Ort, Handlung, Figurenbezüge und räumlicher Kontext." wide />
-          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkCompositionDetails" label="Kompositionsdetails" help="Blickführung, Gewichtung sowie Vorder-, Mittel- und Hintergrund." wide />
+          <SelectField
+            form={form}
+            name="artworkComposition"
+            label={t("Komposition")}
+            help={t("Einzelmotiv, Gruppe oder gestaffelte Szene.")}
+            options={COMPOSITION_OPTIONS}
+          />
+          <SelectField
+            form={form}
+            name="artworkFocus"
+            label={t("Fokus")}
+            help={t(
+              "Form, Material, Stimmung, Geschichte oder Maßstab als Hauptaussage."
+            )}
+            options={FOCUS_OPTIONS}
+          />
+          <TextField
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+            name="artworkSceneDescription"
+            label={t("Szene")}
+            help={t("Ort, Handlung, Figurenbezüge und räumlicher Kontext.")}
+            wide
+          />
+          <TextField
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+            name="artworkCompositionDetails"
+            label={t("Kompositionsdetails")}
+            help={t(
+              "Blickführung, Gewichtung sowie Vorder-, Mittel- und Hintergrund."
+            )}
+            wide
+          />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Format und Hintergrund</legend>
+        <legend>{t("Format und Hintergrund")}</legend>
         <div className={styles.fieldGrid}>
-          <SelectField form={form} name="artworkFormat" label="Format" help="Quadratisch, Hochformat, Querformat oder bewusst frei." options={FORMAT_OPTIONS} />
-          <SelectField form={form} name="artworkBackground" label="Artwork-Hintergrund" help="Transparent, einfach gehalten oder vollständig ausgearbeitet." options={BACKGROUND_OPTIONS} />
-          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkBackgroundDetails" label="Hintergrunddetails" help="Umgebungsebenen, Tiefe und gewünschte Ausarbeitung." wide />
+          <SelectField
+            form={form}
+            name="artworkFormat"
+            label={t("Format")}
+            help={t("Quadratisch, Hochformat, Querformat oder bewusst frei.")}
+            options={FORMAT_OPTIONS}
+          />
+          <SelectField
+            form={form}
+            name="artworkBackground"
+            label={t("Artwork-Hintergrund")}
+            help={t(
+              "Transparent, einfach gehalten oder vollständig ausgearbeitet."
+            )}
+            options={BACKGROUND_OPTIONS}
+          />
+          <TextField
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+            name="artworkBackgroundDetails"
+            label={t("Hintergrunddetails")}
+            help={t("Umgebungsebenen, Tiefe und gewünschte Ausarbeitung.")}
+            wide
+          />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Lichtdramaturgie und Detailgrad</legend>
+        <legend>{t("Lichtdramaturgie und Detailgrad")}</legend>
         <div className={styles.fieldGrid}>
-          <SelectField form={form} name="artworkLightingDrama" label="Lichtdramaturgie" help="Die emotionale Lichtwirkung der gesamten Komposition." options={LIGHTING_OPTIONS} />
-          <SelectField form={form} name="artworkDetailLevel" label="Detailgrad" help="Von der Übersicht über das Produktionskonzept bis zum Showcase." options={DETAIL_OPTIONS} />
-          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkLightingDetails" label="Lichtdetails" help="Lichtquellen, Temperatur, Kontrast und dramatische Akzente." wide />
-          <TextField form={form} notifyProgrammaticChange={notifyProgrammaticChange} name="artworkExtraDetails" label="Zusatzdetails" help="Weitere freie Produktionshinweise; eingebrannte Schrift ist standardmäßig nicht vorgesehen." maxLength={4000} wide />
+          <SelectField
+            form={form}
+            name="artworkLightingDrama"
+            label={t("Lichtdramaturgie")}
+            help={t("Die emotionale Lichtwirkung der gesamten Komposition.")}
+            options={LIGHTING_OPTIONS}
+          />
+          <SelectField
+            form={form}
+            name="artworkDetailLevel"
+            label={t("Detailgrad")}
+            help={t(
+              "Von der Übersicht über das Produktionskonzept bis zum Showcase."
+            )}
+            options={DETAIL_OPTIONS}
+          />
+          <TextField
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+            name="artworkLightingDetails"
+            label={t("Lichtdetails")}
+            help={t(
+              "Lichtquellen, Temperatur, Kontrast und dramatische Akzente."
+            )}
+            wide
+          />
+          <TextField
+            form={form}
+            notifyProgrammaticChange={notifyProgrammaticChange}
+            name="artworkExtraDetails"
+            label={t("Zusatzdetails")}
+            help={t(
+              "Weitere freie Produktionshinweise; eingebrannte Schrift ist standardmäßig nicht vorgesehen."
+            )}
+            maxLength={4000}
+            wide
+          />
         </div>
       </fieldset>
     </div>

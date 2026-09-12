@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useCallback,
@@ -140,6 +141,7 @@ function candidateFailureMessage(): string {
 }
 
 function SaveStatusMessage({ status }: Readonly<{ status: SaveStatus }>) {
+  const { tx } = useI18n();
   const message =
     status.kind === "failed"
       ? status.message
@@ -160,7 +162,7 @@ function SaveStatusMessage({ status }: Readonly<{ status: SaveStatus }>) {
               ? "↻"
               : "•"}
       </span>
-      {message}
+      {tx(message)}
     </p>
   );
 }
@@ -189,11 +191,7 @@ function applicableSteps<
   return steps;
 }
 
-function stepIndex<
-  Values extends FieldValues,
-  StepId extends string,
-  Context
->(
+function stepIndex<Values extends FieldValues, StepId extends string, Context>(
   steps: readonly AnyGuidedWizardStep<Values, StepId, Context>[],
   stepId: StepId
 ): number {
@@ -204,11 +202,7 @@ function stepIndex<
   return index;
 }
 
-function stepAt<
-  Values extends FieldValues,
-  StepId extends string,
-  Context
->(
+function stepAt<Values extends FieldValues, StepId extends string, Context>(
   steps: readonly AnyGuidedWizardStep<Values, StepId, Context>[],
   index: number
 ): GuidedWizardStepDefinition<Values, StepId, Context> | undefined {
@@ -247,11 +241,7 @@ function valueAtPath(value: unknown, path: string): unknown {
   let cursor = value;
 
   for (const segment of segments) {
-    if (
-      cursor === null ||
-      typeof cursor !== "object" ||
-      !(segment in cursor)
-    ) {
+    if (cursor === null || typeof cursor !== "object" || !(segment in cursor)) {
       return undefined;
     }
     cursor = (cursor as Record<string, unknown>)[segment];
@@ -298,6 +288,7 @@ export function GuidedWizardEngine<
   onValuesChanged,
   storageAdapter
 }: GuidedWizardEngineProps<Values, StepId, Context>) {
+  const { t, tx } = useI18n();
   const initialApplicableSteps = applicableSteps(flow, initialValues, context);
   const initialStep = closestApplicableStep(
     flow,
@@ -348,21 +339,10 @@ export function GuidedWizardEngine<
     reValidateMode: "onChange",
     resolver
   });
-  const {
-    control,
-    getValues,
-    handleSubmit,
-    reset,
-    setFocus,
-    watch
-  } = form;
+  const { control, getValues, handleSubmit, reset, setFocus, watch } = form;
   const watchedValues = useWatch({ control }) as Values;
   const visibleSteps = applicableSteps(flow, watchedValues, context);
-  const activeStep = closestApplicableStep(
-    flow,
-    visibleSteps,
-    currentStepId
-  );
+  const activeStep = closestApplicableStep(flow, visibleSteps, currentStepId);
   const activeStepIndex = stepIndex(visibleSteps, activeStep.id);
   currentStepRef.current = activeStep.id;
   activeStepRef.current = activeStep;
@@ -525,12 +505,7 @@ export function GuidedWizardEngine<
       subscription.unsubscribe();
       cancelAutosave();
     };
-  }, [
-    applyFormChange,
-    cancelAutosave,
-    getValues,
-    watch
-  ]);
+  }, [applyFormChange, cancelAutosave, getValues, watch]);
 
   useEffect(() => {
     if (currentStepId !== activeStep.id) {
@@ -663,7 +638,14 @@ export function GuidedWizardEngine<
       setCurrentStepId(previousStep.id);
       setActiveStepConfirmed(false);
     }
-  }, [applyEditedDraft, cancelAutosave, context, flow, getValues, persistValues]);
+  }, [
+    applyEditedDraft,
+    cancelAutosave,
+    context,
+    flow,
+    getValues,
+    persistValues
+  ]);
 
   const currentIndex = activeStepIndex;
   const progressValue = currentIndex + 1;
@@ -676,16 +658,18 @@ export function GuidedWizardEngine<
       <div className={styles.progressPanel}>
         <div className={styles.progressHeader}>
           <span>
-            Schritt {progressValue} von {visibleSteps.length}
+            {t("Schritt")} {progressValue} {t("von")} {visibleSteps.length}
           </span>
-          <span>{Math.round((progressValue / visibleSteps.length) * 100)} %</span>
+          <span>
+            {Math.round((progressValue / visibleSteps.length) * 100)} %
+          </span>
         </div>
         <progress
-          aria-label="Wizard-Fortschritt"
+          aria-label={t("Wizard-Fortschritt")}
           max={visibleSteps.length}
           value={progressValue}
         />
-        <nav aria-label="Wizard-Fortschritt">
+        <nav aria-label={t("Wizard-Fortschritt")}>
           <ol className={styles.stepList}>
             {visibleSteps.map((step, index) => (
               <li
@@ -702,7 +686,7 @@ export function GuidedWizardEngine<
                   : {})}
               >
                 <span>{index + 1}</span>
-                {step.title}
+                {tx(step.title)}
               </li>
             ))}
           </ol>
@@ -717,17 +701,17 @@ export function GuidedWizardEngine<
           onSubmit={handleSubmit(submitValid, submitInvalid)}
         >
           <div className={styles.stepHeading}>
-            <p className={styles.eyebrow}>Geführter Abfragekatalog</p>
+            <p className={styles.eyebrow}>{t("Geführter Abfragekatalog")}</p>
             <h2 id="wizard-step-title" ref={stepHeadingRef} tabIndex={-1}>
-              {activeStep.title}
+              {tx(activeStep.title)}
             </h2>
-            <p>{activeStep.description}</p>
+            <p>{tx(activeStep.description)}</p>
           </div>
 
           {submitError ? (
             <div className={styles.errorSummary} role="alert">
-              <strong>Eingabe noch unvollständig</strong>
-              <span>{submitError}</span>
+              <strong>{t("Eingabe noch unvollständig")}</strong>
+              <span>{tx(submitError)}</span>
             </div>
           ) : null}
 
@@ -749,26 +733,23 @@ export function GuidedWizardEngine<
                   type="button"
                   onClick={goBack}
                 >
-                  ← Zurück
+                  {t("← Zurück")}
                 </button>
               ) : null}
               <button
                 className={styles.primaryButton}
                 type="submit"
                 disabled={
-                  isLastStep &&
-                  isPersisted &&
-                  !isDirty &&
-                  activeStepConfirmed
+                  isLastStep && isPersisted && !isDirty && activeStepConfirmed
                 }
               >
                 {isLastStep
                   ? isPersisted && !isDirty && activeStepConfirmed
-                    ? "Entwurf gesichert"
+                    ? t("Entwurf gesichert")
                     : isPersisted && !isDirty
-                      ? "Schritt prüfen"
-                      : "Entwurf sichern"
-                  : "Weiter →"}
+                      ? t("Schritt prüfen")
+                      : t("Entwurf sichern")
+                  : t("Weiter →")}
               </button>
             </div>
           </div>

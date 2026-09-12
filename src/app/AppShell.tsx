@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n";
 import { useCallback } from "react";
 import { ViewLink } from "../components/navigation";
 import { APP_VIEW_IDS, type AppView } from "../domain/navigation";
@@ -118,11 +119,15 @@ export interface PromptStudioShellProps {
 }
 
 export function PromptStudioNavigation() {
+  const { t, tx } = useI18n();
   const { requestNewAsset } = useWizardSession();
 
   return (
     <div className={styles.navigationRow} data-module-navigation="prompt">
-      <nav className={styles.primaryNavigation} aria-label="Hauptnavigation">
+      <nav
+        className={styles.primaryNavigation}
+        aria-label={t("Hauptnavigation")}
+      >
         <ul className={styles.navigationList}>
           {APP_VIEW_IDS.map((view) => (
             <li key={view}>
@@ -131,16 +136,16 @@ export function PromptStudioNavigation() {
                 indicateCurrent
                 view={view}
               >
-                {APP_VIEW_DEFINITIONS[view].label}
+                {tx(APP_VIEW_DEFINITIONS[view].label)}
               </ViewLink>
             </li>
           ))}
         </ul>
       </nav>
 
-      <nav className={styles.quickNavigation} aria-label="Schnellaktionen">
+      <nav className={styles.quickNavigation} aria-label={t("Schnellaktionen")}>
         <ViewLink className={styles.secondaryAction} view="profiles">
-          Profile öffnen
+          {t("Profile öffnen")}
         </ViewLink>
         <ViewLink
           className={styles.primaryAction}
@@ -148,7 +153,7 @@ export function PromptStudioNavigation() {
           onNavigate={() => requestNewAsset(null)}
         >
           <span aria-hidden="true">+</span>
-          Neues Asset
+          {t("Neues Asset")}
         </ViewLink>
       </nav>
     </div>

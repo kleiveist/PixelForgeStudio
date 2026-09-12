@@ -1,12 +1,10 @@
+import { useI18n } from "../../i18n";
 import { useId } from "react";
 import { Badge } from "../../components/ui";
 import type { StableId } from "../../schemas";
 import { CategoryIcon } from "../dashboard/CategoryIcon";
 import { MaterialBadge } from "../dashboard/MaterialBadge";
-import {
-  formatDashboardDate,
-  type DashboardProfileSummary
-} from "../dashboard/dashboardData";
+import { type DashboardProfileSummary } from "../dashboard/dashboardData";
 import styles from "./ProfileLibraryCard.module.css";
 
 export interface ProfileLibraryCardProps {
@@ -27,6 +25,7 @@ export function ProfileLibraryCard({
   onDuplicate,
   onRequestDelete
 }: ProfileLibraryCardProps) {
+  const { date, t, tx } = useI18n();
   const titleId = useId();
 
   return (
@@ -36,34 +35,48 @@ export function ProfileLibraryCard({
           <CategoryIcon category={profile.category} />
         </span>
         <span className={styles.headingCopy}>
-          <span className={styles.category}>{profile.categoryLabel}</span>
+          <span className={styles.category}>{tx(profile.categoryLabel)}</span>
           <h4 id={titleId}>{profile.name}</h4>
-          <span className={styles.subtype}>{profile.subtypeLabel}</span>
+          <span className={styles.subtype}>{tx(profile.subtypeLabel)}</span>
         </span>
         {profile.favorite ? (
-          <span className={styles.favorite} title="Favorit" aria-hidden="true">
+          <span
+            className={styles.favorite}
+            title={t("Favorit")}
+            aria-hidden="true"
+          >
             ★
           </span>
         ) : null}
       </header>
 
       <div className={styles.metadata}>
-        <span>Basis: {profile.baseProfileName}</span>
+        <span>
+          {t("Basis:")} {profile.baseProfileName}
+        </span>
         <time dateTime={profile.updatedAt}>
-          Aktualisiert {formatDashboardDate(profile.updatedAt)}
+          {t("Aktualisiert")} {date(profile.updatedAt)}
         </time>
       </div>
 
       {profile.facts.length > 0 ? (
-        <div className={styles.badges} role="group" aria-label="Technische Merkmale">
+        <div
+          className={styles.badges}
+          role="group"
+          aria-label={t("Technische Merkmale")}
+        >
           {profile.facts.map((fact, index) => (
-            <Badge key={`${fact}-${index}`}>{fact}</Badge>
+            <Badge key={`${fact}-${index}`}>{tx(fact)}</Badge>
           ))}
         </div>
       ) : null}
 
       {profile.materials.length > 0 ? (
-        <div className={styles.badges} role="group" aria-label="Materialien">
+        <div
+          className={styles.badges}
+          role="group"
+          aria-label={t("Materialien")}
+        >
           {profile.materials.map((material) => (
             <MaterialBadge key={material} material={material} />
           ))}
@@ -71,21 +84,29 @@ export function ProfileLibraryCard({
       ) : null}
 
       {profile.tags.length > 0 ? (
-        <div className={styles.tags} role="group" aria-label="Schlagwörter">
+        <div
+          className={styles.tags}
+          role="group"
+          aria-label={t("Schlagwörter")}
+        >
           {profile.tags.map((tag, index) => (
             <span key={`${tag}-${index}`}>#{tag}</span>
           ))}
         </div>
       ) : null}
 
-      <div className={styles.actions} role="group" aria-label={`Aktionen für ${profile.name}`}>
+      <div
+        className={styles.actions}
+        role="group"
+        aria-label={t("Aktionen für {0}", profile.name)}
+      >
         <button
           className={styles.loadAction}
           type="button"
-          aria-label={`Profil „${profile.name}“ im Wizard laden`}
+          aria-label={t("Profil „{0}“ im Wizard laden", profile.name)}
           onClick={() => onLoad(profile.id)}
         >
-          Profil laden
+          {t("Profil laden")}
           <span aria-hidden="true">→</span>
         </button>
         <button
@@ -94,30 +115,30 @@ export function ProfileLibraryCard({
           aria-pressed={profile.favorite}
           aria-label={
             profile.favorite
-              ? `Profil „${profile.name}“ aus Favoriten entfernen`
-              : `Profil „${profile.name}“ als Favorit markieren`
+              ? t("Profil „{0}“ aus Favoriten entfernen", profile.name)
+              : t("Profil „{0}“ als Favorit markieren", profile.name)
           }
           onClick={() => onToggleFavorite(profile)}
         >
           <span aria-hidden="true">{profile.favorite ? "★" : "☆"}</span>
-          Favorit
+          {t("Favorit")}
         </button>
         <button
           className={styles.action}
           type="button"
-          aria-label={`Profil „${profile.name}“ duplizieren`}
+          aria-label={t("Profil „{0}“ duplizieren", profile.name)}
           onClick={() => onDuplicate(profile.id)}
         >
-          Duplizieren
+          {t("Duplizieren")}
         </button>
         <button
           className={styles.deleteAction}
           type="button"
-          aria-label={`Profil „${profile.name}“ löschen`}
+          aria-label={t("Profil „{0}“ löschen", profile.name)}
           onClick={(event) => onRequestDelete(profile, event.currentTarget)}
         >
           <span aria-hidden="true">×</span>
-          Löschen
+          {t("Löschen")}
         </button>
       </div>
     </article>

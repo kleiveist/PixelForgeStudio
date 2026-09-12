@@ -1,9 +1,5 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent
-} from "react";
+import { useI18n } from "../../i18n";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Badge, Surface } from "../../components/ui";
 import {
   PROMPT_STUDIO_VIEW_IDS,
@@ -108,7 +104,10 @@ function readBrowserFileText(file: File): Promise<string> {
       else reject(new Error("Die ausgewählte Datei enthält keinen Text."));
     });
     reader.addEventListener("error", () => {
-      reject(reader.error ?? new Error("Die ausgewählte Datei konnte nicht gelesen werden."));
+      reject(
+        reader.error ??
+          new Error("Die ausgewählte Datei konnte nicht gelesen werden.")
+      );
     });
     reader.readAsText(file);
   });
@@ -135,27 +134,38 @@ function migrationCounts(
 function MigrationStatus({
   result
 }: Readonly<{ result: LegacyV1StorageMigrationResult }>) {
+  const { t, tx } = useI18n();
   if (result.status === "notNeeded") {
     return (
       <p className={styles.migrationNotice} role="status">
-        Keine V1-Daten gefunden. Der V2-Workspace ist bereit.
+        {t("Keine V1-Daten gefunden. Der V2-Workspace ist bereit.")}
       </p>
     );
   }
 
   if (result.status === "migrated" || result.status === "alreadyMigrated") {
-    const warningCount = result.warnings.length +
+    const warningCount =
+      result.warnings.length +
       (result.status === "migrated" ? result.issues.length : 0);
     return (
-      <div className={styles.migrationNotice} data-state="success" role="status">
+      <div
+        className={styles.migrationNotice}
+        data-state="success"
+        role="status"
+      >
         <strong>
           {result.status === "migrated"
-            ? "V1-Daten wurden automatisch migriert."
-            : "Die V1-Migration ist bereits abgeschlossen."}
+            ? t("V1-Daten wurden automatisch migriert.")
+            : t("Die V1-Migration ist bereits abgeschlossen.")}
         </strong>
-        <span>{migrationCounts(result)} · Backup geprüft</span>
+        <span>
+          {tx(migrationCounts(result))} {t("· Backup geprüft")}
+        </span>
         {warningCount > 0 ? (
-          <span>{warningCount} Hinweis(e) wurden beim Überführen protokolliert.</span>
+          <span>
+            {warningCount}{" "}
+            {t("Hinweis(e) wurden beim Überführen protokolliert.")}
+          </span>
         ) : null}
       </div>
     );
@@ -164,10 +174,14 @@ function MigrationStatus({
   if (result.status === "unavailable") {
     return (
       <div className={styles.migrationNotice} data-state="error" role="alert">
-        <strong>V1-Migration konnte nicht abgeschlossen werden.</strong>
-        <span>{result.message}</span>
+        <strong>{t("V1-Migration konnte nicht abgeschlossen werden.")}</strong>
+        <span>{tx(result.message)}</span>
         {result.profilesWritten ? (
-          <span>Profile wurden geschrieben; der Abschlussstatus konnte nicht gesichert werden.</span>
+          <span>
+            {t(
+              "Profile wurden geschrieben; der Abschlussstatus konnte nicht gesichert werden."
+            )}
+          </span>
         ) : null}
       </div>
     );
@@ -177,15 +191,15 @@ function MigrationStatus({
     <div className={styles.migrationNotice} data-state="error" role="alert">
       <strong>
         {result.status === "conflict"
-          ? "V1-Daten kollidieren mit vorhandenen V2-Profilen."
-          : "V1-Daten konnten nicht sicher migriert werden."}
+          ? t("V1-Daten kollidieren mit vorhandenen V2-Profilen.")
+          : t("V1-Daten konnten nicht sicher migriert werden.")}
       </strong>
-      <span>Die Quelldaten bleiben unangetastet.</span>
+      <span>{t("Die Quelldaten bleiben unangetastet.")}</span>
       {result.issues.length > 0 ? (
         <ul>
           {result.issues.map((issue, index) => (
             <li key={`${issue.sourceKey}-${issue.code}-${index}`}>
-              {issue.sourceKey}: {issue.message}
+              {issue.sourceKey}: {tx(issue.message)}
             </li>
           ))}
         </ul>
@@ -194,20 +208,20 @@ function MigrationStatus({
   );
 }
 
-function ImportInspection({
-  pending
-}: Readonly<{ pending: PendingImport }>) {
+function ImportInspection({ pending }: Readonly<{ pending: PendingImport }>) {
+  const { t, tx } = useI18n();
   const { inspection } = pending;
   if (inspection.status === "invalid") {
     return (
       <div className={styles.importInspection} data-state="error" role="alert">
-        <strong>Importdatei ist ungültig</strong>
-        <span>{inspection.message}</span>
+        <strong>{t("Importdatei ist ungültig")}</strong>
+        <span>{tx(inspection.message)}</span>
         {inspection.issues.length > 0 ? (
           <ul>
             {inspection.issues.slice(0, 8).map((issue, index) => (
               <li key={`${issue.path}-${index}`}>
-                {issue.path ? `${issue.path}: ` : ""}{issue.message}
+                {issue.path ? `${issue.path}: ` : ""}
+                {tx(issue.message)}
               </li>
             ))}
           </ul>
@@ -225,33 +239,36 @@ function ImportInspection({
     >
       <strong>
         {inspection.status === "conflict"
-          ? `${inspection.conflicts.length} ID-Konflikt(e) gefunden`
-          : "Importdatei vollständig validiert"}
+          ? t("{0} ID-Konflikt(e) gefunden", inspection.conflicts.length)
+          : t("Importdatei vollständig validiert")}
       </strong>
       <span>{pending.filename}</span>
       <dl className={styles.compactFacts}>
         <div>
-          <dt>Profile</dt>
+          <dt>{t("Profile")}</dt>
           <dd>
-            {bundle.baseProfiles.length} / {bundle.categoryProfiles.length} / {bundle.assetProfiles.length}
+            {bundle.baseProfiles.length} / {bundle.categoryProfiles.length} /{" "}
+            {bundle.assetProfiles.length}
           </dd>
         </div>
         <div>
-          <dt>Einstellungen</dt>
-          <dd>{bundle.appSettings ? "enthalten" : "nicht enthalten"}</dd>
+          <dt>{t("Einstellungen")}</dt>
+          <dd>{bundle.appSettings ? t("enthalten") : t("nicht enthalten")}</dd>
         </div>
         <div>
-          <dt>Entwürfe</dt>
+          <dt>{t("Entwürfe")}</dt>
           <dd>{bundle.wizardDrafts.length}</dd>
         </div>
         <div>
-          <dt>Identisch</dt>
+          <dt>{t("Identisch")}</dt>
           <dd>{inspection.identicalProfiles.length}</dd>
         </div>
       </dl>
       {inspection.status === "conflict" ? (
         <p>
-          Importieren ersetzt ausschließlich die aufgeführten IDs. Alle anderen lokalen Profile bleiben erhalten.
+          {t(
+            "Importieren ersetzt ausschließlich die aufgeführten IDs. Alle anderen lokalen Profile bleiben erhalten."
+          )}
         </p>
       ) : null}
     </div>
@@ -266,14 +283,14 @@ export function SettingsView({
   readFileText = readBrowserFileText,
   createBundleId
 }: SettingsViewProps) {
-  const {
-    settings,
-    restoreSettings,
-    setPromptStartView
-  } = useSettings();
+  const { t, tx } = useI18n();
+  const { settings, setLocale, restoreSettings, setPromptStartView } =
+    useSettings();
   const { libraryResult, importProfileBundle } = useProfileLibrary();
   const { requestResume } = useWizardSession();
-  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(
+    null
+  );
   const [restoreImportedSettings, setRestoreImportedSettings] = useState(true);
   const [restoreImportedDraft, setRestoreImportedDraft] = useState(true);
   const [status, setStatus] = useState<TransferStatus>({ kind: "idle" });
@@ -300,13 +317,17 @@ export function SettingsView({
     if (library === null) {
       setStatus({
         kind: "error",
-        message: "Der Workspace kann erst exportiert werden, wenn die Profilbibliothek gültig und erreichbar ist."
+        message:
+          "Der Workspace kann erst exportiert werden, wenn die Profilbibliothek gültig und erreichbar ist."
       });
       return;
     }
 
     const draftResult = storageAdapter.readDraft();
-    if (draftResult.status === "invalid" || draftResult.status === "unavailable") {
+    if (
+      draftResult.status === "invalid" ||
+      draftResult.status === "unavailable"
+    ) {
       setStatus({
         kind: "error",
         message:
@@ -338,7 +359,8 @@ export function SettingsView({
     } catch {
       setStatus({
         kind: "error",
-        message: "Der validierte Workspace konnte nicht als JSON bereitgestellt werden."
+        message:
+          "Der validierte Workspace konnte nicht als JSON bereitgestellt werden."
       });
     }
   };
@@ -349,7 +371,8 @@ export function SettingsView({
     if (library === null) {
       setStatus({
         kind: "error",
-        message: "Ein Import ist erst möglich, wenn die lokale Profilbibliothek gültig und erreichbar ist."
+        message:
+          "Ein Import ist erst möglich, wenn die lokale Profilbibliothek gültig und erreichbar ist."
       });
       return;
     }
@@ -357,7 +380,8 @@ export function SettingsView({
       setPendingImport(null);
       setStatus({
         kind: "error",
-        message: "Die Importdatei ist größer als 10 MiB und wurde nicht gelesen."
+        message:
+          "Die Importdatei ist größer als 10 MiB und wurde nicht gelesen."
       });
       return;
     }
@@ -397,7 +421,8 @@ export function SettingsView({
       });
       setStatus({
         kind: "error",
-        message: "Die lokalen Profile haben sich geändert. Prüfe die aktualisierten Konflikte und bestätige erneut."
+        message:
+          "Die lokalen Profile haben sich geändert. Prüfe die aktualisierten Konflikte und bestätige erneut."
       });
       return;
     }
@@ -413,16 +438,22 @@ export function SettingsView({
     if (restoreImportedSettings && result.workspaceData.appSettings) {
       const settingsResult = restoreSettings(result.workspaceData.appSettings);
       if (settingsResult.status !== "ok") {
-        followUpErrors.push("Einstellungen konnten nicht wiederhergestellt werden");
+        followUpErrors.push(
+          "Einstellungen konnten nicht wiederhergestellt werden"
+        );
       }
     }
     if (restoreImportedDraft && result.workspaceData.wizardDrafts.length > 0) {
-      const latestDraft = selectLatestWizardDraft(result.workspaceData.wizardDrafts);
+      const latestDraft = selectLatestWizardDraft(
+        result.workspaceData.wizardDrafts
+      );
       const draftResult = latestDraft
         ? storageAdapter.writeDraft(latestDraft)
         : { status: "ok" as const };
       if (draftResult.status !== "ok") {
-        followUpErrors.push("der neueste Entwurf konnte nicht wiederhergestellt werden");
+        followUpErrors.push(
+          "der neueste Entwurf konnte nicht wiederhergestellt werden"
+        );
       } else if (latestDraft) {
         requestResume(latestDraft.draftId);
       }
@@ -463,42 +494,91 @@ export function SettingsView({
         aria-labelledby="settings-view-title"
       >
         <div>
-          <Badge tone="accent">Lokaler Workspace · V2</Badge>
-          <p className={styles.eyebrow}>Einstellungen &amp; Datentransfer</p>
-          <h1 id="settings-view-title">Das Studio passend konfigurieren.</h1>
+          <Badge tone="accent">{t("Lokaler Workspace · V2")}</Badge>
+          <p className={styles.eyebrow}>{t("Einstellungen & Datentransfer")}</p>
+          <h1 id="settings-view-title">
+            {t("Das Studio passend konfigurieren.")}
+          </h1>
           <p className={styles.description}>
-            Darstellung, Profile und dein letzter Entwurf bleiben lokal. Sichere den vollständigen Workspace als validiertes JSON oder stelle ihn kontrolliert wieder her.
+            {t(
+              "Darstellung, Profile und dein letzter Entwurf bleiben lokal. Sichere den vollständigen Workspace als validiertes JSON oder stelle ihn kontrolliert wieder her."
+            )}
           </p>
         </div>
-        <dl className={styles.heroFacts} aria-label="Workspace-Status">
+        <dl className={styles.heroFacts} aria-label={t("Workspace-Status")}>
           <div>
-            <dt>Profile</dt>
+            <dt>{t("Profile")}</dt>
             <dd>{library ? profileCount(library) : "–"}</dd>
           </div>
           <div>
-            <dt>Theme</dt>
+            <dt>{t("Theme")}</dt>
             <dd>{settings.theme}</dd>
           </div>
           <div>
-            <dt>Speicher</dt>
-            <dd>{library ? "bereit" : "gesperrt"}</dd>
+            <dt>{t("Speicher")}</dt>
+            <dd>{library ? t("bereit") : t("gesperrt")}</dd>
           </div>
         </dl>
       </Surface>
 
-      <section className={styles.section} aria-labelledby="start-settings-title">
+      <section
+        className={styles.section}
+        aria-labelledby="start-settings-title"
+      >
         <div className={styles.sectionHeading}>
-          <p className={styles.sectionIndex}>01 · Startziele</p>
-          <h2 id="start-settings-title">Wo soll PixelForge beginnen?</h2>
+          <p className={styles.sectionIndex}>{t("01 · Startziele")}</p>
+          <h2 id="start-settings-title">{t("Wo soll PixelForge beginnen?")}</h2>
           <p>
-            Wähle die Ansicht, die das Prompt Studio bei einer fehlenden oder
-            ungültigen URL öffnet. Fachwerte werden dadurch nicht verändert.
+            {t(
+              "Wähle die Ansicht, die das Prompt Studio bei einer fehlenden oder ungültigen URL öffnet. Fachwerte werden dadurch nicht verändert."
+            )}
           </p>
         </div>
         <Surface className={styles.startSettings} tone="soft">
           <div className={styles.startSettingsGrid}>
             <label>
-              <span>Startansicht</span>
+              <span id="interface-language-label">
+                {t("Oberflächensprache")}
+              </span>
+              <select
+                aria-labelledby="interface-language-label"
+                aria-describedby="interface-language-help"
+                value={settings.locale}
+                onChange={(event) => {
+                  const locale = event.target.value;
+                  if (locale !== "de" && locale !== "en") return;
+                  const result = setLocale(locale);
+                  setStartStatus({
+                    kind:
+                      result.status === "ok"
+                        ? "saved"
+                        : result.status === "unavailable"
+                          ? "session"
+                          : "invalid",
+                    message:
+                      result.status === "ok"
+                        ? "Die Sprache wurde lokal gespeichert."
+                        : result.status === "unavailable"
+                          ? "Die Sprache gilt für diese Sitzung; lokales Speichern ist nicht verfügbar."
+                          : "Die Sprache konnte nicht gespeichert werden."
+                  });
+                }}
+              >
+                <option value="de" lang="de">
+                  {t("Deutsch")}
+                </option>
+                <option value="en" lang="en">
+                  {t("English")}
+                </option>
+              </select>
+              <small id="interface-language-help">
+                {t(
+                  "Die Oberfläche wechselt sofort. Die Prompt-Sprache wählst du zusätzlich in der Ausgabe; eigene Texte bleiben unverändert."
+                )}
+              </small>
+            </label>
+            <label>
+              <span>{t("Startansicht")}</span>
               <select
                 value={settings.startView}
                 onChange={(event) => {
@@ -513,15 +593,16 @@ export function SettingsView({
               >
                 {PROMPT_STUDIO_VIEW_IDS.map((view) => (
                   <option key={view} value={view}>
-                    {promptStartViewLabels[view]}
+                    {tx(promptStartViewLabels[view])}
                   </option>
                 ))}
               </select>
             </label>
-
           </div>
           <p className={styles.startSettingsHint}>
-            Ohne gültige Route startet das Prompt Studio in dieser Ansicht.
+            {t(
+              "Ohne gültige Route startet das Prompt Studio in dieser Ansicht."
+            )}
           </p>
           {startStatus ? (
             <p
@@ -529,7 +610,7 @@ export function SettingsView({
               data-state={startStatus.kind}
               role={startStatus.kind === "invalid" ? "alert" : "status"}
             >
-              {startStatus.message}
+              {tx(startStatus.message)}
             </p>
           ) : null}
         </Surface>
@@ -537,38 +618,60 @@ export function SettingsView({
 
       <section className={styles.section} aria-labelledby="migration-title">
         <div className={styles.sectionHeading}>
-          <p className={styles.sectionIndex}>02 · Migration</p>
-          <h2 id="migration-title">V1 → V2</h2>
-          <p>Beim Start werden vorhandene V1-Daten vor dem ersten V2-Lesezugriff geprüft, gesichert und idempotent migriert.</p>
+          <p className={styles.sectionIndex}>{t("02 · Migration")}</p>
+          <h2 id="migration-title">{t("V1 → V2")}</h2>
+          <p>
+            {t(
+              "Beim Start werden vorhandene V1-Daten vor dem ersten V2-Lesezugriff geprüft, gesichert und idempotent migriert."
+            )}
+          </p>
         </div>
         <MigrationStatus result={startupMigration} />
       </section>
 
       <div className={styles.transferGrid}>
-        <Surface as="section" className={styles.transferPanel} tone="soft" aria-labelledby="export-title">
+        <Surface
+          as="section"
+          className={styles.transferPanel}
+          tone="soft"
+          aria-labelledby="export-title"
+        >
           <div className={styles.panelHeading}>
             <span className={styles.sectionIndex}>03</span>
-            <h2 id="export-title">Workspace exportieren</h2>
+            <h2 id="export-title">{t("Workspace exportieren")}</h2>
           </div>
           <p>
-            Enthält alle Basis-, Kategorie- und Assetprofile, die aktuellen App-Einstellungen und – falls vorhanden – den letzten Entwurf.
+            {t(
+              "Enthält alle Basis-, Kategorie- und Assetprofile, die aktuellen App-Einstellungen und – falls vorhanden – den letzten Entwurf."
+            )}
           </p>
-          <button type="button" onClick={exportWorkspace} disabled={library === null}>
-            Workspace als JSON exportieren
+          <button
+            type="button"
+            onClick={exportWorkspace}
+            disabled={library === null}
+          >
+            {t("Workspace als JSON exportieren")}
           </button>
         </Surface>
 
-        <Surface as="section" className={styles.transferPanel} tone="soft" aria-labelledby="import-title">
+        <Surface
+          as="section"
+          className={styles.transferPanel}
+          tone="soft"
+          aria-labelledby="import-title"
+        >
           <div className={styles.panelHeading}>
             <span className={styles.sectionIndex}>04</span>
-            <h2 id="import-title">Workspace importieren</h2>
+            <h2 id="import-title">{t("Workspace importieren")}</h2>
           </div>
           <p>
-            JSON wird zuerst vollständig validiert. Abweichende Profile mit derselben ID werden nur nach deiner ausdrücklichen Bestätigung ersetzt.
+            {t(
+              "JSON wird zuerst vollständig validiert. Abweichende Profile mit derselben ID werden nur nach deiner ausdrücklichen Bestätigung ersetzt."
+            )}
           </p>
           <div className={styles.fileField}>
             <label htmlFor="workspace-json-file">
-              PixelForge-V2-JSON auswählen
+              {t("PixelForge-V2-JSON auswählen")}
             </label>
             <input
               ref={fileInputRef}
@@ -580,7 +683,7 @@ export function SettingsView({
               disabled={library === null}
             />
             <small id="workspace-json-file-help">
-              Maximal 10 MiB · bleibt vollständig lokal
+              {t("Maximal 10 MiB · bleibt vollständig lokal")}
             </small>
           </div>
 
@@ -588,15 +691,17 @@ export function SettingsView({
 
           {actionableInspection ? (
             <fieldset className={styles.restoreOptions}>
-              <legend>Zusätzliche Workspace-Daten</legend>
+              <legend>{t("Zusätzliche Workspace-Daten")}</legend>
               {actionableInspection.bundle.appSettings ? (
                 <label>
                   <input
                     type="checkbox"
                     checked={restoreImportedSettings}
-                    onChange={(event) => setRestoreImportedSettings(event.target.checked)}
+                    onChange={(event) =>
+                      setRestoreImportedSettings(event.target.checked)
+                    }
                   />
-                  App-Einstellungen übernehmen
+                  {t("App-Einstellungen übernehmen")}
                 </label>
               ) : null}
               {actionableInspection.bundle.wizardDrafts.length > 0 ? (
@@ -604,9 +709,11 @@ export function SettingsView({
                   <input
                     type="checkbox"
                     checked={restoreImportedDraft}
-                    onChange={(event) => setRestoreImportedDraft(event.target.checked)}
+                    onChange={(event) =>
+                      setRestoreImportedDraft(event.target.checked)
+                    }
                   />
-                  Neuesten Entwurf übernehmen
+                  {t("Neuesten Entwurf übernehmen")}
                 </label>
               ) : null}
             </fieldset>
@@ -614,13 +721,17 @@ export function SettingsView({
 
           {actionableInspection ? (
             <button
-              className={actionableInspection.status === "conflict" ? styles.dangerAction : undefined}
+              className={
+                actionableInspection.status === "conflict"
+                  ? styles.dangerAction
+                  : undefined
+              }
               type="button"
               onClick={applyImport}
             >
               {actionableInspection.status === "conflict"
-                ? "Konflikte ersetzen und importieren"
-                : "Geprüften Workspace importieren"}
+                ? t("Konflikte ersetzen und importieren")
+                : t("Geprüften Workspace importieren")}
             </button>
           ) : null}
         </Surface>
@@ -634,7 +745,7 @@ export function SettingsView({
           role={status.kind === "error" ? "alert" : "status"}
           tabIndex={-1}
         >
-          {status.message}
+          {tx(status.message)}
         </div>
       ) : null}
     </div>

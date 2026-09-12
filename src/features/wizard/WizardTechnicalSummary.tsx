@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import type {
   AssetCapabilities,
   AssetCategory,
@@ -130,11 +131,7 @@ import {
   type TilesetVariantKind
 } from "../../domain/tilesets";
 import type { ResolvedProfile } from "../../domain/profiles";
-import type {
-  BaseProfile,
-  ProfileLibrary,
-  WizardDraft
-} from "../../schemas";
+import type { BaseProfile, ProfileLibrary, WizardDraft } from "../../schemas";
 import {
   formatSubtypeLabel,
   getDashboardCategory
@@ -202,17 +199,18 @@ const CHARACTER_ANIMATION_LABELS: Readonly<
   special: "Spezialaktion"
 };
 
-const MOVING_OBJECT_CLASS_LABELS: Readonly<Record<MovingObjectClass, string>> = {
-  cart: "Karren / Wagen",
-  rollingObject: "Rollendes Objekt",
-  floatingObject: "Schwebendes Objekt",
-  slidingObject: "Gleitendes Objekt",
-  mechanicalConstruct: "Mechanische Konstruktion",
-  boat: "Boot",
-  platform: "Plattform",
-  magicObject: "Magisches Objekt",
-  nonHumanoidUnit: "Nicht-humanoide Einheit"
-};
+const MOVING_OBJECT_CLASS_LABELS: Readonly<Record<MovingObjectClass, string>> =
+  {
+    cart: "Karren / Wagen",
+    rollingObject: "Rollendes Objekt",
+    floatingObject: "Schwebendes Objekt",
+    slidingObject: "Gleitendes Objekt",
+    mechanicalConstruct: "Mechanische Konstruktion",
+    boat: "Boot",
+    platform: "Plattform",
+    magicObject: "Magisches Objekt",
+    nonHumanoidUnit: "Nicht-humanoide Einheit"
+  };
 
 const MOVING_OBJECT_MOVEMENT_LABELS: Readonly<
   Record<MovingObjectMovementType, string>
@@ -341,13 +339,14 @@ const TEXTURE_LIGHTING_LABELS: Readonly<Record<TextureLighting, string>> = {
   worldAligned: "An Weltlicht ausgerichtet"
 };
 
-const TEXTURE_ORIENTATION_LABELS: Readonly<Record<TextureOrientation, string>> = {
-  horizontal: "Horizontal",
-  vertical: "Vertikal",
-  radial: "Radial",
-  unordered: "Ungeordnet",
-  grainAligned: "Entlang der Maserung"
-};
+const TEXTURE_ORIENTATION_LABELS: Readonly<Record<TextureOrientation, string>> =
+  {
+    horizontal: "Horizontal",
+    vertical: "Vertikal",
+    radial: "Radial",
+    unordered: "Ungeordnet",
+    grainAligned: "Entlang der Maserung"
+  };
 
 const NATURE_PLANT_TYPE_LABELS: Readonly<Record<NaturePlantType, string>> = {
   tree: "Baum",
@@ -482,18 +481,19 @@ const NATURE_GROUNDING_LABELS: Readonly<Record<NatureGrounding, string>> = {
   freestanding: "Freigestellt"
 };
 
-const STATIC_OBJECT_CLASS_LABELS: Readonly<Record<StaticObjectClass, string>> = {
-  furniture: "Möbel",
-  container: "Behälter",
-  door: "Tür",
-  well: "Brunnen",
-  sign: "Schild",
-  pillar: "Säule",
-  altar: "Altar",
-  decoration: "Dekoration",
-  workTool: "Arbeitsgerät",
-  interactiveObject: "Interaktives Objekt"
-};
+const STATIC_OBJECT_CLASS_LABELS: Readonly<Record<StaticObjectClass, string>> =
+  {
+    furniture: "Möbel",
+    container: "Behälter",
+    door: "Tür",
+    well: "Brunnen",
+    sign: "Schild",
+    pillar: "Säule",
+    altar: "Altar",
+    decoration: "Dekoration",
+    workTool: "Arbeitsgerät",
+    interactiveObject: "Interaktives Objekt"
+  };
 
 const STATIC_OBJECT_PURPOSE_LABELS: Readonly<
   Record<StaticObjectPurpose, string>
@@ -617,19 +617,18 @@ const BUILDING_MATERIAL_LABELS: Readonly<Record<BuildingMaterial, string>> = {
   custom: "Eigenes Material"
 };
 
-const BUILDING_ROOF_SHAPE_LABELS: Readonly<
-  Record<BuildingRoofShape, string>
-> = {
-  gable: "Satteldach",
-  hipped: "Walmdach",
-  flat: "Flachdach",
-  shed: "Pultdach",
-  conical: "Kegeldach",
-  domed: "Kuppeldach",
-  collapsed: "Eingestürzt",
-  none: "Kein Dach",
-  custom: "Individuell"
-};
+const BUILDING_ROOF_SHAPE_LABELS: Readonly<Record<BuildingRoofShape, string>> =
+  {
+    gable: "Satteldach",
+    hipped: "Walmdach",
+    flat: "Flachdach",
+    shed: "Pultdach",
+    conical: "Kegeldach",
+    domed: "Kuppeldach",
+    collapsed: "Eingestürzt",
+    none: "Kein Dach",
+    custom: "Individuell"
+  };
 
 const BUILDING_ROOF_MATERIAL_LABELS: Readonly<
   Record<BuildingRoofMaterial, string>
@@ -668,13 +667,14 @@ const BUILDING_DOOR_TYPE_LABELS: Readonly<Record<BuildingDoorType, string>> = {
   custom: "Individuell"
 };
 
-const BUILDING_DOOR_STATE_LABELS: Readonly<Record<BuildingDoorState, string>> = {
-  open: "Offen",
-  closed: "Geschlossen",
-  ajar: "Angelehnt",
-  blocked: "Blockiert",
-  broken: "Beschädigt"
-};
+const BUILDING_DOOR_STATE_LABELS: Readonly<Record<BuildingDoorState, string>> =
+  {
+    open: "Offen",
+    closed: "Geschlossen",
+    ajar: "Angelehnt",
+    blocked: "Blockiert",
+    broken: "Beschädigt"
+  };
 
 const BUILDING_WINDOW_SHAPE_LABELS: Readonly<
   Record<BuildingWindowShape, string>
@@ -827,43 +827,87 @@ const TILESET_ATLAS_LAYOUT_LABELS: Readonly<
 };
 
 const ITEM_CLASS_LABELS: Readonly<Record<ItemClass, string>> = {
-  weapon: "Waffe", tool: "Werkzeug", clothing: "Kleidung", armor: "Rüstung",
-  bag: "Tasche", jewelry: "Schmuck", consumable: "Verbrauchsgegenstand",
-  keyItem: "Schlüsselgegenstand", questItem: "Questgegenstand", collectible: "Sammelobjekt"
+  weapon: "Waffe",
+  tool: "Werkzeug",
+  clothing: "Kleidung",
+  armor: "Rüstung",
+  bag: "Tasche",
+  jewelry: "Schmuck",
+  consumable: "Verbrauchsgegenstand",
+  keyItem: "Schlüsselgegenstand",
+  questItem: "Questgegenstand",
+  collectible: "Sammelobjekt"
 };
 const ITEM_PURPOSE_LABELS: Readonly<Record<ItemPurpose, string>> = {
-  practical: "Praktisch", decorative: "Dekorativ", wearable: "Tragbar", usable: "Benutzbar"
+  practical: "Praktisch",
+  decorative: "Dekorativ",
+  wearable: "Tragbar",
+  usable: "Benutzbar"
 };
 const ITEM_PRESENTATION_LABELS: Readonly<Record<ItemPresentation, string>> = {
-  icon: "Inventar-Icon", worldAsset: "Weltobjekt", equipped: "Ausgerüstet"
+  icon: "Inventar-Icon",
+  worldAsset: "Weltobjekt",
+  equipped: "Ausgerüstet"
 };
 const ITEM_WEAR_POSITION_LABELS: Readonly<Record<ItemWearPosition, string>> = {
-  head: "Kopf", neck: "Hals", hand: "Hand", body: "Körper", back: "Rücken", belt: "Gürtel"
+  head: "Kopf",
+  neck: "Hals",
+  hand: "Hand",
+  body: "Körper",
+  back: "Rücken",
+  belt: "Gürtel"
 };
 const ITEM_MATERIAL_LABELS: Readonly<Record<ItemMaterial, string>> = {
-  wood: "Holz", metal: "Metall", leather: "Leder", fabric: "Stoff", glass: "Glas",
-  ceramic: "Keramik", stone: "Stein", bone: "Knochen", organic: "Organisch",
-  liquid: "Flüssigkeit", magic: "Magische Substanz", mixed: "Mischmaterial", custom: "Eigenes Material"
+  wood: "Holz",
+  metal: "Metall",
+  leather: "Leder",
+  fabric: "Stoff",
+  glass: "Glas",
+  ceramic: "Keramik",
+  stone: "Stein",
+  bone: "Knochen",
+  organic: "Organisch",
+  liquid: "Flüssigkeit",
+  magic: "Magische Substanz",
+  mixed: "Mischmaterial",
+  custom: "Eigenes Material"
 };
 const ITEM_CONDITION_LABELS: Readonly<Record<ItemCondition, string>> = {
-  new: "Neu / makellos", used: "Gebraucht", worn: "Abgenutzt", damaged: "Beschädigt",
-  ancient: "Alt / historisch", magicallyAltered: "Magisch verändert"
+  new: "Neu / makellos",
+  used: "Gebraucht",
+  worn: "Abgenutzt",
+  damaged: "Beschädigt",
+  ancient: "Alt / historisch",
+  magicallyAltered: "Magisch verändert"
 };
 const ITEM_SIGNIFICANCE_LABELS: Readonly<Record<ItemSignificance, string>> = {
-  common: "Alltäglich", valuable: "Wertvoll", rare: "Selten", ceremonial: "Zeremoniell",
-  magical: "Magisch", questCritical: "Handlungsentscheidend"
+  common: "Alltäglich",
+  valuable: "Wertvoll",
+  rare: "Selten",
+  ceremonial: "Zeremoniell",
+  magical: "Magisch",
+  questCritical: "Handlungsentscheidend"
 };
 const ITEM_SIZE_LABELS: Readonly<Record<ItemSize, string>> = {
-  tiny: "Winzig", small: "Klein", medium: "Mittel", large: "Groß", oversized: "Überdimensioniert"
+  tiny: "Winzig",
+  small: "Klein",
+  medium: "Mittel",
+  large: "Groß",
+  oversized: "Überdimensioniert"
 };
 const ITEM_READABILITY_LABELS: Readonly<Record<ItemReadability, string>> = {
-  silhouetteFirst: "Silhouette zuerst", balanced: "Ausgewogen", detailRich: "Detailreich"
+  silhouetteFirst: "Silhouette zuerst",
+  balanced: "Ausgewogen",
+  detailRich: "Detailreich"
 };
 const ITEM_GLOW_LABELS: Readonly<Record<ItemGlowMode, string>> = {
-  none: "Kein Leuchten", subtle: "Subtil", emissive: "Emissiv"
+  none: "Kein Leuchten",
+  subtle: "Subtil",
+  emissive: "Emissiv"
 };
 const ITEM_SHADOW_LABELS: Readonly<Record<ItemShadowMode, string>> = {
-  none: "Kein eigener Schatten", contact: "Kontaktschatten"
+  none: "Kein eigener Schatten",
+  contact: "Kontaktschatten"
 };
 
 const ARTWORK_TYPE_LABELS: Readonly<Record<ArtworkType, string>> = {
@@ -876,28 +920,52 @@ const ARTWORK_TYPE_LABELS: Readonly<Record<ArtworkType, string>> = {
   moodPainting: "Stimmungsbild"
 };
 const ARTWORK_PURPOSE_LABELS: Readonly<Record<ArtworkPurpose, string>> = {
-  concept: "Konzept", presentation: "Präsentation", productionReference: "Produktionsreferenz"
+  concept: "Konzept",
+  presentation: "Präsentation",
+  productionReference: "Produktionsreferenz"
 };
 const ARTWORK_MOTIF_LABELS: Readonly<Record<ArtworkMotif, string>> = {
-  figure: "Figur", object: "Objekt", environment: "Umgebung", scene: "Szene"
+  figure: "Figur",
+  object: "Objekt",
+  environment: "Umgebung",
+  scene: "Szene"
 };
-const ARTWORK_COMPOSITION_LABELS: Readonly<Record<ArtworkComposition, string>> = {
-  singleSubject: "Einzelmotiv", group: "Gruppe", scene: "Gestaffelte Szene"
-};
+const ARTWORK_COMPOSITION_LABELS: Readonly<Record<ArtworkComposition, string>> =
+  {
+    singleSubject: "Einzelmotiv",
+    group: "Gruppe",
+    scene: "Gestaffelte Szene"
+  };
 const ARTWORK_FORMAT_LABELS: Readonly<Record<ArtworkFormat, string>> = {
-  square: "Quadratisch", portrait: "Hochformat", landscape: "Querformat", free: "Freies Format"
+  square: "Quadratisch",
+  portrait: "Hochformat",
+  landscape: "Querformat",
+  free: "Freies Format"
 };
 const ARTWORK_BACKGROUND_LABELS: Readonly<Record<ArtworkBackground, string>> = {
-  transparent: "Transparent", simple: "Einfach", complete: "Vollständig ausgearbeitet"
+  transparent: "Transparent",
+  simple: "Einfach",
+  complete: "Vollständig ausgearbeitet"
 };
 const ARTWORK_FOCUS_LABELS: Readonly<Record<ArtworkFocus, string>> = {
-  form: "Form", material: "Material", mood: "Stimmung", story: "Geschichte", scale: "Maßstab"
+  form: "Form",
+  material: "Material",
+  mood: "Stimmung",
+  story: "Geschichte",
+  scale: "Maßstab"
 };
-const ARTWORK_LIGHTING_LABELS: Readonly<Record<ArtworkLightingDrama, string>> = {
-  neutral: "Neutral", warm: "Warm", gloomy: "Düster", night: "Nacht", custom: "Benutzerdefiniert"
-};
+const ARTWORK_LIGHTING_LABELS: Readonly<Record<ArtworkLightingDrama, string>> =
+  {
+    neutral: "Neutral",
+    warm: "Warm",
+    gloomy: "Düster",
+    night: "Nacht",
+    custom: "Benutzerdefiniert"
+  };
 const ARTWORK_DETAIL_LABELS: Readonly<Record<ArtworkDetailLevel, string>> = {
-  overview: "Übersicht", productionConcept: "Produktionskonzept", showcase: "Showcase"
+  overview: "Übersicht",
+  productionConcept: "Produktionskonzept",
+  showcase: "Showcase"
 };
 
 function natureAnimationSummary(
@@ -1031,9 +1099,7 @@ function characterAnimationSummary(
     ];
   });
 
-  return selected.length === 0
-    ? "Noch nicht ausgewählt"
-    : selected.join("; ");
+  return selected.length === 0 ? "Noch nicht ausgewählt" : selected.join("; ");
 }
 
 function movingObjectAnimationSummary(
@@ -1051,9 +1117,7 @@ function movingObjectAnimationSummary(
           }`
         ];
   });
-  return selected.length === 0
-    ? "Noch nicht ausgewählt"
-    : selected.join("; ");
+  return selected.length === 0 ? "Noch nicht ausgewählt" : selected.join("; ");
 }
 
 interface SummaryProfile {
@@ -1090,8 +1154,7 @@ function findSummaryProfile(
 
   return {
     base,
-    resolved:
-      resolution?.status === "resolved" ? resolution.profile : null,
+    resolved: resolution?.status === "resolved" ? resolution.profile : null,
     sourceName: sourceAsset?.name ?? null
   };
 }
@@ -1101,7 +1164,9 @@ function summaryCategory(
   categoryHint: AssetCategory | null,
   activeCategory: AssetCategory | null
 ): AssetCategory | null {
-  return activeCategory ?? ("category" in draft ? draft.category : categoryHint);
+  return (
+    activeCategory ?? ("category" in draft ? draft.category : categoryHint)
+  );
 }
 
 export interface WizardSelectionSummary {
@@ -1112,12 +1177,14 @@ export interface WizardSelectionSummary {
 
 function SummaryFact({
   label,
-  value
-}: Readonly<{ label: string; value: string }>) {
+  value,
+  raw = false
+}: Readonly<{ label: string; value: string; raw?: boolean }>) {
+  const { tx } = useI18n();
   return (
     <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
+      <dt>{tx(label)}</dt>
+      <dd>{raw ? value : tx(value)}</dd>
     </div>
   );
 }
@@ -1143,6 +1210,7 @@ export function WizardTechnicalSummary({
   selection,
   formValues
 }: WizardTechnicalSummaryProps) {
+  const { t } = useI18n();
   const category = summaryCategory(draft, categoryHint, activeCategory);
   const draftMatchesActiveSelection =
     !("category" in draft) ||
@@ -1152,8 +1220,8 @@ export function WizardTechnicalSummary({
     : { base: null, resolved: null, sourceName: null };
   const technicalValues =
     "category" in draft
-      ? profile.resolved?.values ?? null
-      : profile.base?.values ?? null;
+      ? (profile.resolved?.values ?? null)
+      : (profile.base?.values ?? null);
   const isFreeComposition =
     profile.resolved?.capabilities.freeComposition === true;
   const usesCharacterScale =
@@ -1178,57 +1246,71 @@ export function WizardTechnicalSummary({
       className={styles.technicalSummary}
       aria-labelledby="wizard-technical-summary-title"
     >
-      <p className={styles.eyebrow}>Live-Überblick</p>
-      <h2 id="wizard-technical-summary-title">Technische Zusammenfassung</h2>
+      <p className={styles.eyebrow}>{t("Live-Überblick")}</p>
+      <h2 id="wizard-technical-summary-title">
+        {t("Technische Zusammenfassung")}
+      </h2>
       <dl className={styles.summaryList}>
         <SummaryFact
-          label="Projekt"
-          value={projectName.trim() || "Noch nicht benannt"}
+          raw
+          label={t("Projekt")}
+          value={projectName.trim() || t("Noch nicht benannt")}
         />
         {category ? (
           <SummaryFact
-            label="Asset-Kategorie"
+            label={t("Asset-Kategorie")}
             value={getDashboardCategory(category).label}
           />
         ) : null}
         {selection ? (
           <>
             <SummaryFact
-              label="Untertyp"
+              label={t("Untertyp")}
               value={formatSubtypeLabel(selection.subtype)}
             />
             <SummaryFact
-              label="Asset-Logik"
-              value={[
-                selection.capabilities.movable ? "beweglich" : null,
-                selection.capabilities.directional ? "richtungsfähig" : null,
-                selection.capabilities.animated ? "Animation" : null,
-                selection.capabilities.tileable ? "kachelbar" : null,
-                selection.capabilities.scaledCharacter ? "Figurenmaßstab" : null,
-                selection.capabilities.freeComposition ? "freie Komposition" : null
-              ]
-                .filter((value): value is string => value !== null)
-                .join(" · ") || "statisches Einzelasset"}
+              label={t("Asset-Logik")}
+              value={
+                [
+                  selection.capabilities.movable ? "beweglich" : null,
+                  selection.capabilities.directional ? "richtungsfähig" : null,
+                  selection.capabilities.animated ? "Animation" : null,
+                  selection.capabilities.tileable ? "kachelbar" : null,
+                  selection.capabilities.scaledCharacter
+                    ? "Figurenmaßstab"
+                    : null,
+                  selection.capabilities.freeComposition
+                    ? "freie Komposition"
+                    : null
+                ]
+                  .filter((value): value is string => value !== null)
+                  .join(" · ") || "statisches Einzelasset"
+              }
             />
           </>
         ) : null}
         {profile.sourceName ? (
-          <SummaryFact label="Assetprofil" value={profile.sourceName} />
+          <SummaryFact
+            raw
+            label={t("Assetprofil")}
+            value={profile.sourceName}
+          />
         ) : null}
         {profile.base ? (
-          <SummaryFact label="Basisprofil" value={profile.base.name} />
+          <SummaryFact raw label={t("Basisprofil")} value={profile.base.name} />
         ) : null}
         {selection?.category === "character" ? (
           <>
             {formValues.role?.trim() ? (
               <SummaryFact
-                label="Rolle / Beruf"
+                raw
+                label={t("Rolle / Beruf")}
                 value={formValues.role.trim()}
               />
             ) : null}
             {selection.capabilities.directional ? (
               <SummaryFact
-                label="Richtungsset"
+                label={t("Richtungsset")}
                 value={
                   formValues.directionCount === undefined
                     ? "Noch nicht ausgewählt"
@@ -1238,7 +1320,7 @@ export function WizardTechnicalSummary({
             ) : null}
             {selection.capabilities.animated ? (
               <SummaryFact
-                label="Animationen"
+                label={t("Animationen")}
                 value={characterAnimationSummary(
                   formValues.characterAnimationFrames
                 )}
@@ -1246,7 +1328,8 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.silhouette?.trim() ? (
               <SummaryFact
-                label="Silhouette"
+                raw
+                label={t("Silhouette")}
                 value={formValues.silhouette.trim()}
               />
             ) : null}
@@ -1255,7 +1338,7 @@ export function WizardTechnicalSummary({
         {selection?.category === "movingObject" ? (
           <>
             <SummaryFact
-              label="Objektklasse"
+              label={t("Objektklasse")}
               value={
                 MOVING_OBJECT_CLASS_LABELS[
                   formValues.movingObjectClass ??
@@ -1267,30 +1350,28 @@ export function WizardTechnicalSummary({
             />
             {formValues.movementType !== undefined ? (
               <SummaryFact
-                label="Bewegungsart"
+                label={t("Bewegungsart")}
                 value={MOVING_OBJECT_MOVEMENT_LABELS[formValues.movementType]}
               />
             ) : null}
             {formValues.movingObjectFootprintWidthTiles !== undefined &&
             formValues.movingObjectFootprintDepthTiles !== undefined ? (
               <SummaryFact
-                label="Standfläche"
+                label={t("Standfläche")}
                 value={`${formValues.movingObjectFootprintWidthTiles} × ${formValues.movingObjectFootprintDepthTiles} Tiles`}
               />
             ) : null}
             {formValues.movingObjectAnchorMode !== undefined ? (
               <SummaryFact
-                label="Ausrichtungsanker"
+                label={t("Ausrichtungsanker")}
                 value={
-                  MOVING_OBJECT_ANCHOR_LABELS[
-                    formValues.movingObjectAnchorMode
-                  ]
+                  MOVING_OBJECT_ANCHOR_LABELS[formValues.movingObjectAnchorMode]
                 }
               />
             ) : null}
             {selection.capabilities.directional ? (
               <SummaryFact
-                label="Richtungsset"
+                label={t("Richtungsset")}
                 value={
                   formValues.directionCount === undefined
                     ? "Noch nicht ausgewählt"
@@ -1300,7 +1381,7 @@ export function WizardTechnicalSummary({
             ) : null}
             {selection.capabilities.animated ? (
               <SummaryFact
-                label="Animationen"
+                label={t("Animationen")}
                 value={movingObjectAnimationSummary(
                   formValues.movingObjectAnimationFrames
                 )}
@@ -1308,7 +1389,7 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.movingObjectMaterial !== undefined ? (
               <SummaryFact
-                label="Material"
+                label={t("Material")}
                 value={
                   MOVING_OBJECT_MATERIAL_LABELS[formValues.movingObjectMaterial]
                 }
@@ -1316,7 +1397,7 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.movingObjectCondition !== undefined ? (
               <SummaryFact
-                label="Zustand"
+                label={t("Zustand")}
                 value={
                   MOVING_OBJECT_CONDITION_LABELS[
                     formValues.movingObjectCondition
@@ -1329,7 +1410,7 @@ export function WizardTechnicalSummary({
         {selection?.category === "staticObject" ? (
           <>
             <SummaryFact
-              label="Objektklasse"
+              label={t("Objektklasse")}
               value={
                 STATIC_OBJECT_CLASS_LABELS[
                   formValues.staticObjectClass ??
@@ -1341,13 +1422,15 @@ export function WizardTechnicalSummary({
             />
             {formValues.staticObjectPurpose !== undefined ? (
               <SummaryFact
-                label="Funktion"
-                value={STATIC_OBJECT_PURPOSE_LABELS[formValues.staticObjectPurpose]}
+                label={t("Funktion")}
+                value={
+                  STATIC_OBJECT_PURPOSE_LABELS[formValues.staticObjectPurpose]
+                }
               />
             ) : null}
             {formValues.staticObjectBasicShape !== undefined ? (
               <SummaryFact
-                label="Grundform"
+                label={t("Grundform")}
                 value={
                   STATIC_OBJECT_BASIC_SHAPE_LABELS[
                     formValues.staticObjectBasicShape
@@ -1357,7 +1440,7 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.staticObjectProportion !== undefined ? (
               <SummaryFact
-                label="Proportion"
+                label={t("Proportion")}
                 value={
                   STATIC_OBJECT_PROPORTION_LABELS[
                     formValues.staticObjectProportion
@@ -1367,17 +1450,15 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.staticObjectSymmetry !== undefined ? (
               <SummaryFact
-                label="Symmetrie"
+                label={t("Symmetrie")}
                 value={
-                  STATIC_OBJECT_SYMMETRY_LABELS[
-                    formValues.staticObjectSymmetry
-                  ]
+                  STATIC_OBJECT_SYMMETRY_LABELS[formValues.staticObjectSymmetry]
                 }
               />
             ) : null}
             {formValues.staticObjectPrimaryMaterial !== undefined ? (
               <SummaryFact
-                label="Hauptmaterial"
+                label={t("Hauptmaterial")}
                 value={
                   STATIC_OBJECT_MATERIAL_LABELS[
                     formValues.staticObjectPrimaryMaterial
@@ -1387,7 +1468,7 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.staticObjectSecondaryMaterial !== undefined ? (
               <SummaryFact
-                label="Zweitmaterial"
+                label={t("Zweitmaterial")}
                 value={
                   STATIC_OBJECT_MATERIAL_LABELS[
                     formValues.staticObjectSecondaryMaterial
@@ -1397,7 +1478,7 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.staticObjectCondition !== undefined ? (
               <SummaryFact
-                label="Zustand"
+                label={t("Zustand")}
                 value={
                   STATIC_OBJECT_CONDITION_LABELS[
                     formValues.staticObjectCondition
@@ -1408,13 +1489,13 @@ export function WizardTechnicalSummary({
             {formValues.staticObjectFootprintWidthTiles !== undefined &&
             formValues.staticObjectFootprintDepthTiles !== undefined ? (
               <SummaryFact
-                label="Standfläche"
+                label={t("Standfläche")}
                 value={`${formValues.staticObjectFootprintWidthTiles} × ${formValues.staticObjectFootprintDepthTiles} Tiles`}
               />
             ) : null}
             {formValues.staticObjectInteraction !== undefined ? (
               <SummaryFact
-                label="Interaktion"
+                label={t("Interaktion")}
                 value={
                   STATIC_OBJECT_INTERACTION_LABELS[
                     formValues.staticObjectInteraction
@@ -1424,23 +1505,21 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.staticObjectShadowMode !== undefined ? (
               <SummaryFact
-                label="Schatten"
+                label={t("Schatten")}
                 value={
-                  STATIC_OBJECT_SHADOW_LABELS[
-                    formValues.staticObjectShadowMode
-                  ]
+                  STATIC_OBJECT_SHADOW_LABELS[formValues.staticObjectShadowMode]
                 }
               />
             ) : null}
             {formValues.staticObjectVariantCount !== undefined ? (
               <SummaryFact
-                label="Varianten"
+                label={t("Varianten")}
                 value={String(formValues.staticObjectVariantCount)}
               />
             ) : null}
             {selection.capabilities.animated ? (
               <SummaryFact
-                label="Animation"
+                label={t("Animation")}
                 value={staticObjectAnimationSummary(formValues.animationType)}
               />
             ) : null}
@@ -1449,92 +1528,85 @@ export function WizardTechnicalSummary({
         {selection?.category === "building" ? (
           <>
             <SummaryFact
-              label="Gebäudetyp"
+              label={t("Gebäudetyp")}
               value={
                 BUILDING_TYPE_LABELS[
                   formValues.buildingType ??
-                    getDefaultBuildingType(
-                      selection.subtype as BuildingSubtype
-                    )
+                    getDefaultBuildingType(selection.subtype as BuildingSubtype)
                 ]
               }
             />
             {formValues.buildingPurpose?.trim() ? (
               <SummaryFact
-                label="Nutzung"
+                raw
+                label={t("Nutzung")}
                 value={formValues.buildingPurpose.trim()}
               />
             ) : null}
             {formValues.buildingSize !== undefined ? (
               <SummaryFact
-                label="Größe"
+                label={t("Größe")}
                 value={BUILDING_SIZE_LABELS[formValues.buildingSize]}
               />
             ) : null}
             {formValues.buildingFootprintWidthTiles !== undefined &&
             formValues.buildingFootprintDepthTiles !== undefined ? (
               <SummaryFact
-                label="Standfläche"
+                label={t("Standfläche")}
                 value={`${formValues.buildingFootprintWidthTiles} × ${formValues.buildingFootprintDepthTiles} Tiles`}
               />
             ) : null}
             {formValues.buildingFloors !== undefined ? (
               <SummaryFact
-                label="Geschosse"
+                label={t("Geschosse")}
                 value={String(formValues.buildingFloors)}
               />
             ) : null}
             {formValues.buildingHeightPixels !== undefined ? (
               <SummaryFact
-                label="Gebäudehöhe"
+                label={t("Gebäudehöhe")}
                 value={`${formValues.buildingHeightPixels} px`}
               />
             ) : null}
             {formValues.buildingPrimaryMaterial !== undefined ? (
               <SummaryFact
-                label="Hauptmaterial"
+                label={t("Hauptmaterial")}
                 value={
-                  BUILDING_MATERIAL_LABELS[
-                    formValues.buildingPrimaryMaterial
-                  ]
+                  BUILDING_MATERIAL_LABELS[formValues.buildingPrimaryMaterial]
                 }
               />
             ) : null}
             {formValues.buildingSecondaryMaterial !== undefined ? (
               <SummaryFact
-                label="Zweitmaterial"
+                label={t("Zweitmaterial")}
                 value={
-                  BUILDING_MATERIAL_LABELS[
-                    formValues.buildingSecondaryMaterial
-                  ]
+                  BUILDING_MATERIAL_LABELS[formValues.buildingSecondaryMaterial]
                 }
               />
             ) : null}
             {formValues.buildingRoofShape !== undefined ? (
               <SummaryFact
-                label="Dachform"
+                label={t("Dachform")}
                 value={BUILDING_ROOF_SHAPE_LABELS[formValues.buildingRoofShape]}
               />
             ) : null}
             {formValues.buildingRoofMaterial !== undefined ? (
               <SummaryFact
-                label="Dachmaterial"
+                label={t("Dachmaterial")}
                 value={
-                  BUILDING_ROOF_MATERIAL_LABELS[
-                    formValues.buildingRoofMaterial
-                  ]
+                  BUILDING_ROOF_MATERIAL_LABELS[formValues.buildingRoofMaterial]
                 }
               />
             ) : null}
             {formValues.buildingFacadeStyle !== undefined ? (
               <SummaryFact
-                label="Fassade"
+                label={t("Fassade")}
                 value={BUILDING_FACADE_LABELS[formValues.buildingFacadeStyle]}
               />
             ) : null}
             {formValues.buildingDoorCount !== undefined ? (
               <SummaryFact
-                label="Türen"
+                label={t("Türen")}
                 value={[
                   String(formValues.buildingDoorCount),
                   formValues.buildingDoorType === undefined
@@ -1550,7 +1622,7 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.buildingWindowCount !== undefined ? (
               <SummaryFact
-                label="Fenster"
+                label={t("Fenster")}
                 value={[
                   String(formValues.buildingWindowCount),
                   formValues.buildingWindowShape === undefined
@@ -1570,35 +1642,33 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.buildingCondition !== undefined ? (
               <SummaryFact
-                label="Zustand"
+                label={t("Zustand")}
                 value={BUILDING_CONDITION_LABELS[formValues.buildingCondition]}
               />
             ) : null}
             {formValues.buildingOccupancy !== undefined ? (
               <SummaryFact
-                label="Belegung"
+                label={t("Belegung")}
                 value={BUILDING_OCCUPANCY_LABELS[formValues.buildingOccupancy]}
               />
             ) : null}
             {formValues.buildingMappingMode !== undefined ? (
               <SummaryFact
-                label="Mapping"
+                label={t("Mapping")}
                 value={BUILDING_MAPPING_LABELS[formValues.buildingMappingMode]}
               />
             ) : null}
             {formValues.buildingCollisionMode !== undefined ? (
               <SummaryFact
-                label="Kollision"
+                label={t("Kollision")}
                 value={
-                  BUILDING_COLLISION_LABELS[
-                    formValues.buildingCollisionMode
-                  ]
+                  BUILDING_COLLISION_LABELS[formValues.buildingCollisionMode]
                 }
               />
             ) : null}
             {selection.capabilities.modular ? (
               <SummaryFact
-                label="Modularität"
+                label={t("Modularität")}
                 value={
                   formValues.buildingModular === undefined
                     ? "Noch nicht ausgewählt"
@@ -1610,13 +1680,13 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.buildingLighting !== undefined ? (
               <SummaryFact
-                label="Gebäudelicht"
+                label={t("Gebäudelicht")}
                 value={BUILDING_LIGHTING_LABELS[formValues.buildingLighting]}
               />
             ) : null}
             {selection.capabilities.animated ? (
               <SummaryFact
-                label="Animation"
+                label={t("Animation")}
                 value={buildingAnimationSummary(formValues.animationType)}
               />
             ) : null}
@@ -1625,78 +1695,75 @@ export function WizardTechnicalSummary({
         {selection?.category === "tileset" ? (
           <>
             <SummaryFact
-              label="Tiletyp"
+              label={t("Tiletyp")}
               value={
                 TILESET_TYPE_LABELS[
                   formValues.tilesetType ??
-                    getDefaultTilesetType(
-                      selection.subtype as TilesetSubtype
-                    )
+                    getDefaultTilesetType(selection.subtype as TilesetSubtype)
                 ]
               }
             />
             {formValues.tilesetUsage !== undefined ? (
               <SummaryFact
-                label="Mapping-Einsatz"
+                label={t("Mapping-Einsatz")}
                 value={TILESET_USAGE_LABELS[formValues.tilesetUsage]}
               />
             ) : null}
             {formValues.tilesetEdgeSet !== undefined ? (
               <SummaryFact
-                label="Kanten"
+                label={t("Kanten")}
                 value={TILESET_EDGE_LABELS[formValues.tilesetEdgeSet]}
               />
             ) : null}
             {formValues.tilesetCornerSet !== undefined ? (
               <SummaryFact
-                label="Ecken"
+                label={t("Ecken")}
                 value={TILESET_CORNER_LABELS[formValues.tilesetCornerSet]}
               />
             ) : null}
             {formValues.tilesetTransitionMode !== undefined ? (
               <SummaryFact
-                label="Übergang"
+                label={t("Übergang")}
                 value={
-                  TILESET_TRANSITION_LABELS[
-                    formValues.tilesetTransitionMode
-                  ]
+                  TILESET_TRANSITION_LABELS[formValues.tilesetTransitionMode]
                 }
               />
             ) : null}
             {formValues.tilesetSourceMaterial?.trim() ||
             formValues.tilesetTargetMaterial?.trim() ? (
               <SummaryFact
-                label="Materialgrenze"
-                value={`${formValues.tilesetSourceMaterial?.trim() || "offen"} → ${formValues.tilesetTargetMaterial?.trim() || "offen"}`}
+                raw
+                label={t("Materialgrenze")}
+                value={`${formValues.tilesetSourceMaterial?.trim() || t("offen")} → ${formValues.tilesetTargetMaterial?.trim() || t("offen")}`}
               />
             ) : null}
             {formValues.tilesetSeamMode !== undefined ? (
               <SummaryFact
-                label="Seam-Regel"
+                label={t("Seam-Regel")}
                 value={TILESET_SEAM_LABELS[formValues.tilesetSeamMode]}
               />
             ) : null}
             {formValues.tileableAxes !== undefined ? (
               <SummaryFact
-                label="Kachelbare Achsen"
+                label={t("Kachelbare Achsen")}
                 value={TILESET_AXES_LABELS[formValues.tileableAxes]}
               />
             ) : null}
             {formValues.tilesetRepeatMode !== undefined ? (
               <SummaryFact
-                label="Wiederholung"
+                label={t("Wiederholung")}
                 value={TILESET_REPEAT_LABELS[formValues.tilesetRepeatMode]}
               />
             ) : null}
             {formValues.tilesetVariantCount !== undefined ? (
               <SummaryFact
-                label="Varianten pro Zustand"
+                label={t("Varianten pro Zustand")}
                 value={String(formValues.tilesetVariantCount)}
               />
             ) : null}
             {formValues.tilesetVariantKinds !== undefined ? (
               <SummaryFact
-                label="Variantenarten"
+                label={t("Variantenarten")}
                 value={formValues.tilesetVariantKinds
                   .map((variant) => TILESET_VARIANT_LABELS[variant])
                   .join(", ")}
@@ -1705,7 +1772,7 @@ export function WizardTechnicalSummary({
             {activeTilesetSpecification !== null ? (
               <>
                 <SummaryFact
-                  label="Atlaslayout"
+                  label={t("Atlaslayout")}
                   value={
                     TILESET_ATLAS_LAYOUT_LABELS[
                       activeTilesetSpecification.metrics.layout
@@ -1713,23 +1780,21 @@ export function WizardTechnicalSummary({
                   }
                 />
                 <SummaryFact
-                  label="Atlas-Spezifikation"
+                  label={t("Atlas-Spezifikation")}
                   value={`${String(activeTilesetSpecification.metrics.columns)} × ${String(activeTilesetSpecification.metrics.rows)} Zellen · ${String(activeTilesetSpecification.metrics.atlasWidthPixels)} × ${String(activeTilesetSpecification.metrics.atlasHeightPixels)} px · ${String(activeTilesetSpecification.metrics.tileCount)}/${String(activeTilesetSpecification.metrics.capacity)} Slots`}
                 />
               </>
             ) : formValues.tilesetAtlasLayout !== undefined ? (
               <SummaryFact
-                label="Atlaslayout"
+                label={t("Atlaslayout")}
                 value={
-                  TILESET_ATLAS_LAYOUT_LABELS[
-                    formValues.tilesetAtlasLayout
-                  ]
+                  TILESET_ATLAS_LAYOUT_LABELS[formValues.tilesetAtlasLayout]
                 }
               />
             ) : null}
             {selection.capabilities.animated ? (
               <SummaryFact
-                label="Animation"
+                label={t("Animation")}
                 value={tilesetAnimationSummary(formValues.animationType)}
               />
             ) : null}
@@ -1738,106 +1803,173 @@ export function WizardTechnicalSummary({
         {selection?.category === "item" ? (
           <>
             <SummaryFact
-              label="Itemklasse"
-              value={ITEM_CLASS_LABELS[
-                formValues.itemClass ??
-                  getDefaultItemClass(selection.subtype as ItemSubtype)
-              ]}
+              label={t("Itemklasse")}
+              value={
+                ITEM_CLASS_LABELS[
+                  formValues.itemClass ??
+                    getDefaultItemClass(selection.subtype as ItemSubtype)
+                ]
+              }
             />
-            {formValues.itemPurpose !== undefined ? <SummaryFact label="Zweck" value={ITEM_PURPOSE_LABELS[formValues.itemPurpose]} /> : null}
-            {formValues.itemPresentation !== undefined ? <SummaryFact label="Darstellung" value={ITEM_PRESENTATION_LABELS[formValues.itemPresentation]} /> : null}
-            {formValues.itemWearPosition !== undefined ? <SummaryFact label="Trageposition" value={ITEM_WEAR_POSITION_LABELS[formValues.itemWearPosition]} /> : null}
-            {formValues.itemPrimaryMaterial !== undefined ? (
+            {formValues.itemPurpose !== undefined ? (
               <SummaryFact
-                label="Material"
-                value={[ITEM_MATERIAL_LABELS[formValues.itemPrimaryMaterial], formValues.itemSecondaryMaterial === undefined ? null : ITEM_MATERIAL_LABELS[formValues.itemSecondaryMaterial]].filter((value): value is string => value !== null).join(" + ")}
+                label={t("Zweck")}
+                value={ITEM_PURPOSE_LABELS[formValues.itemPurpose]}
               />
             ) : null}
-            {formValues.itemCondition !== undefined ? <SummaryFact label="Zustand" value={ITEM_CONDITION_LABELS[formValues.itemCondition]} /> : null}
-            {formValues.itemSize !== undefined ? <SummaryFact label="Relative Größe" value={ITEM_SIZE_LABELS[formValues.itemSize]} /> : null}
-            {formValues.itemReadability !== undefined ? <SummaryFact label="Lesbarkeit" value={ITEM_READABILITY_LABELS[formValues.itemReadability]} /> : null}
-            {formValues.itemSignificance !== undefined ? <SummaryFact label="Bedeutung" value={ITEM_SIGNIFICANCE_LABELS[formValues.itemSignificance]} /> : null}
-            {formValues.itemFunctionDetails?.trim() ? <SummaryFact label="Funktion" value={formValues.itemFunctionDetails.trim()} /> : null}
-            {formValues.itemMeaningDetails?.trim() ? <SummaryFact label="Symbolik" value={formValues.itemMeaningDetails.trim()} /> : null}
-            {formValues.itemGlowMode !== undefined ? <SummaryFact label="Leuchteffekt" value={ITEM_GLOW_LABELS[formValues.itemGlowMode]} /> : null}
-            {formValues.itemShadowMode !== undefined ? <SummaryFact label="Schatten" value={ITEM_SHADOW_LABELS[formValues.itemShadowMode]} /> : null}
-            {formValues.itemIconSize !== undefined ? <SummaryFact label="Icongröße" value={`${String(formValues.itemIconSize)} px`} /> : null}
-            {formValues.itemVariantCount !== undefined ? <SummaryFact label="Varianten" value={String(formValues.itemVariantCount)} /> : null}
+            {formValues.itemPresentation !== undefined ? (
+              <SummaryFact
+                label={t("Darstellung")}
+                value={ITEM_PRESENTATION_LABELS[formValues.itemPresentation]}
+              />
+            ) : null}
+            {formValues.itemWearPosition !== undefined ? (
+              <SummaryFact
+                label={t("Trageposition")}
+                value={ITEM_WEAR_POSITION_LABELS[formValues.itemWearPosition]}
+              />
+            ) : null}
+            {formValues.itemPrimaryMaterial !== undefined ? (
+              <SummaryFact
+                label={t("Material")}
+                value={[
+                  ITEM_MATERIAL_LABELS[formValues.itemPrimaryMaterial],
+                  formValues.itemSecondaryMaterial === undefined
+                    ? null
+                    : ITEM_MATERIAL_LABELS[formValues.itemSecondaryMaterial]
+                ]
+                  .filter((value): value is string => value !== null)
+                  .join(" + ")}
+              />
+            ) : null}
+            {formValues.itemCondition !== undefined ? (
+              <SummaryFact
+                label={t("Zustand")}
+                value={ITEM_CONDITION_LABELS[formValues.itemCondition]}
+              />
+            ) : null}
+            {formValues.itemSize !== undefined ? (
+              <SummaryFact
+                label={t("Relative Größe")}
+                value={ITEM_SIZE_LABELS[formValues.itemSize]}
+              />
+            ) : null}
+            {formValues.itemReadability !== undefined ? (
+              <SummaryFact
+                label={t("Lesbarkeit")}
+                value={ITEM_READABILITY_LABELS[formValues.itemReadability]}
+              />
+            ) : null}
+            {formValues.itemSignificance !== undefined ? (
+              <SummaryFact
+                label={t("Bedeutung")}
+                value={ITEM_SIGNIFICANCE_LABELS[formValues.itemSignificance]}
+              />
+            ) : null}
+            {formValues.itemFunctionDetails?.trim() ? (
+              <SummaryFact
+                raw
+                label={t("Funktion")}
+                value={formValues.itemFunctionDetails.trim()}
+              />
+            ) : null}
+            {formValues.itemMeaningDetails?.trim() ? (
+              <SummaryFact
+                raw
+                label={t("Symbolik")}
+                value={formValues.itemMeaningDetails.trim()}
+              />
+            ) : null}
+            {formValues.itemGlowMode !== undefined ? (
+              <SummaryFact
+                label={t("Leuchteffekt")}
+                value={ITEM_GLOW_LABELS[formValues.itemGlowMode]}
+              />
+            ) : null}
+            {formValues.itemShadowMode !== undefined ? (
+              <SummaryFact
+                label={t("Schatten")}
+                value={ITEM_SHADOW_LABELS[formValues.itemShadowMode]}
+              />
+            ) : null}
+            {formValues.itemIconSize !== undefined ? (
+              <SummaryFact
+                label={t("Icongröße")}
+                value={`${String(formValues.itemIconSize)} px`}
+              />
+            ) : null}
+            {formValues.itemVariantCount !== undefined ? (
+              <SummaryFact
+                label={t("Varianten")}
+                value={String(formValues.itemVariantCount)}
+              />
+            ) : null}
           </>
         ) : null}
         {selection?.category === "artwork" ? (
           <>
             <SummaryFact
-              label="Artworktyp"
+              label={t("Artworktyp")}
               value={
                 ARTWORK_TYPE_LABELS[
-                  getDefaultArtworkType(
-                    selection.subtype as ArtworkSubtype
-                  )
+                  getDefaultArtworkType(selection.subtype as ArtworkSubtype)
                 ]
               }
             />
             {formValues.artworkPurpose !== undefined ? (
               <SummaryFact
-                label="Zweck"
+                label={t("Zweck")}
                 value={ARTWORK_PURPOSE_LABELS[formValues.artworkPurpose]}
               />
             ) : null}
             {formValues.artworkMotif !== undefined ? (
               <SummaryFact
-                label="Motiv"
+                label={t("Motiv")}
                 value={ARTWORK_MOTIF_LABELS[formValues.artworkMotif]}
               />
             ) : null}
             {formValues.artworkSceneDescription?.trim() ? (
               <SummaryFact
-                label="Szene"
+                raw
+                label={t("Szene")}
                 value={formValues.artworkSceneDescription.trim()}
               />
             ) : null}
             {formValues.artworkComposition !== undefined ? (
               <SummaryFact
-                label="Komposition"
+                label={t("Komposition")}
                 value={
-                  ARTWORK_COMPOSITION_LABELS[
-                    formValues.artworkComposition
-                  ]
+                  ARTWORK_COMPOSITION_LABELS[formValues.artworkComposition]
                 }
               />
             ) : null}
             {formValues.artworkFormat !== undefined ? (
               <SummaryFact
-                label="Format"
+                label={t("Format")}
                 value={ARTWORK_FORMAT_LABELS[formValues.artworkFormat]}
               />
             ) : null}
             {formValues.artworkBackground !== undefined ? (
               <SummaryFact
-                label="Artwork-Hintergrund"
-                value={
-                  ARTWORK_BACKGROUND_LABELS[formValues.artworkBackground]
-                }
+                label={t("Artwork-Hintergrund")}
+                value={ARTWORK_BACKGROUND_LABELS[formValues.artworkBackground]}
               />
             ) : null}
             {formValues.artworkFocus !== undefined ? (
               <SummaryFact
-                label="Fokus"
+                label={t("Fokus")}
                 value={ARTWORK_FOCUS_LABELS[formValues.artworkFocus]}
               />
             ) : null}
             {formValues.artworkLightingDrama !== undefined ? (
               <SummaryFact
-                label="Lichtdramaturgie"
-                value={
-                  ARTWORK_LIGHTING_LABELS[
-                    formValues.artworkLightingDrama
-                  ]
-                }
+                label={t("Lichtdramaturgie")}
+                value={ARTWORK_LIGHTING_LABELS[formValues.artworkLightingDrama]}
               />
             ) : null}
             {formValues.artworkDetailLevel !== undefined ? (
               <SummaryFact
-                label="Detailgrad"
+                label={t("Detailgrad")}
                 value={ARTWORK_DETAIL_LABELS[formValues.artworkDetailLevel]}
               />
             ) : null}
@@ -1846,7 +1978,7 @@ export function WizardTechnicalSummary({
         {selection?.category === "texture" ? (
           <>
             <SummaryFact
-              label="Material"
+              label={t("Material")}
               value={
                 TEXTURE_MATERIAL_LABELS[
                   formValues.textureMaterialType ??
@@ -1858,49 +1990,49 @@ export function WizardTechnicalSummary({
             />
             {formValues.textureUsage !== undefined ? (
               <SummaryFact
-                label="Einsatz"
+                label={t("Einsatz")}
                 value={TEXTURE_USAGE_LABELS[formValues.textureUsage]}
               />
             ) : null}
             {formValues.seamless !== undefined ? (
               <SummaryFact
-                label="Kachelbarkeit"
+                label={t("Kachelbarkeit")}
                 value={formValues.seamless ? "Nahtlos" : "Nicht nahtlos"}
               />
             ) : null}
             {formValues.textureStructure !== undefined ? (
               <SummaryFact
-                label="Strukturgrad"
+                label={t("Strukturgrad")}
                 value={TEXTURE_STRUCTURE_LABELS[formValues.textureStructure]}
               />
             ) : null}
             {formValues.textureSurface !== undefined ? (
               <SummaryFact
-                label="Oberfläche"
+                label={t("Oberfläche")}
                 value={TEXTURE_SURFACE_LABELS[formValues.textureSurface]}
               />
             ) : null}
             {formValues.textureCondition !== undefined ? (
               <SummaryFact
-                label="Zustand"
+                label={t("Zustand")}
                 value={TEXTURE_CONDITION_LABELS[formValues.textureCondition]}
               />
             ) : null}
             {formValues.textureMoisture !== undefined ? (
               <SummaryFact
-                label="Feuchtigkeit"
+                label={t("Feuchtigkeit")}
                 value={TEXTURE_MOISTURE_LABELS[formValues.textureMoisture]}
               />
             ) : null}
             {formValues.textureIcing !== undefined ? (
               <SummaryFact
-                label="Vereisung"
+                label={t("Vereisung")}
                 value={TEXTURE_ICING_LABELS[formValues.textureIcing]}
               />
             ) : null}
             {formValues.textureOrientation !== undefined ? (
               <SummaryFact
-                label="Ausrichtung"
+                label={t("Ausrichtung")}
                 value={
                   TEXTURE_ORIENTATION_LABELS[formValues.textureOrientation]
                 }
@@ -1908,7 +2040,7 @@ export function WizardTechnicalSummary({
             ) : null}
             {formValues.textureLighting !== undefined ? (
               <SummaryFact
-                label="Materiallicht"
+                label={t("Materiallicht")}
                 value={TEXTURE_LIGHTING_LABELS[formValues.textureLighting]}
               />
             ) : null}
@@ -1917,131 +2049,126 @@ export function WizardTechnicalSummary({
         {selection?.category === "nature" ? (
           <>
             <SummaryFact
-              label="Pflanzentyp"
+              label={t("Pflanzentyp")}
               value={
                 NATURE_PLANT_TYPE_LABELS[
-                  getDefaultNaturePlantType(
-                    selection.subtype as NatureSubtype
-                  )
+                  getDefaultNaturePlantType(selection.subtype as NatureSubtype)
                 ]
               }
             />
             {formValues.natureSpecies?.trim() ? (
-              <SummaryFact label="Art" value={formValues.natureSpecies.trim()} />
+              <SummaryFact
+                raw
+                label={t("Art")}
+                value={formValues.natureSpecies.trim()}
+              />
             ) : null}
             {formValues.natureClimate !== undefined ? (
               <SummaryFact
-                label="Klima"
+                label={t("Klima")}
                 value={NATURE_CLIMATE_LABELS[formValues.natureClimate]}
               />
             ) : null}
             {formValues.natureSeason !== undefined ? (
               <SummaryFact
-                label="Saison"
+                label={t("Saison")}
                 value={NATURE_SEASON_LABELS[formValues.natureSeason]}
               />
             ) : null}
             {formValues.natureAge !== undefined ? (
               <SummaryFact
-                label="Alter"
+                label={t("Alter")}
                 value={NATURE_AGE_LABELS[formValues.natureAge]}
               />
             ) : null}
             {formValues.natureSilhouette !== undefined ? (
               <SummaryFact
-                label="Silhouette"
+                label={t("Silhouette")}
                 value={NATURE_SILHOUETTE_LABELS[formValues.natureSilhouette]}
               />
             ) : null}
-            {natureHasTrunk &&
-            formValues.natureTrunkThickness !== undefined ? (
+            {natureHasTrunk && formValues.natureTrunkThickness !== undefined ? (
               <SummaryFact
-                label="Stammstärke"
+                label={t("Stammstärke")}
                 value={
-                  NATURE_TRUNK_THICKNESS_LABELS[
-                    formValues.natureTrunkThickness
-                  ]
+                  NATURE_TRUNK_THICKNESS_LABELS[formValues.natureTrunkThickness]
                 }
               />
             ) : null}
             {natureHasTrunk && formValues.natureTrunkShape !== undefined ? (
               <SummaryFact
-                label="Stammform"
+                label={t("Stammform")}
                 value={NATURE_TRUNK_SHAPE_LABELS[formValues.natureTrunkShape]}
               />
             ) : null}
             {natureHasCrown && formValues.natureCrownShape !== undefined ? (
               <SummaryFact
-                label="Kronenform"
+                label={t("Kronenform")}
                 value={NATURE_CROWN_SHAPE_LABELS[formValues.natureCrownShape]}
               />
             ) : null}
-            {natureHasCrown &&
-            formValues.natureCrownDensity !== undefined ? (
+            {natureHasCrown && formValues.natureCrownDensity !== undefined ? (
               <SummaryFact
-                label="Kronendichte"
+                label={t("Kronendichte")}
                 value={
                   NATURE_CROWN_DENSITY_LABELS[formValues.natureCrownDensity]
                 }
               />
             ) : null}
-            {natureHasRoots &&
-            formValues.natureRootVisibility !== undefined ? (
+            {natureHasRoots && formValues.natureRootVisibility !== undefined ? (
               <SummaryFact
-                label="Wurzeln"
+                label={t("Wurzeln")}
                 value={
-                  NATURE_ROOT_VISIBILITY_LABELS[
-                    formValues.natureRootVisibility
-                  ]
+                  NATURE_ROOT_VISIBILITY_LABELS[formValues.natureRootVisibility]
                 }
               />
             ) : null}
             {formValues.natureMossCoverage !== undefined ? (
               <SummaryFact
-                label="Moosbewuchs"
+                label={t("Moosbewuchs")}
                 value={NATURE_MOSS_LABELS[formValues.natureMossCoverage]}
               />
             ) : null}
             {formValues.natureMushroomGrowth !== undefined ? (
               <SummaryFact
-                label="Pilzbewuchs"
+                label={t("Pilzbewuchs")}
                 value={NATURE_MUSHROOM_LABELS[formValues.natureMushroomGrowth]}
               />
             ) : null}
             {formValues.natureSnowCover !== undefined ? (
               <SummaryFact
-                label="Schneedecke"
+                label={t("Schneedecke")}
                 value={NATURE_SNOW_LABELS[formValues.natureSnowCover]}
               />
             ) : null}
             {formValues.natureVineGrowth !== undefined ? (
               <SummaryFact
-                label="Rankenbewuchs"
+                label={t("Rankenbewuchs")}
                 value={NATURE_VINE_LABELS[formValues.natureVineGrowth]}
               />
             ) : null}
             {formValues.natureFootprintWidthTiles !== undefined &&
             formValues.natureFootprintDepthTiles !== undefined ? (
               <SummaryFact
-                label="Standfläche"
+                label={t("Standfläche")}
                 value={`${formValues.natureFootprintWidthTiles} × ${formValues.natureFootprintDepthTiles} Tiles`}
               />
             ) : null}
             {formValues.natureGrounding !== undefined ? (
               <SummaryFact
-                label="Bodenanschluss"
+                label={t("Bodenanschluss")}
                 value={NATURE_GROUNDING_LABELS[formValues.natureGrounding]}
               />
             ) : null}
             {formValues.natureVariantCount !== undefined ? (
               <SummaryFact
-                label="Varianten"
+                label={t("Varianten")}
                 value={String(formValues.natureVariantCount)}
               />
             ) : null}
             {selection.capabilities.animated ? (
               <SummaryFact
-                label="Animation"
+                label={t("Animation")}
                 value={natureAnimationSummary(formValues.animationType)}
               />
             ) : null}
@@ -2050,29 +2177,29 @@ export function WizardTechnicalSummary({
         {technicalValues ? (
           <>
             <SummaryFact
-              label="Pixelstil"
+              label={t("Pixelstil")}
               value={PIXEL_DENSITY_LABELS[technicalValues.pixelDensity]}
             />
             <SummaryFact
-              label="Stilprofil"
+              label={t("Stilprofil")}
               value={STYLE_PROFILE_LABELS[technicalValues.styleProfile]}
             />
             {!isFreeComposition ? (
               <>
                 <SummaryFact
-                  label="Tile-Raster"
+                  label={t("Tile-Raster")}
                   value={`${technicalValues.tileSize} × ${technicalValues.tileSize} px`}
                 />
                 <SummaryFact
-                  label="Perspektive"
+                  label={t("Perspektive")}
                   value={PERSPECTIVE_LABELS[technicalValues.perspectiveType]}
                 />
                 <SummaryFact
-                  label="Projektion"
+                  label={t("Projektion")}
                   value={PROJECTION_LABELS[technicalValues.projectionType]}
                 />
                 <SummaryFact
-                  label="Kameraneigung"
+                  label={t("Kameraneigung")}
                   value={`${technicalValues.cameraAngle}°`}
                 />
               </>
@@ -2080,31 +2207,30 @@ export function WizardTechnicalSummary({
             {usesCharacterScale &&
             technicalValues.characterHeight !== undefined ? (
               <SummaryFact
-                label="Figurenhöhe"
+                label={t("Figurenhöhe")}
                 value={`${technicalValues.characterHeight} px`}
               />
             ) : null}
             <SummaryFact
-              label="Outline"
+              label={t("Outline")}
               value={OUTLINE_LABELS[technicalValues.outlineStyle]}
             />
             <SummaryFact
-              label="Hintergrund"
+              label={t("Hintergrund")}
               value={BACKGROUND_LABELS[technicalValues.backgroundMode]}
             />
             <SummaryFact
-              label="Lichtlogik"
-              value={
-                LIGHTING_LABELS[technicalValues.lightingDefaults.policy]
-              }
+              label={t("Lichtlogik")}
+              value={LIGHTING_LABELS[technicalValues.lightingDefaults.policy]}
             />
           </>
         ) : null}
       </dl>
       {!technicalValues ? (
         <p className={styles.summaryHint}>
-          Technische Werte erscheinen, sobald ein Basisprofil Teil des
-          Entwurfs ist.
+          {t(
+            "Technische Werte erscheinen, sobald ein Basisprofil Teil des Entwurfs ist."
+          )}
         </p>
       ) : null}
     </aside>

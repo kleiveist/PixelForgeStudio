@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import { resolveCapabilities } from "../../domain/assets";
@@ -237,16 +238,19 @@ function FieldShell({
   label: string;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   return (
-    <div className={wide ? `${styles.field} ${styles.wideField}` : styles.field}>
-      <label htmlFor={id}>{label}</label>
+    <div
+      className={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+    >
+      <label htmlFor={id}>{tx(label)}</label>
       {children}
       <p id={`${id}-help`} className={styles.help}>
-        {help}
+        {tx(help)}
       </p>
       {error ? (
         <p id={`${id}-error`} className={styles.error}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -266,22 +270,23 @@ function SelectField({
   name: StaticObjectSelectFieldName;
   options: readonly SelectOption[];
 }>) {
+  const { t, tx } = useI18n();
   const id = `static-object-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <select
         id={id}
         aria-describedby={describedBy}
         aria-invalid={error ? "true" : "false"}
         {...form.register(name, { setValueAs: optionalSelectValue })}
       >
-        <option value="">Nicht festgelegt</option>
+        <option value="">{t("Nicht festgelegt")}</option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
-            {option.label}
+            {tx(option.label)}
           </option>
         ))}
       </select>
@@ -306,6 +311,7 @@ function TextField({
   notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   const id = `static-object-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
@@ -316,11 +322,13 @@ function TextField({
       describedBy={describedBy}
       error={error}
       errorClassName={styles.error}
-      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
-      help={help}
+      fieldClassName={
+        wide ? `${styles.field} ${styles.wideField}` : styles.field
+      }
+      help={tx(help)}
       helpClassName={styles.help}
       id={id}
-      label={label}
+      label={tx(label)}
       maxLength={maxLength}
       multiline
       onChoose={(nextValue) => {
@@ -353,12 +361,13 @@ function NumberField({
   min: number;
   name: StaticObjectNumberFieldName;
 }>) {
+  const { tx } = useI18n();
   const id = `static-object-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <input
         id={id}
         type="number"
@@ -381,31 +390,33 @@ function ObjectClassField({
   objectClass: StaticObjectClass;
   subtype: StaticObjectSubtype;
 }>) {
+  const { t, tx } = useI18n();
   return (
     <div className={styles.field}>
       <span id="static-object-class-label" className={styles.fieldLabel}>
-        Objektklasse
+        {t("Objektklasse")}
       </span>
       <output
         className={styles.derivedValue}
         aria-labelledby="static-object-class-label"
         aria-describedby="static-object-class-help"
       >
-        {CLASS_LABELS[objectClass]}
+        {tx(CLASS_LABELS[objectClass])}
       </output>
       <p id="static-object-class-help" className={styles.help}>
-        Aus dem Untertyp {SUBTYPE_LABELS[subtype]} abgeleitet. Ein Wechsel
-        erfolgt im Schritt Bildart.
+        {t("Aus dem Untertyp")} {tx(SUBTYPE_LABELS[subtype])}{" "}
+        {t("abgeleitet. Ein Wechsel erfolgt im Schritt Bildart.")}
       </p>
     </div>
   );
 }
 
 function TileSizeField({ tileSize }: Readonly<{ tileSize?: number }>) {
+  const { t } = useI18n();
   return (
     <div className={styles.field}>
       <span id="static-object-tile-size-label" className={styles.fieldLabel}>
-        Wirksame Tilegröße
+        {t("Wirksame Tilegröße")}
       </span>
       <output
         className={styles.derivedValue}
@@ -413,12 +424,13 @@ function TileSizeField({ tileSize }: Readonly<{ tileSize?: number }>) {
         aria-describedby="static-object-tile-size-help"
       >
         {tileSize === undefined
-          ? "Nicht festgelegt"
-          : `${String(tileSize)} × ${String(tileSize)} px`}
+          ? t("Nicht festgelegt")
+          : t("{0} × {1} px", String(tileSize), String(tileSize))}
       </output>
       <p id="static-object-tile-size-help" className={styles.help}>
-        Technischer Wert aus der Basisprofil-Vererbung. Er wird nicht in den
-        Objektantworten dupliziert.
+        {t(
+          "Technischer Wert aus der Basisprofil-Vererbung. Er wird nicht in den Objektantworten dupliziert."
+        )}
       </p>
     </div>
   );
@@ -435,6 +447,7 @@ export function StaticWorldObjectEditor({
   notifyProgrammaticChange,
   subtype
 }: StaticWorldObjectEditorProps) {
+  const { t, tx } = useI18n();
   const objectClass = getDefaultStaticObjectClass(subtype);
   const capabilities = resolveCapabilities("staticObject", subtype);
   const tileSize = useWatch({ control: form.control, name: "tileSize" });
@@ -456,13 +469,14 @@ export function StaticWorldObjectEditor({
         aria-labelledby="static-object-context-title"
       >
         <div className={styles.contextCopy}>
-          <p className={styles.eyebrow}>Statisches Weltobjekt</p>
+          <p className={styles.eyebrow}>{t("Statisches Weltobjekt")}</p>
           <h3 id="static-object-context-title">
-            {SUBTYPE_LABELS[subtype]} gestalten
+            {tx(SUBTYPE_LABELS[subtype])} {t("gestalten")}
           </h3>
           <p className={styles.contextHelp}>
-            Form, Material und Footprint bleiben im Weltmaßstab konsistent.
-            Interaktion und Animation ändern niemals die Blickrichtung.
+            {t(
+              "Form, Material und Footprint bleiben im Weltmaßstab konsistent. Interaktion und Animation ändern niemals die Blickrichtung."
+            )}
           </p>
         </div>
         <div className={styles.objectMark} aria-hidden="true">
@@ -471,12 +485,14 @@ export function StaticWorldObjectEditor({
           <span className={styles.objectSide} />
           <span className={styles.objectShadow} />
         </div>
-        <ul className={styles.statusList} aria-label="Objekt-Capabilities">
-          <li className={styles.statusBadge}>Keine Richtungsansichten</li>
+        <ul className={styles.statusList} aria-label={t("Objekt-Capabilities")}>
+          <li className={styles.statusBadge}>
+            {t("Keine Richtungsansichten")}
+          </li>
           <li className={styles.statusBadge}>
             {capabilities.animated
-              ? "Animation separat verfügbar"
-              : "Statisches Einzelasset"}
+              ? t("Animation separat verfügbar")
+              : t("Statisches Einzelasset")}
           </li>
         </ul>
       </section>
@@ -486,57 +502,70 @@ export function StaticWorldObjectEditor({
         aria-labelledby="static-object-animation-title"
       >
         <h3 id="static-object-animation-title">
-          Interaktion und Animation bleiben getrennt
+          {t("Interaktion und Animation bleiben getrennt")}
         </h3>
         <p>
           {capabilities.animated
-            ? "Die fachliche Interaktion wird hier beschrieben. Eine optionale Öffnen-, Leuchten- oder Zerbrechen-Animation wird ausschließlich im folgenden Capability-Schritt gewählt."
-            : "Dieser Untertyp erhält hier keine Animationsauswahl. Interaktion beschreibt nur seine Funktion in der Welt."}
+            ? t(
+                "Die fachliche Interaktion wird hier beschrieben. Eine optionale Öffnen-, Leuchten- oder Zerbrechen-Animation wird ausschließlich im folgenden Capability-Schritt gewählt."
+              )
+            : t(
+                "Dieser Untertyp erhält hier keine Animationsauswahl. Interaktion beschreibt nur seine Funktion in der Welt."
+              )}
         </p>
       </section>
 
       <fieldset className={styles.group}>
-        <legend>Funktion und Grundform</legend>
+        <legend>{t("Funktion und Grundform")}</legend>
         <p className={styles.groupIntro}>
-          Definiere zuerst Spielzweck, große Formmassen und Silhouette des
-          unbewegten Weltobjekts.
+          {t(
+            "Definiere zuerst Spielzweck, große Formmassen und Silhouette des unbewegten Weltobjekts."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <ObjectClassField objectClass={objectClass} subtype={subtype} />
           <SelectField
             form={form}
             name="staticObjectPurpose"
-            label="Funktion / Zweck"
-            help="Bestimmt, ob das Objekt dekoriert, blockiert, begehbar oder interaktiv ist."
+            label={t("Funktion / Zweck")}
+            help={t(
+              "Bestimmt, ob das Objekt dekoriert, blockiert, begehbar oder interaktiv ist."
+            )}
             options={PURPOSE_OPTIONS}
           />
           <SelectField
             form={form}
             name="staticObjectBasicShape"
-            label="Grundform"
-            help="Große geometrische Form, die auch in nativer Pixelgröße lesbar bleibt."
+            label={t("Grundform")}
+            help={t(
+              "Große geometrische Form, die auch in nativer Pixelgröße lesbar bleibt."
+            )}
             options={BASIC_SHAPE_OPTIONS}
           />
           <SelectField
             form={form}
             name="staticObjectProportion"
-            label="Proportion"
-            help="Verhältnis von Höhe, Breite und visueller Masse."
+            label={t("Proportion")}
+            help={t("Verhältnis von Höhe, Breite und visueller Masse.")}
             options={PROPORTION_OPTIONS}
           />
           <SelectField
             form={form}
             name="staticObjectSymmetry"
-            label="Symmetrie"
-            help="Ordnung der großen Formelemente, nicht kleinteiliges Oberflächenrauschen."
+            label={t("Symmetrie")}
+            help={t(
+              "Ordnung der großen Formelemente, nicht kleinteiliges Oberflächenrauschen."
+            )}
             options={SYMMETRY_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectDescription"
-            label="Kurze Objektbeschreibung"
-            help="Fasse Motiv, Funktion und wichtigste Erkennungsmerkmale zusammen."
+            label={t("Kurze Objektbeschreibung")}
+            help={t(
+              "Fasse Motiv, Funktion und wichtigste Erkennungsmerkmale zusammen."
+            )}
             maxLength={4000}
             wide
           />
@@ -544,47 +573,58 @@ export function StaticWorldObjectEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Material, Zustand und Details</legend>
+        <legend>{t("Material, Zustand und Details")}</legend>
         <p className={styles.groupIntro}>
-          Beschreibe Materialien als klare Flächen und Cluster, damit das
-          Objekt trotz Alterung gameplay-lesbar bleibt.
+          {t(
+            "Beschreibe Materialien als klare Flächen und Cluster, damit das Objekt trotz Alterung gameplay-lesbar bleibt."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="staticObjectPrimaryMaterial"
-            label="Hauptmaterial"
-            help="Dominantes Material der Silhouette und größten sichtbaren Flächen."
+            label={t("Hauptmaterial")}
+            help={t(
+              "Dominantes Material der Silhouette und größten sichtbaren Flächen."
+            )}
             options={MATERIAL_OPTIONS}
           />
           <SelectField
             form={form}
             name="staticObjectSecondaryMaterial"
-            label="Sekundärmaterial"
-            help="Optionales zweites Material für Beschläge, Einfassungen oder Akzente."
+            label={t("Sekundärmaterial")}
+            help={t(
+              "Optionales zweites Material für Beschläge, Einfassungen oder Akzente."
+            )}
             options={MATERIAL_OPTIONS}
           />
           <SelectField
             form={form}
             name="staticObjectCondition"
-            label="Zustand"
-            help="Sauber, gebraucht, verwittert, beschädigt oder überwuchert."
+            label={t("Zustand")}
+            help={t(
+              "Sauber, gebraucht, verwittert, beschädigt oder überwuchert."
+            )}
             options={CONDITION_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectMaterialDetails"
-            label="Materialaufbau und Oberfläche"
-            help="Beschreibe Maserung, Fugen, Beschläge, Bruchkanten oder Materialwechsel."
+            label={t("Materialaufbau und Oberfläche")}
+            help={t(
+              "Beschreibe Maserung, Fugen, Beschläge, Bruchkanten oder Materialwechsel."
+            )}
             maxLength={500}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectDetailElements"
-            label="Lesbare Detail-Elemente"
-            help="Nenne funktionale Griffe, Bänder, Symbole, Kanten oder andere wichtige Details."
+            label={t("Lesbare Detail-Elemente")}
+            help={t(
+              "Nenne funktionale Griffe, Bänder, Symbole, Kanten oder andere wichtige Details."
+            )}
             maxLength={500}
             wide
           />
@@ -592,66 +632,78 @@ export function StaticWorldObjectEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Inhalt, Interaktion und Schatten</legend>
+        <legend>{t("Inhalt, Interaktion und Schatten")}</legend>
         <p className={styles.groupIntro}>
-          Inhalt und Interaktion definieren den Spielzustand. Animation bleibt
-          weiterhin dem separaten Capability-Schritt vorbehalten.
+          {t(
+            "Inhalt und Interaktion definieren den Spielzustand. Animation bleibt weiterhin dem separaten Capability-Schritt vorbehalten."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectContents"
-            label="Sichtbarer Inhalt"
-            help="Optionaler Inhalt, eine Einlage oder der Zustand des geöffneten Innenraums."
+            label={t("Sichtbarer Inhalt")}
+            help={t(
+              "Optionaler Inhalt, eine Einlage oder der Zustand des geöffneten Innenraums."
+            )}
             maxLength={500}
             wide
           />
           <SelectField
             form={form}
             name="staticObjectInteraction"
-            label="Interaktion"
-            help="Fachliche Reaktion im Spiel; keine Animations- oder Richtungsdefinition."
+            label={t("Interaktion")}
+            help={t(
+              "Fachliche Reaktion im Spiel; keine Animations- oder Richtungsdefinition."
+            )}
             options={INTERACTION_OPTIONS}
           />
           <SelectField
             form={form}
             name="staticObjectShadowMode"
-            label="Schatten"
-            help="Kein eigener Schatten oder ein kleiner, weltlichtkonformer Kontaktschatten."
+            label={t("Schatten")}
+            help={t(
+              "Kein eigener Schatten oder ein kleiner, weltlichtkonformer Kontaktschatten."
+            )}
             options={SHADOW_OPTIONS}
           />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Standfläche und Varianten</legend>
+        <legend>{t("Standfläche und Varianten")}</legend>
         <p className={styles.groupIntro}>
-          Breite und Tiefe bilden gemeinsam den optionalen Footprint. Ein
-          einzelner Wert ist unvollständig und muss ergänzt oder geleert werden.
+          {t(
+            "Breite und Tiefe bilden gemeinsam den optionalen Footprint. Ein einzelner Wert ist unvollständig und muss ergänzt oder geleert werden."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <NumberField
             form={form}
             name="staticObjectFootprintWidthTiles"
-            label="Standfläche · Breite in Tiles"
-            help="Ganzzahlig von 1 bis 64; nur gemeinsam mit der Tiefe gültig."
+            label={t("Standfläche · Breite in Tiles")}
+            help={t(
+              "Ganzzahlig von 1 bis 64; nur gemeinsam mit der Tiefe gültig."
+            )}
             min={1}
             max={64}
           />
           <NumberField
             form={form}
             name="staticObjectFootprintDepthTiles"
-            label="Standfläche · Tiefe in Tiles"
-            help="Ganzzahlig von 1 bis 64; nur gemeinsam mit der Breite gültig."
+            label={t("Standfläche · Tiefe in Tiles")}
+            help={t(
+              "Ganzzahlig von 1 bis 64; nur gemeinsam mit der Breite gültig."
+            )}
             min={1}
             max={64}
           />
           <NumberField
             form={form}
             name="staticObjectVariantCount"
-            label="Verwandte Varianten"
-            help="Ein bis zwölf zusammengehörige Objektvarianten."
+            label={t("Verwandte Varianten")}
+            help={t("Ein bis zwölf zusammengehörige Objektvarianten.")}
             min={1}
             max={12}
           />
@@ -661,23 +713,26 @@ export function StaticWorldObjectEditor({
           <p
             className={styles.footprintWarning}
             role="status"
-            aria-label="Footprint-Hinweis"
+            aria-label={t("Footprint-Hinweis")}
           >
-            Der Footprint ist unvollständig. Ergänze Breite und Tiefe gemeinsam
-            oder leere beide Werte.
+            {t(
+              "Der Footprint ist unvollständig. Ergänze Breite und Tiefe gemeinsam oder leere beide Werte."
+            )}
           </p>
         ) : null}
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Weitere Objektdetails</legend>
+        <legend>{t("Weitere Objektdetails")}</legend>
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="staticObjectExtraDetails"
-            label="Weitere Objektdetails"
-            help="Optionale Ergänzungen zu Nutzungskontext, Farbwirkung, Alterung oder Lesbarkeit."
+            label={t("Weitere Objektdetails")}
+            help={t(
+              "Optionale Ergänzungen zu Nutzungskontext, Farbwirkung, Alterung oder Lesbarkeit."
+            )}
             maxLength={4000}
             wide
           />

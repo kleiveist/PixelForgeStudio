@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { useEffect, useRef, useState } from "react";
 import { useController, useWatch } from "react-hook-form";
 import {
@@ -178,6 +179,7 @@ function clearClassificationFields(
 }
 
 function ProjectStep({ form }: CoreStepProps) {
+  const { t, tx } = useI18n();
   const error = fieldError(form, "projectName");
   const describedBy = error
     ? "wizard-project-name-help wizard-project-name-error"
@@ -186,7 +188,8 @@ function ProjectStep({ form }: CoreStepProps) {
   return (
     <div className={styles.fieldGroup}>
       <label htmlFor="wizard-project-name">
-        Projektname <span className={styles.required}>Pflichtfeld</span>
+        {t("Projektname")}{" "}
+        <span className={styles.required}>{t("Pflichtfeld")}</span>
       </label>
       <input
         id="wizard-project-name"
@@ -198,11 +201,11 @@ function ProjectStep({ form }: CoreStepProps) {
         {...form.register("projectName")}
       />
       <p id="wizard-project-name-help" className={styles.fieldHelp}>
-        Der Name ordnet Autosave und spätere Prompt-Pakete eindeutig zu.
+        {t("Der Name ordnet Autosave und spätere Prompt-Pakete eindeutig zu.")}
       </p>
       {error ? (
         <p id="wizard-project-name-error" className={styles.fieldError}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -214,6 +217,7 @@ function CategoryStep({
   form,
   notifyProgrammaticChange
 }: CoreStepProps) {
+  const { t, tx } = useI18n();
   const firstCategoryRef = useRef<HTMLInputElement>(null);
   const subtypeRef = useRef<HTMLSelectElement>(null);
   const categoryController = useController({
@@ -249,9 +253,9 @@ function CategoryStep({
   const [pendingCategory, setPendingCategory] = useState<AssetCategory | null>(
     null
   );
-  const [pendingSubtype, setPendingSubtype] = useState<AssetSubtype | "" | null>(
-    null
-  );
+  const [pendingSubtype, setPendingSubtype] = useState<
+    AssetSubtype | "" | null
+  >(null);
   const categoryError = fieldError(form, "category");
   const subtypeError = fieldError(form, "subtype");
   const capabilities = resolveWizardCapabilities({ category, subtype });
@@ -438,8 +442,8 @@ function CategoryStep({
         aria-describedby={categoryError ? "wizard-category-error" : undefined}
       >
         <legend>
-          Welche Art von Bild oder Asset möchtest du erstellen?{" "}
-          <span className={styles.required}>Pflichtfeld</span>
+          {t("Welche Art von Bild oder Asset möchtest du erstellen?")}{" "}
+          <span className={styles.required}>{t("Pflichtfeld")}</span>
         </legend>
         <div className={styles.categoryChoiceGrid}>
           {DASHBOARD_CATEGORIES.map((definition) => (
@@ -463,15 +467,15 @@ function CategoryStep({
               />
               <CategoryIcon category={definition.id} aria-hidden="true" />
               <span>
-                <strong>{definition.label}</strong>
-                <small>{definition.examples}</small>
+                <strong>{tx(definition.label)}</strong>
+                <small>{tx(definition.examples)}</small>
               </span>
             </label>
           ))}
         </div>
         {categoryError ? (
           <p id="wizard-category-error" className={styles.fieldError}>
-            {categoryError}
+            {tx(categoryError)}
           </p>
         ) : null}
       </fieldset>
@@ -479,11 +483,11 @@ function CategoryStep({
       {pendingCategory ? (
         <section className={styles.changeWarning} role="alert">
           <div>
-            <strong>Kategorie wirklich wechseln?</strong>
+            <strong>{t("Kategorie wirklich wechseln?")}</strong>
             <p>
-              Untertyp, Spezialantworten und die Verknüpfung zum bisherigen
-              Assetprofil werden verworfen. Allgemeine Basiswerte bleiben
-              erhalten.
+              {t(
+                "Untertyp, Spezialantworten und die Verknüpfung zum bisherigen Assetprofil werden verworfen. Allgemeine Basiswerte bleiben erhalten."
+              )}
             </p>
           </div>
           <div className={styles.inlineActions}>
@@ -492,14 +496,15 @@ function CategoryStep({
               className={styles.secondaryButton}
               onClick={() => setPendingCategory(null)}
             >
-              Abbrechen
+              {t("Abbrechen")}
             </button>
             <button
               type="button"
               className={styles.dangerButton}
               onClick={() => applyCategory(pendingCategory)}
             >
-              Zu {getDashboardCategory(pendingCategory).label} wechseln
+              {t("Zu")} {tx(getDashboardCategory(pendingCategory).label)}{" "}
+              {t("wechseln")}
             </button>
           </div>
         </section>
@@ -508,7 +513,8 @@ function CategoryStep({
       {category ? (
         <div className={styles.fieldGroup}>
           <label htmlFor="wizard-asset-subtype">
-            Untertyp <span className={styles.required}>Pflichtfeld</span>
+            {t("Untertyp")}{" "}
+            <span className={styles.required}>{t("Pflichtfeld")}</span>
           </label>
           <select
             id="wizard-asset-subtype"
@@ -529,19 +535,21 @@ function CategoryStep({
               selectSubtype(event.currentTarget.value as AssetSubtype | "")
             }
           >
-            <option value="">Untertyp auswählen …</option>
+            <option value="">{t("Untertyp auswählen …")}</option>
             {subtypeOptions.map((option) => (
               <option key={option} value={option}>
-                {formatSubtypeLabel(option)}
+                {tx(formatSubtypeLabel(option))}
               </option>
             ))}
           </select>
           <p id="wizard-subtype-help" className={styles.fieldHelp}>
-            Erst der Untertyp aktiviert die passenden Fragen und Produktionsregeln.
+            {t(
+              "Erst der Untertyp aktiviert die passenden Fragen und Produktionsregeln."
+            )}
           </p>
           {subtypeError ? (
             <p id="wizard-subtype-error" className={styles.fieldError}>
-              {subtypeError}
+              {tx(subtypeError)}
             </p>
           ) : null}
           {naturePlantTypeMismatch ? (
@@ -559,7 +567,7 @@ function CategoryStep({
                   subtypeRef.current?.focus();
                 }}
               >
-                Pflanzentyp aus Untertyp wiederherstellen
+                {t("Pflanzentyp aus Untertyp wiederherstellen")}
               </button>
             </div>
           ) : null}
@@ -579,7 +587,7 @@ function CategoryStep({
                   subtypeRef.current?.focus();
                 }}
               >
-                Objektklasse aus Untertyp wiederherstellen
+                {t("Objektklasse aus Untertyp wiederherstellen")}
               </button>
             </div>
           ) : null}
@@ -598,7 +606,7 @@ function CategoryStep({
                   subtypeRef.current?.focus();
                 }}
               >
-                Gebäudetyp aus Untertyp wiederherstellen
+                {t("Gebäudetyp aus Untertyp wiederherstellen")}
               </button>
             </div>
           ) : null}
@@ -617,7 +625,7 @@ function CategoryStep({
                   subtypeRef.current?.focus();
                 }}
               >
-                Tiletyp aus Untertyp wiederherstellen
+                {t("Tiletyp aus Untertyp wiederherstellen")}
               </button>
             </div>
           ) : null}
@@ -636,7 +644,7 @@ function CategoryStep({
                   subtypeRef.current?.focus();
                 }}
               >
-                Itemklasse aus Untertyp wiederherstellen
+                {t("Itemklasse aus Untertyp wiederherstellen")}
               </button>
             </div>
           ) : null}
@@ -646,10 +654,11 @@ function CategoryStep({
       {pendingSubtype !== null ? (
         <section className={styles.changeWarning} role="alert">
           <div>
-            <strong>Untertyp wirklich wechseln?</strong>
+            <strong>{t("Untertyp wirklich wechseln?")}</strong>
             <p>
-              Spezialantworten und die Verknüpfung zum bisherigen Assetprofil
-              werden verworfen. Allgemeine Basiswerte bleiben erhalten.
+              {t(
+                "Spezialantworten und die Verknüpfung zum bisherigen Assetprofil werden verworfen. Allgemeine Basiswerte bleiben erhalten."
+              )}
             </p>
           </div>
           <div className={styles.inlineActions}>
@@ -658,7 +667,7 @@ function CategoryStep({
               className={styles.secondaryButton}
               onClick={() => setPendingSubtype(null)}
             >
-              Abbrechen
+              {t("Abbrechen")}
             </button>
             <button
               type="button"
@@ -666,8 +675,8 @@ function CategoryStep({
               onClick={() => applySubtype(pendingSubtype)}
             >
               {pendingSubtype === ""
-                ? "Untertyp leeren"
-                : `Zu ${formatSubtypeLabel(pendingSubtype)} wechseln`}
+                ? t("Untertyp leeren")
+                : t("Zu {0} wechseln", tx(formatSubtypeLabel(pendingSubtype)))}
             </button>
           </div>
         </section>
@@ -679,15 +688,21 @@ function CategoryStep({
           aria-labelledby="wizard-capability-preview-title"
         >
           <div>
-            <p className={styles.eyebrow}>Automatisch aufgelöst</p>
-            <h3 id="wizard-capability-preview-title">Aktive Asset-Logik</h3>
+            <p className={styles.eyebrow}>{t("Automatisch aufgelöst")}</p>
+            <h3 id="wizard-capability-preview-title">
+              {t("Aktive Asset-Logik")}
+            </h3>
           </div>
           <ul>
             {Object.entries(capabilities)
               .filter(([, enabled]) => enabled)
               .map(([capability]) => (
                 <li key={capability}>
-                  {CAPABILITY_LABELS[capability as keyof typeof CAPABILITY_LABELS]}
+                  {tx(
+                    CAPABILITY_LABELS[
+                      capability as keyof typeof CAPABILITY_LABELS
+                    ]
+                  )}
                 </li>
               ))}
           </ul>
@@ -698,6 +713,7 @@ function CategoryStep({
 }
 
 function DirectionsStep({ form }: CoreStepProps) {
+  const { t } = useI18n();
   const directionController = useController({
     control: form.control,
     name: "directionCount"
@@ -707,7 +723,7 @@ function DirectionsStep({ form }: CoreStepProps) {
   return (
     <div className={styles.capabilityQuestions}>
       <fieldset className={styles.optionFieldset}>
-        <legend>Wie viele Richtungsansichten werden benötigt?</legend>
+        <legend>{t("Wie viele Richtungsansichten werden benötigt?")}</legend>
         <div className={styles.segmentedOptions}>
           <label
             data-selected={directionCount === undefined ? "true" : "false"}
@@ -716,14 +732,14 @@ function DirectionsStep({ form }: CoreStepProps) {
               type="radio"
               name={directionController.field.name}
               value=""
-              aria-label="Keine Richtungen"
+              aria-label={t("Keine Richtungen")}
               checked={directionCount === undefined}
               ref={directionController.field.ref}
               onBlur={directionController.field.onBlur}
               onChange={() => directionController.field.onChange(undefined)}
             />
-            <strong>Keine Richtungen</strong>
-            <span>Einzelansicht</span>
+            <strong>{t("Keine Richtungen")}</strong>
+            <span>{t("Einzelansicht")}</span>
           </label>
           {([4, 8] as const).map((count) => (
             <label
@@ -734,24 +750,27 @@ function DirectionsStep({ form }: CoreStepProps) {
                 type="radio"
                 name={directionController.field.name}
                 value={count}
-                aria-label={`${count} Richtungen`}
+                aria-label={t("{0} Richtungen", count)}
                 checked={directionCount === count}
                 onBlur={directionController.field.onBlur}
-                onChange={() =>
-                  directionController.field.onChange(count)
-                }
+                onChange={() => directionController.field.onChange(count)}
               />
-              <strong>{count} Richtungen</strong>
-              <span>{count === 8 ? "Produktionsstandard" : "kompaktes Set"}</span>
+              <strong>
+                {count} {t("Richtungen")}
+              </strong>
+              <span>
+                {count === 8 ? t("Produktionsstandard") : t("kompaktes Set")}
+              </span>
             </label>
           ))}
         </div>
       </fieldset>
       <p className={styles.logicNote}>
-        Die Kamera bleibt fest. Nur das Motiv wird logisch neu ausgerichtet;
-        asymmetrische Details werden nicht blind gespiegelt.
+        {t(
+          "Die Kamera bleibt fest. Nur das Motiv wird logisch neu ausgerichtet; asymmetrische Details werden nicht blind gespiegelt."
+        )}
         {directionCount === 8
-          ? " Die feste Reihenfolge lautet S, SW, W, NW, N, NE, E, SE."
+          ? t("Die feste Reihenfolge lautet S, SW, W, NW, N, NE, E, SE.")
           : ""}
       </p>
     </div>
@@ -764,6 +783,7 @@ function CharacterDetailsStep({
   form,
   notifyProgrammaticChange
 }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const baseProfileId = useWatch({
@@ -788,10 +808,11 @@ function CharacterDetailsStep({
   ) {
     return (
       <section className={styles.changeWarning} role="alert">
-        <strong>Figurenprofil nicht verfügbar</strong>
+        <strong>{t("Figurenprofil nicht verfügbar")}</strong>
         <p>
-          Kehre zum Basisprofil zurück und wähle eine gültige
-          Produktionsfamilie mit Figurenmaßstab.
+          {t(
+            "Kehre zum Basisprofil zurück und wähle eine gültige Produktionsfamilie mit Figurenmaßstab."
+          )}
         </p>
       </section>
     );
@@ -840,6 +861,7 @@ function MovingObjectDetailsStep({
   form,
   notifyProgrammaticChange
 }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownMovingObjectSubtypes: readonly string[] =
@@ -852,10 +874,11 @@ function MovingObjectDetailsStep({
   ) {
     return (
       <section className={styles.changeWarning} role="alert">
-        <strong>Bewegungsobjekt nicht verfügbar</strong>
+        <strong>{t("Bewegungsobjekt nicht verfügbar")}</strong>
         <p>
-          Kehre zur Bildart zurück und wähle einen gültigen Untertyp für ein
-          bewegliches Objekt.
+          {t(
+            "Kehre zur Bildart zurück und wähle einen gültigen Untertyp für ein bewegliches Objekt."
+          )}
         </p>
       </section>
     );
@@ -870,10 +893,8 @@ function MovingObjectDetailsStep({
   );
 }
 
-function TextureDetailsStep({
-  form,
-  notifyProgrammaticChange
-}: CoreStepProps) {
+function TextureDetailsStep({ form, notifyProgrammaticChange }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownTextureSubtypes: readonly string[] = ASSET_SUBTYPES.texture;
@@ -885,9 +906,11 @@ function TextureDetailsStep({
   ) {
     return (
       <section className={styles.changeWarning} role="alert">
-        <strong>Texturprofil nicht verfügbar</strong>
+        <strong>{t("Texturprofil nicht verfügbar")}</strong>
         <p>
-          Kehre zur Bildart zurück und wähle einen gültigen Material-Untertyp.
+          {t(
+            "Kehre zur Bildart zurück und wähle einen gültigen Material-Untertyp."
+          )}
         </p>
       </section>
     );
@@ -902,10 +925,8 @@ function TextureDetailsStep({
   );
 }
 
-function NatureDetailsStep({
-  form,
-  notifyProgrammaticChange
-}: CoreStepProps) {
+function NatureDetailsStep({ form, notifyProgrammaticChange }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownNatureSubtypes: readonly string[] = ASSET_SUBTYPES.nature;
@@ -917,10 +938,11 @@ function NatureDetailsStep({
   ) {
     return (
       <section className={styles.changeWarning} role="alert">
-        <strong>Naturprofil nicht verfügbar</strong>
+        <strong>{t("Naturprofil nicht verfügbar")}</strong>
         <p>
-          Kehre zur Bildart zurück und wähle einen gültigen Pflanzen- oder
-          Natur-Untertyp.
+          {t(
+            "Kehre zur Bildart zurück und wähle einen gültigen Pflanzen- oder Natur-Untertyp."
+          )}
         </p>
       </section>
     );
@@ -939,6 +961,7 @@ function StaticObjectDetailsStep({
   form,
   notifyProgrammaticChange
 }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownStaticObjectSubtypes: readonly string[] =
@@ -951,10 +974,11 @@ function StaticObjectDetailsStep({
   ) {
     return (
       <section className={styles.changeWarning} role="alert">
-        <strong>Statisches Objektprofil nicht verfügbar</strong>
+        <strong>{t("Statisches Objektprofil nicht verfügbar")}</strong>
         <p>
-          Kehre zur Bildart zurück und wähle einen gültigen Untertyp für ein
-          statisches Weltobjekt.
+          {t(
+            "Kehre zur Bildart zurück und wähle einen gültigen Untertyp für ein statisches Weltobjekt."
+          )}
         </p>
       </section>
     );
@@ -973,6 +997,7 @@ function BuildingDetailsStep({
   form,
   notifyProgrammaticChange
 }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownBuildingSubtypes: readonly string[] = ASSET_SUBTYPES.building;
@@ -984,10 +1009,11 @@ function BuildingDetailsStep({
   ) {
     return (
       <section className={styles.changeWarning} role="alert">
-        <strong>Gebäudeprofil nicht verfügbar</strong>
+        <strong>{t("Gebäudeprofil nicht verfügbar")}</strong>
         <p>
-          Kehre zur Bildart zurück und wähle einen gültigen Gebäude- oder
-          Architektur-Untertyp.
+          {t(
+            "Kehre zur Bildart zurück und wähle einen gültigen Gebäude- oder Architektur-Untertyp."
+          )}
         </p>
       </section>
     );
@@ -1002,10 +1028,8 @@ function BuildingDetailsStep({
   );
 }
 
-function TilesetDetailsStep({
-  form,
-  notifyProgrammaticChange
-}: CoreStepProps) {
+function TilesetDetailsStep({ form, notifyProgrammaticChange }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownTilesetSubtypes: readonly string[] = ASSET_SUBTYPES.tileset;
@@ -1017,10 +1041,11 @@ function TilesetDetailsStep({
   ) {
     return (
       <section className={styles.changeWarning} role="alert">
-        <strong>Tileset-Profil nicht verfügbar</strong>
+        <strong>{t("Tileset-Profil nicht verfügbar")}</strong>
         <p>
-          Kehre zur Bildart zurück und wähle einen gültigen Tileset- oder
-          Kartenelement-Untertyp.
+          {t(
+            "Kehre zur Bildart zurück und wähle einen gültigen Tileset- oder Kartenelement-Untertyp."
+          )}
         </p>
       </section>
     );
@@ -1036,6 +1061,7 @@ function TilesetDetailsStep({
 }
 
 function ItemDetailsStep({ form, notifyProgrammaticChange }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownItemSubtypes: readonly string[] = ASSET_SUBTYPES.item;
@@ -1047,10 +1073,11 @@ function ItemDetailsStep({ form, notifyProgrammaticChange }: CoreStepProps) {
   ) {
     return (
       <section className={styles.changeWarning} role="alert">
-        <strong>Itemprofil nicht verfügbar</strong>
+        <strong>{t("Itemprofil nicht verfügbar")}</strong>
         <p>
-          Kehre zur Bildart zurück und wähle einen gültigen Item- oder
-          Ausrüstungs-Untertyp.
+          {t(
+            "Kehre zur Bildart zurück und wähle einen gültigen Item- oder Ausrüstungs-Untertyp."
+          )}
         </p>
       </section>
     );
@@ -1065,10 +1092,8 @@ function ItemDetailsStep({ form, notifyProgrammaticChange }: CoreStepProps) {
   );
 }
 
-function ArtworkDetailsStep({
-  form,
-  notifyProgrammaticChange
-}: CoreStepProps) {
+function ArtworkDetailsStep({ form, notifyProgrammaticChange }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const knownArtworkSubtypes: readonly string[] = ASSET_SUBTYPES.artwork;
@@ -1080,10 +1105,11 @@ function ArtworkDetailsStep({
   ) {
     return (
       <section className={styles.changeWarning} role="alert">
-        <strong>Artwork-Profil nicht verfügbar</strong>
+        <strong>{t("Artwork-Profil nicht verfügbar")}</strong>
         <p>
-          Kehre zur Bildart zurück und wähle einen gültigen Konzept- oder
-          Artwork-Untertyp.
+          {t(
+            "Kehre zur Bildart zurück und wähle einen gültigen Konzept- oder Artwork-Untertyp."
+          )}
         </p>
       </section>
     );
@@ -1105,17 +1131,18 @@ function AnimationSelect({
   form: CoreStepProps["form"];
   options: readonly (readonly [string, string])[];
 }>) {
+  const { t, tx } = useI18n();
   return (
     <div className={styles.fieldGroup}>
-      <label htmlFor="wizard-animation-type">Animationsart</label>
+      <label htmlFor="wizard-animation-type">{t("Animationsart")}</label>
       <select
         id="wizard-animation-type"
         {...form.register("animationType", { setValueAs: optionalSelectValue })}
       >
-        <option value="">Noch keine Animation festlegen</option>
+        <option value="">{t("Noch keine Animation festlegen")}</option>
         {options.map(([value, label]) => (
           <option key={value} value={value}>
-            {label}
+            {tx(label)}
           </option>
         ))}
       </select>
@@ -1124,6 +1151,7 @@ function AnimationSelect({
 }
 
 function AnimationStep({ form, notifyProgrammaticChange }: CoreStepProps) {
+  const { t } = useI18n();
   const category = useWatch({ control: form.control, name: "category" });
   const subtype = useWatch({ control: form.control, name: "subtype" });
   const values = form.getValues();
@@ -1136,13 +1164,13 @@ function AnimationStep({ form, notifyProgrammaticChange }: CoreStepProps) {
       <div className={styles.logicNote} role="note">
         <strong>
           {capabilities.movable
-            ? "Dieses Asset kann sich bewegen."
-            : "Dieses Asset bleibt am Ort und kann trotzdem animiert sein."}
+            ? t("Dieses Asset kann sich bewegen.")
+            : t("Dieses Asset bleibt am Ort und kann trotzdem animiert sein.")}
         </strong>
         <span>
           {capabilities.directional
-            ? "Animation und Richtungsset werden getrennt gespeichert."
-            : "Dafür wird bewusst kein Richtungsset eingeblendet."}
+            ? t("Animation und Richtungsset werden getrennt gespeichert.")
+            : t("Dafür wird bewusst kein Richtungsset eingeblendet.")}
         </span>
       </div>
 
@@ -1164,7 +1192,10 @@ function AnimationStep({ form, notifyProgrammaticChange }: CoreStepProps) {
       ) : null}
 
       {category === "staticObject" ? (
-        <AnimationSelect form={form} options={ANIMATION_TYPE_OPTIONS.staticObject} />
+        <AnimationSelect
+          form={form}
+          options={ANIMATION_TYPE_OPTIONS.staticObject}
+        />
       ) : null}
       {category === "nature" ? (
         <AnimationSelect form={form} options={ANIMATION_TYPE_OPTIONS.nature} />
@@ -1173,7 +1204,10 @@ function AnimationStep({ form, notifyProgrammaticChange }: CoreStepProps) {
         <AnimationSelect form={form} options={ANIMATION_TYPE_OPTIONS.tileset} />
       ) : null}
       {category === "building" ? (
-        <AnimationSelect form={form} options={ANIMATION_TYPE_OPTIONS.building} />
+        <AnimationSelect
+          form={form}
+          options={ANIMATION_TYPE_OPTIONS.building}
+        />
       ) : null}
     </div>
   );
@@ -1260,7 +1294,8 @@ export const WIZARD_CORE_FLOW = Object.freeze({
       isApplicable: (
         values: WizardCoreFormValues,
         context: WizardCoreFlowContext
-      ) => wizardStepIsApplicable("movingObjectDetails", values, context.library)
+      ) =>
+        wizardStepIsApplicable("movingObjectDetails", values, context.library)
     }),
     Object.freeze({
       ...getWizardCoreStep("textureDetails"),

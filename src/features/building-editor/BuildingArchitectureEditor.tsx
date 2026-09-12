@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import { resolveCapabilities } from "../../domain/assets";
@@ -232,14 +233,15 @@ const WINDOW_SHAPE_LABELS: Readonly<Record<BuildingWindowShape, string>> = {
   none: "Keine Fenster"
 };
 
-const WINDOW_LIGHTING_LABELS: Readonly<Record<BuildingWindowLighting, string>> = {
-  dark: "Dunkel",
-  neutral: "Neutral",
-  warmLit: "Warm beleuchtet",
-  coolLit: "Kühl beleuchtet",
-  mixed: "Gemischte Lichtzustände",
-  boarded: "Vernagelt / verdeckt"
-};
+const WINDOW_LIGHTING_LABELS: Readonly<Record<BuildingWindowLighting, string>> =
+  {
+    dark: "Dunkel",
+    neutral: "Neutral",
+    warmLit: "Warm beleuchtet",
+    coolLit: "Kühl beleuchtet",
+    mixed: "Gemischte Lichtzustände",
+    boarded: "Vernagelt / verdeckt"
+  };
 
 const CONDITION_LABELS: Readonly<Record<BuildingCondition, string>> = {
   maintained: "Gepflegt",
@@ -321,10 +323,7 @@ const ROOF_CONDITION_OPTIONS = optionsFromIds(
   BUILDING_ROOF_CONDITION_IDS,
   ROOF_CONDITION_LABELS
 );
-const FACADE_OPTIONS = optionsFromIds(
-  BUILDING_FACADE_STYLE_IDS,
-  FACADE_LABELS
-);
+const FACADE_OPTIONS = optionsFromIds(BUILDING_FACADE_STYLE_IDS, FACADE_LABELS);
 const DOOR_TYPE_OPTIONS = optionsFromIds(
   BUILDING_DOOR_TYPE_IDS,
   DOOR_TYPE_LABELS
@@ -361,10 +360,7 @@ const COLLISION_OPTIONS = optionsFromIds(
   BUILDING_COLLISION_MODE_IDS,
   COLLISION_LABELS
 );
-const LIGHTING_OPTIONS = optionsFromIds(
-  BUILDING_LIGHTING_IDS,
-  LIGHTING_LABELS
-);
+const LIGHTING_OPTIONS = optionsFromIds(BUILDING_LIGHTING_IDS, LIGHTING_LABELS);
 
 function optionalTextValue(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -410,16 +406,19 @@ function FieldShell({
   label: string;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   return (
-    <div className={wide ? `${styles.field} ${styles.wideField}` : styles.field}>
-      <label htmlFor={id}>{label}</label>
+    <div
+      className={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+    >
+      <label htmlFor={id}>{tx(label)}</label>
       {children}
       <p id={`${id}-help`} className={styles.help}>
-        {help}
+        {tx(help)}
       </p>
       {error ? (
         <p id={`${id}-error`} className={styles.error}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -439,22 +438,23 @@ function SelectField({
   name: BuildingSelectFieldName;
   options: readonly SelectOption[];
 }>) {
+  const { t, tx } = useI18n();
   const id = `building-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <select
         id={id}
         aria-describedby={describedBy}
         aria-invalid={error ? "true" : "false"}
         {...form.register(name, { setValueAs: optionalSelectValue })}
       >
-        <option value="">Nicht festgelegt</option>
+        <option value="">{t("Nicht festgelegt")}</option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
-            {option.label}
+            {tx(option.label)}
           </option>
         ))}
       </select>
@@ -479,6 +479,7 @@ function TextField({
   notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   const id = `building-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
@@ -489,11 +490,13 @@ function TextField({
       describedBy={describedBy}
       error={error}
       errorClassName={styles.error}
-      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
-      help={help}
+      fieldClassName={
+        wide ? `${styles.field} ${styles.wideField}` : styles.field
+      }
+      help={tx(help)}
       helpClassName={styles.help}
       id={id}
-      label={label}
+      label={tx(label)}
       maxLength={maxLength}
       multiline
       onChoose={(nextValue) => {
@@ -526,12 +529,13 @@ function NumberField({
   min: number;
   name: BuildingNumberFieldName;
 }>) {
+  const { tx } = useI18n();
   const id = `building-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <input
         id={id}
         type="number"
@@ -554,21 +558,22 @@ function BuildingTypeField({
   buildingType: BuildingType;
   subtype: BuildingSubtype;
 }>) {
+  const { t, tx } = useI18n();
   return (
     <div className={styles.field}>
       <span id="building-type-label" className={styles.fieldLabel}>
-        Gebäudetyp
+        {t("Gebäudetyp")}
       </span>
       <output
         className={styles.derivedValue}
         aria-labelledby="building-type-label"
         aria-describedby="building-type-help"
       >
-        {TYPE_LABELS[buildingType]}
+        {tx(TYPE_LABELS[buildingType])}
       </output>
       <p id="building-type-help" className={styles.help}>
-        Aus dem Untertyp {SUBTYPE_LABELS[subtype]} abgeleitet. Ein Wechsel
-        erfolgt im Schritt Bildart.
+        {t("Aus dem Untertyp")} {tx(SUBTYPE_LABELS[subtype])}{" "}
+        {t("abgeleitet. Ein Wechsel erfolgt im Schritt Bildart.")}
       </p>
     </div>
   );
@@ -585,6 +590,7 @@ function TechnicalGeometryFields({
   projectionType?: WizardCoreFormValues["projectionType"];
   tileSize?: number;
 }>) {
+  const { t } = useI18n();
   const perspectiveLabels = {
     topdown: "Top-down",
     threeQuarter: "3/4-RPG",
@@ -605,7 +611,7 @@ function TechnicalGeometryFields({
     <>
       <div className={styles.field}>
         <span id="building-tile-size-label" className={styles.fieldLabel}>
-          Wirksame Tilegröße
+          {t("Wirksame Tilegröße")}
         </span>
         <output
           className={styles.derivedValue}
@@ -613,27 +619,30 @@ function TechnicalGeometryFields({
           aria-describedby="building-tile-size-help"
         >
           {tileSize === undefined
-            ? "Nicht festgelegt"
-            : `${String(tileSize)} × ${String(tileSize)} px`}
+            ? t("Nicht festgelegt")
+            : t("{0} × {1} px", String(tileSize), String(tileSize))}
         </output>
         <p id="building-tile-size-help" className={styles.help}>
-          Technischer Wert aus der Profilvererbung; keine Building-Antwort.
+          {t(
+            "Technischer Wert aus der Profilvererbung; keine Building-Antwort."
+          )}
         </p>
       </div>
       <div className={styles.field}>
         <span id="building-world-geometry-label" className={styles.fieldLabel}>
-          Wirksame Weltgeometrie
+          {t("Wirksame Weltgeometrie")}
         </span>
         <output
           className={styles.derivedValue}
           aria-labelledby="building-world-geometry-label"
           aria-describedby="building-world-geometry-help"
         >
-          {geometry.length === 0 ? "Nicht festgelegt" : geometry.join(" · ")}
+          {geometry.length === 0 ? t("Nicht festgelegt") : geometry.join(" · ")}
         </output>
         <p id="building-world-geometry-help" className={styles.help}>
-          Perspektive, Kamerawinkel und Projektion werden aus dem Basisprofil
-          geerbt und nicht im Gebäude dupliziert.
+          {t(
+            "Perspektive, Kamerawinkel und Projektion werden aus dem Basisprofil geerbt und nicht im Gebäude dupliziert."
+          )}
         </p>
       </div>
     </>
@@ -651,6 +660,7 @@ export function BuildingArchitectureEditor({
   notifyProgrammaticChange,
   subtype
 }: BuildingArchitectureEditorProps) {
+  const { t, tx } = useI18n();
   const buildingType = getDefaultBuildingType(subtype);
   const capabilities = resolveCapabilities("building", subtype);
   const tileSize = useWatch({ control: form.control, name: "tileSize" });
@@ -688,11 +698,14 @@ export function BuildingArchitectureEditor({
         aria-labelledby="building-context-title"
       >
         <div className={styles.contextCopy}>
-          <p className={styles.eyebrow}>Gebäude / Architektur</p>
-          <h3 id="building-context-title">{SUBTYPE_LABELS[subtype]} gestalten</h3>
+          <p className={styles.eyebrow}>{t("Gebäude / Architektur")}</p>
+          <h3 id="building-context-title">
+            {tx(SUBTYPE_LABELS[subtype])} {t("gestalten")}
+          </h3>
           <p className={styles.contextHelp}>
-            Baukörper, Fassade und Öffnungen folgen demselben Tile-Raster und
-            derselben Weltkamera wie die übrigen Kartenassets.
+            {t(
+              "Baukörper, Fassade und Öffnungen folgen demselben Tile-Raster und derselben Weltkamera wie die übrigen Kartenassets."
+            )}
           </p>
         </div>
         <div className={styles.buildingMark} aria-hidden="true">
@@ -702,62 +715,79 @@ export function BuildingArchitectureEditor({
           <span className={styles.windowMark} />
           <span className={styles.shadowMark} />
         </div>
-        <ul className={styles.statusList} aria-label="Gebäude-Capabilities">
-          <li className={styles.statusBadge}>Keine Richtungsansichten</li>
-          <li className={styles.statusBadge}>Tile-Footprint</li>
+        <ul
+          className={styles.statusList}
+          aria-label={t("Gebäude-Capabilities")}
+        >
           <li className={styles.statusBadge}>
-            {capabilities.modular ? "Modularität verfügbar" : "Komplettbau"}
+            {t("Keine Richtungsansichten")}
+          </li>
+          <li className={styles.statusBadge}>{t("Tile-Footprint")}</li>
+          <li className={styles.statusBadge}>
+            {capabilities.modular
+              ? t("Modularität verfügbar")
+              : t("Komplettbau")}
           </li>
           {capabilities.animated ? (
-            <li className={styles.statusBadge}>Animation separat verfügbar</li>
+            <li className={styles.statusBadge}>
+              {t("Animation separat verfügbar")}
+            </li>
           ) : null}
         </ul>
       </section>
 
-      <section className={styles.logicNote} aria-labelledby="building-logic-title">
-        <h3 id="building-logic-title">Weltkamera und Lichtseite bleiben stabil</h3>
+      <section
+        className={styles.logicNote}
+        aria-labelledby="building-logic-title"
+      >
+        <h3 id="building-logic-title">
+          {t("Weltkamera und Lichtseite bleiben stabil")}
+        </h3>
         <p>
-          Gebäude erhalten kein 4/8-Richtungsset. Eine optionale Toranimation
-          beschreibt Zeitphasen am festen Footprint und wird im separaten
-          Capability-Schritt gewählt.
+          {t(
+            "Gebäude erhalten kein 4/8-Richtungsset. Eine optionale Toranimation beschreibt Zeitphasen am festen Footprint und wird im separaten Capability-Schritt gewählt."
+          )}
         </p>
       </section>
 
       <fieldset className={styles.group}>
-        <legend>Nutzung und Baukörper</legend>
+        <legend>{t("Nutzung und Baukörper")}</legend>
         <p className={styles.groupIntro}>
-          Lege Funktion, große Grundform und vertikale Staffelung fest, bevor
-          kleinteilige Fassadendetails hinzukommen.
+          {t(
+            "Lege Funktion, große Grundform und vertikale Staffelung fest, bevor kleinteilige Fassadendetails hinzukommen."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <BuildingTypeField buildingType={buildingType} subtype={subtype} />
           <SelectField
             form={form}
             name="buildingPlanShape"
-            label="Bauform / Grundriss"
-            help="Große Grundrissform, die im orthografischen Tile-Raster lesbar bleibt."
+            label={t("Bauform / Grundriss")}
+            help={t(
+              "Große Grundrissform, die im orthografischen Tile-Raster lesbar bleibt."
+            )}
             options={planShapeOptions}
           />
           <SelectField
             form={form}
             name="buildingSize"
-            label="Größenklasse"
-            help="Visuelle Gesamtgröße relativ zu den übrigen Weltassets."
+            label={t("Größenklasse")}
+            help={t("Visuelle Gesamtgröße relativ zu den übrigen Weltassets.")}
             options={SIZE_OPTIONS}
           />
           <NumberField
             form={form}
             name="buildingFloors"
-            label="Stockwerke"
-            help="Ganzzahlig von 1 bis 20."
+            label={t("Stockwerke")}
+            help={t("Ganzzahlig von 1 bis 20.")}
             min={1}
             max={20}
           />
           <NumberField
             form={form}
             name="buildingHeightPixels"
-            label="Gesamthöhe in Pixeln"
-            help="Optionaler Produktionswert von 16 bis 8192 px."
+            label={t("Gesamthöhe in Pixeln")}
+            help={t("Optionaler Produktionswert von 16 bis 8192 px.")}
             min={16}
             max={8192}
           />
@@ -765,16 +795,20 @@ export function BuildingArchitectureEditor({
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingPurpose"
-            label="Nutzung und Bewohnerrolle"
-            help="Zum Beispiel Wohnhaus einer Handwerkerfamilie, Laden oder Wachposten."
+            label={t("Nutzung und Bewohnerrolle")}
+            help={t(
+              "Zum Beispiel Wohnhaus einer Handwerkerfamilie, Laden oder Wachposten."
+            )}
             maxLength={200}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingDescription"
-            label="Kurze Gebäudebeschreibung"
-            help="Fasse Funktion, Silhouette und wichtigste Erkennungsmerkmale zusammen."
+            label={t("Kurze Gebäudebeschreibung")}
+            help={t(
+              "Fasse Funktion, Silhouette und wichtigste Erkennungsmerkmale zusammen."
+            )}
             maxLength={4000}
             wide
           />
@@ -782,48 +816,59 @@ export function BuildingArchitectureEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Footprint und Mapping-Kompatibilität</legend>
+        <legend>{t("Footprint und Mapping-Kompatibilität")}</legend>
         <p className={styles.groupIntro}>
-          Breite und Tiefe bilden gemeinsam den Footprint. Eingang und
-          blockierende Flächen müssen auf der Karte eindeutig bleiben.
+          {t(
+            "Breite und Tiefe bilden gemeinsam den Footprint. Eingang und blockierende Flächen müssen auf der Karte eindeutig bleiben."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <NumberField
             form={form}
             name="buildingFootprintWidthTiles"
-            label="Footprint · Breite in Tiles"
-            help="Ganzzahlig von 1 bis 64; nur gemeinsam mit der Tiefe gültig."
+            label={t("Footprint · Breite in Tiles")}
+            help={t(
+              "Ganzzahlig von 1 bis 64; nur gemeinsam mit der Tiefe gültig."
+            )}
             min={1}
             max={64}
           />
           <NumberField
             form={form}
             name="buildingFootprintDepthTiles"
-            label="Footprint · Tiefe in Tiles"
-            help="Ganzzahlig von 1 bis 64; nur gemeinsam mit der Breite gültig."
+            label={t("Footprint · Tiefe in Tiles")}
+            help={t(
+              "Ganzzahlig von 1 bis 64; nur gemeinsam mit der Breite gültig."
+            )}
             min={1}
             max={64}
           />
           <SelectField
             form={form}
             name="buildingMappingMode"
-            label="Mapping-Modus"
-            help="Legt fest, wie das Gebäude in Tile-Karten und Bauteilsätze integriert wird."
+            label={t("Mapping-Modus")}
+            help={t(
+              "Legt fest, wie das Gebäude in Tile-Karten und Bauteilsätze integriert wird."
+            )}
             options={mappingOptions}
           />
           <SelectField
             form={form}
             name="buildingCollisionMode"
-            label="Kollisionslesbarkeit"
-            help="Kennzeichnet blockierende Flächen, Eingänge und gegebenenfalls Innenräume."
+            label={t("Kollisionslesbarkeit")}
+            help={t(
+              "Kennzeichnet blockierende Flächen, Eingänge und gegebenenfalls Innenräume."
+            )}
             options={COLLISION_OPTIONS}
           />
           {capabilities.modular ? (
             <FieldShell
               error={modularError}
-              help="Speichert die bewusste Entscheidung für oder gegen kombinierbare Bauteile."
+              help={t(
+                "Speichert die bewusste Entscheidung für oder gegen kombinierbare Bauteile."
+              )}
               id="building-buildingModular"
-              label="Modularer Ausgabesatz"
+              label={t("Modularer Ausgabesatz")}
             >
               <select
                 id="building-buildingModular"
@@ -835,9 +880,9 @@ export function BuildingArchitectureEditor({
                   setValueAs: optionalBooleanValue
                 })}
               >
-                <option value="">Nicht festgelegt</option>
-                <option value="true">Ja, kombinierbare Bauteile</option>
-                <option value="false">Nein, komplettes Gebäude</option>
+                <option value="">{t("Nicht festgelegt")}</option>
+                <option value="true">{t("Ja, kombinierbare Bauteile")}</option>
+                <option value="false">{t("Nein, komplettes Gebäude")}</option>
               </select>
             </FieldShell>
           ) : null}
@@ -852,93 +897,111 @@ export function BuildingArchitectureEditor({
           <p
             className={styles.footprintWarning}
             role="status"
-            aria-label="Gebäude-Footprint-Hinweis"
+            aria-label={t("Gebäude-Footprint-Hinweis")}
           >
-            Der Gebäude-Footprint ist unvollständig. Ergänze Breite und Tiefe
-            gemeinsam oder leere beide Werte.
+            {t(
+              "Der Gebäude-Footprint ist unvollständig. Ergänze Breite und Tiefe gemeinsam oder leere beide Werte."
+            )}
           </p>
         ) : null}
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Material, Dach und Fassade</legend>
+        <legend>{t("Material, Dach und Fassade")}</legend>
         <p className={styles.groupIntro}>
-          Materialwechsel und Konstruktion sollen als große, pixelklare
-          Flächen lesbar sein und zum Zustand des Gebäudes passen.
+          {t(
+            "Materialwechsel und Konstruktion sollen als große, pixelklare Flächen lesbar sein und zum Zustand des Gebäudes passen."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="buildingPrimaryMaterial"
-            label="Hauptmaterial"
-            help="Dominantes Material von Tragwerk und großen Fassadenflächen."
+            label={t("Hauptmaterial")}
+            help={t(
+              "Dominantes Material von Tragwerk und großen Fassadenflächen."
+            )}
             options={MATERIAL_OPTIONS}
           />
           <SelectField
             form={form}
             name="buildingSecondaryMaterial"
-            label="Sekundärmaterial"
-            help="Optionales Material für Sockel, Rahmen, Stützen oder Beschläge."
+            label={t("Sekundärmaterial")}
+            help={t(
+              "Optionales Material für Sockel, Rahmen, Stützen oder Beschläge."
+            )}
             options={MATERIAL_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingMaterialDetails"
-            label="Material- und Konstruktionsdetails"
-            help="Beschreibe Balken, Mauerfugen, Putz, Stützen und Materialwechsel."
+            label={t("Material- und Konstruktionsdetails")}
+            help={t(
+              "Beschreibe Balken, Mauerfugen, Putz, Stützen und Materialwechsel."
+            )}
             maxLength={500}
             wide
           />
           <SelectField
             form={form}
             name="buildingRoofShape"
-            label="Dachform"
-            help="Große Dachsilhouette einschließlich fehlendem oder eingestürztem Dach."
+            label={t("Dachform")}
+            help={t(
+              "Große Dachsilhouette einschließlich fehlendem oder eingestürztem Dach."
+            )}
             options={ROOF_SHAPE_OPTIONS}
           />
           <SelectField
             form={form}
             name="buildingRoofPitch"
-            label="Dachneigung"
-            help="Steilheit der sichtbaren Dachflächen in der geerbten Kamera."
+            label={t("Dachneigung")}
+            help={t(
+              "Steilheit der sichtbaren Dachflächen in der geerbten Kamera."
+            )}
             options={ROOF_PITCH_OPTIONS}
           />
           <SelectField
             form={form}
             name="buildingRoofMaterial"
-            label="Dachmaterial"
-            help="Material der größten sichtbaren Dachfläche."
+            label={t("Dachmaterial")}
+            help={t("Material der größten sichtbaren Dachfläche.")}
             options={ROOF_MATERIAL_OPTIONS}
           />
           <SelectField
             form={form}
             name="buildingRoofCondition"
-            label="Dachzustand"
-            help="Intakt, verwittert, beschädigt, eingestürzt oder überwuchert."
+            label={t("Dachzustand")}
+            help={t(
+              "Intakt, verwittert, beschädigt, eingestürzt oder überwuchert."
+            )}
             options={ROOF_CONDITION_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingRoofDetails"
-            label="Dachdetails"
-            help="Zum Beispiel Gauben, Schornsteine, First, Lücken oder Bewuchs."
+            label={t("Dachdetails")}
+            help={t(
+              "Zum Beispiel Gauben, Schornsteine, First, Lücken oder Bewuchs."
+            )}
             maxLength={500}
           />
           <SelectField
             form={form}
             name="buildingFacadeStyle"
-            label="Fassadenaufbau"
-            help="Tragwerk und sichtbare Gliederung der Außenwände."
+            label={t("Fassadenaufbau")}
+            help={t("Tragwerk und sichtbare Gliederung der Außenwände.")}
             options={FACADE_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingFacadeDetails"
-            label="Fassadendetails"
-            help="Balken, Steine, Schilder, Stützen, Ornamente oder Bruchstellen."
+            label={t("Fassadendetails")}
+            help={t(
+              "Balken, Steine, Schilder, Stützen, Ornamente oder Bruchstellen."
+            )}
             maxLength={500}
             wide
           />
@@ -946,116 +1009,134 @@ export function BuildingArchitectureEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Türen und Fenster</legend>
+        <legend>{t("Türen und Fenster")}</legend>
         <p className={styles.groupIntro}>
-          Öffnungen strukturieren die Fassade und müssen trotz nativer
-          Pixelgröße, Beleuchtung und Zustand eindeutig erkennbar bleiben.
+          {t(
+            "Öffnungen strukturieren die Fassade und müssen trotz nativer Pixelgröße, Beleuchtung und Zustand eindeutig erkennbar bleiben."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <NumberField
             form={form}
             name="buildingDoorCount"
-            label="Anzahl Türen / Tore"
-            help="Ganzzahlig von 0 bis 64."
+            label={t("Anzahl Türen / Tore")}
+            help={t("Ganzzahlig von 0 bis 64.")}
             min={0}
             max={64}
           />
           <SelectField
             form={form}
             name="buildingDoorType"
-            label="Tür- oder Tortyp"
-            help="Dominante Öffnung der sichtbaren Fassade."
+            label={t("Tür- oder Tortyp")}
+            help={t("Dominante Öffnung der sichtbaren Fassade.")}
             options={DOOR_TYPE_OPTIONS}
           />
           <SelectField
             form={form}
             name="buildingDoorState"
-            label="Türzustand"
-            help="Offen, geschlossen, angelehnt, blockiert oder beschädigt."
+            label={t("Türzustand")}
+            help={t(
+              "Offen, geschlossen, angelehnt, blockiert oder beschädigt."
+            )}
             options={DOOR_STATE_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingDoorPosition"
-            label="Türposition und Eingangsausrichtung"
-            help="Position relativ zum Footprint und zu begehbaren Tile-Kanten."
+            label={t("Türposition und Eingangsausrichtung")}
+            help={t(
+              "Position relativ zum Footprint und zu begehbaren Tile-Kanten."
+            )}
             maxLength={500}
           />
           <NumberField
             form={form}
             name="buildingWindowCount"
-            label="Anzahl Fenster"
-            help="Ganzzahlig von 0 bis 256."
+            label={t("Anzahl Fenster")}
+            help={t("Ganzzahlig von 0 bis 256.")}
             min={0}
             max={256}
           />
           <SelectField
             form={form}
             name="buildingWindowShape"
-            label="Fensterform"
-            help="Dominante Form oder bewusster Verzicht auf Fenster."
+            label={t("Fensterform")}
+            help={t("Dominante Form oder bewusster Verzicht auf Fenster.")}
             options={WINDOW_SHAPE_OPTIONS}
           />
           <SelectField
             form={form}
             name="buildingWindowLighting"
-            label="Fensterlicht"
-            help="Sichtbarer Lichtzustand, der zur lokalen Innenbeleuchtung passt."
+            label={t("Fensterlicht")}
+            help={t(
+              "Sichtbarer Lichtzustand, der zur lokalen Innenbeleuchtung passt."
+            )}
             options={WINDOW_LIGHTING_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingWindowDetails"
-            label="Fensterdetails"
-            help="Rahmen, Läden, Verglasung, Gitter oder beschädigte Öffnungen."
+            label={t("Fensterdetails")}
+            help={t(
+              "Rahmen, Läden, Verglasung, Gitter oder beschädigte Öffnungen."
+            )}
             maxLength={500}
           />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Zustand, Belegung und Licht</legend>
+        <legend>{t("Zustand, Belegung und Licht")}</legend>
         <p className={styles.groupIntro}>
-          Gebäudenutzung und lokales Licht ergänzen die geerbte Weltbeleuchtung,
-          ohne deren Richtung still zu verändern.
+          {t(
+            "Gebäudenutzung und lokales Licht ergänzen die geerbte Weltbeleuchtung, ohne deren Richtung still zu verändern."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="buildingCondition"
-            label="Gebäudezustand"
-            help="Pflege, Abnutzung, Beschädigung, Verlassenheit oder Bewuchs."
+            label={t("Gebäudezustand")}
+            help={t(
+              "Pflege, Abnutzung, Beschädigung, Verlassenheit oder Bewuchs."
+            )}
             options={CONDITION_OPTIONS}
           />
           <SelectField
             form={form}
             name="buildingOccupancy"
-            label="Bewohnt / verlassen"
-            help="Bewohnt, aktiv genutzt, leerstehend oder verlassen."
+            label={t("Bewohnt / verlassen")}
+            help={t("Bewohnt, aktiv genutzt, leerstehend oder verlassen.")}
             options={OCCUPANCY_OPTIONS}
           />
           <SelectField
             form={form}
             name="buildingEnvironment"
-            label="Umgebungskontext"
-            help="Kartenkontext für Anschlussflächen, Wetterung und Dekoration."
+            label={t("Umgebungskontext")}
+            help={t(
+              "Kartenkontext für Anschlussflächen, Wetterung und Dekoration."
+            )}
             options={ENVIRONMENT_OPTIONS}
           />
           <SelectField
             form={form}
             name="buildingLighting"
-            label="Lokale Gebäudebeleuchtung"
-            help="Ergänzt das geerbte Weltlicht durch kontrolliertes Innen- oder Quellenlicht."
+            label={t("Lokale Gebäudebeleuchtung")}
+            help={t(
+              "Ergänzt das geerbte Weltlicht durch kontrolliertes Innen- oder Quellenlicht."
+            )}
             options={LIGHTING_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingLightSourceDetails"
-            label="Sichtbare Lichtquellen"
-            help="Zum Beispiel Fensterlicht, Laternen oder ein schwacher magischer Akzent."
+            label={t("Sichtbare Lichtquellen")}
+            help={t(
+              "Zum Beispiel Fensterlicht, Laternen oder ein schwacher magischer Akzent."
+            )}
             maxLength={500}
             wide
           />
@@ -1063,14 +1144,16 @@ export function BuildingArchitectureEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Weitere Architekturdetails</legend>
+        <legend>{t("Weitere Architekturdetails")}</legend>
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="buildingExtraDetails"
-            label="Weitere Architekturdetails"
-            help="Optionale Ergänzungen zu Umgebung, Schildern, Lesbarkeit oder modularen Anschlüssen."
+            label={t("Weitere Architekturdetails")}
+            help={t(
+              "Optionale Ergänzungen zu Umgebung, Schildern, Lesbarkeit oder modularen Anschlüssen."
+            )}
             maxLength={4000}
             wide
           />

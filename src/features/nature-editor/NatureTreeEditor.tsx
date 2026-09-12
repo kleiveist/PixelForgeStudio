@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import type { ReactNode } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import { resolveCapabilities } from "../../domain/assets";
@@ -312,16 +313,19 @@ function FieldShell({
   label: string;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   return (
-    <div className={wide ? `${styles.field} ${styles.wideField}` : styles.field}>
-      <label htmlFor={id}>{label}</label>
+    <div
+      className={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+    >
+      <label htmlFor={id}>{tx(label)}</label>
       {children}
       <p id={`${id}-help`} className={styles.help}>
-        {help}
+        {tx(help)}
       </p>
       {error ? (
         <p id={`${id}-error`} className={styles.error}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -341,22 +345,23 @@ function SelectField({
   name: NatureSelectFieldName;
   options: readonly SelectOption[];
 }>) {
+  const { t, tx } = useI18n();
   const id = `nature-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <select
         id={id}
         aria-describedby={describedBy}
         aria-invalid={error ? "true" : "false"}
         {...form.register(name, { setValueAs: optionalSelectValue })}
       >
-        <option value="">Nicht festgelegt</option>
+        <option value="">{t("Nicht festgelegt")}</option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
-            {option.label}
+            {tx(option.label)}
           </option>
         ))}
       </select>
@@ -383,6 +388,7 @@ function TextField({
   notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   const id = `nature-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
@@ -394,11 +400,13 @@ function TextField({
       describedBy={describedBy}
       error={error}
       errorClassName={styles.error}
-      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
-      help={help}
+      fieldClassName={
+        wide ? `${styles.field} ${styles.wideField}` : styles.field
+      }
+      help={tx(help)}
       helpClassName={styles.help}
       id={id}
-      label={label}
+      label={tx(label)}
       maxLength={maxLength}
       multiline={multiline}
       onChoose={(nextValue) => {
@@ -431,12 +439,13 @@ function NumberField({
   min: number;
   name: NatureNumberFieldName;
 }>) {
+  const { tx } = useI18n();
   const id = `nature-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <input
         id={id}
         type="number"
@@ -461,27 +470,28 @@ function PlantTypeField({
   plantType: NaturePlantType;
   subtype: NatureSubtype;
 }>) {
+  const { t, tx } = useI18n();
   const error = fieldError(form, "naturePlantType");
 
   return (
     <div className={styles.field}>
       <span id="nature-plant-type-label" className={styles.fieldLabel}>
-        Pflanzentyp
+        {t("Pflanzentyp")}
       </span>
       <output
         className={styles.derivedValue}
         aria-labelledby="nature-plant-type-label"
         aria-describedby={`nature-plant-type-help${error ? " nature-plant-type-error" : ""}`}
       >
-        {PLANT_TYPE_LABELS[plantType]}
+        {tx(PLANT_TYPE_LABELS[plantType])}
       </output>
       <p id="nature-plant-type-help" className={styles.help}>
-        Aus dem Untertyp {SUBTYPE_LABELS[subtype]} abgeleitet. Ein Wechsel
-        erfolgt im Schritt Bildart.
+        {t("Aus dem Untertyp")} {tx(SUBTYPE_LABELS[subtype])}{" "}
+        {t("abgeleitet. Ein Wechsel erfolgt im Schritt Bildart.")}
       </p>
       {error ? (
         <p id="nature-plant-type-error" className={styles.error}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -489,10 +499,11 @@ function PlantTypeField({
 }
 
 function TileSizeField({ tileSize }: Readonly<{ tileSize?: number }>) {
+  const { t } = useI18n();
   return (
     <div className={styles.field}>
       <span id="nature-tile-size-label" className={styles.fieldLabel}>
-        Wirksame Tilegröße
+        {t("Wirksame Tilegröße")}
       </span>
       <output
         className={styles.derivedValue}
@@ -500,12 +511,13 @@ function TileSizeField({ tileSize }: Readonly<{ tileSize?: number }>) {
         aria-describedby="nature-tile-size-help"
       >
         {tileSize === undefined
-          ? "Nicht festgelegt"
-          : `${String(tileSize)} × ${String(tileSize)} px`}
+          ? t("Nicht festgelegt")
+          : t("{0} × {1} px", String(tileSize), String(tileSize))}
       </output>
       <p id="nature-tile-size-help" className={styles.help}>
-        Technischer Wert aus der Basisprofil-Vererbung. Er wird nicht in den
-        Naturantworten dupliziert.
+        {t(
+          "Technischer Wert aus der Basisprofil-Vererbung. Er wird nicht in den Naturantworten dupliziert."
+        )}
       </p>
     </div>
   );
@@ -522,6 +534,7 @@ export function NatureTreeEditor({
   notifyProgrammaticChange,
   subtype
 }: NatureTreeEditorProps) {
+  const { t, tx } = useI18n();
   const plantType = getDefaultNaturePlantType(subtype);
   const capabilities = resolveCapabilities("nature", subtype);
   const tileSize = useWatch({ control: form.control, name: "tileSize" });
@@ -543,12 +556,14 @@ export function NatureTreeEditor({
         aria-labelledby="nature-context-title"
       >
         <div className={styles.contextCopy}>
-          <p className={styles.eyebrow}>Naturasset im Weltmaßstab</p>
-          <h3 id="nature-context-title">{SUBTYPE_LABELS[subtype]} gestalten</h3>
+          <p className={styles.eyebrow}>{t("Naturasset im Weltmaßstab")}</p>
+          <h3 id="nature-context-title">
+            {tx(SUBTYPE_LABELS[subtype])} {t("gestalten")}
+          </h3>
           <p className={styles.contextHelp}>
-            Der Untertyp steuert die sichtbaren Anatomiegruppen. Kamera,
-            Tile-Raster und Licht bleiben Teil der gemeinsamen
-            Produktionsfamilie.
+            {t(
+              "Der Untertyp steuert die sichtbaren Anatomiegruppen. Kamera, Tile-Raster und Licht bleiben Teil der gemeinsamen Produktionsfamilie."
+            )}
           </p>
         </div>
         <div className={styles.natureMark} aria-hidden="true">
@@ -556,12 +571,14 @@ export function NatureTreeEditor({
           <span className={styles.trunk} />
           <span className={styles.groundLine} />
         </div>
-        <ul className={styles.statusList} aria-label="Natur-Capabilities">
-          <li className={styles.statusBadge}>Keine Richtungsansichten</li>
+        <ul className={styles.statusList} aria-label={t("Natur-Capabilities")}>
+          <li className={styles.statusBadge}>
+            {t("Keine Richtungsansichten")}
+          </li>
           <li className={styles.statusBadge}>
             {capabilities.animated
-              ? "Animation separat verfügbar"
-              : "Statisches Naturasset"}
+              ? t("Animation separat verfügbar")
+              : t("Statisches Naturasset")}
           </li>
         </ul>
       </section>
@@ -570,19 +587,24 @@ export function NatureTreeEditor({
         className={styles.animationNote}
         aria-labelledby="nature-animation-title"
       >
-        <h3 id="nature-animation-title">Animation bleibt getrennt</h3>
+        <h3 id="nature-animation-title">{t("Animation bleibt getrennt")}</h3>
         <p>
           {capabilities.animated
-            ? "Eine optionale Wind- oder Magieanimation wird ausschließlich im folgenden Capability-Schritt gewählt. Sie erzeugt niemals ein Richtungsset."
-            : "Dieser Untertyp erhält hier keine Animationsauswahl und niemals ein Richtungsset."}
+            ? t(
+                "Eine optionale Wind- oder Magieanimation wird ausschließlich im folgenden Capability-Schritt gewählt. Sie erzeugt niemals ein Richtungsset."
+              )
+            : t(
+                "Dieser Untertyp erhält hier keine Animationsauswahl und niemals ein Richtungsset."
+              )}
         </p>
       </section>
 
       <fieldset className={styles.group}>
-        <legend>Pflanze und Umgebung</legend>
+        <legend>{t("Pflanze und Umgebung")}</legend>
         <p className={styles.groupIntro}>
-          Lege Art, Standort und große Silhouette fest, bevor anatomische
-          Details und Bewuchs folgen.
+          {t(
+            "Lege Art, Standort und große Silhouette fest, bevor anatomische Details und Bewuchs folgen."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <PlantTypeField form={form} plantType={plantType} subtype={subtype} />
@@ -590,16 +612,20 @@ export function NatureTreeEditor({
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="natureSpecies"
-            label="Art / Spezies"
-            help="Konkrete botanische oder frei erfundene Art, ohne bestehende Marken- oder Werkbezüge."
+            label={t("Art / Spezies")}
+            help={t(
+              "Konkrete botanische oder frei erfundene Art, ohne bestehende Marken- oder Werkbezüge."
+            )}
             maxLength={200}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="natureDescription"
-            label="Kurze Naturbeschreibung"
-            help="Fasse Motiv, Alterswirkung und wichtigste Erkennungsmerkmale zusammen."
+            label={t("Kurze Naturbeschreibung")}
+            help={t(
+              "Fasse Motiv, Alterswirkung und wichtigste Erkennungsmerkmale zusammen."
+            )}
             maxLength={4000}
             multiline
             wide
@@ -607,29 +633,31 @@ export function NatureTreeEditor({
           <SelectField
             form={form}
             name="natureClimate"
-            label="Klimazone"
-            help="Standortklima für Form, Farbe und Bewuchs."
+            label={t("Klimazone")}
+            help={t("Standortklima für Form, Farbe und Bewuchs.")}
             options={CLIMATE_OPTIONS}
           />
           <SelectField
             form={form}
             name="natureSeason"
-            label="Jahreszeit"
-            help="Saisonale Farb- und Wachstumswirkung."
+            label={t("Jahreszeit")}
+            help={t("Saisonale Farb- und Wachstumswirkung.")}
             options={SEASON_OPTIONS}
           />
           <SelectField
             form={form}
             name="natureAge"
-            label="Alter / Entwicklungsstand"
-            help="Jung, ausgewachsen, uralt oder abgestorben."
+            label={t("Alter / Entwicklungsstand")}
+            help={t("Jung, ausgewachsen, uralt oder abgestorben.")}
             options={AGE_OPTIONS}
           />
           <SelectField
             form={form}
             name="natureSilhouette"
-            label="Gesamtsilhouette"
-            help="Die Form muss in nativer Spielgröße eindeutig lesbar bleiben."
+            label={t("Gesamtsilhouette")}
+            help={t(
+              "Die Form muss in nativer Spielgröße eindeutig lesbar bleiben."
+            )}
             options={SILHOUETTE_OPTIONS}
           />
         </div>
@@ -637,32 +665,35 @@ export function NatureTreeEditor({
 
       {natureSubtypeHasTrunk(subtype) ? (
         <fieldset className={styles.group}>
-          <legend>Stamm und Rinde</legend>
+          <legend>{t("Stamm und Rinde")}</legend>
           <p className={styles.groupIntro}>
-            Stammform und große Rindencluster bestimmen Stabilität und Alter
-            des Baumassets.
+            {t(
+              "Stammform und große Rindencluster bestimmen Stabilität und Alter des Baumassets."
+            )}
           </p>
           <div className={styles.fieldGrid}>
             <SelectField
               form={form}
               name="natureTrunkThickness"
-              label="Stammdicke"
-              help="Relative Dicke des tragenden Stamms."
+              label={t("Stammdicke")}
+              help={t("Relative Dicke des tragenden Stamms.")}
               options={TRUNK_THICKNESS_OPTIONS}
             />
             <SelectField
               form={form}
               name="natureTrunkShape"
-              label="Stammform"
-              help="Große Form des Stamms ohne kleinteiliges Rauschen."
+              label={t("Stammform")}
+              help={t("Große Form des Stamms ohne kleinteiliges Rauschen.")}
               options={TRUNK_SHAPE_OPTIONS}
             />
             <TextField
               form={form}
               notifyProgrammaticChange={notifyProgrammaticChange}
               name="natureTrunkDetails"
-              label="Rinde, Verzweigung und Hohlräume"
-              help="Beschreibe lesbare Rindenstruktur, Astansätze, Brüche oder Hohlräume."
+              label={t("Rinde, Verzweigung und Hohlräume")}
+              help={t(
+                "Beschreibe lesbare Rindenstruktur, Astansätze, Brüche oder Hohlräume."
+              )}
               maxLength={500}
               multiline
               wide
@@ -673,32 +704,35 @@ export function NatureTreeEditor({
 
       {natureSubtypeHasCrown(subtype) ? (
         <fieldset className={styles.group}>
-          <legend>Krone und Blattmasse</legend>
+          <legend>{t("Krone und Blattmasse")}</legend>
           <p className={styles.groupIntro}>
-            Die Krone wird als klare Clusterstruktur statt als ungeordnetes
-            Einzelblatt-Rauschen definiert.
+            {t(
+              "Die Krone wird als klare Clusterstruktur statt als ungeordnetes Einzelblatt-Rauschen definiert."
+            )}
           </p>
           <div className={styles.fieldGrid}>
             <SelectField
               form={form}
               name="natureCrownShape"
-              label="Kronenform"
-              help="Große Außenform der Krone."
+              label={t("Kronenform")}
+              help={t("Große Außenform der Krone.")}
               options={CROWN_SHAPE_OPTIONS}
             />
             <SelectField
               form={form}
               name="natureCrownDensity"
-              label="Kronendichte"
-              help="Dichte und Durchlässigkeit der Blatt- oder Nadelmasse."
+              label={t("Kronendichte")}
+              help={t("Dichte und Durchlässigkeit der Blatt- oder Nadelmasse.")}
               options={CROWN_DENSITY_OPTIONS}
             />
             <TextField
               form={form}
               notifyProgrammaticChange={notifyProgrammaticChange}
               name="natureFoliageDetails"
-              label="Blätter, Nadeln und Cluster"
-              help="Beschreibe Clustergröße, Dichte, Schichtung und kontrollierte Farbvariation."
+              label={t("Blätter, Nadeln und Cluster")}
+              help={t(
+                "Beschreibe Clustergröße, Dichte, Schichtung und kontrollierte Farbvariation."
+              )}
               maxLength={500}
               multiline
               wide
@@ -709,25 +743,30 @@ export function NatureTreeEditor({
 
       {natureSubtypeHasRoots(subtype) ? (
         <fieldset className={styles.group}>
-          <legend>Wurzeln und Fußpunkt</legend>
+          <legend>{t("Wurzeln und Fußpunkt")}</legend>
           <p className={styles.groupIntro}>
-            Wurzeln und Fußpunkt verankern das Asset eindeutig auf seiner
-            Standfläche.
+            {t(
+              "Wurzeln und Fußpunkt verankern das Asset eindeutig auf seiner Standfläche."
+            )}
           </p>
           <div className={styles.fieldGrid}>
             <SelectField
               form={form}
               name="natureRootVisibility"
-              label="Wurzelsichtbarkeit"
-              help="Verborgen, sichtbar, ausladend, felsumgreifend oder freigelegt."
+              label={t("Wurzelsichtbarkeit")}
+              help={t(
+                "Verborgen, sichtbar, ausladend, felsumgreifend oder freigelegt."
+              )}
               options={ROOT_VISIBILITY_OPTIONS}
             />
             <TextField
               form={form}
               notifyProgrammaticChange={notifyProgrammaticChange}
               name="natureRootDetails"
-              label="Wurzelform und Verlauf"
-              help="Beschreibe Richtung, Ausladung und Kontakt mit Boden oder Fels."
+              label={t("Wurzelform und Verlauf")}
+              help={t(
+                "Beschreibe Richtung, Ausladung und Kontakt mit Boden oder Fels."
+              )}
               maxLength={500}
               multiline
             />
@@ -736,79 +775,86 @@ export function NatureTreeEditor({
       ) : null}
 
       <fieldset className={styles.group}>
-        <legend>Bewuchs und Wetterauflage</legend>
+        <legend>{t("Bewuchs und Wetterauflage")}</legend>
         <p className={styles.groupIntro}>
-          Zusatzbewuchs und Schnee werden als kontrollierte, silhouette-treue
-          Auflagen behandelt.
+          {t(
+            "Zusatzbewuchs und Schnee werden als kontrollierte, silhouette-treue Auflagen behandelt."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="natureMossCoverage"
-            label="Moosbewuchs"
-            help="Stärke des Moosbewuchses auf den sichtbaren Flächen."
+            label={t("Moosbewuchs")}
+            help={t("Stärke des Moosbewuchses auf den sichtbaren Flächen.")}
             options={MOSS_COVERAGE_OPTIONS}
           />
           <SelectField
             form={form}
             name="natureMushroomGrowth"
-            label="Pilzbewuchs"
-            help="Anzahl und Gruppierung zusätzlicher Pilze."
+            label={t("Pilzbewuchs")}
+            help={t("Anzahl und Gruppierung zusätzlicher Pilze.")}
             options={MUSHROOM_GROWTH_OPTIONS}
           />
           <SelectField
             form={form}
             name="natureSnowCover"
-            label="Schneebedeckung"
-            help="Menge und Verteilung der sichtbaren Schneeauflage."
+            label={t("Schneebedeckung")}
+            help={t("Menge und Verteilung der sichtbaren Schneeauflage.")}
             options={SNOW_COVER_OPTIONS}
           />
           <SelectField
             form={form}
             name="natureVineGrowth"
-            label="Rankenbewuchs"
-            help="Leichte, herabhängende oder dicht verflochtene Ranken."
+            label={t("Rankenbewuchs")}
+            help={t("Leichte, herabhängende oder dicht verflochtene Ranken.")}
             options={VINE_GROWTH_OPTIONS}
           />
         </div>
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Standfläche und Varianten</legend>
+        <legend>{t("Standfläche und Varianten")}</legend>
         <p className={styles.groupIntro}>
-          Breite und Tiefe bilden gemeinsam den optionalen Footprint. Ein
-          einzelner Wert ist unvollständig und muss vor dem Weitergehen ergänzt
-          oder geleert werden.
+          {t(
+            "Breite und Tiefe bilden gemeinsam den optionalen Footprint. Ein einzelner Wert ist unvollständig und muss vor dem Weitergehen ergänzt oder geleert werden."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <NumberField
             form={form}
             name="natureFootprintWidthTiles"
-            label="Standfläche · Breite in Tiles"
-            help="Ganzzahlig von 1 bis 64; nur gemeinsam mit der Tiefe gültig."
+            label={t("Standfläche · Breite in Tiles")}
+            help={t(
+              "Ganzzahlig von 1 bis 64; nur gemeinsam mit der Tiefe gültig."
+            )}
             min={1}
             max={64}
           />
           <NumberField
             form={form}
             name="natureFootprintDepthTiles"
-            label="Standfläche · Tiefe in Tiles"
-            help="Ganzzahlig von 1 bis 64; nur gemeinsam mit der Breite gültig."
+            label={t("Standfläche · Tiefe in Tiles")}
+            help={t(
+              "Ganzzahlig von 1 bis 64; nur gemeinsam mit der Breite gültig."
+            )}
             min={1}
             max={64}
           />
           <SelectField
             form={form}
             name="natureGrounding"
-            label="Bodenanschluss"
-            help="Beschreibt den sichtbaren Anschluss an Boden, Fels, Schnee oder Sumpf."
+            label={t("Bodenanschluss")}
+            help={t(
+              "Beschreibt den sichtbaren Anschluss an Boden, Fels, Schnee oder Sumpf."
+            )}
             options={GROUNDING_OPTIONS}
           />
           <NumberField
             form={form}
             name="natureVariantCount"
-            label="Verwandte Varianten"
-            help="Ein bis zwölf zusammengehörige Silhouetten."
+            label={t("Verwandte Varianten")}
+            help={t("Ein bis zwölf zusammengehörige Silhouetten.")}
             min={1}
             max={12}
           />
@@ -818,23 +864,26 @@ export function NatureTreeEditor({
           <p
             className={styles.footprintWarning}
             role="status"
-            aria-label="Footprint-Hinweis"
+            aria-label={t("Footprint-Hinweis")}
           >
-            Der Footprint ist unvollständig. Ergänze Breite und Tiefe gemeinsam
-            oder leere beide Werte.
+            {t(
+              "Der Footprint ist unvollständig. Ergänze Breite und Tiefe gemeinsam oder leere beide Werte."
+            )}
           </p>
         ) : null}
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Weitere Naturdetails</legend>
+        <legend>{t("Weitere Naturdetails")}</legend>
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="natureExtraDetails"
-            label="Weitere Naturdetails"
-            help="Optionale Ergänzungen zu Farbe, Flechten, Frost, Nässe, Staub oder magischen Merkmalen."
+            label={t("Weitere Naturdetails")}
+            help={t(
+              "Optionale Ergänzungen zu Farbe, Flechten, Frost, Nässe, Staub oder magischen Merkmalen."
+            )}
             maxLength={4000}
             multiline
             wide

@@ -5,10 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { BRAND } from "../config";
 import { DARK_THEME_MEDIA_QUERY } from "../domain/theme";
 import { parseAppSettings } from "../schemas";
-import {
-  V2_STORAGE_KEYS,
-  createV2StorageAdapter
-} from "../services";
+import { V2_STORAGE_KEYS, createV2StorageAdapter } from "../services";
 import { MemoryStorage } from "../test/memoryStorage";
 import { MemoryNavigation } from "../test/memoryNavigation";
 import { App as StudioApp, type AppProps } from "./App";
@@ -76,7 +73,10 @@ function installMatchMedia(initiallyDark: boolean) {
     activeListenerCount: () => listeners.size,
     setDark(nextMatches: boolean) {
       matches = nextMatches;
-      const event = { matches, media: DARK_THEME_MEDIA_QUERY } as MediaQueryListEvent;
+      const event = {
+        matches,
+        media: DARK_THEME_MEDIA_QUERY
+      } as MediaQueryListEvent;
       for (const listener of listeners) listener(event);
     }
   };
@@ -121,9 +121,7 @@ describe("PixelForge visual foundation", () => {
     expect(
       screen.getByRole("region", { name: "Was möchtest du erschaffen?" })
     ).toBeVisible();
-    expect(
-      screen.getByRole("group", { name: "Darstellung" })
-    ).toBeVisible();
+    expect(screen.getByRole("group", { name: "Darstellung" })).toBeVisible();
     expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
     expect(document.documentElement).toHaveAttribute("data-theme", "light");
     expect(storage.mutations).toHaveLength(0);
@@ -200,13 +198,13 @@ describe("PixelForge visual foundation", () => {
     const now = () => "2026-09-02T20:00:00.000Z";
     const rendered = render(<App storageAdapter={adapter} now={now} />);
     const heading = screen.getByRole("heading", {
-      name: /pixelart-produktion beginnt mit der richtigen asset-art/i
+      name: /pixel-art production starts with the right asset type/i
     });
 
-    await user.click(screen.getByRole("radio", { name: "Dunkel" }));
+    await user.click(screen.getByRole("radio", { name: "Dark" }));
 
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
-    expect(screen.getByText("Darstellung gespeichert.")).toBeVisible();
+    expect(screen.getByText("Appearance saved.")).toBeVisible();
     expect(screen.getByRole("heading", { level: 1 })).toBe(heading);
     expect(storage.mutations).toEqual([
       { operation: "set", key: V2_STORAGE_KEYS.settings }
@@ -229,7 +227,7 @@ describe("PixelForge visual foundation", () => {
     rendered.unmount();
     expect(document.documentElement).not.toHaveAttribute("data-theme");
     render(<App storageAdapter={adapter} now={now} />);
-    expect(screen.getByRole("radio", { name: "Dunkel" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Dark" })).toBeChecked();
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
   });
 
@@ -282,10 +280,7 @@ describe("PixelForge visual foundation", () => {
     const adapter = createV2StorageAdapter(storage);
 
     render(
-      <App
-        storageAdapter={adapter}
-        now={() => "2026-09-02T20:05:00.000Z"}
-      />
+      <App storageAdapter={adapter} now={() => "2026-09-02T20:05:00.000Z"} />
     );
     act(() => media.setDark(true));
 
@@ -340,13 +335,12 @@ describe("PixelForge visual foundation", () => {
     const adapter = createV2StorageAdapter(storage);
 
     render(
-      <App
-        storageAdapter={adapter}
-        now={() => "2026-09-02T20:10:00.000Z"}
-      />
+      <App storageAdapter={adapter} now={() => "2026-09-02T20:10:00.000Z"} />
     );
 
-    expect(screen.getByText(/gespeicherten einstellungen sind ungültig/i)).toBeVisible();
+    expect(
+      screen.getByText(/gespeicherten einstellungen sind ungültig/i)
+    ).toBeVisible();
     expect(storage.getItem(V2_STORAGE_KEYS.settings)).toBe(corruptValue);
     expect(storage.mutations).toHaveLength(0);
 
@@ -364,7 +358,9 @@ describe("PixelForge visual foundation", () => {
 
     render(<App storageAdapter={createV2StorageAdapter(null)} />);
 
-    expect(screen.getByText(/lokales speichern ist nicht verfügbar/i)).toBeVisible();
+    expect(
+      screen.getByText(/lokales speichern ist nicht verfügbar/i)
+    ).toBeVisible();
     await user.click(screen.getByRole("radio", { name: "Dunkel" }));
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
     expect(screen.getByRole("radio", { name: "Dunkel" })).toBeChecked();
@@ -404,7 +400,9 @@ describe("PixelForge visual foundation", () => {
     await user.click(screen.getByRole("radio", { name: "Dunkel" }));
 
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
-    expect(screen.getByText(/änderungen gelten für diese sitzung/i)).toBeVisible();
+    expect(
+      screen.getByText(/änderungen gelten für diese sitzung/i)
+    ).toBeVisible();
     expect(storage.getItem(V2_STORAGE_KEYS.settings)).toBe(persisted);
     expect(storage.mutations).toHaveLength(0);
 

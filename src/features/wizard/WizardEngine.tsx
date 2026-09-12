@@ -24,9 +24,7 @@ export interface WizardEngineProps {
   readonly now: () => string;
   readonly onDraftEdited: (draft: WizardDraft) => void;
   readonly onDraftSaved: (draft: WizardDraft) => void;
-  readonly onRawCoreFormValuesChanged?: (
-    values: WizardCoreFormValues
-  ) => void;
+  readonly onRawCoreFormValuesChanged?: (values: WizardCoreFormValues) => void;
   readonly storageAdapter: WizardDraftStorage;
 }
 
@@ -58,7 +56,8 @@ export function WizardEngine({
     library
   );
   const initialValues =
-    initialFormValues ?? createWizardCoreFormValues(draft, categoryHint, library);
+    initialFormValues ??
+    createWizardCoreFormValues(draft, categoryHint, library);
 
   return (
     <GuidedWizardEngine

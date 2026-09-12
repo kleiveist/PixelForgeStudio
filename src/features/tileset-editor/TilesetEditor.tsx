@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import type { ReactNode } from "react";
 import { useController, useWatch, type UseFormReturn } from "react-hook-form";
 import { GUIDED_TEXT_PRESETS_DE } from "../../domain/guided-answers";
@@ -112,15 +113,14 @@ const CORNER_SET_LABELS: Readonly<Record<TilesetCornerSet, string>> = {
   custom: "Individuelles Eckset"
 };
 
-const TRANSITION_MODE_LABELS: Readonly<
-  Record<TilesetTransitionMode, string>
-> = {
-  none: "Kein Materialübergang",
-  oneWay: "Einseitiger Übergang",
-  bidirectional: "Beidseitiger Übergang",
-  multiMaterial: "Mehrere Nachbarmaterialien",
-  custom: "Individuelle Übergangslogik"
-};
+const TRANSITION_MODE_LABELS: Readonly<Record<TilesetTransitionMode, string>> =
+  {
+    none: "Kein Materialübergang",
+    oneWay: "Einseitiger Übergang",
+    bidirectional: "Beidseitiger Übergang",
+    multiMaterial: "Mehrere Nachbarmaterialien",
+    custom: "Individuelle Übergangslogik"
+  };
 
 const SEAM_MODE_LABELS: Readonly<Record<TilesetSeamMode, string>> = {
   seamless: "Vollständig nahtlos",
@@ -130,9 +130,7 @@ const SEAM_MODE_LABELS: Readonly<Record<TilesetSeamMode, string>> = {
   custom: "Individuelle Seam-Regel"
 };
 
-const TILEABLE_AXES_LABELS: Readonly<
-  Record<TilesetTileableAxes, string>
-> = {
+const TILEABLE_AXES_LABELS: Readonly<Record<TilesetTileableAxes, string>> = {
   horizontal: "Horizontal",
   vertical: "Vertikal",
   both: "Horizontal und vertikal",
@@ -176,10 +174,7 @@ function optionsFromIds<Value extends string>(
 }
 
 const USAGE_OPTIONS = optionsFromIds(TILESET_USAGE_IDS, USAGE_LABELS);
-const EDGE_SET_OPTIONS = optionsFromIds(
-  TILESET_EDGE_SET_IDS,
-  EDGE_SET_LABELS
-);
+const EDGE_SET_OPTIONS = optionsFromIds(TILESET_EDGE_SET_IDS, EDGE_SET_LABELS);
 const CORNER_SET_OPTIONS = optionsFromIds(
   TILESET_CORNER_SET_IDS,
   CORNER_SET_LABELS
@@ -243,16 +238,19 @@ function FieldShell({
   label: string;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   return (
-    <div className={wide ? `${styles.field} ${styles.wideField}` : styles.field}>
-      <label htmlFor={id}>{label}</label>
+    <div
+      className={wide ? `${styles.field} ${styles.wideField}` : styles.field}
+    >
+      <label htmlFor={id}>{tx(label)}</label>
       {children}
       <p id={`${id}-help`} className={styles.help}>
-        {help}
+        {tx(help)}
       </p>
       {error ? (
         <p id={`${id}-error`} className={styles.error}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>
@@ -274,12 +272,13 @@ function SelectField({
   onValueChange?: (value: string | undefined) => void;
   options: readonly SelectOption[];
 }>) {
+  const { t, tx } = useI18n();
   const id = `tileset-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <select
         id={id}
         aria-describedby={describedBy}
@@ -291,10 +290,10 @@ function SelectField({
           }
         })}
       >
-        <option value="">Nicht festgelegt</option>
+        <option value="">{t("Nicht festgelegt")}</option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
-            {option.label}
+            {tx(option.label)}
           </option>
         ))}
       </select>
@@ -319,6 +318,7 @@ function TextField({
   notifyProgrammaticChange: () => void;
   wide?: boolean;
 }>) {
+  const { tx } = useI18n();
   const id = `tileset-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
@@ -329,11 +329,13 @@ function TextField({
       describedBy={describedBy}
       error={error}
       errorClassName={styles.error}
-      fieldClassName={wide ? `${styles.field} ${styles.wideField}` : styles.field}
-      help={help}
+      fieldClassName={
+        wide ? `${styles.field} ${styles.wideField}` : styles.field
+      }
+      help={tx(help)}
       helpClassName={styles.help}
       id={id}
-      label={label}
+      label={tx(label)}
       maxLength={maxLength}
       multiline
       onChoose={(nextValue) => {
@@ -366,12 +368,13 @@ function NumberField({
   min: number;
   name: TilesetNumberFieldName;
 }>) {
+  const { tx } = useI18n();
   const id = `tileset-${name}`;
   const error = fieldError(form, name);
   const describedBy = `${id}-help${error ? ` ${id}-error` : ""}`;
 
   return (
-    <FieldShell error={error} help={help} id={id} label={label}>
+    <FieldShell error={error} help={tx(help)} id={id} label={tx(label)}>
       <input
         id={id}
         type="number"
@@ -398,26 +401,28 @@ function DerivedField({
   label: string;
   value: string;
 }>) {
+  const { tx } = useI18n();
   return (
     <div className={styles.field}>
       <span id={`${id}-label`} className={styles.fieldLabel}>
-        {label}
+        {tx(label)}
       </span>
       <output
         className={styles.derivedValue}
         aria-labelledby={`${id}-label`}
         aria-describedby={`${id}-help`}
       >
-        {value}
+        {tx(value)}
       </output>
       <p id={`${id}-help`} className={styles.help}>
-        {help}
+        {tx(help)}
       </p>
     </div>
   );
 }
 
 function VariantKindsField({ form }: Readonly<{ form: TilesetForm }>) {
+  const { t, tx } = useI18n();
   const controller = useController({
     control: form.control,
     name: "tilesetVariantKinds"
@@ -434,7 +439,9 @@ function VariantKindsField({ form }: Readonly<{ form: TilesetForm }>) {
   ): void => {
     if (checked) selected.add(variant);
     else selected.delete(variant);
-    const next = TILESET_VARIANT_KIND_IDS.filter((entry) => selected.has(entry));
+    const next = TILESET_VARIANT_KIND_IDS.filter((entry) =>
+      selected.has(entry)
+    );
     controller.field.onChange(next.length === 0 ? undefined : next);
   };
 
@@ -444,7 +451,7 @@ function VariantKindsField({ form }: Readonly<{ form: TilesetForm }>) {
       aria-describedby={describedBy}
       aria-invalid={error ? "true" : "false"}
     >
-      <legend>Variantenarten</legend>
+      <legend>{t("Variantenarten")}</legend>
       <div className={styles.choiceGrid}>
         {TILESET_VARIANT_KIND_IDS.map((variant) => (
           <label key={variant} className={styles.choice}>
@@ -457,18 +464,24 @@ function VariantKindsField({ form }: Readonly<{ form: TilesetForm }>) {
               onChange={(event) =>
                 updateVariant(variant, event.currentTarget.checked)
               }
-              ref={variant === TILESET_VARIANT_KIND_IDS[0] ? controller.field.ref : undefined}
+              ref={
+                variant === TILESET_VARIANT_KIND_IDS[0]
+                  ? controller.field.ref
+                  : undefined
+              }
             />
-            <span>{VARIANT_KIND_LABELS[variant]}</span>
+            <span>{tx(VARIANT_KIND_LABELS[variant])}</span>
           </label>
         ))}
       </div>
       <p id="tileset-variant-kinds-help" className={styles.help}>
-        Wähle nur Varianten, die als eigenständige Atlas-Slots produziert werden.
+        {t(
+          "Wähle nur Varianten, die als eigenständige Atlas-Slots produziert werden."
+        )}
       </p>
       {error ? (
         <p id="tileset-variant-kinds-error" className={styles.error}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </fieldset>
@@ -526,13 +539,15 @@ function resolveTechnicalSpecification(
 function TechnicalSpecificationCard({
   specification
 }: Readonly<{ specification: TilesetTechnicalSpecification | null }>) {
+  const { t } = useI18n();
   if (specification === null) {
     return (
       <section className={styles.specificationCard} aria-live="polite">
-        <h4>Technische Atlas-Spezifikation</h4>
+        <h4>{t("Technische Atlas-Spezifikation")}</h4>
         <p>
-          Trage eine gültige Atlas-Tilezahl ein. Beim festen Layout wird
-          zusätzlich die Spaltenzahl benötigt.
+          {t(
+            "Trage eine gültige Atlas-Tilezahl ein. Beim festen Layout wird zusätzlich die Spaltenzahl benötigt."
+          )}
         </p>
       </section>
     );
@@ -545,46 +560,48 @@ function TechnicalSpecificationCard({
       aria-labelledby="tileset-specification-title"
       aria-live="polite"
     >
-      <h4 id="tileset-specification-title">Technische Atlas-Spezifikation</h4>
+      <h4 id="tileset-specification-title">
+        {t("Technische Atlas-Spezifikation")}
+      </h4>
       <dl className={styles.metricGrid}>
         <div>
-          <dt>Tile-Zelle</dt>
+          <dt>{t("Tile-Zelle")}</dt>
           <dd>
             {metrics.tileSizePixels} × {metrics.tileSizePixels} px
           </dd>
         </div>
         <div>
-          <dt>Atlas-Raster</dt>
+          <dt>{t("Atlas-Raster")}</dt>
           <dd>
-            {metrics.columns} × {metrics.rows} Zellen
+            {metrics.columns} × {metrics.rows} {t("Zellen")}
           </dd>
         </div>
         <div>
-          <dt>Canvas</dt>
+          <dt>{t("Canvas")}</dt>
           <dd>
             {metrics.atlasWidthPixels} × {metrics.atlasHeightPixels} px
           </dd>
         </div>
         <div>
-          <dt>Belegung</dt>
+          <dt>{t("Belegung")}</dt>
           <dd>
-            {metrics.tileCount} von {metrics.capacity} Slots
+            {metrics.tileCount} {t("von")} {metrics.capacity} {t("Slots")}
           </dd>
         </div>
         <div>
-          <dt>Zwischenraum</dt>
+          <dt>{t("Zwischenraum")}</dt>
           <dd>{metrics.gutterPixels} px</dd>
         </div>
         <div>
-          <dt>Außenrand</dt>
+          <dt>{t("Außenrand")}</dt>
           <dd>{metrics.marginPixels} px</dd>
         </div>
       </dl>
       {metrics.unusedCells > 0 ? (
         <p className={styles.capacityNote}>
           {metrics.unusedCells === 1
-            ? "1 Atlas-Slot bleibt frei."
-            : `${String(metrics.unusedCells)} Atlas-Slots bleiben frei.`}
+            ? t("1 Atlas-Slot bleibt frei.")
+            : t("{0} Atlas-Slots bleiben frei.", String(metrics.unusedCells))}
         </p>
       ) : null}
     </section>
@@ -602,6 +619,7 @@ export function TilesetEditor({
   notifyProgrammaticChange,
   subtype
 }: TilesetEditorProps) {
+  const { t, tx } = useI18n();
   const tilesetType = getDefaultTilesetType(subtype);
   const supportsEdges = tilesetSubtypeSupportsEdges(subtype);
   const supportsCorners = tilesetSubtypeSupportsCorners(subtype);
@@ -642,14 +660,19 @@ export function TilesetEditor({
 
   return (
     <div className={styles.editor}>
-      <section className={styles.contextCard} aria-labelledby="tileset-context-title">
+      <section
+        className={styles.contextCard}
+        aria-labelledby="tileset-context-title"
+      >
         <div className={styles.contextCopy}>
-          <p className={styles.eyebrow}>Tileset / Kartenelement</p>
-          <h3 id="tileset-context-title">{SUBTYPE_LABELS[subtype]} strukturieren</h3>
+          <p className={styles.eyebrow}>{t("Tileset / Kartenelement")}</p>
+          <h3 id="tileset-context-title">
+            {tx(SUBTYPE_LABELS[subtype])} {t("strukturieren")}
+          </h3>
           <p className={styles.contextHelp}>
-            Jede Zelle bleibt am geerbten Pixelraster ausgerichtet. Verbindungen,
-            Varianten und Atlas-Slots werden als Mappingregeln statt als
-            Richtungsansichten beschrieben.
+            {t(
+              "Jede Zelle bleibt am geerbten Pixelraster ausgerichtet. Verbindungen, Varianten und Atlas-Slots werden als Mappingregeln statt als Richtungsansichten beschrieben."
+            )}
           </p>
         </div>
         <div className={styles.tileMark} aria-hidden="true">
@@ -657,74 +680,92 @@ export function TilesetEditor({
             <span key={index} data-accent={index === 4 ? "true" : "false"} />
           ))}
         </div>
-        <ul className={styles.statusList} aria-label="Tileset-Capabilities">
-          <li className={styles.statusBadge}>Gridgebunden</li>
-          <li className={styles.statusBadge}>Kachelbar</li>
-          <li className={styles.statusBadge}>Keine Richtungsansichten</li>
+        <ul
+          className={styles.statusList}
+          aria-label={t("Tileset-Capabilities")}
+        >
+          <li className={styles.statusBadge}>{t("Gridgebunden")}</li>
+          <li className={styles.statusBadge}>{t("Kachelbar")}</li>
+          <li className={styles.statusBadge}>
+            {t("Keine Richtungsansichten")}
+          </li>
           {supportsEdges ? (
-            <li className={styles.statusBadge}>Verbindungsset</li>
+            <li className={styles.statusBadge}>{t("Verbindungsset")}</li>
           ) : null}
           {subtype === "animatedTile" ? (
-            <li className={styles.statusBadge}>Animation separat</li>
+            <li className={styles.statusBadge}>{t("Animation separat")}</li>
           ) : null}
         </ul>
       </section>
 
-      <section className={styles.logicNote} aria-labelledby="tileset-logic-title">
-        <h3 id="tileset-logic-title">Ein Grid, deterministische Anschlüsse</h3>
+      <section
+        className={styles.logicNote}
+        aria-labelledby="tileset-logic-title"
+      >
+        <h3 id="tileset-logic-title">
+          {t("Ein Grid, deterministische Anschlüsse")}
+        </h3>
         <p>
-          Gegenüberliegende Kanten müssen pixelgenau zusammenpassen. Innen- und
-          Außenecken erscheinen nur bei passenden Untertypen; Animation bleibt
-          ein eigener Capability-Schritt ohne 4/8-Richtungsset.
+          {t(
+            "Gegenüberliegende Kanten müssen pixelgenau zusammenpassen. Innen- und Außenecken erscheinen nur bei passenden Untertypen; Animation bleibt ein eigener Capability-Schritt ohne 4/8-Richtungsset."
+          )}
         </p>
       </section>
 
       <fieldset className={styles.group}>
-        <legend>Grid und Tiletyp</legend>
+        <legend>{t("Grid und Tiletyp")}</legend>
         <p className={styles.groupIntro}>
-          Tilegröße und Pixelmaßstab stammen aus der technischen Profilkette und
-          werden nicht als Tileset-Antwort dupliziert.
+          {t(
+            "Tilegröße und Pixelmaßstab stammen aus der technischen Profilkette und werden nicht als Tileset-Antwort dupliziert."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <DerivedField
             id="tileset-type"
-            label="Tiletyp"
+            label={t("Tiletyp")}
             value={TYPE_LABELS[tilesetType]}
-            help={`Aus dem Untertyp ${SUBTYPE_LABELS[subtype]} abgeleitet.`}
+            help={t(
+              "Aus dem Untertyp {0} abgeleitet.",
+              SUBTYPE_LABELS[subtype]
+            )}
           />
           <DerivedField
             id="tileset-grid"
-            label="Wirksames Tile-Grid"
+            label={t("Wirksames Tile-Grid")}
             value={
               tileSize === undefined
                 ? "Nicht festgelegt"
                 : `${String(tileSize)} × ${String(tileSize)} px`
             }
-            help="Sperrbarer technischer Wert aus Base→Category→Asset."
+            help={t("Sperrbarer technischer Wert aus Base→Category→Asset.")}
           />
           <DerivedField
             id="tileset-pixel-density"
-            label="Pixelmaßstab"
+            label={t("Pixelmaßstab")}
             value={
               pixelDensity === undefined
                 ? "Nicht festgelegt"
                 : PIXEL_DENSITY_LABELS[pixelDensity]
             }
-            help="Die geerbte Pixeldichte gilt für jede Atlas-Zelle."
+            help={t("Die geerbte Pixeldichte gilt für jede Atlas-Zelle.")}
           />
           <SelectField
             form={form}
             name="tilesetUsage"
-            label="Einsatz im Mapping"
-            help="Fläche oder Anschlussrolle, für die das Set produziert wird."
+            label={t("Einsatz im Mapping")}
+            help={t(
+              "Fläche oder Anschlussrolle, für die das Set produziert wird."
+            )}
             options={USAGE_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="tilesetDescription"
-            label="Tileset-Beschreibung"
-            help="Material, Lesbarkeit und charakteristische Flächendetails."
+            label={t("Tileset-Beschreibung")}
+            help={t(
+              "Material, Lesbarkeit und charakteristische Flächendetails."
+            )}
             maxLength={4000}
             wide
           />
@@ -732,10 +773,11 @@ export function TilesetEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Kanten, Übergänge und Ecken</legend>
+        <legend>{t("Kanten, Übergänge und Ecken")}</legend>
         <p className={styles.groupIntro}>
-          Nur Verbindungen erfassen, die der gewählte Untertyp tatsächlich als
-          eigene Atlas-Slots benötigt.
+          {t(
+            "Nur Verbindungen erfassen, die der gewählte Untertyp tatsächlich als eigene Atlas-Slots benötigt."
+          )}
         </p>
         {supportsEdges || supportsCorners || supportsTransitions ? (
           <div className={styles.fieldGrid}>
@@ -744,16 +786,20 @@ export function TilesetEditor({
                 <SelectField
                   form={form}
                   name="tilesetEdgeSet"
-                  label="Kantenset"
-                  help="Kardinale und gegebenenfalls diagonale Anschlusszustände."
+                  label={t("Kantenset")}
+                  help={t(
+                    "Kardinale und gegebenenfalls diagonale Anschlusszustände."
+                  )}
                   options={EDGE_SET_OPTIONS}
                 />
                 <TextField
                   form={form}
                   notifyProgrammaticChange={notifyProgrammaticChange}
                   name="tilesetEdgeDetails"
-                  label="Kantenregeln"
-                  help="Reihenfolge, Nachbarschaftsmasken und pixelgenaue Randlogik."
+                  label={t("Kantenregeln")}
+                  help={t(
+                    "Reihenfolge, Nachbarschaftsmasken und pixelgenaue Randlogik."
+                  )}
                   maxLength={500}
                 />
               </>
@@ -762,8 +808,10 @@ export function TilesetEditor({
               <SelectField
                 form={form}
                 name="tilesetCornerSet"
-                label="Innen-/Außenecken"
-                help="Legt fest, welche konkaven und konvexen Eckzustände enthalten sind."
+                label={t("Innen-/Außenecken")}
+                help={t(
+                  "Legt fest, welche konkaven und konvexen Eckzustände enthalten sind."
+                )}
                 options={CORNER_SET_OPTIONS}
               />
             ) : null}
@@ -772,24 +820,26 @@ export function TilesetEditor({
                 <SelectField
                   form={form}
                   name="tilesetTransitionMode"
-                  label="Übergangslogik"
-                  help="Richtung und Umfang der Materialübergänge."
+                  label={t("Übergangslogik")}
+                  help={t("Richtung und Umfang der Materialübergänge.")}
                   options={TRANSITION_MODE_OPTIONS}
                 />
                 <TextField
                   form={form}
                   notifyProgrammaticChange={notifyProgrammaticChange}
                   name="tilesetSourceMaterial"
-                  label="Ausgangsmaterial"
-                  help="Material auf der primären Seite des Übergangs."
+                  label={t("Ausgangsmaterial")}
+                  help={t("Material auf der primären Seite des Übergangs.")}
                   maxLength={200}
                 />
                 <TextField
                   form={form}
                   notifyProgrammaticChange={notifyProgrammaticChange}
                   name="tilesetTargetMaterial"
-                  label="Nachbarmaterial"
-                  help="Material, das an der gegenüberliegenden Seite anschließt."
+                  label={t("Nachbarmaterial")}
+                  help={t(
+                    "Material, das an der gegenüberliegenden Seite anschließt."
+                  )}
                   maxLength={200}
                 />
               </>
@@ -797,46 +847,56 @@ export function TilesetEditor({
           </div>
         ) : (
           <p className={styles.emptyGroupNote} role="note">
-            Dieser Untertyp benötigt kein separates Kanten-, Eck- oder
-            Übergangsset. Seine Seam- und Wiederholungsregeln bleiben relevant.
+            {t(
+              "Dieser Untertyp benötigt kein separates Kanten-, Eck- oder Übergangsset. Seine Seam- und Wiederholungsregeln bleiben relevant."
+            )}
           </p>
         )}
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Seam-Regeln und Wiederholung</legend>
+        <legend>{t("Seam-Regeln und Wiederholung")}</legend>
         <p className={styles.groupIntro}>
-          Beschreibe sowohl die erlaubten Wiederholungsachsen als auch die
-          sichtbare Behandlung der Randpixel.
+          {t(
+            "Beschreibe sowohl die erlaubten Wiederholungsachsen als auch die sichtbare Behandlung der Randpixel."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <SelectField
             form={form}
             name="tileableAxes"
-            label="Kachelbare Achsen"
-            help="Horizontale, vertikale, beidseitige oder keine Wiederholung."
+            label={t("Kachelbare Achsen")}
+            help={t(
+              "Horizontale, vertikale, beidseitige oder keine Wiederholung."
+            )}
             options={TILEABLE_AXES_OPTIONS}
           />
           <SelectField
             form={form}
             name="tilesetSeamMode"
-            label="Seam-Regel"
-            help="Nahtlosigkeit, passende Kanten oder eine bewusste Materialgrenze."
+            label={t("Seam-Regel")}
+            help={t(
+              "Nahtlosigkeit, passende Kanten oder eine bewusste Materialgrenze."
+            )}
             options={SEAM_MODE_OPTIONS}
           />
           <SelectField
             form={form}
             name="tilesetRepeatMode"
-            label="Wiederholungsmuster"
-            help="Steuert erkennbare Periodizität und den Einsatz von Varianten."
+            label={t("Wiederholungsmuster")}
+            help={t(
+              "Steuert erkennbare Periodizität und den Einsatz von Varianten."
+            )}
             options={REPEAT_MODE_OPTIONS}
           />
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="tilesetSeamDetails"
-            label="Seam- und Wiederholungsdetails"
-            help="Zum Beispiel identische Randzeilen, versetzte Motive oder kontrollierter Bleed."
+            label={t("Seam- und Wiederholungsdetails")}
+            help={t(
+              "Zum Beispiel identische Randzeilen, versetzte Motive oder kontrollierter Bleed."
+            )}
             maxLength={500}
             wide
           />
@@ -844,17 +904,18 @@ export function TilesetEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Varianten</legend>
+        <legend>{t("Varianten")}</legend>
         <p className={styles.groupIntro}>
-          Varianten reduzieren sichtbare Wiederholung, ohne Anschlussregeln oder
-          die Materialidentität zu verändern.
+          {t(
+            "Varianten reduzieren sichtbare Wiederholung, ohne Anschlussregeln oder die Materialidentität zu verändern."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <NumberField
             form={form}
             name="tilesetVariantCount"
-            label="Varianten pro Zustand"
-            help="Ganzzahlig von 1 bis 64."
+            label={t("Varianten pro Zustand")}
+            help={t("Ganzzahlig von 1 bis 64.")}
             min={1}
             max={64}
           />
@@ -863,25 +924,30 @@ export function TilesetEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Atlaslayout und Tilemetriken</legend>
+        <legend>{t("Atlaslayout und Tilemetriken")}</legend>
         <p className={styles.groupIntro}>
-          Die Zeilenzahl und exakte Canvasgröße werden aus Slotzahl, Layout,
-          Tilegröße, Zwischenraum und Außenrand berechnet.
+          {t(
+            "Die Zeilenzahl und exakte Canvasgröße werden aus Slotzahl, Layout, Tilegröße, Zwischenraum und Außenrand berechnet."
+          )}
         </p>
         <div className={styles.fieldGrid}>
           <NumberField
             form={form}
             name="tilesetAtlasTileCount"
-            label="Atlas-Tiles insgesamt"
-            help="Belegte Atlas-Slots von 1 bis 256, einschließlich Verbindungen und Varianten."
+            label={t("Atlas-Tiles insgesamt")}
+            help={t(
+              "Belegte Atlas-Slots von 1 bis 256, einschließlich Verbindungen und Varianten."
+            )}
             min={1}
             max={256}
           />
           <SelectField
             form={form}
             name="tilesetAtlasLayout"
-            label="Atlaslayout"
-            help="Ohne Auswahl wird für die Vorschau ein kompaktes automatisches Raster verwendet."
+            label={t("Atlaslayout")}
+            help={t(
+              "Ohne Auswahl wird für die Vorschau ein kompaktes automatisches Raster verwendet."
+            )}
             options={ATLAS_LAYOUT_OPTIONS}
             onValueChange={(value) => {
               if (value === "fixedColumns") return;
@@ -896,8 +962,10 @@ export function TilesetEditor({
             <NumberField
               form={form}
               name="tilesetAtlasColumns"
-              label="Feste Spaltenzahl"
-              help="Ganzzahlig von 1 bis 64; die benötigten Zeilen werden automatisch berechnet."
+              label={t("Feste Spaltenzahl")}
+              help={t(
+                "Ganzzahlig von 1 bis 64; die benötigten Zeilen werden automatisch berechnet."
+              )}
               min={1}
               max={64}
             />
@@ -905,16 +973,18 @@ export function TilesetEditor({
           <NumberField
             form={form}
             name="tilesetAtlasGutterPixels"
-            label="Zwischenraum in Pixeln"
-            help="Optionaler Abstand von 0 bis 64 px zwischen Atlas-Zellen."
+            label={t("Zwischenraum in Pixeln")}
+            help={t(
+              "Optionaler Abstand von 0 bis 64 px zwischen Atlas-Zellen."
+            )}
             min={0}
             max={64}
           />
           <NumberField
             form={form}
             name="tilesetAtlasMarginPixels"
-            label="Außenrand in Pixeln"
-            help="Optionaler Rand von 0 bis 64 px auf jeder Canvas-Seite."
+            label={t("Außenrand in Pixeln")}
+            help={t("Optionaler Rand von 0 bis 64 px auf jeder Canvas-Seite.")}
             min={0}
             max={64}
           />
@@ -923,14 +993,16 @@ export function TilesetEditor({
       </fieldset>
 
       <fieldset className={styles.group}>
-        <legend>Weitere Tileset-Details</legend>
+        <legend>{t("Weitere Tileset-Details")}</legend>
         <div className={styles.fieldGrid}>
           <TextField
             form={form}
             notifyProgrammaticChange={notifyProgrammaticChange}
             name="tilesetExtraDetails"
-            label="Weitere Produktionshinweise"
-            help="Optionale Ergänzungen zu Slotreihenfolge, Export oder Mappingkonventionen."
+            label={t("Weitere Produktionshinweise")}
+            help={t(
+              "Optionale Ergänzungen zu Slotreihenfolge, Export oder Mappingkonventionen."
+            )}
             maxLength={4000}
             wide
           />

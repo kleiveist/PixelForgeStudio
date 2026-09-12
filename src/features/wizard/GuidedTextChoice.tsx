@@ -1,3 +1,4 @@
+import { useI18n, translateText } from "../../i18n";
 import { useState } from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 import styles from "./GuidedTextChoice.module.css";
@@ -37,8 +38,13 @@ export function GuidedTextChoice({
   registration,
   value
 }: GuidedTextChoiceProps) {
+  const { t, tx } = useI18n();
   const currentValue = typeof value === "string" ? value : "";
-  const matchesPreset = presets.includes(currentValue);
+  const matchedPreset = presets.find(
+    (preset) =>
+      preset === currentValue || translateText("en", preset) === currentValue
+  );
+  const matchesPreset = matchedPreset !== undefined;
   const [customRequested, setCustomRequested] = useState(
     () => currentValue !== "" && !matchesPreset
   );
@@ -47,7 +53,7 @@ export function GuidedTextChoice({
   const selectedValue = customActive
     ? CUSTOM_TEXT_CHOICE
     : matchesPreset
-      ? currentValue
+      ? matchedPreset
       : "";
 
   function choose(value: string): void {
@@ -57,13 +63,13 @@ export function GuidedTextChoice({
     }
 
     setCustomRequested(false);
-    const nextValue = value === "" ? undefined : value;
+    const nextValue = value === "" ? undefined : tx(value);
     if (nextValue !== currentValue) onChoose(nextValue);
   }
 
   return (
     <div className={fieldClassName}>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{tx(label)}</label>
       <select
         id={id}
         value={selectedValue}
@@ -71,17 +77,19 @@ export function GuidedTextChoice({
         aria-invalid={error ? "true" : "false"}
         onChange={(event) => choose(event.currentTarget.value)}
       >
-        <option value="">Nicht festgelegt</option>
+        <option value="">{t("Nicht festgelegt")}</option>
         {presets.map((preset) => (
           <option key={preset} value={preset}>
-            {preset}
+            {tx(preset)}
           </option>
         ))}
-        <option value={CUSTOM_TEXT_CHOICE}>Eigene Eingabe</option>
+        <option value={CUSTOM_TEXT_CHOICE}>{t("Eigene Eingabe")}</option>
       </select>
       {customActive ? (
         <div className={styles.customInput}>
-          <label htmlFor={`${id}-custom`}>Eigene Eingabe für {label}</label>
+          <label htmlFor={`${id}-custom`}>
+            {t("Eigene Eingabe für")} {tx(label)}
+          </label>
           {multiline ? (
             <textarea
               id={`${id}-custom`}
@@ -106,11 +114,11 @@ export function GuidedTextChoice({
         </div>
       ) : null}
       <p id={`${id}-help`} className={helpClassName}>
-        {help}
+        {tx(help)}
       </p>
       {error ? (
         <p id={`${id}-error`} className={errorClassName}>
-          {error}
+          {tx(error)}
         </p>
       ) : null}
     </div>

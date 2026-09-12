@@ -2,9 +2,17 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Prompt-only-Rückbau — Animation Studio vollständig
-  entfernt (abgeschlossen)
-- **Nächste Aufgabe:** keine; auf einen neuen konkreten Auftrag warten
+- **Aktuelle Aufgabe:** Release v1.0.0, Issue #1 — Deutsch/Englisch-Lokalisierung abgeschlossen
+- **Nächste Aufgabe:** #2 Branding, danach #3–#9 in Reihenfolge
+- **Beauftragt:** alle neun GitHub-Issues umsetzen; je Issue ein separater
+  englischer Conventional Commit mit vorangestelltem Emoji, danach Push und
+  GitHub-Issue als erledigt schließen.
+- **Release-Fortschritt:** #1 umgesetzt und geprüft; #2–#9 offen.
+- **Abnahme #1:** 644 Tests in 114 Dateien, Typecheck und Build; 16/16
+  Browser-Smokes in Chromium/Firefox; `git diff --check` sauber.
+  Die eingeschränkte Testsitzung benötigt lokale Browserbibliotheken und
+  deaktivierte Firefox-Content-Sandbox; keine App-Konfiguration dafür geändert.
+- **Umgebung:** Node 22 und npm 10 verfügbar; Docker-Laufzeit noch zu prüfen.
 - **Prompt-Studio-Releasehistorie:** Prompts 00–27 unter `docs/erledigt/`
 - **Ausgemusterte V3-Historie:** Prompts 28–51 unter
   `docs/erledigt/pixelforge-studio-v3/`

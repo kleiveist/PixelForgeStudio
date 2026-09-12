@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -57,6 +58,7 @@ function ConversionImpact({
   preparation: ReadyProfileConversion;
   plan: ReadyPlan;
 }>) {
+  const { t, tx } = useI18n();
   const overrideDescription =
     plan.overrideFields.length === 0
       ? "Keine — exakte technische Übereinstimmung"
@@ -76,42 +78,50 @@ function ConversionImpact({
     >
       <div className={styles.sectionHeading}>
         <div>
-          <span className={styles.eyebrow}>Vorschau vor dem Speichern</span>
-          <h3 id="profile-conversion-impact-title">Folgen der Konvertierung</h3>
+          <span className={styles.eyebrow}>
+            {t("Vorschau vor dem Speichern")}
+          </span>
+          <h3 id="profile-conversion-impact-title">
+            {t("Folgen der Konvertierung")}
+          </h3>
         </div>
         <Badge tone={plan.compatibilityChanged ? "accent" : "success"}>
           {plan.compatibilityChanged
-            ? "Neue technische Gruppe"
-            : "Gruppe bleibt gleich"}
+            ? t("Neue technische Gruppe")
+            : t("Gruppe bleibt gleich")}
         </Badge>
       </div>
 
       <dl className={styles.impactGrid}>
         <div>
-          <dt>Ziel-Basisprofil</dt>
+          <dt>{t("Ziel-Basisprofil")}</dt>
           <dd>{plan.targetBase.name}</dd>
         </div>
         <div>
-          <dt>Lokale technische Abweichungen</dt>
-          <dd>{overrideDescription}</dd>
+          <dt>{t("Lokale technische Abweichungen")}</dt>
+          <dd>{tx(overrideDescription)}</dd>
         </div>
       </dl>
 
       <div className={styles.changeBlock}>
-        <strong>Gewünschte Änderung</strong>
+        <strong>{t("Gewünschte Änderung")}</strong>
         <ul>
           {preparation.changes.map((change) => (
             <li key={change.field}>
-              <span>{change.label}</span>
+              <span>{tx(change.label)}</span>
               <span>
-                {formatProfileConversionValue(
-                  change.field,
-                  change.previousValue
+                {tx(
+                  formatProfileConversionValue(
+                    change.field,
+                    change.previousValue
+                  )
                 )}
                 {" → "}
-                {formatProfileConversionValue(
-                  change.field,
-                  change.desiredValue
+                {tx(
+                  formatProfileConversionValue(
+                    change.field,
+                    change.desiredValue
+                  )
                 )}
               </span>
             </li>
@@ -121,19 +131,22 @@ function ConversionImpact({
 
       <ul className={styles.safetyList}>
         <li>
-          Das ursprüngliche Basisprofil „{preparation.sourceBase.name}“ und
-          alle bestehenden Kinder bleiben unverändert.
+          {t("Das ursprüngliche Basisprofil „")}
+          {preparation.sourceBase.name}
+          {t("“ und alle bestehenden Kinder bleiben unverändert.")}
         </li>
         {preparation.detachesCategoryProfile ? (
           <li>
-            Geerbte Kategorieantworten werden in den neuen Entwurf übernommen;
-            die alte Kategorieprofil-Verknüpfung wird gelöst.
+            {t(
+              "Geerbte Kategorieantworten werden in den neuen Entwurf übernommen; die alte Kategorieprofil-Verknüpfung wird gelöst."
+            )}
           </li>
         ) : null}
         {preparation.detachesSourceAssetProfile ? (
           <li>
-            Das gespeicherte Quell-Asset bleibt unverändert; der konvertierte
-            Entwurf wird zu einem eigenständigen Asset.
+            {t(
+              "Das gespeicherte Quell-Asset bleibt unverändert; der konvertierte Entwurf wird zu einem eigenständigen Asset."
+            )}
           </li>
         ) : null}
       </ul>
@@ -169,6 +182,7 @@ export function ProfileConversionWorkflow({
   onCancel,
   onConverted
 }: ProfileConversionWorkflowProps) {
+  const { t, tx } = useI18n();
   const { createBaseProfile, duplicateBaseProfile } = useProfileLibrary();
   const [mode, setMode] = useState<ConversionMode>("choices");
   const [selectedTargetId, setSelectedTargetId] = useState<string>("");
@@ -305,7 +319,9 @@ export function ProfileConversionWorkflow({
     try {
       savedAt = now();
     } catch {
-      setLocalError("Der Konvertierungszeitpunkt konnte nicht bestimmt werden.");
+      setLocalError(
+        "Der Konvertierungszeitpunkt konnte nicht bestimmt werden."
+      );
       return;
     }
     let plan: ProfileConversionPlan;
@@ -377,18 +393,18 @@ export function ProfileConversionWorkflow({
         role="alert"
         aria-labelledby="profile-conflict-title"
       >
-        <span className={styles.eyebrow}>Konfliktprüfung</span>
-        <h2 id="profile-conflict-title">Ausgabe sicher angehalten</h2>
-        <p>{unavailableMessage(conversion.reason)}</p>
+        <span className={styles.eyebrow}>{t("Konfliktprüfung")}</span>
+        <h2 id="profile-conflict-title">{t("Ausgabe sicher angehalten")}</h2>
+        <p>{tx(unavailableMessage(conversion.reason))}</p>
         <ul>
           {preparation.conflicts.map((conflict, index) => (
             <li key={`${conflict.code}-${index}`}>
-              {formatResolutionConflict(conflict)}
+              {tx(formatResolutionConflict(conflict))}
             </li>
           ))}
         </ul>
         <button type="button" onClick={onCancel}>
-          Zurück zum Dashboard
+          {t("Zurück zum Dashboard")}
         </button>
       </Surface>
     );
@@ -405,23 +421,24 @@ export function ProfileConversionWorkflow({
     >
       <header className={styles.header}>
         <div>
-          <span className={styles.eyebrow}>Konfliktprüfung</span>
+          <span className={styles.eyebrow}>{t("Konfliktprüfung")}</span>
           <h2 id="profile-conflict-title">
-            Technische Änderung kontrolliert konvertieren
+            {t("Technische Änderung kontrolliert konvertieren")}
           </h2>
         </div>
-        <Badge tone="neutral">Ausgabe angehalten</Badge>
+        <Badge tone="neutral">{t("Ausgabe angehalten")}</Badge>
       </header>
 
       <div className={styles.conflictNotice} role="alert">
         <p className={styles.intro}>
-          Mindestens ein gewünschter Wert ist im aktuellen Basisprofil
-          gesperrt. Es wurde nichts verändert und kein Teilprompt erzeugt.
+          {t(
+            "Mindestens ein gewünschter Wert ist im aktuellen Basisprofil gesperrt. Es wurde nichts verändert und kein Teilprompt erzeugt."
+          )}
         </p>
         <ul className={styles.conflictList}>
           {preparation.conflicts.map((conflict, index) => (
             <li key={`${conflict.code}-${index}`}>
-              {formatResolutionConflict(conflict)}
+              {tx(formatResolutionConflict(conflict))}
             </li>
           ))}
         </ul>
@@ -429,7 +446,7 @@ export function ProfileConversionWorkflow({
           <ul className={styles.noticeList}>
             {preparation.notices.map((notice, index) => (
               <li key={`${notice.code}-${index}`}>
-                {formatResolutionNotice(notice)}
+                {tx(formatResolutionNotice(notice))}
               </li>
             ))}
           </ul>
@@ -440,10 +457,10 @@ export function ProfileConversionWorkflow({
         <div
           className={styles.choiceGrid}
           role="group"
-          aria-label="Konvertierungsoptionen"
+          aria-label={t("Konvertierungsoptionen")}
         >
           <button type="button" onClick={onCancel}>
-            Abbrechen
+            {t("Abbrechen")}
           </button>
           <button
             ref={(element) => {
@@ -452,7 +469,7 @@ export function ProfileConversionWorkflow({
             type="button"
             onClick={() => chooseMode("duplicate")}
           >
-            Basisprofil duplizieren
+            {t("Basisprofil duplizieren")}
           </button>
           <button
             ref={(element) => {
@@ -461,7 +478,7 @@ export function ProfileConversionWorkflow({
             type="button"
             onClick={() => chooseMode("new")}
           >
-            Neues Basisprofil
+            {t("Neues Basisprofil")}
           </button>
           <button
             ref={(element) => {
@@ -470,7 +487,7 @@ export function ProfileConversionWorkflow({
             type="button"
             onClick={() => chooseMode("existing")}
           >
-            Kompatibles Profil wählen
+            {t("Kompatibles Profil wählen")}
           </button>
         </div>
       ) : null}
@@ -481,31 +498,29 @@ export function ProfileConversionWorkflow({
             <div>
               <span className={styles.eyebrow}>
                 {familyKind === "duplicate"
-                  ? "Eigenständige Kopie"
-                  : "Neue Produktionsfamilie"}
+                  ? t("Eigenständige Kopie")
+                  : t("Neue Produktionsfamilie")}
               </span>
               <h3>
                 {familyKind === "duplicate"
-                  ? `„${activeConversion.sourceBase.name}“ duplizieren`
-                  : "Kanonisches Basisprofil anlegen"}
+                  ? t("„{0}“ duplizieren", activeConversion.sourceBase.name)
+                  : t("Kanonisches Basisprofil anlegen")}
               </h3>
             </div>
           </div>
           <label className={styles.nameField}>
-            <span>Name der Produktionsfamilie</span>
+            <span>{t("Name der Produktionsfamilie")}</span>
             <input
               aria-invalid={Boolean(form.formState.errors.name)}
               aria-describedby={
-                form.formState.errors.name
-                  ? "conversion-name-error"
-                  : undefined
+                form.formState.errors.name ? "conversion-name-error" : undefined
               }
               {...form.register("name")}
             />
           </label>
           {form.formState.errors.name ? (
             <p id="conversion-name-error" className={styles.fieldError}>
-              Bitte gib einen Namen mit höchstens 120 Zeichen ein.
+              {t("Bitte gib einen Namen mit höchstens 120 Zeichen ein.")}
             </p>
           ) : null}
 
@@ -518,7 +533,7 @@ export function ProfileConversionWorkflow({
 
           <div className={styles.actions}>
             <button type="button" onClick={returnToChoices}>
-              Zurück zu den Optionen
+              {t("Zurück zu den Optionen")}
             </button>
             <button
               className={styles.primaryButton}
@@ -526,8 +541,8 @@ export function ProfileConversionWorkflow({
               disabled={familyPreview === null || form.formState.isSubmitting}
             >
               {familyKind === "duplicate"
-                ? "Duplikat anlegen und konvertieren"
-                : "Basisprofil anlegen und konvertieren"}
+                ? t("Duplikat anlegen und konvertieren")
+                : t("Basisprofil anlegen und konvertieren")}
             </button>
           </div>
         </form>
@@ -540,20 +555,21 @@ export function ProfileConversionWorkflow({
         >
           <div className={styles.sectionHeading}>
             <div>
-              <span className={styles.eyebrow}>Vorhandene Familie</span>
+              <span className={styles.eyebrow}>{t("Vorhandene Familie")}</span>
               <h3
                 ref={existingHeadingRef}
                 id="compatible-profile-title"
                 tabIndex={-1}
               >
-                Kompatibles Basisprofil wählen
+                {t("Kompatibles Basisprofil wählen")}
               </h3>
             </div>
           </div>
           {compatiblePlans.length === 0 ? (
             <p className={styles.emptyState} role="note">
-              Keine andere vorhandene Produktionsfamilie kann die gewünschte
-              Konfiguration ohne Lock-Konflikt abbilden.
+              {t(
+                "Keine andere vorhandene Produktionsfamilie kann die gewünschte Konfiguration ohne Lock-Konflikt abbilden."
+              )}
             </p>
           ) : (
             <div className={styles.profileList}>
@@ -573,8 +589,12 @@ export function ProfileConversionWorkflow({
                     <strong>{plan.targetBase.name}</strong>
                     <small>
                       {plan.exactTechnicalMatch
-                        ? "Exakte technische Übereinstimmung"
-                        : `${plan.overrideFields.length} lokale technische Abweichung${plan.overrideFields.length === 1 ? "" : "en"}`}
+                        ? t("Exakte technische Übereinstimmung")
+                        : t(
+                            "{0} lokale technische Abweichung{1}",
+                            plan.overrideFields.length,
+                            plan.overrideFields.length === 1 ? "" : "en"
+                          )}
                     </small>
                   </span>
                 </label>
@@ -591,7 +611,7 @@ export function ProfileConversionWorkflow({
 
           <div className={styles.actions}>
             <button type="button" onClick={returnToChoices}>
-              Zurück zu den Optionen
+              {t("Zurück zu den Optionen")}
             </button>
             <button
               className={styles.primaryButton}
@@ -599,7 +619,7 @@ export function ProfileConversionWorkflow({
               disabled={selectedPlan === null}
               onClick={convertWithExisting}
             >
-              Mit gewähltem Profil konvertieren
+              {t("Mit gewähltem Profil konvertieren")}
             </button>
           </div>
         </section>
@@ -607,7 +627,7 @@ export function ProfileConversionWorkflow({
 
       {localError ? (
         <p className={styles.errorNotice} role="alert">
-          {localError}
+          {tx(localError)}
         </p>
       ) : null}
     </Surface>

@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import { THEME_PREFERENCES, type ThemePreference } from "../../domain/theme";
 import { useSettings } from "../../store/settings";
 import styles from "./ThemeSwitcher.module.css";
@@ -11,6 +12,7 @@ const THEME_OPTIONS: Readonly<
 };
 
 export function ThemeSwitcher() {
+  const { t, tx } = useI18n();
   const {
     themePreference,
     resolvedTheme,
@@ -22,7 +24,7 @@ export function ThemeSwitcher() {
 
   return (
     <fieldset className={styles.switcher}>
-      <legend className={styles.legend}>Darstellung</legend>
+      <legend className={styles.legend}>{t("Darstellung")}</legend>
       <div className={styles.options}>
         {THEME_PREFERENCES.map((theme) => {
           const option = THEME_OPTIONS[theme];
@@ -36,20 +38,20 @@ export function ThemeSwitcher() {
                 type="radio"
                 value={theme}
               />
-              <span className={styles.optionLabel} title={option.hint}>
-                {option.label}
+              <span className={styles.optionLabel} title={tx(option.hint)}>
+                {tx(option.label)}
               </span>
             </label>
           );
         })}
       </div>
       <p className={styles.status} aria-live="polite">
-        <span>Aktiv: {resolvedLabel}</span>
+        <span>{t("Aktiv:")} {tx(resolvedLabel)}</span>
         {persistence.status === "saved" ? (
-          <span>Darstellung gespeichert.</span>
+          <span>{t("Darstellung gespeichert.")}</span>
         ) : persistence.status === "invalid" ||
           persistence.status === "unavailable" ? (
-          <span>{persistence.message}</span>
+          <span>{tx(persistence.message)}</span>
         ) : null}
       </p>
     </fieldset>

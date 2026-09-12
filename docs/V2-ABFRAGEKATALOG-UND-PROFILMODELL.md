@@ -518,15 +518,17 @@ Die Sichtbarkeit von Fragen wird nicht nur über die Kategorie, sondern über F�
   bilden die Character-Felder vollständig ab. Hydration und Resume schreiben
   nicht; Kategorie- oder Untertypwechsel bereinigen alte Character-Antworten,
   ein Basiswechsel erhält sie.
-- Alle Character-Freitextfelder besitzen ein auswahlorientiertes deutsches
+- Alle Character-Freitextfelder besitzen ein auswahlorientiertes zweisprachiges
   Vorlagenpaket. Dasselbe Auswahl-zuerst-Muster gilt für sämtliche kreativen
   Textfelder der acht übrigen Fachbereiche; darunter ausdrücklich „Rinde,
   Verzweigung und Hohlräume“ sowie „Wurzelform und Verlauf“. „Nicht festgelegt“
   bleibt der schreibfreie Ausgangszustand; eine Vorlage wird erst nach
   ausdrücklicher Auswahl in das bestehende RHF-/Schemafeld übernommen.
   „Eigene Eingabe“ öffnet freien Text, und bereits gespeicherte individuelle
-  Werte werden automatisch in diesem Modus dargestellt. Ein englisches
-  Vorlagenpaket ist nicht Bestandteil dieses Stands.
+  Werte werden automatisch in diesem Modus dargestellt. Vorlagen werden bei
+  ausdrücklicher Auswahl in der aktuellen Oberflächensprache eingefügt.
+  Ein Sprachwechsel schreibt bestehende Antworten nicht um; siehe
+  [Sprachvertrag](LOCALIZATION.md).
 - Der Output-Wunsch bleibt außerhalb des RHF-Fachschritts; Prompt Engine und
   Review-/Output-Workspace lesen die validierten Character-Daten seit Prompts
   23 und 24 aus dem aufgelösten Profil.

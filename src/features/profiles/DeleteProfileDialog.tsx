@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n";
 import {
   Fragment,
   useEffect,
@@ -44,9 +45,11 @@ function isolateFallbackDialog(dialog: HTMLDialogElement): () => void {
 function trapDialogFocus(event: KeyboardEvent<HTMLDialogElement>): void {
   if (event.key !== "Tab") return;
 
-  const controls = [...event.currentTarget.querySelectorAll<HTMLElement>(
-    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-  )].filter((control) => !control.hasAttribute("hidden"));
+  const controls = [
+    ...event.currentTarget.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ].filter((control) => !control.hasAttribute("hidden"));
   const firstControl = controls[0];
   const lastControl = controls.at(-1);
   if (!firstControl || !lastControl) return;
@@ -66,6 +69,7 @@ export function DeleteProfileDialog({
   onCancel,
   onConfirm
 }: DeleteProfileDialogProps) {
+  const { t, tx } = useI18n();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const [usesFallbackModal, setUsesFallbackModal] = useState(false);
@@ -145,15 +149,19 @@ export function DeleteProfileDialog({
           trapDialogFocus(event);
         }}
       >
-        <span className={styles.dialogEyebrow}>Profil löschen</span>
-        <h2 id={titleId}>„{profile.name}“ endgültig löschen?</h2>
+        <span className={styles.dialogEyebrow}>{t("Profil löschen")}</span>
+        <h2 id={titleId}>
+          „{profile.name}
+          {t("“ endgültig löschen?")}
+        </h2>
         <p id={descriptionId}>
-          Das Assetprofil wird aus der lokalen Bibliothek entfernt. Sein Basis-
-          und Kategorieprofil bleiben unverändert erhalten.
+          {t(
+            "Das Assetprofil wird aus der lokalen Bibliothek entfernt. Sein Basis- und Kategorieprofil bleiben unverändert erhalten."
+          )}
         </p>
         {errorMessage ? (
           <p className={styles.dialogError} role="alert">
-            {errorMessage}
+            {tx(errorMessage)}
           </p>
         ) : null}
         <div className={styles.dialogActions}>
@@ -163,14 +171,14 @@ export function DeleteProfileDialog({
             type="button"
             onClick={onCancel}
           >
-            Abbrechen
+            {t("Abbrechen")}
           </button>
           <button
             className={styles.dangerButton}
             type="button"
             onClick={onConfirm}
           >
-            Profil endgültig löschen
+            {t("Profil endgültig löschen")}
           </button>
         </div>
       </dialog>
