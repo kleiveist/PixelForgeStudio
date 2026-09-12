@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("persists language and localizes every primary route in both browsers", async ({
   page
 }) => {
-  await page.goto("/?view=settings");
+  await page.goto("./?view=settings");
   await page.getByLabel("Oberflächensprache").selectOption("en");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page.reload();
@@ -15,7 +15,7 @@ test("persists language and localizes every primary route in both browsers", asy
     ["output", "Export production-ready prompt packages."],
     ["settings", "Configure your studio."]
   ]) {
-    await page.goto(`/?view=${view}`);
+    await page.goto(`./?view=${view}`);
     await expect(
       page.getByRole("heading", { level: 1, name: heading })
     ).toBeVisible();
@@ -34,7 +34,7 @@ test("persists language and localizes every primary route in both browsers", asy
 test("validates the wizard in English while keeping user-entered names intact", async ({
   page
 }) => {
-  await page.goto("/?view=settings");
+  await page.goto("./?view=settings");
   await page.getByLabel("Oberflächensprache").selectOption("en");
   await page.getByRole("link", { name: "Wizard", exact: true }).click();
   await page.getByRole("button", { name: "Next →" }).click();

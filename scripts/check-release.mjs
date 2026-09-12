@@ -1,0 +1,40 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
+
+const root = resolve(import.meta.dirname, "..");
+const output = resolve(root, "release");
+const { version } = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
+const metadata = JSON.parse(readFileSync(resolve(output, "release.json"), "utf8"));
+assert.equal(metadata.version, version);
+assert.equal(metadata.schemaVersion, 2);
+assert.equal(metadata.formatVersion, 2);
+assert.equal(metadata.revision, execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim());
+const archive = `pixelforge-prompt-studio-${version}.tar.gz`;
+const expected = ["LICENSE", "THIRD_PARTY_NOTICES.md", "release.json", "sbom.cdx.json", archive];
+assert.deepEqual(readdirSync(output).sort(), [...expected, "SHA256SUMS"].sort());
+const sums = readFileSync(resolve(output, "SHA256SUMS"), "utf8").trim().split("\n");
+assert.equal(sums.length, expected.length);
+const checked = new Set();
+for (const line of sums) {
+  const match = /^([a-f0-9]{64})  ([\w.-]+)$/.exec(line);
+  assert(match && expected.includes(match[2]) && !checked.has(match[2]), "Unexpected/duplicate checksum entry");
+  checked.add(match[2]);
+  assert.equal(createHash("sha256").update(readFileSync(resolve(output, match[2]))).digest("hex"), match[1]);
+}
+const entries = execFileSync("tar", ["-tzf", resolve(output, archive)], { encoding: "utf8" }).trim().split("\n");
+const allowed = /^(?:\.\/|\.\/assets\/|\.\/(?:index\.html|favicon\.svg|logo\.svg|social-preview\.(?:svg|png)|LICENSE|THIRD_PARTY_NOTICES\.md|release\.json)|\.\/assets\/[\w-]+\.(?:js|css))$/;
+assert(entries.every((name) => allowed.test(name)), "Unexpected file in static archive");
+const listing = execFileSync("tar", ["-tvzf", resolve(output, archive)], { encoding: "utf8" }).trim().split("\n");
+assert(listing.every((line) => /^[d-]/.test(line)), "Links/devices are not allowed in release artifacts");
+for (const file of ["index.html", "release.json", "LICENSE", "THIRD_PARTY_NOTICES.md"]) assert(entries.includes(`./${file}`));
+const embedded = execFileSync("tar", ["-xOzf", resolve(output, archive), "./release.json"], { encoding: "utf8" });
+assert.deepEqual(JSON.parse(embedded), metadata);
+const sbom = JSON.parse(readFileSync(resolve(output, "sbom.cdx.json"), "utf8"));
+assert.equal(sbom.bomFormat, "CycloneDX");
+assert.equal(sbom.metadata.component.version, version);
+assert.equal(sbom.metadata.component.name, "pixelforge-studio");
+assert(sbom.components.length > 0 && sbom.components.every((component) => component.scope !== "excluded"));
+console.log(`Release checks passed: ${expected.length} checksums, ${entries.length} safe archive entries, runtime SBOM and V2/version/revision metadata.`);

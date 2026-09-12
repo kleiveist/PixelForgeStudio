@@ -11,3 +11,4 @@
 !deploy/
 !deploy/nginx.conf
 !LICENSE
+!THIRD_PARTY_NOTICES.md

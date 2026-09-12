@@ -4,27 +4,100 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: checks-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  verify:
+    name: Verify, browser and release artifacts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run verify
+      - run: npm audit --audit-level=high
+      - name: Audit workflow syntax and complete Git history
+        run: |
+          actionlint=$(bash scripts/install-ci-tool.sh actionlint)
+          "$actionlint" -shellcheck="" -pyflakes=""
+          gitleaks=$(bash scripts/install-ci-tool.sh gitleaks)
+          "$gitleaks" git --redact=100 --log-opts=--all
+      - run: npx --no-install playwright install --with-deps chromium firefox
+      - run: npm run test:browser -- --workers=1
+      - name: Package, inspect and reproduce release artifacts
+        run: |
+          npm run package:release
+          npm run check:release
+          cp release/SHA256SUMS "$RUNNER_TEMP/first-build-sums"
+          npm run build
+          npm run package:release
+          npm run check:release
+          cmp release/SHA256SUMS "$RUNNER_TEMP/first-build-sums"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: static-release-${{ github.sha }}
+          path: release/*
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: browser-failure-${{ github.job }}-${{ github.sha }}
+          path: test-results/
+          retention-days: 7
   container:
     name: Container and Compose
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: "22"
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx --no-install playwright install --with-deps chromium firefox
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - name: Build and smoke test production Compose deployment
+        env:
+          PIXELFORGE_BROWSER_SMOKE: "1"
         run: bash scripts/smoke-compose.sh
       - name: Validate HTTPS examples and smoke test direct static hosting
         run: bash scripts/smoke-proxy.sh
+      - name: Smoke test the ARM64 runtime
+        run: bash scripts/smoke-arm64.sh
+      - name: Scan runtime image for high and critical vulnerabilities
+        run: |
+          grype=$(bash scripts/install-ci-tool.sh grype)
+          "$grype" docker:pixelforge-prompt-studio:1.0.0 --fail-on high --output json --file "$RUNNER_TEMP/container-vulnerabilities.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: container-audit-${{ github.sha }}
+          path: ${{ runner.temp }}/container-vulnerabilities.json
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: container-browser-failure-${{ github.sha }}
+          path: test-results/
+          retention-days: 7

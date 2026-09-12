@@ -27,6 +27,11 @@ npm run test:browser:install
 npm run test:browser
 ```
 
+Browser smokes use the production build, not the Vite development server.
+Set `PLAYWRIGHT_BASE_URL` (including a trailing slash for subpaths) to test an
+already running deployment. CI also runs the suite against read-only NGINX
+and checks real JSON downloads/imports in a fresh browser workspace.
+
 For visual review, inspect populated and empty states at 1440×1000,
 768×1024 and 360×800 in both themes/languages, with long names and error states.
 Check 200% zoom and OS high-contrast behavior where available. Automated DOM

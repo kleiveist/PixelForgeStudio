@@ -3,7 +3,7 @@ import { resolve, dirname, relative, extname } from "node:path";
 import assert from "node:assert/strict";
 
 const root = resolve(import.meta.dirname, "..");
-const excluded = new Set([".git", "node_modules", "dist", "test-results", "playwright-report", "coverage", ".vite"]);
+const excluded = new Set([".git", "node_modules", "dist", "release", "test-results", "playwright-report", "coverage", ".vite"]);
 function documents(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = resolve(directory, entry.name);

@@ -51,6 +51,13 @@ Fokusübergabe und Footer. `app/AppShell.tsx` verbindet die fünf Ansichten:
 
 ## Verzeichnisverantwortung
 
+Der Produktionsbuild trennt nur externe Vendor-Pakete explizit. Fachkataloge,
+Schema-Konstanten und Features werden nicht künstlich auf manuelle Chunks
+verteilt: dadurch entstehende Importzyklen können vor dem React-Start ungültige
+Enum-Schemas erzeugen. Playwright prüft den gebauten Code und in CI zusätzlich
+den tatsächlichen NGINX-Container. Der größere initiale App-Chunk ist ein
+bekannter Performance-Tradeoff, kein Anlass zum Ausblenden der Buildwarnung.
+
 - `app/`: Composition, Shell, Viewauswahl und sichtbare Navigationsmetadaten.
 - `components/`: wiederverwendbare UI-Bausteine, Prompt-Links, Themecontrol
   und lokale SVG-React-Icons.

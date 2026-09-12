@@ -7,6 +7,7 @@
 - [German/English interface and prompt languages](LOCALIZATION.md)
 - [Product name, logo and versioning](BRANDING.md)
 - [Public presentation and website setup](PUBLIC-PRESENTATION.md)
+- [Release pipeline, reproducibility and publication](RELEASING.md)
 
 ## Contributors and maintainers
 

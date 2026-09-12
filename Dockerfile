@@ -1,4 +1,5 @@
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS build
+FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS build
+ARG SOURCE_DATE_EPOCH
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -19,6 +20,7 @@ LABEL org.opencontainers.image.title="PixelForge Prompt Studio" \
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY LICENSE /usr/share/licenses/pixelforge/LICENSE
+COPY THIRD_PARTY_NOTICES.md /usr/share/licenses/pixelforge/THIRD_PARTY_NOTICES.md
 USER 101:101
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

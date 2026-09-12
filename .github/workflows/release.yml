@@ -1,0 +1,180 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Validate and build without publishing (disable only on an approved stable tag)"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      publish: ${{ steps.metadata.outputs.publish }}
+      version: ${{ steps.metadata.outputs.version }}
+      image: ${{ steps.metadata.outputs.image }}
+      epoch: ${{ steps.metadata.outputs.epoch }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Require an approved stable tag and reviewed public repository
+        id: metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          version=$(node -p 'JSON.parse(require("fs").readFileSync("package.json", "utf8")).version')
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          publish=false
+          if [[ "$DRY_RUN" != true ]]; then
+            [[ "$GITHUB_REF" == "refs/tags/v$version" ]]
+            [[ "$(gh api "repos/$GITHUB_REPOSITORY" --jq .visibility)" == public ]]
+            if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo 'A release already exists. Never overwrite a released version.' >&2
+              exit 1
+            fi
+            publish=true
+          fi
+          printf 'publish=%s\nversion=%s\nimage=ghcr.io/%s/pixelforge-prompt-studio\nepoch=%s\n' \
+            "$publish" "$version" "${GITHUB_REPOSITORY_OWNER,,}" "$(git show -s --format=%ct HEAD)" >> "$GITHUB_OUTPUT"
+
+  checks:
+    needs: gate
+    uses: ./.github/workflows/ci.yml
+
+  image:
+    needs: [gate, checks]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: ${{ needs.gate.outputs.publish == 'true' && 'release' || 'release-dry-run' }}
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - run: echo "DOCKER_CONFIG=$RUNNER_TEMP/release-docker-auth" >> "$GITHUB_ENV"
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        if: needs.gate.outputs.publish == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Refuse to replace an existing versioned image
+        if: needs.gate.outputs.publish == 'true'
+        env:
+          IMAGE: ${{ needs.gate.outputs.image }}
+          VERSION: ${{ needs.gate.outputs.version }}
+        run: |
+          if docker buildx imagetools inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
+            echo 'This image version exists. Re-run failed jobs only, or choose a new version.' >&2
+            exit 1
+          fi
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        id: build
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ needs.gate.outputs.publish == 'true' }}
+          outputs: ${{ needs.gate.outputs.publish != 'true' && format('type=oci,dest={0}/image.oci.tar', runner.temp) || '' }}
+          tags: |
+            ${{ needs.gate.outputs.image }}:${{ needs.gate.outputs.version }}
+            ${{ needs.gate.outputs.image }}:latest
+          build-args: |
+            VERSION=${{ needs.gate.outputs.version }}
+            REVISION=${{ github.sha }}
+            SOURCE_DATE_EPOCH=${{ needs.gate.outputs.epoch }}
+          provenance: mode=max
+          sbom: true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: needs.gate.outputs.publish != 'true'
+        with:
+          name: dry-run-multiarch-${{ github.sha }}
+          path: ${{ runner.temp }}/image.oci.tar
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [gate, checks, image]
+    if: needs.gate.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - run: echo "DOCKER_CONFIG=$RUNNER_TEMP/anonymous-docker" >> "$GITHUB_ENV"
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: static-release-${{ github.sha }}
+          path: release
+      - run: npm run check:release
+      - name: Require anonymous access to the immutable image
+        env:
+          IMAGE: ${{ needs.gate.outputs.image }}
+          DIGEST: ${{ needs.image.outputs.digest }}
+        run: |
+          mkdir -p "$DOCKER_CONFIG"
+          if ! docker pull "$IMAGE@$DIGEST"; then
+            echo '::error::The GHCR package must be Public. Set package visibility in its GitHub package settings, then re-run failed jobs only. No GitHub release has been published.'
+            exit 1
+          fi
+          [[ "$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.version"}}' "$IMAGE@$DIGEST")" == "${GITHUB_REF_NAME#v}" ]]
+          [[ "$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$IMAGE@$DIGEST")" == "$GITHUB_SHA" ]]
+      - run: npm ci --no-audit --no-fund
+      - run: npx --no-install playwright install --with-deps chromium firefox
+      - name: Smoke test the anonymously pulled release with Compose and real browsers
+        env:
+          PIXELFORGE_PULL_ONLY: "1"
+          PIXELFORGE_BROWSER_SMOKE: "1"
+          PIXELFORGE_IMAGE: ${{ needs.gate.outputs.image }}@${{ needs.image.outputs.digest }}
+        run: bash scripts/smoke-compose.sh
+      - name: Record immutable container identity and checksum
+        env:
+          IMAGE: ${{ needs.gate.outputs.image }}
+          DIGEST: ${{ needs.image.outputs.digest }}
+          VERSION: ${{ needs.gate.outputs.version }}
+        run: |
+          printf '%s:%s\n%s@%s\ncommit %s\n' "$IMAGE" "$VERSION" "$IMAGE" "$DIGEST" "$GITHUB_SHA" > release/container-image.txt
+          cd release
+          sha256sum container-image.txt >> SHA256SUMS
+          sha256sum --check SHA256SUMS
+      - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: release/*
+      - name: Publish the verified stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "PixelForge Prompt Studio $GITHUB_REF_NAME" \
+            --notes-file "docs/releases/$GITHUB_REF_NAME.md" --latest

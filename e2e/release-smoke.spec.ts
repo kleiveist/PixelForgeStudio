@@ -1,11 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const releaseViews = [
-  ["/?studio=prompt&view=dashboard", "Pixelart-Produktion beginnt mit der richtigen Asset-Art."],
-  ["/?studio=prompt&view=profiles", "Produktionsprofile sicher organisieren."],
-  ["/?studio=prompt&view=wizard", "Neue Assets geführt aufsetzen."],
-  ["/?studio=prompt&view=output", "Prompt-Pakete produktionsbereit ausgeben."],
-  ["/?studio=prompt&view=settings", "Das Studio passend konfigurieren."]
+  ["./?studio=prompt&view=dashboard", "Pixelart-Produktion beginnt mit der richtigen Asset-Art."],
+  ["./?studio=prompt&view=profiles", "Produktionsprofile sicher organisieren."],
+  ["./?studio=prompt&view=wizard", "Neue Assets geführt aufsetzen."],
+  ["./?studio=prompt&view=output", "Prompt-Pakete produktionsbereit ausgeben."],
+  ["./?studio=prompt&view=settings", "Das Studio passend konfigurieren."]
 ] as const;
 
 async function expectNoHorizontalPageOverflow(page: Page): Promise<void> {
@@ -31,11 +31,11 @@ test("routes every Prompt Studio view with one labelled main heading", async ({ 
 test("canonicalizes every legacy Prompt route including review", async ({ page }) => {
   const routes = ["dashboard", "profiles", "wizard", "output", "settings"];
   for (const view of routes) {
-    await page.goto(`/?view=${view}`);
+    await page.goto(`./?view=${view}`);
     await expect(page).toHaveURL(new RegExp(`\\?studio=prompt&view=${view}$`));
   }
 
-  await page.goto("/?view=review");
+  await page.goto("./?view=review");
   await expect(page).toHaveURL(/\?studio=prompt&view=output$/);
   await expect(
     page.getByRole("heading", { level: 1, name: "Prompt-Pakete produktionsbereit ausgeben." })
@@ -44,9 +44,9 @@ test("canonicalizes every legacy Prompt route including review", async ({ page }
 
 test("repairs retired home and animation routes to the Prompt dashboard", async ({ page }) => {
   for (const route of [
-    "/?studio=home",
-    "/?studio=animation&view=projects",
-    "/?studio=animation&view=workspace&project=legacy-project"
+    "./?studio=home",
+    "./?studio=animation&view=projects",
+    "./?studio=animation&view=workspace&project=legacy-project"
   ]) {
     await page.goto(route);
     await expect(page).toHaveURL(/\?studio=prompt&view=dashboard$/);
@@ -60,7 +60,7 @@ test("repairs retired home and animation routes to the Prompt dashboard", async 
 });
 
 test("supports skip navigation and Prompt view switching by keyboard", async ({ page }) => {
-  await page.goto("/?studio=prompt&view=dashboard");
+  await page.goto("./?studio=prompt&view=dashboard");
   const skipLink = page.getByRole("link", { name: "Zum Inhalt springen" });
   await page.keyboard.press("Tab");
   if (!(await skipLink.evaluate((element) => element === document.activeElement))) {
@@ -80,7 +80,7 @@ test("supports skip navigation and Prompt view switching by keyboard", async ({ 
 test("reflows the Prompt shell at desktop, medium and a 200-percent proxy width", async ({ page }) => {
   for (const width of [1440, 900, 640, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/?studio=prompt&view=dashboard");
+    await page.goto("./?studio=prompt&view=dashboard");
     await expect(page.getByRole("banner")).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Hauptnavigation" })).toBeVisible();
     await expect(page.getByRole("group", { name: "Darstellung" })).toBeVisible();
@@ -90,7 +90,7 @@ test("reflows the Prompt shell at desktop, medium and a 200-percent proxy width"
 
 test("applies the reduced-motion contract in the browser", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/?studio=prompt&view=dashboard");
+  await page.goto("./?studio=prompt&view=dashboard");
   const wizardLink = page.getByRole("link", { name: "Wizard", exact: true });
   await expect(wizardLink).toBeVisible();
   const motion = {

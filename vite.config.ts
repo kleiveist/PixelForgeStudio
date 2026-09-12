@@ -8,6 +8,9 @@ export default defineConfig({
     rolldownOptions: {
       output: {
         codeSplitting: {
+          // Keep application evaluation order intact. Forcing feature groups
+          // creates cross-chunk cycles between catalogs and schema constants.
+          // Production-browser smokes guard this boundary (dev serving cannot).
           groups: [
             {
               name: "react-vendor",
@@ -18,12 +21,6 @@ export default defineConfig({
               name: "forms-vendor",
               test: /node_modules[\\/](?:@hookform|react-hook-form|zod)[\\/]/,
               priority: 30
-            },
-            {
-              name: "prompt-features",
-              test: /src[\\/]features[\\/]/,
-              maxSize: 450 * 1024,
-              priority: 20
             },
             {
               name: "vendor",
