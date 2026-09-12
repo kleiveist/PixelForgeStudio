@@ -11,10 +11,6 @@ export {
 } from "./AssetCategoryIcons";
 export { ForgeMarkIcon } from "./ForgeMarkIcon";
 export {
-  AnimationStudioArtwork,
-  PromptStudioArtwork
-} from "./StudioModuleArtwork";
-export {
   ClothIcon,
   IceIcon,
   LeatherIcon,

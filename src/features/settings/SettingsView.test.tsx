@@ -117,43 +117,35 @@ afterEach(() => {
 });
 
 describe("settings workspace transfer", () => {
-  it("persists the three start decisions independently", async () => {
+  it("persists the Prompt start view and hides retired module settings", async () => {
     const user = userEvent.setup();
     const library = createProfileLibraryFixture();
     const rendered = renderSettings(populatedStorage(library));
 
     await user.selectOptions(
-      screen.getByLabelText("Startbereich"),
-      "animation"
-    );
-    await user.selectOptions(
-      screen.getByLabelText("Prompt-Startansicht"),
+      screen.getByLabelText("Startansicht"),
       "output"
-    );
-    await user.selectOptions(
-      screen.getByLabelText("Animations-Startansicht"),
-      "rigs"
     );
 
     expect(rendered.adapter.readSettings()).toMatchObject({
       status: "valid",
       value: {
         schemaVersion: 2,
-        startStudio: "animation",
+        startStudio: "home",
         startView: "output",
-        animationStartView: "rigs",
+        animationStartView: "projects",
         updatedAt: now
       }
     });
-    expect(screen.getByLabelText("Startbereich")).toHaveValue("animation");
-    expect(screen.getByLabelText("Prompt-Startansicht")).toHaveValue("output");
-    expect(screen.getByLabelText("Animations-Startansicht")).toHaveValue("rigs");
+    expect(screen.getByLabelText("Startansicht")).toHaveValue("output");
+    expect(screen.queryByLabelText("Startbereich")).not.toBeInTheDocument();
     expect(
-      screen.getByText("Die Animations-Startansicht wurde lokal gespeichert.")
+      screen.queryByLabelText("Animations-Startansicht")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Die Prompt-Startansicht wurde lokal gespeichert.")
     ).toBeVisible();
     expect(rendered.storage.mutations).toEqual([
-      { operation: "set", key: V2_STORAGE_KEYS.settings },
-      { operation: "set", key: V2_STORAGE_KEYS.settings },
       { operation: "set", key: V2_STORAGE_KEYS.settings }
     ]);
   });
@@ -165,17 +157,20 @@ describe("settings workspace transfer", () => {
     storage.failSetFor = V2_STORAGE_KEYS.settings;
     const rendered = renderSettings(storage);
 
-    await user.selectOptions(screen.getByLabelText("Startbereich"), "prompt");
+    await user.selectOptions(
+      screen.getByLabelText("Startansicht"),
+      "output"
+    );
 
-    expect(screen.getByLabelText("Startbereich")).toHaveValue("prompt");
+    expect(screen.getByLabelText("Startansicht")).toHaveValue("output");
     expect(
       screen.getByText(
-        "Der Startbereich gilt für diese Sitzung; lokales Speichern ist nicht verfügbar."
+        "Die Prompt-Startansicht gilt für diese Sitzung; lokales Speichern ist nicht verfügbar."
       )
     ).toBeVisible();
     expect(rendered.adapter.readSettings()).toMatchObject({
       status: "valid",
-      value: { startStudio: "home" }
+      value: { startView: "dashboard" }
     });
   });
 

@@ -50,7 +50,7 @@ export const PROMPT_STUDIO_VIEW_DEFINITIONS: Readonly<
     description:
       "Darstellung und Workspace-Daten bleiben lokal, kontrollierbar und als validiertes V2-JSON übertragbar.",
     nextStep:
-      "Getrennte Studio-Startziele, V1-Migrationsstatus sowie vollständiger JSON-Export und -Import sind aktiv."
+      "Prompt-Startansicht, V1-Migrationsstatus sowie vollständiger JSON-Export und -Import sind aktiv."
   }
 };
 

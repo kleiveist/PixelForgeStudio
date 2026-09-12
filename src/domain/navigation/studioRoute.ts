@@ -1,11 +1,3 @@
-import { StableIdSchema, type StableId } from "../../schemas/common.schema";
-
-export const STUDIO_IDS = Object.freeze([
-  "home",
-  "prompt",
-  "animation"
-] as const);
-
 export const PROMPT_STUDIO_VIEW_IDS = Object.freeze([
   "dashboard",
   "profiles",
@@ -15,13 +7,6 @@ export const PROMPT_STUDIO_VIEW_IDS = Object.freeze([
 ] as const);
 
 const LEGACY_REVIEW_VIEW = "review";
-
-export const ANIMATION_STUDIO_VIEW_IDS = Object.freeze([
-  "projects",
-  "workspace",
-  "library",
-  "rigs"
-] as const);
 
 export const STUDIO_QUERY_PARAMETER = "studio";
 export const VIEW_QUERY_PARAMETER = "view";
@@ -33,9 +18,7 @@ export const STUDIO_ROUTE_QUERY_PARAMETERS = Object.freeze([
   PROJECT_QUERY_PARAMETER
 ] as const);
 
-export type StudioId = (typeof STUDIO_IDS)[number];
 export type PromptStudioView = (typeof PROMPT_STUDIO_VIEW_IDS)[number];
-export type AnimationStudioView = (typeof ANIMATION_STUDIO_VIEW_IDS)[number];
 export type StudioRouteQueryParameter =
   (typeof STUDIO_ROUTE_QUERY_PARAMETERS)[number];
 
@@ -44,30 +27,14 @@ export type PromptStudioRoute = Readonly<{
   view: PromptStudioView;
 }>;
 
-export type AnimationStudioRoute =
-  | Readonly<{
-      studio: "animation";
-      view: "workspace";
-      projectId?: StableId;
-    }>
-  | Readonly<{
-      studio: "animation";
-      view: Exclude<AnimationStudioView, "workspace">;
-    }>;
-
-export type StudioRoute =
-  | Readonly<{ studio: "home" }>
-  | PromptStudioRoute
-  | AnimationStudioRoute;
+export type StudioRoute = PromptStudioRoute;
 
 export type StudioRouteInvalidReason =
   | "duplicateParameter"
   | "unknownStudio"
   | "missingView"
-  | "unexpectedView"
   | "unknownView"
-  | "unexpectedProject"
-  | "invalidProjectId";
+  | "unexpectedProject";
 
 export type StudioRouteParseResult =
   | Readonly<{ status: "valid"; route: StudioRoute }>
@@ -85,23 +52,11 @@ export interface StudioRouteSerializationOptions {
   readonly duplicateControlledParameters?: "reject" | "discard";
 }
 
-const studioIds = new Set<string>(STUDIO_IDS);
 const promptStudioViewIds = new Set<string>(PROMPT_STUDIO_VIEW_IDS);
-const animationStudioViewIds = new Set<string>(ANIMATION_STUDIO_VIEW_IDS);
 const controlledParameters = new Set<string>(STUDIO_ROUTE_QUERY_PARAMETERS);
-
-export function isStudioId(value: unknown): value is StudioId {
-  return typeof value === "string" && studioIds.has(value);
-}
 
 export function isPromptStudioView(value: unknown): value is PromptStudioView {
   return typeof value === "string" && promptStudioViewIds.has(value);
-}
-
-export function isAnimationStudioView(
-  value: unknown
-): value is AnimationStudioView {
-  return typeof value === "string" && animationStudioViewIds.has(value);
 }
 
 export function createPromptStudioRoute(
@@ -110,27 +65,15 @@ export function createPromptStudioRoute(
   return { studio: "prompt", view };
 }
 
-export function promptStudioViewOf(
-  route: StudioRoute
-): PromptStudioView | null {
-  return route.studio === "prompt" ? route.view : null;
+export function promptStudioViewOf(route: StudioRoute): PromptStudioView {
+  return route.view;
 }
 
 export function studioRoutesEqual(
   left: StudioRoute,
   right: StudioRoute
 ): boolean {
-  if (left.studio !== right.studio) return false;
-  if (left.studio === "home" && right.studio === "home") return true;
-  if (left.studio === "prompt" && right.studio === "prompt") {
-    return left.view === right.view;
-  }
-  if (left.studio === "animation" && right.studio === "animation") {
-    if (left.view !== right.view) return false;
-    if (left.view !== "workspace" || right.view !== "workspace") return true;
-    return left.projectId === right.projectId;
-  }
-  return false;
+  return left.view === right.view;
 }
 
 function duplicateControlledParameter(
@@ -161,41 +104,7 @@ export function parseStudioRouteSearch(
   const viewValue = parameters.get(VIEW_QUERY_PARAMETER);
   const projectValue = parameters.get(PROJECT_QUERY_PARAMETER);
 
-  if (studioValue === null) {
-    if (viewValue === null) {
-      if (projectValue === null) return { status: "missing" };
-      return {
-        status: "invalid",
-        reason: "unexpectedProject",
-        parameter: PROJECT_QUERY_PARAMETER,
-        value: projectValue
-      };
-    }
-    if (viewValue !== LEGACY_REVIEW_VIEW && !isPromptStudioView(viewValue)) {
-      return {
-        status: "invalid",
-        reason: "unknownView",
-        parameter: VIEW_QUERY_PARAMETER,
-        value: viewValue
-      };
-    }
-    if (projectValue !== null) {
-      return {
-        status: "invalid",
-        reason: "unexpectedProject",
-        parameter: PROJECT_QUERY_PARAMETER,
-        value: projectValue
-      };
-    }
-    return {
-      status: "legacy",
-      route: createPromptStudioRoute(
-        viewValue === LEGACY_REVIEW_VIEW ? "output" : viewValue
-      )
-    };
-  }
-
-  if (!isStudioId(studioValue)) {
+  if (studioValue !== null && studioValue !== "prompt") {
     return {
       status: "invalid",
       reason: "unknownStudio",
@@ -204,60 +113,26 @@ export function parseStudioRouteSearch(
     };
   }
 
-  if (studioValue === "home") {
-    if (viewValue !== null) {
-      return {
-        status: "invalid",
-        reason: "unexpectedView",
-        parameter: VIEW_QUERY_PARAMETER,
-        value: viewValue
-      };
-    }
-    if (projectValue !== null) {
-      return {
-        status: "invalid",
-        reason: "unexpectedProject",
-        parameter: PROJECT_QUERY_PARAMETER,
-        value: projectValue
-      };
-    }
-    return { status: "valid", route: { studio: "home" } };
+  if (projectValue !== null) {
+    return {
+      status: "invalid",
+      reason: "unexpectedProject",
+      parameter: PROJECT_QUERY_PARAMETER,
+      value: projectValue
+    };
   }
 
   if (viewValue === null) {
-    return {
-      status: "invalid",
-      reason: "missingView",
-      parameter: VIEW_QUERY_PARAMETER
-    };
+    return studioValue === null
+      ? { status: "missing" }
+      : {
+          status: "invalid",
+          reason: "missingView",
+          parameter: VIEW_QUERY_PARAMETER
+        };
   }
 
-  if (studioValue === "prompt") {
-    if (viewValue !== LEGACY_REVIEW_VIEW && !isPromptStudioView(viewValue)) {
-      return {
-        status: "invalid",
-        reason: "unknownView",
-        parameter: VIEW_QUERY_PARAMETER,
-        value: viewValue
-      };
-    }
-    if (projectValue !== null) {
-      return {
-        status: "invalid",
-        reason: "unexpectedProject",
-        parameter: PROJECT_QUERY_PARAMETER,
-        value: projectValue
-      };
-    }
-    return {
-      status: viewValue === LEGACY_REVIEW_VIEW ? "legacy" : "valid",
-      route: createPromptStudioRoute(
-        viewValue === LEGACY_REVIEW_VIEW ? "output" : viewValue
-      )
-    };
-  }
-
-  if (!isAnimationStudioView(viewValue)) {
+  if (viewValue !== LEGACY_REVIEW_VIEW && !isPromptStudioView(viewValue)) {
     return {
       status: "invalid",
       reason: "unknownView",
@@ -265,43 +140,15 @@ export function parseStudioRouteSearch(
       value: viewValue
     };
   }
-  if (viewValue !== "workspace") {
-    if (projectValue !== null) {
-      return {
-        status: "invalid",
-        reason: "unexpectedProject",
-        parameter: PROJECT_QUERY_PARAMETER,
-        value: projectValue
-      };
-    }
-    return {
-      status: "valid",
-      route: { studio: "animation", view: viewValue }
-    };
-  }
-  if (projectValue === null) {
-    return {
-      status: "valid",
-      route: { studio: "animation", view: "workspace" }
-    };
-  }
 
-  const projectId = StableIdSchema.safeParse(projectValue);
-  if (!projectId.success) {
-    return {
-      status: "invalid",
-      reason: "invalidProjectId",
-      parameter: PROJECT_QUERY_PARAMETER,
-      value: projectValue
-    };
-  }
   return {
-    status: "valid",
-    route: {
-      studio: "animation",
-      view: "workspace",
-      projectId: projectId.data
-    }
+    status:
+      studioValue === null || viewValue === LEGACY_REVIEW_VIEW
+        ? "legacy"
+        : "valid",
+    route: createPromptStudioRoute(
+      viewValue === LEGACY_REVIEW_VIEW ? "output" : viewValue
+    )
   };
 }
 
@@ -328,21 +175,8 @@ export function serializeStudioRoute(
   }
 
   const parameters = new URLSearchParams();
-  parameters.set(STUDIO_QUERY_PARAMETER, route.studio);
-  if (route.studio !== "home") {
-    parameters.set(VIEW_QUERY_PARAMETER, route.view);
-  }
-  if (
-    route.studio === "animation" &&
-    route.view === "workspace" &&
-    route.projectId !== undefined
-  ) {
-    const projectId = StableIdSchema.safeParse(route.projectId);
-    if (!projectId.success) {
-      throw new TypeError("Cannot serialize an invalid animation project ID.");
-    }
-    parameters.set(PROJECT_QUERY_PARAMETER, projectId.data);
-  }
+  parameters.set(STUDIO_QUERY_PARAMETER, "prompt");
+  parameters.set(VIEW_QUERY_PARAMETER, route.view);
 
   for (const [parameter, value] of currentParameters) {
     if (!controlledParameters.has(parameter)) {

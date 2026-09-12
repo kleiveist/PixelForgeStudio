@@ -180,7 +180,7 @@ export function parseExportBundleJson(json: string): ParsedExportBundleJson {
     return {
       status: "invalid",
       reason: "schemaValidation",
-      message: `Import does not match the ${BRAND.modules.prompt.shortLabel} V${V2_SCHEMA_VERSION} export schema.`,
+      message: `Import does not match the ${BRAND.productName} V${V2_SCHEMA_VERSION} export schema.`,
       issues: toIssues(result.error)
     };
   }

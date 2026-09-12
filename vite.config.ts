@@ -20,21 +20,10 @@ export default defineConfig({
               priority: 30
             },
             {
-              name: "archive-vendor",
-              test: /node_modules[\\/]fflate[\\/]/,
-              priority: 30
-            },
-            {
-              name: "animation-studio",
-              test: /src[\\/](?:domain[\\/]animation|features[\\/]animation-|services[\\/]animation|store[\\/]animation|workers[\\/])/,
+              name: "prompt-features",
+              test: /src[\\/]features[\\/]/,
               maxSize: 450 * 1024,
               priority: 20
-            },
-            {
-              name: "prompt-features",
-              test: /src[\\/]features[\\/](?!animation-|studio-handoff)/,
-              maxSize: 450 * 1024,
-              priority: 10
             },
             {
               name: "vendor",

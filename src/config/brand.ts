@@ -1,16 +1,12 @@
 export const BRAND = Object.freeze({
-  productName: "PixelForge Studio",
+  productName: "PixelForge Prompt Studio",
   shortName: "PixelForge",
-  versionLabel: "V3",
-  tagline: "Lokale Prompt-Produktion und Pixelanimation aus einer Oberfläche",
+  versionLabel: "V2",
+  tagline: "Lokale Prompt-Produktion für konsistente Pixelart-Assets",
   modules: Object.freeze({
     prompt: Object.freeze({
       productName: "PixelForge Prompt Studio",
       shortLabel: "Prompt Studio"
-    }),
-    animation: Object.freeze({
-      productName: "PixelForge Animation Studio",
-      shortLabel: "Animation Studio"
     })
   })
 } as const);
@@ -21,7 +17,3 @@ export const PROMPT_EXPORT_APPLICATION_ID = "PixelForge Prompt Studio" as const;
 
 // Backward-compatible public alias retained for existing consumers.
 export const EXPORT_APPLICATION_ID = PROMPT_EXPORT_APPLICATION_ID;
-
-// Stable protocol discriminator for Animation Studio V1 metadata and bundles.
-export const ANIMATION_EXPORT_APPLICATION_ID =
-  "PixelForge Animation Studio" as const;

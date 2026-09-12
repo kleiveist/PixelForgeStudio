@@ -1,9 +1,6 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import {
   createBrowserOutputWorkspaceAdapter,
-  createBrowserImageDecoder,
-  type AnimationRepository,
-  type ImageDecoder,
   type LegacyV1StorageMigrationResult,
   type NavigationAdapter,
   type OutputWorkspaceAdapter
@@ -21,13 +18,8 @@ import {
   type ProfileLibraryStorage
 } from "../store/profiles";
 import { NavigationProvider } from "../store/navigation";
-import {
-  AnimationProjectProvider,
-  useAnimationProject
-} from "../store/animation";
 import { WizardSessionProvider } from "../store/wizard";
 import { StudioShell } from "./StudioShell";
-import { AnimationHandoffProvider } from "../features/studio-handoff";
 
 export interface AppProps {
   readonly navigationAdapter: NavigationAdapter;
@@ -39,14 +31,6 @@ export interface AppProps {
   readonly createProfileId?: () => string;
   readonly createBaseProfileId?: () => string;
   readonly createDraftId?: () => string;
-  readonly animationRepository?: AnimationRepository | null;
-  readonly animationRepositoryUnavailableMessage?: string;
-  readonly createAnimationProjectId?: () => string;
-  readonly createAnimationClipId?: () => string;
-  readonly createAnimationPartAssetId?: () => string;
-  readonly createAnimationImageBlobId?: () => string;
-  readonly animationAutosaveDelayMs?: number;
-  readonly animationImageDecoder?: ImageDecoder;
   readonly outputAdapter?: OutputWorkspaceAdapter;
   readonly startupMigration?: LegacyV1StorageMigrationResult;
 }
@@ -67,42 +51,26 @@ function NavigationRoot({
   createDraftId?: () => string;
 }>) {
   const { settings } = useSettings();
-  const { projectDirty } = useAnimationProject();
   const fallbackRoute = useMemo(
     () => resolveStudioStartRoute(settings),
-    [
-      settings.animationStartView,
-      settings.startStudio,
-      settings.startView
-    ]
-  );
-  const confirmNavigation = useCallback(
-    () =>
-      !projectDirty ||
-      window.confirm(
-        "Das aktive Animationsprojekt enthält ungespeicherte Änderungen. Trotzdem navigieren?"
-      ),
-    [projectDirty]
+    [settings.startView]
   );
 
   return (
     <NavigationProvider
-      confirmNavigation={confirmNavigation}
       fallbackRoute={fallbackRoute}
       fallbackView={settings.startView}
       navigationAdapter={navigationAdapter}
     >
       <WizardSessionProvider>
-        <AnimationHandoffProvider>
-          <StudioShell
-            activeBaseProfileId={settings.activeBaseProfileId}
-            outputAdapter={outputAdapter}
-            startupMigration={startupMigration}
-            storageAdapter={storageAdapter}
-            {...(now ? { now } : {})}
-            {...(createDraftId ? { createDraftId } : {})}
-          />
-        </AnimationHandoffProvider>
+        <StudioShell
+          activeBaseProfileId={settings.activeBaseProfileId}
+          outputAdapter={outputAdapter}
+          startupMigration={startupMigration}
+          storageAdapter={storageAdapter}
+          {...(now ? { now } : {})}
+          {...(createDraftId ? { createDraftId } : {})}
+        />
       </WizardSessionProvider>
     </NavigationProvider>
   );
@@ -115,14 +83,6 @@ export function App({
   createProfileId,
   createBaseProfileId,
   createDraftId,
-  animationRepository = null,
-  animationRepositoryUnavailableMessage,
-  createAnimationProjectId,
-  createAnimationClipId,
-  createAnimationPartAssetId,
-  createAnimationImageBlobId,
-  animationAutosaveDelayMs,
-  animationImageDecoder = createBrowserImageDecoder(),
   outputAdapter = createBrowserOutputWorkspaceAdapter(),
   startupMigration = { status: "notNeeded" }
 }: AppProps) {
@@ -138,38 +98,14 @@ export function App({
         storageAdapter={storageAdapter}
         {...optionalProfileProviderProps}
       >
-        <AnimationProjectProvider
-          repository={animationRepository}
-          imageDecoder={animationImageDecoder}
-          {...(animationRepositoryUnavailableMessage
-            ? { unavailableMessage: animationRepositoryUnavailableMessage }
-            : {})}
-          {...(createAnimationProjectId
-            ? { createProjectId: createAnimationProjectId }
-            : {})}
-          {...(createAnimationClipId
-            ? { createClipId: createAnimationClipId }
-            : {})}
-          {...(createAnimationPartAssetId
-            ? { createPartAssetId: createAnimationPartAssetId }
-            : {})}
-          {...(createAnimationImageBlobId
-            ? { createImageBlobId: createAnimationImageBlobId }
-            : {})}
-          {...(animationAutosaveDelayMs !== undefined
-            ? { autosaveDelayMs: animationAutosaveDelayMs }
-            : {})}
+        <NavigationRoot
+          navigationAdapter={navigationAdapter}
+          outputAdapter={outputAdapter}
+          startupMigration={startupMigration}
+          storageAdapter={storageAdapter}
           {...(now ? { now } : {})}
-        >
-          <NavigationRoot
-            navigationAdapter={navigationAdapter}
-            outputAdapter={outputAdapter}
-            startupMigration={startupMigration}
-            storageAdapter={storageAdapter}
-            {...(now ? { now } : {})}
-            {...(createDraftId ? { createDraftId } : {})}
-          />
-        </AnimationProjectProvider>
+          {...(createDraftId ? { createDraftId } : {})}
+        />
       </ProfileLibraryProvider>
     </SettingsProvider>
   );

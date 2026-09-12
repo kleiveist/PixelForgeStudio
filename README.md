@@ -1,4 +1,4 @@
-# PixelForge Studio 3.0
+# PixelForge Prompt Studio
 
 <!-- PYGINDEX:README START -->
 ## Dokumentation
@@ -7,22 +7,20 @@
 - [Erledigt](docs/erledigt/index.md)
 
 ## Projektdateien
-- [AGENTS.md — PixelForge Studio](AGENTS.md)
+- [AGENTS.md — PixelForge Prompt Studio](AGENTS.md)
 - [Changelog](CHANGELOG.md)
-- [PixelForge Studio — Arbeitsplan](PLANS.md)
+- [PixelForge Prompt Studio — Arbeitsplan](PLANS.md)
 <!-- PYGINDEX:README END -->
 
-PixelForge Studio ist eine lokale React-Anwendung für konsistente
-Pixelart-Produktion ohne Backend. Das **Prompt Studio** verwaltet Profile,
-führt durch die Asset-Erstellung und erzeugt Prompt-Pakete. Das **Animation
-Studio** baut aus validierten PNG-Teilen einen `humanoid-80-v1`, erzeugt den
-Walk mit acht Richtungen und exportiert SpriteSheets, `.pfanim`-Projektbundles
-und Godot-4-Pakete.
+PixelForge Prompt Studio ist eine lokale React-Anwendung für konsistente
+Pixelart-Prompt-Produktion ohne Backend. Es verwaltet technische
+Produktionsprofile, führt durch neun Asset-Kategorien und erzeugt
+Hauptprompt, Negativprompt, technische Spezifikation sowie eine kombinierte
+Ausgabe.
 
-Prompt-Daten bleiben beim Schema- und Exportvertrag V2 in `localStorage`;
-Animationsdaten verwenden das getrennte Format V1 in IndexedDB. Details und
-Release-Nachweise stehen in der
-[V3-Release-Abnahme](docs/PIXELFORGE-STUDIO-V3-RELEASE-ACCEPTANCE.md).
+Profile, Einstellungen und Entwürfe bleiben beim Schema- und Exportvertrag V2
+in `localStorage`. Die Anwendung enthält keine Animationsprojekt-, Rig-,
+Renderer- oder Engineexport-Funktion mehr.
 
 Repository: [kleiveist/PixelForgeStudio](https://github.com/kleiveist/PixelForgeStudio)
 
@@ -31,7 +29,7 @@ Repository: [kleiveist/PixelForgeStudio](https://github.com/kleiveist/PixelForge
 Vorausgesetzt werden Node.js 20.19+ beziehungsweise 22.12+ und npm 10+.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -42,7 +40,7 @@ npm run dev
 | `index.html` | Vite-HTML-Einstieg |
 | `src/main.tsx` | React-Bootstrap |
 | `src/app/App.tsx` | Provider- und App-Komposition |
-| `src/app/StudioShell.tsx` | Dachnavigation und Modulzuordnung |
+| `src/app/StudioShell.tsx` | Prompt-Navigation und gemeinsame App-Shell |
 | `src/ARCHITECTURE.md` | Architektur und öffentliche Modulgrenzen |
 | `docs/index.md` | Dokumentationsübersicht |
 

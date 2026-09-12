@@ -230,39 +230,13 @@ describe("V2 dashboard interactions", () => {
     }
   );
 
-  it("keeps the category entry prominent while linking to Home and Animation Studio", async () => {
-    const user = userEvent.setup();
-    const { navigation } = renderStudio();
-    const studioLinks = screen.getByRole("navigation", {
-      name: "Weitere Studios"
-    });
-
+  it("keeps all category entries without exposing another studio", () => {
+    renderStudio();
     expect(within(categorySection()).getAllByRole("button")).toHaveLength(9);
     expect(
-      within(studioLinks).getByRole("link", { name: "Studio-Startseite" })
-    ).toHaveAttribute("href", "?studio=home");
-    const animationLink = within(studioLinks).getByRole("link", {
-      name: /Animation Studio ansehen/
-    });
-    expect(
-      within(studioLinks).getByRole("link", {
-        name: /Charakterprofil ins Animation Studio übertragen/
-      })
-    ).toHaveAttribute("href", "?studio=prompt&view=profiles");
-
-    animationLink.focus();
-    await user.keyboard("{Enter}");
-
-    expect(navigation.pushedRoutes).toEqual([
-      { studio: "animation", view: "projects" }
-    ]);
-    expect(screen.getByRole("main")).toHaveFocus();
-    expect(
-      screen.getByRole("heading", {
-        level: 1,
-        name: "Animationsprojekte organisieren."
-      })
-    ).toBeVisible();
+      screen.queryByRole("navigation", { name: "Weitere Studios" })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Animation Studio/i)).not.toBeInTheDocument();
   });
 
   it("clears a stale category when the generic new-asset action is used", async () => {

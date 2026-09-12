@@ -186,88 +186,31 @@ keine direkten Namen bestehender Spiele, Marken, Figuren, Werke oder
 Kunstschaffender; die generische negative Regel gegen namentliche Imitation
 bleibt erhalten. Evidenz: `erledigt/V2-RELEASE-ACCEPTANCE.md`.
 
-## 10. Implementierung V3
+## 10. Aktueller Produktumfang
 
-V3 erweitert das Dachprodukt zu **PixelForge Studio** mit den getrennten
-Modulen **PixelForge Prompt Studio** und **PixelForge Animation Studio**. Diese
-Produktstufe ist keine stillschweigende Migration des Promptformats: Prompt
-Studio behält `schemaVersion: 2`, den bestehenden Export-Identifier und die
-sechs `pixelforge:v2:*`-localStorage-Namespaces. Die in den Abschnitten 1–9
-definierten Promptregeln, Paketbestandteile und Capability-Grenzen bleiben
-damit verbindlich.
-
-Die technische Ownership ist bewusst getrennt:
-
-| Bereich | Versionsvertrag | Persistenz | zuständige Grenze |
-|---|---|---|---|
-| Prompt Studio | Prompt-Schema und Exportformat V2 | sechs bestehende localStorage-Namespaces | Profil-/Wizard-Provider und `src/domain/prompt-engine/` |
-| Animation Studio | eigenständiges Animationsformat V1 | native IndexedDB-Datenbank `pixelforge-studio` | `AnimationRepository` und `AnimationProjectProvider` |
-| Animation Workspace | kein eigener Persistenzvertrag | Richtung, Clip, Frame, Slot, Zoom, Overlays und Paneele nur flüchtig | lokaler `animationWorkspaceReducer` |
+Die produktive Anwendung ist wieder ausschließlich das **PixelForge Prompt
+Studio**. Eine Animationsprojektverwaltung, ein Animations-Workspace und ein
+Export in Engine- oder Animationsformate gehören nicht zum aktuellen
+Produktumfang. Die abgeschlossene frühere V3-Erweiterung bleibt nur als
+historischer Umsetzungsnachweis unter `erledigt/pixelforge-studio-v3/`
+erhalten.
 
 `buildPromptPackages()` bleibt die einzige Produktionsgrenze für die vier
-Promptausgaben. Animation-Projekte oder Workspace-Auswahlen werden nicht
-automatisch in `ResolvedProfile`, Hauptprompt, Negativprompt oder technische
-Spezifikation gemischt. Die Übergabe vom Prompt- zum Animationsmodul erfolgt
-explizit über einen validierten, schmalen Projektseed und hält die beiden
-Versionsverträge getrennt.
+Promptausgaben. Fachliche Angaben zu Animationen und Richtungen innerhalb
+eines Asset-Prompts bleiben Bestandteil des V2-Schemas: Sie beschreiben die
+gewünschte Bild- oder Frameproduktion, erzeugen aber weder lokale
+Animationsprojekte noch Binär-, SpriteSheet- oder Engineexporte.
 
-Der derzeit implementierte V3-Ausbaustand umfasst:
+Der Promptvertrag bleibt unverändert:
 
-1. die kompatible Produktumbenennung, typisierte Modulmarken und
-   roundtrip-stabile Studio-Routen,
-2. die gemeinsame zugängliche App-Shell, Studio-Startseite und getrennte
-   Startziele,
-3. die frameworkfreie Animationsdomain mit acht Richtungen, 39 Slots,
-   Rig-Topologie und dem unveränderlichen `humanoid-80-v1`-Framevertrag,
-4. strikte Animationsprojekt-, PartAsset-, Character-Kit- und Bundle-Schemas,
-5. den injizierbaren Memory-/IndexedDB-Repository-Port mit getrennter
-   Metadaten-/Blob-Persistenz,
-6. den validierten Animationsprojekt-Lifecycle mit CRUD, Autosave,
-   Dirty-Navigation und stabiler Workspace-Projekt-ID sowie
-7. die responsive Animation-Workspace-Shell mit Teileinventar,
-   DOM-Viewport, Projekt-/Part-/Frame-Inspektor und acht Walk-Frameplätzen sowie
-8. den validierten PNG-Part-Import mit injiziertem Decoder, Alpha-Trim,
-   kurzlebiger Vorschau, `anchorsPending`, Richtungs-Coverage und atomarer
-   Part-/Blob-/Projektzuweisung sowie
-9. die immutable Built-in-Rigvorlage `humanoid-80-v1` mit fünf eigenen
-   Neutralposen, validierter Bone-/Slot-Hierarchie, stabilem Compatibility Key
-   und datengetriebenem SVG-Overlay sowie
-10. den Originalanker-Editor mit Ein-/Zweipunktvertrag, reproduzierbarer
-    uniformer Bone-Platzierung, getrennten projektweiten Deltas, atomarem
-    Resume und den Coverage-Zuständen `ready`, `anchorsPending`,
-    `invalidAnchors` und `missing` sowie
-11. den frameworkfreien nearest-neighbor Software-Rasterizer mit
-    ganzzahlig-deterministischem Source-over, strukturierten Diagnosen,
-    revisionsgebundenem RGBA-Cache und display-only Canvas-Adapter sowie
-12. acht versionierte richtungsspezifische Draw-Orders mit getrennter
-    Nah-/Fernseite, validierten Ausrüstungs-Attachments, kleinen
-    projektweiten Layer-Deltas und sichtbarer Kanten-/Bounding-Box-Diagnostik
-    sowie
-13. die rekonstruierbare South-Laufvorlage `walk-humanoid-8-v1` mit acht
-    Phasen, 10 FPS Default, normierten Gegenphasenkanälen, Groundline-
-    Kontaktkorrektur und acht flüchtig gerenderten Frames,
-14. kontrollierte Acht-Richtungs-Coverage und exakt 64 reproduzierbare Frames,
-15. sparse Framekorrekturen sowie eine begrenzte Metadaten-History und
-16. lokale Character Kits mit referenzgeteiltem Ausrüstungsinventar,
-    Compatibility-Grenze und kontrollierter Overridebereinigung,
-17. neutrale 64-Frame-, 1024×1024-SpriteSheet-, JSON- und `.pfanim`-Exporte
-    sowie einen abgeleiteten Godot-4-Paketadapter,
-18. die explizite Promptprofil-Übergabe, ein versioniertes Workerprotokoll,
-    kontrollierte Fallbacks und revisionsgebundene Ressourcencaches sowie
-19. die produktive Rig-Vorlagenbibliothek und die automatisierte
-    Accessibility-, Responsive-, Browser- und Regressionsabnahme für 3.0.
+- `schemaVersion: 2` und Exportformat V2,
+- persistierter Identifier `PixelForge Prompt Studio`,
+- die sechs `pixelforge:v2:*`-localStorage-Namespaces,
+- dieselben Profil-, Capability-, Migrations- und Promptregeln aus den
+  Abschnitten 1–9.
 
-Im Workspace liest das Rig-SVG Bones, Joints, Groundline und Pflichtslotlabels
-direkt aus den versionierten Produktionsdaten. Schachbrett, Raster,
-Part-Anker und Begrenzungsrahmen bleiben Anzeigeebenen und sind weder Quelle
-der Rigdaten noch ein fertiger Part-Renderer. Ganzzahliger Zoom verändert nur
-die Anzeige; Projekt- und Exportkoordinaten bleiben unverändert. Nicht
-aufgelöste PartAsset-/Blob-Referenzen werden sichtbar als fehlende Quelle
-behandelt, ohne Dummybilder oder scheinpräzise Anker zu erzeugen.
-
-Die V3-Implementierung und Release-Abnahme sind mit Prompt 51 abgeschlossen.
-Der Dach-Stack steht in [`TECHNOLOGIE-STACK-V3.md`](TECHNOLOGIE-STACK-V3.md),
-die prüfbaren Release-Nachweise in
-[`PIXELFORGE-STUDIO-V3-RELEASE-ACCEPTANCE.md`](PIXELFORGE-STUDIO-V3-RELEASE-ACCEPTANCE.md).
-Die Prompts 28–51 bleiben als historischer Umsetzungsnachweis unter
-`erledigt/pixelforge-studio-v3/` erhalten.
+Die früher additiven Settings-Felder `startStudio` und
+`animationStartView` werden ausschließlich zum Einlesen bestehender
+Settings-V2-Daten und Export-Bundles toleriert. Sie besitzen keine sichtbare
+Einstellung und keine Navigationswirkung mehr. `startView` entscheidet allein
+über die Prompt-Startansicht.

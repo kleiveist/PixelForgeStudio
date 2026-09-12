@@ -44,4 +44,3 @@ export {
   type OutputTextFile,
   type OutputWorkspaceAdapter
 } from "./outputWorkspaceAdapter";
-export * from "./animation";

@@ -6,12 +6,10 @@
 
 ## Status
 
-Dieses Dokument ist die weiterhin **verbindliche Stack-Spezifikation des
-PixelForge-Prompt-Studio-Moduls V2** innerhalb von PixelForge Studio. Die
-produktweite V3-Dacharchitektur und die getrennten Versionsverträge stehen in
-[`TECHNOLOGIE-STACK-V3.md`](TECHNOLOGIE-STACK-V3.md). Dieses Dokument bleibt
-der Prompt-Studio-V2-Vertrag und wird durch die Produktversion 3.0 nicht
-ersetzt.
+Dieses Dokument ist die verbindliche Stack-Spezifikation des eigenständigen
+**PixelForge Prompt Studio V2**. Das frühere Dach- und Animationsmodul ist
+entfernt; Schema-, Storage- und Exportvertrag des Prompt Studio bleiben
+unverändert.
 
 Die historische Vanilla-JavaScript-Anwendung diente ausschließlich als Legacy-Migrationsquelle
 und wurde nach der belegten Prompt-27-Parität entfernt. Erhalten bleiben pure
@@ -30,7 +28,6 @@ V2-Domänenfunktionen dürfen nicht als Vanilla-DOM-Anwendung umgesetzt werden.
 | Schema-/Datenvalidierung | Zod | verbindlich an Daten- und Importgrenzen |
 | Globaler Zustand | React Context + `useReducer` | Startlösung; keine zusätzliche State-Bibliothek ohne nachgewiesenen Bedarf |
 | Prompt-Studio-Speicherung | `localStorage` + JSON-Import/-Export | verbindlich; bestehende `pixelforge:v2:*`-Verträge bleiben unverändert |
-| Animationsspeicherung | native IndexedDB | verbindlich für Projekt-/Part-/Kit-Metadaten sowie Bild- und Preview-Blobs |
 | Styling | CSS Modules + globale CSS Custom Properties | verbindlich |
 | Icons | eigene lokale SVG-React-Komponenten | verbindlich |
 | Unit-/Integrationstests | Vitest + React Testing Library | verbindlich |
@@ -174,14 +171,14 @@ rehydrieren, statt parallel direkt in dieselben Namespaces zu schreiben.
 Die Top-Level-Navigation nutzt bewusst keine Router-Abhängigkeit. Ein
 injizierbarer Adapter kapselt `history.pushState`, `history.replaceState` und
 `popstate`; der aktuelle Route-State liegt in einem eigenen Context/Reducer.
-Kanonische URLs verwenden `?studio=…&view=…`, während alte `?view=…`-Prompt-
-Links weiter gelesen und ersetzt werden. Fragmentanker bleiben für Skip-Links
-und In-Page-Ziele frei. `startStudio` wählt Home, Prompt oder Animation;
-`startView` bleibt ausschließlich die Prompt-Startansicht und
-`animationStartView` die getrennte Animations-Startansicht. Fehlende neue
-Felder in alten Settings V2 oder Export-Bundles erhalten über Zod die Defaults
-`home` und `projects`. Keine dieser Einstellungen wird beim normalen
-Ansichtswechsel als „zuletzt besucht“ überschrieben.
+Kanonische URLs verwenden `?studio=prompt&view=…`, während alte
+`?view=…`-Prompt-Links weiter gelesen und ersetzt werden. Ehemalige Home- und
+Animationsrouten sind ungültig und werden ohne Storage-Write auf die
+konfigurierte Prompt-Startansicht repariert. Fragmentanker bleiben für
+Skip-Links und In-Page-Ziele frei. `startView` ist die einzige wirksame
+Startentscheidung. Die früher additiven Felder `startStudio` und
+`animationStartView` bleiben mit ihren bisherigen Zod-Defaults ausschließlich
+für die Lesbarkeit alter Settings V2 und Export-Bundles erhalten.
 
 Seit Prompt 11 hält ein eigener `WizardSessionProvider` den aktiven validierten
 Draft, seine strukturelle Dirty-Baseline, einen nicht persistierten Rohwert-
@@ -540,87 +537,6 @@ nur gemeinsam über `writeProfileLibrary()` verändert werden, damit
 Referenzen, Locks und Compatibility Keys als Gesamtgraph gültig bleiben.
 Adapter-Reads liefern `valid`, `empty`, `invalid` oder `unavailable` statt
 Storage- und Parsefehler bis in React durchzuwerfen.
-
-Animationsdaten verwenden davon getrennt den asynchronen, injizierbaren
-`AnimationRepository`-Port unter `src/services/animation/`. Die native
-IndexedDB-Datenbank heißt `pixelforge-studio`, steht in Version 1 und besitzt
-die Stores `animationProjects`, `animationPartAssets`,
-`animationImageBlobs`, `animationCharacterKits` und `animationPreviews`.
-Projekt-, Part- und Kit-Metadaten werden vor jedem Write mit ihren
-Animation-V1-Zod-Schemas validiert. Bilddaten bleiben echte `Blob`-Werte in
-getrennten Stores; sie werden weder als Base64 noch in `localStorage` oder
-JSON-Metadaten abgelegt.
-
-Der Browseradapter kapselt Open-, Upgrade-, Request- und Transaktionsfehler
-vollständig und liefert dieselben diskriminierten Resultate wie der
-vollständige Memoryadapter. Neue Part-Metadaten und ihr Bildblob werden in
-einer gemeinsamen Transaktion geschrieben. Der bestätigte PNG-Import erweitert
-diese Grenze atomar um die aktualisierte Projektzuweisung und speichert das
-unveränderte Originalblob; der injizierte Browserdecoder bevorzugt
-`createImageBitmap` und widerruft seine kontrollierte Object-URL-Fallbackquelle
-in jedem Ausgang. Projektlöschung kaskadiert nicht
-in geteilte Binärdaten; ausschließlich die explizite Garbage Collection darf
-nach einer puren Referenzanalyse tatsächlich unreferenzierte Bild- und
-Preview-Datensätze entfernen. Sie bricht bei schema-ungültigen Metadaten ohne
-Löschung ab.
-
-IndexedDB-Upgrades bleiben additiv: Für jede künftige Datenbankversion wird
-nach Erhöhung der Versionskonstante ein neuer, monotoner
-`if (oldVersion < n)`-Schritt an `upgradeAnimationDatabase()` angehängt.
-Bestehende Stores und Indizes werden in normalen Upgrades nicht gelöscht;
-Metadatenmigrationen müssen innerhalb der Upgrade-Transaktion validieren und
-fail-closed abbrechen. `fake-indexeddb` ist ausschließlich eine schmale
-Dev-Abhängigkeit für isolierte Adapter-, Store-, Index- und Rollbacktests;
-Produktivcode verwendet nur die native Browser-API.
-
-Die konkrete Built-in-Rigvorlage `humanoid-80-v1` bleibt davon getrennte pure
-TypeScript-Domain. Fünf eigene Neutralposen, hierarchische Bones,
-Pflichtslotbindungen, strukturierte Validierung und der deterministische
-Rig-Compatibility-Key importieren weder React noch Zod oder Browser-APIs. Der
-Workspace liest diese Produktionsdaten über ein SVG-Anzeigeprojektionsmodell;
-SVG und CSS sind keine zweite Quelle für Jointkoordinaten.
-
-Prompt 39 ergänzt `domain/animation/anchorPlacement.ts` als pure Grenze für
-slotabhängige Originalanker, die einmalige Trim-Umrechnung und die
-reproduzierbare uniforme Bone-Matrix. Fast-Null-Quellvektoren liefern
-strukturierte Fehler; automatische Scale-Werte außerhalb 0,5–2,0 bleiben
-unverändert und erzeugen eine sichtbare Warnung. Der Anzeigeadapter im
-Ankereditor nutzt diese Matrix nur für eine Live-CSS-Vorschau.
-
-Projektweite Partkorrekturen liegen separat als streng validiertes
-`transformDelta` auf der Projektzuweisung (Offset ±32 px, Rotation ±π/2,
-uniformer Multiplikator 0,5–1,5). Der Provider hält Blobdaten weiterhin nicht
-im globalen State: Er liest das Original kurzfristig für die View und schreibt
-fertige beziehungsweise fortsetzbare Source-Anker zusammen mit dem Projekt in
-einer Memory-/IndexedDB-Transaktion, ohne das Blob neu zu speichern.
-
-Prompt 40 ergänzt `domain/animation/renderer.ts` als browserfreie Quelle der
-Pixelwahrheit. Zielpixelzentren werden invers-affin auf Quellzellen abgebildet
-und ausschließlich nearest-neighbor gelesen; Source-over verwendet
-ganzzahlige Zwischenwerte und eine dokumentierte Half-up-Rundung. Ein
-revisionsgebundener Servicecache hält nur kopierte RGBA-Daten, niemals Blobs.
-Canvas erhält den fertigen Frame per `ImageData`/`putImageData`, deaktiviert
-Glättung und bleibt reine Anzeige statt Render- oder Exportquelle.
-
-Prompt 41 ergänzt `domain/animation/layerOrder.ts` als frameworkfreie,
-versionierte Quelle der Ebenenreihenfolge. Jede der acht Zielrichtungen
-besitzt eine ausdrückliche Liste aller Slots und eine getrennte Angabe der
-visuell nahen anatomischen Seite. Freie Accessoires benötigen einen gültigen
-Attachment-Joint; Projektzuweisungen dürfen nur ein kleines ganzzahliges
-Layer-Delta von -8 bis +8 speichern. Der Workspace löst die belegten Parts
-vor dem Renderer auf und zeigt Layergruppe, Position sowie Bounding-Box und
-betroffene Framekante an. Vollständig außerhalb liegende Parts sind Fehler;
-Canvas und DOM bleiben reine Anzeigegrenzen.
-
-Prompt 42 ergänzt `domain/animation/walkClip.ts` mit der readonly Vorlage
-`walk-humanoid-8-v1`: acht benannte Phasen, 10 FPS Default, Loop und
-ausdrückliche normierte Stride-, Root-Bob-, Root-Sway-, Arm- und Liftkanäle.
-Die pure South-Auflösung kopiert das Rig, begrenzt den Standard-Bob auf ±1 px
-und hält Kontaktzehen per geclampter Two-Bone-IK auf der Groundline. Ein
-unvollständiges Partset, offene Anker, ungültige Bone-Längen oder Renderfehler
-bleiben gesammelte Produktionsblocker. Nur bei vollständiger Freigabe werden
-acht flüchtige `RenderedFrame`-Werte erzeugt; Projekt und IndexedDB speichern
-keine abgeleiteten Frame-PNGs.
 
 ## Styling
 

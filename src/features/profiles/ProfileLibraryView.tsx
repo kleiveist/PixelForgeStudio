@@ -6,7 +6,6 @@ import {
   type FormEvent
 } from "react";
 import { ASSET_CATEGORY_IDS } from "../../domain/assets";
-import { useAnimationHandoff } from "../studio-handoff";
 import type { StableId } from "../../schemas";
 import { useProfileLibrary } from "../../store/profiles";
 import { Surface } from "../../components/ui";
@@ -73,7 +72,6 @@ export function ProfileLibraryView({
   onProfileDeleted,
   onStartNewAsset
 }: ProfileLibraryViewProps) {
-  const { prepareProfile } = useAnimationHandoff();
   const {
     libraryResult,
     filters,
@@ -387,7 +385,6 @@ export function ProfileLibraryView({
                             }
                           }}
                           onDuplicate={duplicateProfile}
-                          onUseInAnimation={prepareProfile}
                           onRequestDelete={requestDelete}
                         />
                       </li>

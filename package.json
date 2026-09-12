@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "Lokales Dachstudio für Pixelart-Prompt-Produktion und Pixelanimation.",
+  "description": "Lokales Prompt Studio für konsistente Pixelart-Produktion.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kleiveist/PixelForgeStudio.git"
@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
-    "fflate": "^0.8.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.87.0",
@@ -42,7 +41,6 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.1",
-    "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",

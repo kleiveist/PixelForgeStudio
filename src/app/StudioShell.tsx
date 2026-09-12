@@ -1,9 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ForgeMarkIcon } from "../components/icons/ForgeMarkIcon";
-import {
-  StudioLink,
-  StudioSwitcher
-} from "../components/navigation";
+import { ViewLink } from "../components/navigation";
 import { ThemeSwitcher } from "../components/theme";
 import { Badge } from "../components/ui";
 import { BRAND } from "../config";
@@ -18,15 +15,10 @@ import type {
 import { useNavigation } from "../store/navigation";
 import { useWizardSession } from "../store/wizard";
 import {
-  AnimationStudioNavigation,
-  AnimationStudioShell
-} from "./AnimationStudioShell";
-import {
   PromptStudioNavigation,
   PromptStudioShell
 } from "./AppShell";
 import styles from "./AppShell.module.css";
-import { StudioHomeController } from "./StudioHomeController";
 import {
   studioRouteContextLabel,
   studioRouteHeadingId,
@@ -70,7 +62,6 @@ export function StudioShell({
       activeRoute
     );
     const wizardSessionChanged =
-      activeRoute.studio === "prompt" &&
       activeRoute.view === "wizard" &&
       previousWizardSessionRevisionRef.current !== sessionRevision;
 
@@ -93,26 +84,24 @@ export function StudioShell({
 
       <div
         className={styles.shell}
-        data-active-studio={activeRoute.studio}
+        data-active-studio="prompt"
         data-studio-shell="true"
       >
         <header className={styles.header}>
           <div className={styles.topbar}>
-            <StudioLink
-              aria-label={`${BRAND.productName} – Startseite`}
+            <ViewLink
+              aria-label={`${BRAND.productName} – Dashboard`}
               className={styles.brand}
-              route={{ studio: "home" }}
+              view="dashboard"
             >
               <span className={styles.mark} aria-hidden="true">
                 <ForgeMarkIcon />
               </span>
               <span>
                 <strong>{BRAND.shortName}</strong>
-                <small>Studio</small>
+                <small>Prompt Studio</small>
               </span>
-            </StudioLink>
-
-            <StudioSwitcher />
+            </ViewLink>
 
             <div className={styles.headerTools}>
               <Badge tone="accent">
@@ -122,12 +111,7 @@ export function StudioShell({
             </div>
           </div>
 
-          {activeRoute.studio === "prompt" ? (
-            <PromptStudioNavigation />
-          ) : null}
-          {activeRoute.studio === "animation" ? (
-            <AnimationStudioNavigation route={activeRoute} />
-          ) : null}
+          <PromptStudioNavigation />
         </header>
 
         <main
@@ -137,26 +121,15 @@ export function StudioShell({
           aria-labelledby={studioRouteHeadingId(activeRoute)}
           tabIndex={-1}
         >
-          {activeRoute.studio === "home" ? (
-            <StudioHomeController
-              activeBaseProfileId={activeBaseProfileId}
-              storageAdapter={storageAdapter}
-            />
-          ) : null}
-          {activeRoute.studio === "prompt" ? (
-            <PromptStudioShell
-              activeBaseProfileId={activeBaseProfileId}
-              {...(createDraftId ? { createDraftId } : {})}
-              {...(now ? { now } : {})}
-              outputAdapter={outputAdapter}
-              startupMigration={startupMigration}
-              storageAdapter={storageAdapter}
-              view={activeRoute.view}
-            />
-          ) : null}
-          {activeRoute.studio === "animation" ? (
-            <AnimationStudioShell route={activeRoute} />
-          ) : null}
+          <PromptStudioShell
+            activeBaseProfileId={activeBaseProfileId}
+            {...(createDraftId ? { createDraftId } : {})}
+            {...(now ? { now } : {})}
+            outputAdapter={outputAdapter}
+            startupMigration={startupMigration}
+            storageAdapter={storageAdapter}
+            view={activeRoute.view}
+          />
         </main>
 
         <footer className={styles.footer}>

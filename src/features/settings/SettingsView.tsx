@@ -5,17 +5,10 @@ import {
   type ChangeEvent
 } from "react";
 import { Badge, Surface } from "../../components/ui";
-import { STUDIO_MODULE_DEFINITIONS } from "../../config";
 import {
-  ANIMATION_STUDIO_VIEW_IDS,
   PROMPT_STUDIO_VIEW_IDS,
-  STUDIO_IDS,
-  isAnimationStudioView,
   isPromptStudioView,
-  isStudioId,
-  type AnimationStudioView,
-  type PromptStudioView,
-  type StudioId
+  type PromptStudioView
 } from "../../domain/navigation";
 import type { ProfileLibrary } from "../../schemas";
 import {
@@ -68,27 +61,12 @@ type StartSettingsStatus = Readonly<{
   message: string;
 }>;
 
-const startStudioLabels: Readonly<Record<StudioId, string>> = {
-  home: "Studio-Startseite",
-  prompt: STUDIO_MODULE_DEFINITIONS.prompt.shortLabel,
-  animation: STUDIO_MODULE_DEFINITIONS.animation.shortLabel
-};
-
 const promptStartViewLabels: Readonly<Record<PromptStudioView, string>> = {
   dashboard: "Dashboard",
   profiles: "Profile",
   wizard: "Wizard",
   output: "Ausgabe",
   settings: "Einstellungen"
-};
-
-const animationStartViewLabels: Readonly<
-  Record<AnimationStudioView, string>
-> = {
-  projects: "Projekte",
-  workspace: "Workspace",
-  library: "Character Kits",
-  rigs: "Rig-Vorlagen"
 };
 
 function startSettingsStatus(
@@ -291,9 +269,7 @@ export function SettingsView({
   const {
     settings,
     restoreSettings,
-    setAnimationStartView,
-    setPromptStartView,
-    setStartStudio
+    setPromptStartView
   } = useSettings();
   const { libraryResult, importProfileBundle } = useProfileLibrary();
   const { requestResume } = useWizardSession();
@@ -515,36 +491,14 @@ export function SettingsView({
           <p className={styles.sectionIndex}>01 · Startziele</p>
           <h2 id="start-settings-title">Wo soll PixelForge beginnen?</h2>
           <p>
-            Dachziel und beide Modulansichten bleiben getrennt. Ein Wechsel
-            hier öffnet nichts automatisch und verändert keine Fachwerte.
+            Wähle die Ansicht, die das Prompt Studio bei einer fehlenden oder
+            ungültigen URL öffnet. Fachwerte werden dadurch nicht verändert.
           </p>
         </div>
         <Surface className={styles.startSettings} tone="soft">
           <div className={styles.startSettingsGrid}>
             <label>
-              <span>Startbereich</span>
-              <select
-                value={settings.startStudio}
-                onChange={(event) => {
-                  if (!isStudioId(event.target.value)) return;
-                  setStartStatus(
-                    startSettingsStatus(
-                      "Der Startbereich",
-                      setStartStudio(event.target.value)
-                    )
-                  );
-                }}
-              >
-                {STUDIO_IDS.map((studio) => (
-                  <option key={studio} value={studio}>
-                    {startStudioLabels[studio]}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Prompt-Startansicht</span>
+              <span>Startansicht</span>
               <select
                 value={settings.startView}
                 onChange={(event) => {
@@ -565,32 +519,9 @@ export function SettingsView({
               </select>
             </label>
 
-            <label>
-              <span>Animations-Startansicht</span>
-              <select
-                value={settings.animationStartView}
-                onChange={(event) => {
-                  if (!isAnimationStudioView(event.target.value)) return;
-                  setStartStatus(
-                    startSettingsStatus(
-                      "Die Animations-Startansicht",
-                      setAnimationStartView(event.target.value)
-                    )
-                  );
-                }}
-              >
-                {ANIMATION_STUDIO_VIEW_IDS.map((view) => (
-                  <option key={view} value={view}>
-                    {animationStartViewLabels[view]}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
           <p className={styles.startSettingsHint}>
-            Ohne gültige Route startet das gewählte Modul in seiner hier
-            festgelegten Ansicht. Ein Workspace-Start öffnet kein Projekt
-            automatisch.
+            Ohne gültige Route startet das Prompt Studio in dieser Ansicht.
           </p>
           {startStatus ? (
             <p

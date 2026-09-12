@@ -6,15 +6,13 @@ import {
   selectResolvedTheme,
   settingsReducer,
   withActiveBaseProfile,
-  withAnimationStartView,
   withPromptStartView,
-  withStartStudio,
   withThemePreference,
   type SettingsState
 } from "./settingsState";
 
 describe("settings state", () => {
-  it("creates the canonical local-first defaults", () => {
+  it("creates schema-V2-compatible local-first defaults", () => {
     expect(createDefaultAppSettings("2026-09-02T20:00:00.000Z")).toEqual({
       schemaVersion: 2,
       kind: "appSettings",
@@ -28,50 +26,35 @@ describe("settings state", () => {
     });
   });
 
-  it("resolves every start studio with independent module views", () => {
+  it("always resolves the configured Prompt start view", () => {
     const defaults = createDefaultAppSettings("2026-09-02T20:00:00.000Z");
-    const prompt = withPromptStartView(
-      withStartStudio(defaults, "prompt", "2026-09-02T20:01:00.000Z"),
+    const output = withPromptStartView(
+      defaults,
       "output",
       "2026-09-02T20:02:00.000Z"
     );
-    const animation = withAnimationStartView(
-      withStartStudio(prompt, "animation", "2026-09-02T20:03:00.000Z"),
-      "rigs",
-      "2026-09-02T20:04:00.000Z"
-    );
 
-    expect(resolveStudioStartRoute(defaults)).toEqual({ studio: "home" });
-    expect(resolveStudioStartRoute(prompt)).toEqual({
+    expect(resolveStudioStartRoute(defaults)).toEqual({
+      studio: "prompt",
+      view: "dashboard"
+    });
+    expect(resolveStudioStartRoute(output)).toEqual({
       studio: "prompt",
       view: "output"
     });
-    expect(resolveStudioStartRoute(animation)).toEqual({
-      studio: "animation",
-      view: "rigs"
-    });
-    expect(animation).toMatchObject({
-      startStudio: "animation",
-      startView: "output",
-      animationStartView: "rigs",
-      updatedAt: "2026-09-02T20:04:00.000Z"
-    });
   });
 
-  it("resolves an Animation Workspace start without inventing a project", () => {
-    const settings = withAnimationStartView(
-      withStartStudio(
-        createDefaultAppSettings("2026-09-02T20:00:00.000Z"),
-        "animation",
-        "2026-09-02T20:01:00.000Z"
-      ),
-      "workspace",
-      "2026-09-02T20:02:00.000Z"
-    );
+  it("ignores retired roof start fields while keeping old settings readable", () => {
+    const settings = parseAppSettings({
+      ...createDefaultAppSettings("2026-09-02T20:00:00.000Z"),
+      startStudio: "animation",
+      animationStartView: "workspace",
+      startView: "profiles"
+    });
 
     expect(resolveStudioStartRoute(settings)).toEqual({
-      studio: "animation",
-      view: "workspace"
+      studio: "prompt",
+      view: "profiles"
     });
   });
 
@@ -103,7 +86,7 @@ describe("settings state", () => {
     });
   });
 
-  it("changes only theme metadata and resolves system state without persistence data", () => {
+  it("changes only theme metadata and resolves system state", () => {
     const settings = parseAppSettings({
       ...createDefaultAppSettings("2026-09-02T20:00:00.000Z"),
       locale: "en",

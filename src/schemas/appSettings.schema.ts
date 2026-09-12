@@ -1,8 +1,6 @@
 import { z } from "zod";
 import {
-  ANIMATION_STUDIO_VIEW_IDS,
   APP_VIEW_IDS,
-  STUDIO_IDS,
   type PromptStudioView
 } from "../domain/navigation";
 import { THEME_PREFERENCES } from "../domain/theme";
@@ -20,14 +18,24 @@ const PromptStartViewSchema = z
     (view): PromptStudioView => (view === "review" ? "output" : view)
   );
 
+// Compatibility-only fields from the retired roof shell. Existing Settings
+// V2 and export bundles remain readable, but these values no longer route the
+// Prompt-only application.
+const LegacyStudioStartSchema = z
+  .enum(["home", "prompt", "animation"])
+  .default("home");
+const LegacyAnimationStartViewSchema = z
+  .enum(["projects", "workspace", "library", "rigs"])
+  .default("projects");
+
 export const AppSettingsSchema = z.strictObject({
   schemaVersion: SchemaVersionSchema,
   kind: z.literal("appSettings"),
   theme: ThemePreferenceSchema,
   locale: z.enum(["de", "en"]),
-  startStudio: z.enum(STUDIO_IDS).default("home"),
+  startStudio: LegacyStudioStartSchema,
   startView: PromptStartViewSchema,
-  animationStartView: z.enum(ANIMATION_STUDIO_VIEW_IDS).default("projects"),
+  animationStartView: LegacyAnimationStartViewSchema,
   activeBaseProfileId: StableIdSchema.nullable(),
   updatedAt: IsoDateTimeSchema
 });

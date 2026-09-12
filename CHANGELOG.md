@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Animation Studio einschließlich Projektverwaltung, Workspace, Character
+  Kits, Rigging, PNG-Part-Import, Rasterizer, Exporte und Prompt-Handoff aus
+  Laufzeit, Navigation und aktiver Dokumentation entfernt
+- Animationsschemas, IndexedDB-/Memory-Repositories, Render-/Exportworker und
+  ausschließlich dafür benötigte Testfixtures entfernt
+- Anwendung, Marke, Metadaten und Browser-Smokes auf das alleinige
+  **PixelForge Prompt Studio V2** zurückgeführt; ehemalige Dach- und
+  Animations-URLs werden auf die konfigurierte Prompt-Startansicht repariert
+- `fflate` und `fake-indexeddb` als nicht mehr benötigte
+  Animation-only-Abhängigkeiten entfernt
+- Prompt-Schema/Exportformat V2, Export-Identifier, sechs
+  `pixelforge:v2:*`-Namespaces, Promptdefaults und V1→V2-Migration unverändert
+  kompatibel gehalten; alte additive Settings-Felder bleiben lesbar, haben
+  aber keine Bedien- oder Navigationswirkung mehr
+
 ## 3.0.0 — 2026-09-05
 
 - PixelForge Studio 3.0 als gemeinsames Dach für das kompatible Prompt Studio

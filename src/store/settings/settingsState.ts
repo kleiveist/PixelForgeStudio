@@ -1,9 +1,7 @@
 import type { ResolvedTheme, ThemePreference } from "../../domain/theme";
 import { resolveThemePreference } from "../../domain/theme";
 import type {
-  AnimationStudioView,
   PromptStudioView,
-  StudioId,
   StudioRoute
 } from "../../domain/navigation";
 import {
@@ -49,21 +47,7 @@ export function createDefaultAppSettings(updatedAt: string): AppSettings {
 }
 
 export function resolveStudioStartRoute(settings: AppSettings): StudioRoute {
-  if (settings.startStudio === "home") return { studio: "home" };
-  if (settings.startStudio === "prompt") {
-    return { studio: "prompt", view: settings.startView };
-  }
-  return settings.animationStartView === "workspace"
-    ? { studio: "animation", view: "workspace" }
-    : { studio: "animation", view: settings.animationStartView };
-}
-
-export function withStartStudio(
-  settings: AppSettings,
-  startStudio: StudioId,
-  updatedAt: string
-): AppSettings {
-  return parseAppSettings({ ...settings, startStudio, updatedAt });
+  return { studio: "prompt", view: settings.startView };
 }
 
 export function withPromptStartView(
@@ -72,14 +56,6 @@ export function withPromptStartView(
   updatedAt: string
 ): AppSettings {
   return parseAppSettings({ ...settings, startView, updatedAt });
-}
-
-export function withAnimationStartView(
-  settings: AppSettings,
-  animationStartView: AnimationStudioView,
-  updatedAt: string
-): AppSettings {
-  return parseAppSettings({ ...settings, animationStartView, updatedAt });
 }
 
 export function withThemePreference(

@@ -8,42 +8,38 @@ import {
 } from "./index";
 
 describe("navigation state", () => {
-  it("prioritizes a valid location route over the fallback", () => {
+  const fallback = { studio: "prompt", view: "profiles" } as const;
+
+  it("prioritizes canonical and legacy Prompt routes", () => {
     expect(
       resolveInitialRoute(
         {
           status: "valid",
-          route: { studio: "animation", view: "projects" }
+          route: { studio: "prompt", view: "dashboard" }
         },
-        { studio: "prompt", view: "profiles" }
+        fallback
       )
-    ).toEqual({ studio: "animation", view: "projects" });
-  });
-
-  it("keeps a valid legacy Prompt route before it is canonicalized", () => {
+    ).toEqual({ studio: "prompt", view: "dashboard" });
     expect(
       resolveInitialRoute(
         {
           status: "legacy",
           route: { studio: "prompt", view: "output" }
         },
-        { studio: "home" }
+        fallback
       )
     ).toEqual({ studio: "prompt", view: "output" });
   });
 
-  it("uses the injected fallback for missing and invalid routes", () => {
-    const fallback = { studio: "prompt", view: "profiles" } as const;
-    expect(resolveInitialRoute({ status: "missing" }, fallback)).toBe(
-      fallback
-    );
+  it("uses the injected fallback for missing and retired routes", () => {
+    expect(resolveInitialRoute({ status: "missing" }, fallback)).toBe(fallback);
     expect(
       resolveInitialRoute(
         {
           status: "invalid",
           reason: "unknownStudio",
           parameter: "studio",
-          value: "elsewhere"
+          value: "animation"
         },
         fallback
       )
@@ -54,15 +50,15 @@ describe("navigation state", () => {
     const state = createNavigationState(
       {
         status: "valid",
-        route: { studio: "animation", view: "workspace" }
+        route: { studio: "prompt", view: "wizard" }
       },
-      { studio: "home" }
+      fallback
     );
 
     expect(
       navigationReducer(state, {
         type: "routeChanged",
-        route: { studio: "animation", view: "workspace" }
+        route: { studio: "prompt", view: "wizard" }
       })
     ).toBe(state);
     expect(
@@ -73,13 +69,7 @@ describe("navigation state", () => {
     ).toEqual({ activeRoute: { studio: "prompt", view: "output" } });
   });
 
-  it("projects a temporary Prompt view alias without changing the roof route", () => {
-    expect(
-      resolvePromptStudioView(
-        { studio: "animation", view: "projects" },
-        "settings"
-      )
-    ).toBe("settings");
+  it("projects Prompt views through the compatibility helpers", () => {
     expect(
       resolvePromptStudioView(
         { studio: "prompt", view: "wizard" },
@@ -88,8 +78,8 @@ describe("navigation state", () => {
     ).toBe("wizard");
     expect(
       resolveInitialView(
-        { status: "valid", route: { studio: "home" } },
-        "dashboard"
+        { status: "valid", route: { studio: "prompt", view: "dashboard" } },
+        "settings"
       )
     ).toBe("dashboard");
   });

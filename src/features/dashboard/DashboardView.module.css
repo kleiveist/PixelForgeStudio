@@ -415,56 +415,6 @@
   font-size: 1.35rem;
 }
 
-.studioBridge {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(16rem, 1fr) auto;
-  gap: var(--space-5);
-  align-items: center;
-  padding: var(--space-5);
-}
-
-.studioBridge h2,
-.studioBridge p {
-  margin: 0;
-}
-
-.studioBridge h2 {
-  margin-top: var(--space-2);
-  font-size: clamp(1.25rem, 2.5vw, 1.8rem);
-}
-
-.studioBridge p:not(.eyebrow) {
-  max-width: 64ch;
-  margin-top: var(--space-2);
-  color: var(--color-text-muted);
-  line-height: 1.55;
-}
-
-.studioBridgeActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-2);
-}
-
-.studioBridgeActions a {
-  min-height: var(--control-min-size);
-  display: inline-flex;
-  align-items: center;
-  padding: 0.65rem var(--space-4);
-  color: var(--color-accent-text);
-  font-weight: 800;
-  text-decoration: none;
-  background: var(--color-control);
-  border: 1px solid var(--color-control-border);
-  border-radius: var(--radius-sm);
-}
-
-.studioBridgeActions a:hover {
-  background: var(--color-control-hover);
-}
-
 .materialStrip {
   display: grid;
   grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
@@ -583,13 +533,8 @@
   }
 
   .hero,
-  .materialStrip,
-  .studioBridge {
+  .materialStrip {
     grid-template-columns: 1fr;
-  }
-
-  .studioBridgeActions {
-    justify-content: flex-start;
   }
 
   .heroVisual {
@@ -610,14 +555,9 @@
   }
 
   .heroActions,
-  .sectionHeading,
-  .studioBridgeActions {
+  .sectionHeading {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .studioBridgeActions a {
-    justify-content: center;
   }
 
   .primaryAction,
