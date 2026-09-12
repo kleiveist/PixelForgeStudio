@@ -18,7 +18,8 @@
     "test:run": "vitest run",
     "test:browser": "playwright test",
     "test:browser:install": "playwright install chromium firefox",
-    "verify": "npm run typecheck && npm run test:run && npm run build"
+    "check:docs": "node scripts/check-docs.mjs",
+    "verify": "npm run check:docs && npm run typecheck && npm run test:run && npm run build"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0",

@@ -1,19 +1,23 @@
-<!-- PYGINDEX:NAVIGATION START -->
-[Zur Projektübersicht](../README.md)
-<!-- PYGINDEX:NAVIGATION END -->
+# Documentation
 
-# PixelForge Prompt Studio — Dokumentationsübersicht
+## Users and operators
 
-<!-- PYGINDEX:INDEX START -->
-## Inhalt
+- [Project overview and quick start](../README.md)
+- [Self-hosting, HTTPS, updates, rollback and backups](SELF-HOSTING.md)
+- [German/English interface and prompt languages](LOCALIZATION.md)
+- [Product name, logo and versioning](BRANDING.md)
 
-### Seiten
-- [PixelForge Studio 3.0 — historische Release-Abnahme](PIXELFORGE-STUDIO-V3-RELEASE-ACCEPTANCE.md)
-- [Technische Prompt-Spezifikation](PROMPT-SPECIFICATION.md)
-- [PixelForge Prompt Studio V2 — verbindlicher Technologie-Stack](TECHNOLOGIE-STACK-V2.md)
-- [PixelForge Prompt Studio V2 — Abfragekatalog und Profilmodell](V2-ABFRAGEKATALOG-UND-PROFILMODELL.md)
+## Contributors and maintainers
 
-### Bereiche
-- [Aufgaben](aufgaben/index.md)
-- [Erledigt](erledigt/index.md)
-<!-- PYGINDEX:INDEX END -->
+- [Architecture and module boundaries](../src/ARCHITECTURE.md)
+- [Technical stack](TECHNOLOGIE-STACK-V2.md)
+- [Data compatibility and migration](COMPATIBILITY.md)
+- [Profile model and category catalog (German reference)](V2-ABFRAGEKATALOG-UND-PROFILMODELL.md)
+- [Prompt specification (German reference)](PROMPT-SPECIFICATION.md)
+- [Accessibility and browser verification](ACCESSIBILITY.md)
+- [Repository working instructions](../AGENTS.md)
+- [Current release ledger](../PLANS.md) and [changelog](../CHANGELOG.md)
+
+This index is maintained directly and checked by `npm run check:docs`.
+Past implementation instructions live only in Git history, not a parallel
+documentation index or an active task list.

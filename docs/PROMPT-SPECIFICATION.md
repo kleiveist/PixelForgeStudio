@@ -1,13 +1,11 @@
-<!-- PYGINDEX:NAVIGATION START -->
 [Zur Übersicht](index.md)
-<!-- PYGINDEX:NAVIGATION END -->
 
 # Technische Prompt-Spezifikation
 
 ## 1. Ziel
 
-Diese Spezifikation gilt für das **PixelForge Prompt Studio** als bestehendes
-Prompt-Produktionsmodul innerhalb von PixelForge Studio.
+Diese Spezifikation gilt für die eigenständige Anwendung
+**PixelForge Prompt Studio** mit Schema- und Exportvertrag V2.
 
 Das Studio erzeugt wiederholbare Prompt-Pakete für eine zusammenhängende Pixelart-Asset-Bibliothek. Die Regeln sollen verhindern, dass Kamera, Figurenmaßstab, Richtung, Beleuchtung oder Pixelstruktur zwischen einzelnen Bildern unkontrolliert wechseln.
 
@@ -137,7 +135,7 @@ Jede Erzeugung liefert:
 
 ## 9. Implementierung in V2
 
-Seit Prompt 23 erzeugt `src/domain/prompt-engine/` diese Pakete aus einem
+Aktuell erzeugt `src/domain/prompt-engine/` diese Pakete aus einem
 validierten `ResolvedProfile`. Zwölf pure, fest geordnete TypeScript-Module
 trennen globale Art Direction, Kategorieantworten, Licht, Bewegung,
 Animation, Komposition, Ausschlüsse und technische Fakten. Die Ausgabe ist
@@ -149,7 +147,7 @@ mindestens 128 × 128 px abgeleitet; daraus entstehen für vier Richtungen ein
 4×1- und für acht Richtungen ein 4×2-Canvas. Kamera, Bodenanker und Weltlicht
 bleiben konstant. Freie Artworks überspringen dagegen Spielraster,
 Weltkamera, Figurenmaßstab, Richtungsset und Animation vollständig. Die
-sichtbare Integration ist seit Prompt 24 unter
+sichtbare Integration ist unter
 `src/features/review-output/` verfügbar: Ein validierter Wizard-Draft wird
 fail-closed über Base→Category→Asset aufgelöst und anschließend ohne
 Promptlogik in React an `buildPromptPackages()` übergeben. Die Oberfläche
@@ -159,7 +157,7 @@ einen injizierbaren Browser-Port kopierbar und als strukturierte
 Markdown-Datei exportierbar; der
 geprüfte Profilstand wird über das bestehende V2-ExportBundle als JSON mit
 seinen Abhängigkeiten ausgegeben. Konflikte erzeugen bewusst keine
-Produktionsausgabe. Seit Prompt 25 können ausschließlich strukturierte
+Produktionsausgabe. Aktuell können ausschließlich strukturierte
 Lock-Konflikte kontrolliert konvertiert werden: Vor der Bestätigung zeigt die
 Oberfläche Wertänderung und Wechsel der technischen Compatibility-Gruppe,
 ohne das interne Key-Format offenzulegen. Abbruch, Duplikation der Basis,
@@ -172,28 +170,26 @@ Die frühere Top-Level-Route `review` ist kein eigener Bedienpfad mehr. Alte
 Links und gespeicherte Startansichten werden kompatibel auf den einzigen
 Ausgabe-Workspace unter `output` kanonisiert.
 
-Prompt 26 verändert Inhalt, Reihenfolge und Determinismus dieser vier
-Ausgaben nicht. Er härtet ausschließlich ihre Darstellung: Die Tabs behalten
+Der Bedienvertrag verändert Inhalt, Reihenfolge und Determinismus dieser vier
+Ausgaben nicht. Die Tabs behalten
 Pfeil-, Home- und End-Steuerung samt sichtbarem Fokus, lange Prompt- und
 Technikzeilen bleiben bei 360 px innerhalb des Output-Panels und reduzierte
 Bewegung deaktiviert Übergänge. Die reproduzierte Viewport-, Theme-,
-Keyboard- und Kontrastprüfung ist in
-`erledigt/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md` dokumentiert.
+Keyboard- und Kontrastprüfung folgt [Accessibility](ACCESSIBILITY.md).
 
-Prompt 27 bestätigt Inhalt und Download-Roundtrip aller vier Ausgaben in der
-Release-Abnahme. App-eigene Vorlagen und erzeugte Release-Beispiele enthalten
+Die Release-Abnahme prüft Inhalt und Download-Roundtrip aller vier Ausgaben.
+App-eigene Vorlagen und erzeugte Release-Beispiele enthalten
 keine direkten Namen bestehender Spiele, Marken, Figuren, Werke oder
 Kunstschaffender; die generische negative Regel gegen namentliche Imitation
-bleibt erhalten. Evidenz: `erledigt/V2-RELEASE-ACCEPTANCE.md`.
+bleibt erhalten. Datenverträge: [Kompatibilität](COMPATIBILITY.md).
 
 ## 10. Aktueller Produktumfang
 
-Die produktive Anwendung ist wieder ausschließlich das **PixelForge Prompt
+Die produktive Anwendung ist ausschließlich das **PixelForge Prompt
 Studio**. Eine Animationsprojektverwaltung, ein Animations-Workspace und ein
 Export in Engine- oder Animationsformate gehören nicht zum aktuellen
-Produktumfang. Die abgeschlossene frühere V3-Erweiterung bleibt nur als
-historischer Umsetzungsnachweis unter `erledigt/pixelforge-studio-v3/`
-erhalten.
+Produktumfang. Historische Implementierungsanweisungen sind nur über die
+Git-Historie verfügbar und beschreiben keine aktuellen Funktionen.
 
 `buildPromptPackages()` bleibt die einzige Produktionsgrenze für die vier
 Promptausgaben. Fachliche Angaben zu Animationen und Richtungen innerhalb

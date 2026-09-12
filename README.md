@@ -4,42 +4,24 @@
 
 Local-first prompt studio for consistent pixel-art production.
 
-**v1.0.0 release candidate** · German / English · local-only data · MIT
-See [product identity and versioning](docs/BRANDING.md). Publication is pending
-the release checklist; schema and JSON export format remain V2.
+**1.0.0 release candidate** · German / English · browser-local data · MIT
 
-<!-- PYGINDEX:README START -->
-## Dokumentation
-- [Dokumentationsübersicht](docs/index.md)
-- [Aufgaben](docs/aufgaben/index.md)
-- [Erledigt](docs/erledigt/index.md)
+Create reusable production profiles, follow a category-aware wizard, and
+export main prompts, negative prompts, technical specifications or a combined
+Markdown document. Nine asset categories share consistent camera, scale,
+material, lighting and pixel-style rules. This app creates prompts, not images.
 
-## Projektdateien
-- [AGENTS.md — PixelForge Prompt Studio](AGENTS.md)
-- [Changelog](CHANGELOG.md)
-- [PixelForge Prompt Studio — Arbeitsplan](PLANS.md)
-<!-- PYGINDEX:README END -->
+## Quick start
 
-PixelForge Prompt Studio ist eine lokale React-Anwendung für konsistente
-Pixelart-Prompt-Produktion ohne Backend. Es verwaltet technische
-Produktionsprofile, führt durch neun Asset-Kategorien und erzeugt
-Hauptprompt, Negativprompt, technische Spezifikation sowie eine kombinierte
-Ausgabe.
-
-Profile, Einstellungen und Entwürfe bleiben beim Schema- und Exportvertrag V2
-in `localStorage`. Die Anwendung enthält keine Animationsprojekt-, Rig-,
-Renderer- oder Engineexport-Funktion mehr.
-
-Repository: [kleiveist/PixelForgeStudio](https://github.com/kleiveist/PixelForgeStudio)
-
-## Schnellstart
-
-Vorausgesetzt werden Node.js 20.19+ beziehungsweise 22.12+ und npm 10+.
+Use Node.js 22 (22.12+) and npm 10:
 
 ```bash
 npm ci
 npm run dev
 ```
+
+Open `http://127.0.0.1:4173`. If `vite` is missing, run `npm ci` first with
+development dependencies enabled. `npm start` also opens the browser.
 
 ## Docker Compose
 
@@ -47,47 +29,40 @@ npm run dev
 docker compose up --build -d --wait
 ```
 
-Öffnen: `http://127.0.0.1:8080`. Siehe [Produktionscontainer](deploy/README.md).
-Die [Self-Hosting-Anleitung](docs/SELF-HOSTING.md) beschreibt HTTPS, statisches
-Hosting ohne Docker, Updates, Rollback und JSON-Backups.
-Die Browserdaten bleiben lokal; es gibt kein Server-Datenvolume.
+Open `http://127.0.0.1:8080`. The non-root production container binds to
+loopback by default. See [self-hosting](docs/SELF-HOSTING.md) for server ports,
+HTTPS, static hosting without Docker, updates and rollback.
 
-## Einstiegspunkte
+## Your data
 
-| Pfad | Zweck |
-|---|---|
-| `index.html` | Vite-HTML-Einstieg |
-| `src/main.tsx` | React-Bootstrap |
-| `src/app/App.tsx` | Provider- und App-Komposition |
-| `src/app/StudioShell.tsx` | Prompt-Navigation und gemeinsame App-Shell |
-| `src/ARCHITECTURE.md` | Architektur und öffentliche Modulgrenzen |
-| `docs/index.md` | Dokumentationsübersicht |
+Profiles, settings and drafts stay in your browser's localStorage. There is no
+backend, telemetry, API key or cloud account. Export your workspace as JSON
+from Settings for backup or transfer. Server backups do not contain browser
+data; changing host, port or HTTP/HTTPS creates a different storage origin.
+Existing [schema-V2 data and migration contracts](docs/COMPATIBILITY.md) remain
+compatible; product version 1.0.0 is independent of schema version 2.
 
-## npm-Befehle
+Settings offers Deutsch and English; Output can choose its own prompt
+language. [Custom text is preserved](docs/LOCALIZATION.md), not automatically
+translated. Only the Prompt Studio is included; there is no animation-project
+workspace, renderer or engine exporter.
 
-| Befehl | Zweck |
-|---|---|
-| `npm run dev` | Entwicklungsserver starten |
-| `npm start` | Entwicklungsserver starten und Browser öffnen |
-| `npm run typecheck` | Strict-TypeScript prüfen |
-| `npm test` | Vitest im Watch-Modus starten |
-| `npm run test:run` | Unit-/Integrationstests einmalig ausführen |
-| `npm run test:browser:install` | Chromium und Firefox für Playwright installieren |
-| `npm run test:browser` | Release-Smokes in Chromium und Firefox ausführen |
-| `npm run build` | Typecheck und Produktionsbuild ausführen |
-| `npm run preview` | Produktionsbuild lokal anzeigen |
-| `npm run verify` | Typecheck, Tests und Build vollständig ausführen |
-
-## Dokumentationsindex
-
-Die Navigation in dieser README und unter `docs/` wird mit **PyGitIndex**
-erzeugt. Inhalte zwischen `PYGINDEX`-Markern nicht manuell pflegen.
+## Development and documentation
 
 ```bash
-PyGitIndex --root .
-PyGitIndex --root . --check
+npm run verify
+npm run test:browser:install
+npm run test:browser
 ```
 
-## Lizenz
+`verify` checks documentation, TypeScript, tests and the production build.
+`npm test` starts watch-mode tests. `npm run build` produces `dist/`;
+`npm run preview` is for local review, not production hosting.
 
-MIT, siehe `LICENSE`.
+[Documentation](docs/index.md) · [Architecture](src/ARCHITECTURE.md) ·
+[Changelog](CHANGELOG.md) · [Product identity](docs/BRANDING.md) ·
+[Release gate](https://github.com/kleiveist/PixelForgeStudio/issues/9)
+
+## License
+
+[MIT](LICENSE). The npm package is private and is not published to npm.

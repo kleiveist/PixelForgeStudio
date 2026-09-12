@@ -173,7 +173,7 @@ Download verwenden `services/outputWorkspaceAdapter.ts`; der Profilstand wird
 als validiertes V2-JSON übertragen. Strukturierte Lock-Konflikte müssen vor
 einer neuen Ausgabe bewusst behoben werden.
 
-`features/settings/` verwaltet Theme, Prompt-Startansicht,
+`features/settings/` verwaltet Sprache, Theme, Prompt-Startansicht,
 Migrationsdiagnostik und den vollständigen Workspace-JSON-Transfer.
 
 ## Öffentliche Modulgrenzen
@@ -206,6 +206,7 @@ darf nicht zurück in `features/`, `store/`, `services/` oder `app/` zeigen.
   zusammen.
 - `git diff --check` bleibt das abschließende Whitespace-Gate.
 
-Die frühere V3-Serie 28–51 liegt ausschließlich als historische Evidenz unter
-`docs/erledigt/pixelforge-studio-v3/`. Sie definiert keine aktuelle
-öffentliche Modulgrenze und ist keine Aufgabenliste.
+Aktuelle Datenverträge: [Kompatibilität](../docs/COMPATIBILITY.md).
+Bedienvertrag: [Accessibility](../docs/ACCESSIBILITY.md).
+Der [Dokumentationsindex](../docs/index.md) führt zu den verbindlichen Quellen;
+historische Implementierungsanweisungen sind keine öffentliche Modulgrenze.

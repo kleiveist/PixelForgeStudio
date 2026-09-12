@@ -1,13 +1,11 @@
-<!-- PYGINDEX:NAVIGATION START -->
 [Zur Übersicht](index.md)
-<!-- PYGINDEX:NAVIGATION END -->
 
-# PixelForge Prompt Studio V2 — Abfragekatalog und Profilmodell
+# PixelForge Prompt Studio — Abfragekatalog und Profilmodell (Schema V2)
 
 ## 1. Zweck
 
-Dieses Dokument bleibt die verbindliche Fachspezifikation des
-**PixelForge-Prompt-Studio-Moduls V2** innerhalb von PixelForge Studio.
+Dieses Dokument ist die verbindliche Fachspezifikation des eigenständigen
+**PixelForge Prompt Studio** mit stabilem Schema-/Exportvertrag V2.
 
 Dieses Dokument legt fest, **welche Informationen das Studio abfragt**, **wann eine Frage erscheint**, **wie Profile kategorisiert werden** und **welche Werte global vererbt werden**.
 
@@ -104,7 +102,7 @@ Ein Profil kann mehrere Tags besitzen, aber genau eine Hauptkategorie.
   wird erst nach der ausdrücklichen Wahl „Eigene Eingabe“ sichtbar; vorhandene
   individuelle Werte öffnen diesen Modus beim schreibfreien Resume automatisch.
 
-## 4.3 Umgesetzter Einstieg bis Prompt 22
+## 4.3 Umgesetzter Einstieg
 
 Der aktuell implementierte Core-Flow lautet:
 
@@ -243,7 +241,7 @@ Antworten, Klassifikationswechsel bereinigen sie und Explicit Clear löst
 geerbte Provenienz. Summary und Dashboard zeigen nur kompakte tatsächliche
 Artwork-Fakten.
 
-Prompts 00 bis 26 sind abgeschlossen. Die Prompt Engine 2.0 erzeugt Material-,
+Die Prompt-Engine erzeugt Material-,
 Setting-, Haupt-, Negativ-, Technik- und kombinierte Textblöcke als pure
 Domain-Ausgabe. Der Ausgabe-Workspace löst aktive oder gespeicherte
 Drafts fail-closed auf, zeigt Profilquellen, Locks und Warnungen und stellt
@@ -321,7 +319,7 @@ Asset-Overrides.
 
 Die in der Parametertabelle genannte Prompt-Ausgabe bleibt Teil des
 vollständigen Zielmodells. Sie ist kein Feld des aktuell implementierten
-`BaseProfileValuesSchema` und wurde durch Prompt 13 nicht vorgezogen.
+`BaseProfileValuesSchema`.
 
 ---
 
@@ -503,7 +501,7 @@ Die Sichtbarkeit von Fragen wird nicht nur über die Kategorie, sondern über F�
 | Maßstab | Figurenhöhe | standardmäßig geerbte 80 px |
 | Output | Einzelansicht, Modellblatt, Richtungsset, Animationsset | capability-abhängig |
 
-### Implementierungsstand seit Prompt 14
+### Implementierungsstand
 
 - Der Fachschritt `characterDetails` folgt direkt auf die Basisprofilwahl und
   erscheint ausschließlich für `character`.
@@ -603,7 +601,7 @@ keine schreibende Migration beim bloßen Laden statt.
 | Schatten | keiner, Kontakt, bewegungsabhängige kleine Anpassung |
 | Output | Einzelasset, Richtungsset, Animationssheet, Variantenpaket |
 
-### Implementierungsstand seit Prompt 15
+### Implementierungsstand
 
 - `movingObjectDetails` folgt direkt auf die Basisprofilwahl und erscheint
   ausschließlich für die Hauptkategorie `movingObject`. Die Objektklasse wird
@@ -631,7 +629,7 @@ keine schreibende Migration beim bloßen Laden statt.
   Bewegung, Standfläche, Anker, capability-gültige Richtungen, Sequenzen mit
   Frames, Material und Zustand.
 - Prompt Engine und Review-/Output-Workspace lesen diese validierten
-  Moving-Object-Daten seit Prompts 23 und 24 aus dem aufgelösten Profil.
+  Moving-Object-Daten aus dem aufgelösten Profil.
 
 ---
 
@@ -665,7 +663,7 @@ keine schreibende Migration beim bloßen Laden statt.
 | Schatten | kein oder kleiner Kontaktschatten |
 | Output | Einzelasset, Varianten, modulares Set |
 
-### Implementierungsstand seit Prompt 18
+### Implementierungsstand
 
 - `staticObjectDetails` folgt direkt auf die Basisprofilwahl und erscheint
   ausschließlich für `staticObject`. Die Objektklasse wird konsistent aus dem
@@ -694,8 +692,8 @@ keine schreibende Migration beim bloßen Laden statt.
   Zerbrechen oder eine individuelle Animation; kein Static-Object-Untertyp
   erhält eine 4/8-Richtungsfrage.
 - Zusammenfassung und Dashboard zeigen nur kompakte tatsächlich konfigurierte
-  Objektfakten. Prompt Engine und Review-/Output-Workspace lesen sie seit
-  Prompts 23 und 24 aus dem aufgelösten Profil.
+  Objektfakten. Prompt Engine und Review-/Output-Workspace lesen sie
+  aus dem aufgelösten Profil.
 
 ---
 
@@ -750,7 +748,7 @@ keine schreibende Migration beim bloßen Laden statt.
 | Stoff | Webart, Faltenmaßstab, Dicke, Muster, Ausfransung |
 | Gras | Halmlänge, Dichte, Trockenheit, Bodenanteil, Übergänge |
 
-### Implementierungsstand seit Prompt 16
+### Implementierungsstand
 
 - `textureDetails` folgt direkt auf die Basisprofilwahl und erscheint
   ausschließlich für `texture`. Der Materialtyp wird aus dem Untertyp
@@ -782,7 +780,7 @@ keine schreibende Migration beim bloßen Laden statt.
   Material-, Kachel- und Oberflächenfakten. Figuren-, Kleidungs-, Bewegungs-
   und Richtungsfragen sind aus dem Texture-Flow ausgeschlossen.
 - Prompt Engine und Review-/Output-Workspace lesen diese validierten
-  Texture-Daten seit Prompts 23 und 24 aus dem aufgelösten Profil.
+  Texture-Daten aus dem aufgelösten Profil.
 
 ---
 
@@ -822,7 +820,7 @@ keine schreibende Migration beim bloßen Laden statt.
 | Animation | keine oder Wind-/Magie-Loop; kein Richtungsset |
 | Output | Einzelasset, Variantenpaket, Naturset |
 
-### Implementierungsstand seit Prompt 17
+### Implementierungsstand
 
 - `src/domain/nature/` veröffentlicht readonly Kataloge und Typen für
   Pflanzentyp, Klima, Saison, Alter, Silhouette, Stamm, Krone, Wurzeln, Moos,
@@ -865,7 +863,7 @@ keine schreibende Migration beim bloßen Laden statt.
 - Zusammenfassung und Dashboard zeigen aufgelösten Pflanzentyp, Art, Umgebung,
   relevante Anatomie, Bewuchs, Schnee, Standfläche, Bodenanschluss, Varianten
   und capability-gültige Animation. Prompt Engine und Review-/Output-Workspace
-  lesen sie seit Prompts 23 und 24 aus dem aufgelösten Profil.
+  lesen sie aus dem aufgelösten Profil.
 
 ---
 
@@ -904,7 +902,7 @@ keine schreibende Migration beim bloßen Laden statt.
 | Kollisionslesbarkeit | begehbare und blockierende Bereiche klar |
 | Output | freigestelltes Gebäude, Kartenbaustein, modularer Satz |
 
-### Implementierungsstand seit Prompt 19
+### Implementierungsstand
 
 - `buildingDetails` folgt direkt auf die Basisprofilwahl und erscheint
   ausschließlich für `building`. Das vollständige
@@ -938,8 +936,8 @@ keine schreibende Migration beim bloßen Laden statt.
   Schließen oder eine individuelle Animation. Kein Building-Untertyp ist
   `directional`; Kamera, Weltlicht und Footprint bleiben über Animationsphasen
   konstant. Zusammenfassung und Dashboard zeigen kompakte tatsächliche
-  Architekturfakten. Prompt Engine und Review-/Output-Workspace lesen sie seit
-  Prompts 23 und 24 aus dem aufgelösten Profil.
+  Architekturfakten. Prompt Engine und Review-/Output-Workspace lesen sie
+  aus dem aufgelösten Profil.
 
 ---
 
@@ -973,7 +971,7 @@ keine schreibende Migration beim bloßen Laden statt.
 | Atlaslayout | automatisch berechnete Zeilen/Spalten |
 | Output | einzelnes Tile, Miniset, vollständiges Tileset |
 
-### Implementierungsstand seit Prompt 20
+### Implementierungsstand
 
 - `tilesetDetails` folgt direkt auf die Basisprofilwahl und erscheint
   ausschließlich für `tileset`. Das vollständige
@@ -1003,8 +1001,8 @@ keine schreibende Migration beim bloßen Laden statt.
   ersetzt daher die generische Kachelbarkeitsstufe. Alte Drafts an dieser
   Stufe werden in-memory auf `tilesetDetails` umgeleitet. Nur `animatedTile`
   erhält einen separaten Animationsschritt; kein Tileset ist `directional`.
-  Prompt Engine und Review-/Output-Workspace lesen die Atlasdaten seit
-  Prompts 23 und 24 über die bestehende pure Metrik.
+  Prompt Engine und Review-/Output-Workspace lesen die Atlasdaten
+  über die bestehende pure Metrik.
 
 ---
 
@@ -1037,7 +1035,7 @@ keine schreibende Migration beim bloßen Laden statt.
 | Varianten | Qualitätsstufen, Zustände, Farbvarianten |
 | Output | Einzelitem, Iconset, Ausrüstungsansicht |
 
-### Implementierungsstand seit Prompt 21
+### Implementierungsstand
 
 - Der eigene `itemDetails`-Schritt erscheint ausschließlich für die
   Item-Kategorie direkt nach der Basisprofilwahl. Er erfasst Zweck,
@@ -1087,7 +1085,7 @@ keine schreibende Migration beim bloßen Laden statt.
 | Beschriftung | standardmäßig keine eingebrannte Schrift |
 | Output | Einzelbild oder Varianten |
 
-### Implementierungsstand seit Prompt 22
+### Implementierungsstand
 
 - Der eigene `artworkDetails`-Schritt erscheint ausschließlich für die
   Artwork-Kategorie direkt nach der Basisprofilwahl. Er erfasst Zweck, Motiv,
@@ -1106,7 +1104,7 @@ keine schreibende Migration beim bloßen Laden statt.
   Vorhandene Profilwerte bleiben verlustfrei lesbar; der Compatibility Key
   ignoriert ihre für Artwork irrelevante Weltgeometrie.
 - Prompt Engine und Review-/Output-Workspace verarbeiten die freien Artwork-
-  Daten seit Prompts 23 und 24 ohne Spielraster-, Weltkamera-, Figuren-,
+  Daten ohne Spielraster-, Weltkamera-, Figuren-,
   Richtungs- oder Animationsvorgaben.
 
 ---
@@ -1201,7 +1199,7 @@ Basisprofil
 | Tileset | nicht passende Kanten, sichtbare Wiederholung, falsches Raster |
 | Artwork | unerwünschte Schrift, Wasserzeichen, unklare Hauptkomposition |
 
-## 11.3 Implementierungsstand bis Prompt 27
+## 11.3 Implementierungsstand
 
 - `buildPromptPackages()` nimmt ein vollständig `ResolvedProfile` entgegen
   und erzeugt pro gewünschter Sprache und wirksamer Stilvariante ein
@@ -1252,31 +1250,30 @@ Basisprofil
 - Ein geprüfter neuer Draft wird als neues Assetprofil gespeichert; ein aus
   der Bibliothek geladener Draft aktualisiert dessen stabile ID und Metadaten.
   Der vollständige Profilgraph wird vor dem Storage-Write erneut validiert.
-- Prompt 26 ändert keine Fachantwort, Capability, Vererbungsregel oder
-  Promptausgabe. Er stellt sicher, dass dieselben strukturierten Werte in
+- Der Bedienvertrag ändert keine Fachantwort, Capability, Vererbungsregel oder
+  Promptausgabe. Dieselben strukturierten Werte müssen in
   Desktop-, Tablet- und 360-px-Layouts ohne Seiten-Overflow lesbar bleiben.
 - Theme-Radiogruppe, Profilaktionen, Wizard, Konvertierung und Ausgabetabs
   behalten semantische Namen und vollständige Tastaturpfade. Dynamische
   Wechsel führen Fokus zum neuen Kontext und Abbruch zum exakten Auslöser.
 - Hell, Dunkel und System verwenden die zentralen Kontrast- und Fokustokens;
   reduzierte Bewegung und Forced-Colors werden am globalen Stylesheet
-  respektiert. Die Mess- und Viewportdetails stehen in
-  `erledigt/V2-ACCESSIBILITY-RESPONSIVE-AUDIT.md`.
-- Prompt 27 startet die idempotente V1→V2-Migration vor der Provider-
+  respektiert. Der aktuelle Prüfvertrag steht in [Accessibility](ACCESSIBILITY.md).
+- Der Bootstrap startet die idempotente V1→V2-Migration vor der Provider-
   Hydration, zeigt ihren strukturierten Zustand und belässt V1-Quellkeys
   unverändert.
 - Der vollständige Workspace-Transfer serialisiert Profilgraph,
   App-Einstellungen und letzten Draft in das bestehende validierte
   ExportBundle. Imports prüfen den gesamten Graph vor Writes, bestätigen
   abweichende IDs explizit und rehydrieren die betroffenen Provider.
-- Die Release-Abnahme belegt alle neun Editoren, Direction-Gating, vier
-  Ausgaben, JSON/Markdown, Themes und Keyboard/Responsive. Erst danach wurde die
-  ausführbare Legacy-UI entfernt; Details stehen in
-  `erledigt/V2-RELEASE-ACCEPTANCE.md`.
+- Die aktuelle Abnahme prüft alle neun Editoren, Direction-Gating, vier
+  Ausgaben, JSON/Markdown, Themes und Keyboard/Responsive. Die ausführbare
+  Legacy-UI ist entfernt; erhaltene Verträge stehen in
+  [Kompatibilität](COMPATIBILITY.md).
 
 ---
 
-# 12. Empfohlenes V2-Datenmodell
+# 12. Datenmodell (Schema V2)
 
 ## 12.1 Basisprofil
 
@@ -1404,12 +1401,12 @@ nicht als vertrauenswürdige Quelle vorgeben. Fehlende Capability-Felder werden 
 Parsen mit `false` materialisiert und der vollständige Snapshot anschließend
 gegen Kategorie und Untertyp geprüft.
 
-Die Beispiele verwenden das seit Prompt 14 kanonische Aktionsmodell. Bereits
+Die Beispiele verwenden das kanonische Aktionsmodell. Bereits
 gespeicherte Schema-V2-Daten mit einem einzelnen `animationAction` und
 `framesPerDirection` bleiben parse- und resume-fähig; neue Wizard-Projektionen
 schreiben diese Legacy-Felder nicht mehr.
 
-Für Moving Objects gilt seit Prompt 15 derselbe additive Kompatibilitätsweg
+Für Moving Objects gilt derselbe additive Kompatibilitätsweg
 mit eigenem Modell: Neue Daten speichern eindeutige, in Domain-Reihenfolge
 sortierte `animationSequences: [{ type, frames }]` mit 1–16 Frames. Bereits
 gespeicherte `animationType`-/`framesPerDirection`-Paare bleiben lesbar. Bei
@@ -1417,7 +1414,7 @@ einer Ebene gewinnt die kanonische Liste; eine explizite Repräsentation auf
 Asset-Ebene ersetzt die geerbte Category-Repräsentation als zusammengehörigen
 Animationswert.
 
-Für Texturen erweitert Prompt 16 den strikten Schema-V2-Vertrag additiv um
+Für Texturen erweitert das Antwortmodell den strikten Schema-V2-Vertrag additiv um
 `materialType`, `surface`, `moisture`, `icing` und `lighting`; die bisherigen
 Felder `usage`, `seamless`, `orientation`, `structure`, `condition`,
 `subjectDescription` und `extraDetails` bleiben unverändert lesbar. Fehlende
@@ -1425,7 +1422,7 @@ Werte werden beim Laden nicht ergänzt. Ein gespeicherter Materialtyp muss zum
 Texture-Untertyp passen. `tileSize` bleibt ausschließlich im technischen
 Profilwert-/Override-Modell und wird nicht in Texture-Antworten dupliziert.
 
-Für Naturassets erweitert Prompt 17 den strikten Schema-V2-Vertrag additiv um
+Für Naturassets erweitert das Antwortmodell den strikten Schema-V2-Vertrag additiv um
 `plantType`, `species`, `silhouette`, Stamm-, Kronen- und Wurzelfelder, Moos,
 Pilze, Schnee, Ranken, `grounding` und `variantCount`. Die bisherigen Felder
 `subjectDescription`, `climate`, `season`, `age`, `animationType`, `footprint`
@@ -1435,7 +1432,7 @@ anatomisch irrelevante Felder werden abgewiesen. `tileSize` bleibt
 ausschließlich im technischen Profilwert-/Override-Modell, Richtungs- und
 Figurenfelder bleiben vollständig außerhalb von `NatureAnswers`.
 
-Für statische Weltobjekte erweitert Prompt 18 den strikten Schema-V2-Vertrag
+Für statische Weltobjekte erweitert das Antwortmodell den strikten Schema-V2-Vertrag
 additiv um `objectClass`, `basicShape`, `proportion`, `symmetry`,
 `primaryMaterial`, `secondaryMaterial`, `materialDetails`, `condition`,
 `detailElements`, `contents`, `shadowMode` und `variantCount`. Die bisherigen
@@ -1445,7 +1442,7 @@ Eine gespeicherte Objektklasse muss zur vollständigen Untertypabbildung passen;
 `tileSize`, Figurenmaßstab und Richtungsdaten bleiben vollständig außerhalb
 von `StaticObjectAnswers`.
 
-Für Gebäude erweitert Prompt 19 den strikten Schema-V2-Vertrag additiv um
+Für Gebäude erweitert das Antwortmodell den strikten Schema-V2-Vertrag additiv um
 `buildingType`, `planShape`, `size`, `heightPixels`, Material-, Dach-,
 Fassaden-, Tür-, Fenster-, Belegungs-, Umgebungs-, Mapping-, Kollisions-,
 Licht- und Animationswerte. Die bisherigen Felder `subjectDescription`,
@@ -1456,7 +1453,7 @@ zum vollständigen Untertyp-Mapping passen; modulare Ausgabe und
 Tilegröße, Perspektive, Kamera, Projektion, Figurenhöhe und Richtungsdaten
 bleiben vollständig außerhalb von `BuildingAnswers`.
 
-Für Tilesets erweitert Prompt 20 den strikten Schema-V2-Vertrag additiv um
+Für Tilesets erweitert das Antwortmodell den strikten Schema-V2-Vertrag additiv um
 `tilesetType`, Kanten-, Ecken-, Übergangs-, Materialgrenzen-, Seam-,
 Wiederholungs-, Variantenarten- und Atlaswerte. Die bisherigen Felder
 `subjectDescription`, `extraDetails`, `tileUsage`, `tileableAxes`,
@@ -1466,7 +1463,7 @@ Verbindungsfelder und Atlas-Spalten werden cross-field validiert. Tilegröße,
 Pixelmaßstab, Figurenhöhe und Richtungsdaten bleiben vollständig außerhalb von
 `TilesetAnswers`.
 
-Für Items erweitert Prompt 21 den strikten Schema-V2-Vertrag additiv um
+Für Items erweitert das Antwortmodell den strikten Schema-V2-Vertrag additiv um
 `itemClass`, Haupt-/Nebenmaterial, Zustand, Funktion, Bedeutung, relative
 Größe, Silhouette, Lesbarkeit, Glow, Schatten und Varianten. Die bisherigen
 Felder `subjectDescription`, `extraDetails`, `purpose`, `presentation`,
@@ -1476,7 +1473,7 @@ Wearable-Daten bleiben capability-gültigen Untertypen vorbehalten.
 Technischer Hintergrund, Tilegröße, Pixelmaßstab, Figurenhöhe, Animation und
 Richtungsdaten bleiben vollständig außerhalb von `ItemAnswers`.
 
-Für Artworks erweitert Prompt 22 den strikten Schema-V2-Vertrag additiv um
+Für Artworks erweitert das Antwortmodell den strikten Schema-V2-Vertrag additiv um
 `motif`, `sceneDescription`, `compositionDetails`, `backgroundDetails`,
 `lightingDrama`, `lightingDetails` und `detailLevel`. Die bisherigen Felder
 `subjectDescription`, `extraDetails`, `purpose`, `composition`, `format`,

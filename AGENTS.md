@@ -14,10 +14,11 @@ Vor funktionalen Änderungen lesen:
 3. `docs/PROMPT-SPECIFICATION.md`
 4. `PLANS.md` und eine dort gegebenenfalls benannte aktive Unterlage
 
-Die abgeschlossenen Promptserien 00–27 sowie 28–51 liegen ausschließlich als
-historische Referenz unter `docs/erledigt/`. Die ehemalige V3-Serie
-dokumentiert ein später wieder entferntes Dach-/Animationsprodukt und ist
-keine aktive Produkt- oder Aufgabenbeschreibung.
+Aktuelle Kompatibilitätsregeln stehen in `docs/COMPATIBILITY.md`,
+Bedien-/Prüfverträge in `docs/ACCESSIBILITY.md`. Historische
+Implementierungsanweisungen liegen ausschließlich in der Git-Historie und
+sind keine aktive Aufgabenliste. Der öffentliche Produktrelease ist 1.0.0;
+Schema- und Exportvertrag bleiben V2.
 
 ## Naming- und Kompatibilitätsgrenze
 
@@ -73,6 +74,11 @@ Neue Features dürfen nicht als Vanilla-DOM-Architektur entstehen.
 10. Mit geänderten Dateien, Tests, Risiken und einem englischen
     Emoji-Commitvorschlag abschließen.
 11. Nicht selbstständig mit der nächsten Aufgabe fortfahren.
+
+Bei einem ausdrücklich beauftragten Gesamtpaket Issues nacheinander umsetzen,
+prüfen und getrennt mit `<emoji> <English Conventional Commit>` committen.
+Nur bei beauftragtem Push pushen; Issues erst nach erfolgreicher Abnahme als
+erledigt schließen. Keine unabhängigen Folgeaufgaben aus alten Plänen ableiten.
 
 Keine Commits oder Pushes ausführen, außer der konkrete Auftrag verlangt dies.
 
