@@ -6,6 +6,7 @@
 - [Self-hosting, HTTPS, updates, rollback and backups](SELF-HOSTING.md)
 - [German/English interface and prompt languages](LOCALIZATION.md)
 - [Product name, logo and versioning](BRANDING.md)
+- [Public presentation and website setup](PUBLIC-PRESENTATION.md)
 
 ## Contributors and maintainers
 

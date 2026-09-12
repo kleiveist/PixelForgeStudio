@@ -11,6 +11,19 @@ export main prompts, negative prompts, technical specifications or a combined
 Markdown document. Nine asset categories share consistent camera, scale,
 material, lighting and pixel-style rules. This app creates prompts, not images.
 
+![English dashboard category catalog showing all nine asset types](docs/assets/dashboard-en.png)
+
+## What you can do
+
+- Keep production values consistent with reusable base/category/asset profiles and locks.
+- Ask only relevant questions for characters, objects, textures, nature, buildings,
+  tilesets, equipment and free artwork.
+- Work in German or English with keyboard-friendly dark/light/system themes.
+- Export readable Markdown prompts and validated JSON workspace backups.
+- Self-host a small static app with Docker Compose; no server database to maintain.
+
+![German Settings with interface language, startup view and local workspace controls](docs/assets/settings-de.png)
+
 ## Quick start
 
 Use Node.js 22 (22.12+) and npm 10:
@@ -61,6 +74,7 @@ npm run test:browser
 
 [Documentation](docs/index.md) · [Architecture](src/ARCHITECTURE.md) ·
 [Changelog](CHANGELOG.md) · [Product identity](docs/BRANDING.md) ·
+[Social preview](public/social-preview.png) ·
 [Release gate](https://github.com/kleiveist/PixelForgeStudio/issues/9)
 
 ## Community

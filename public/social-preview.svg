@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">PixelForge Prompt Studio</title>
+  <desc id="description">Local-first pixel-art prompts. German and English. Self-host with Docker Compose. Version 1.0.0.</desc>
+  <rect width="1200" height="630" fill="#111820"/>
+  <path d="M0 550h1200v80H0z" fill="#19242f"/>
+  <g transform="translate(64 64) scale(1.75)" fill="#9ee37d">
+    <path fill-rule="evenodd" d="M8 8h40v8h8v24h-8v8H32v8H16v-8H8V8Zm8 8v24h8V24h24v-8H16Zm16 16v8h16v-8H32Z"/>
+  </g>
+  <g font-family="system-ui, sans-serif" fill="#f4f7fb">
+    <text x="214" y="119" font-size="50" font-weight="700">PixelForge</text>
+    <text x="217" y="164" font-size="28" fill="#9ee37d">PROMPT STUDIO</text>
+    <text x="72" y="291" font-size="53" font-weight="700">Consistent pixel-art prompts.</text>
+    <text x="72" y="358" font-size="53" font-weight="700">Your rules. Your local data.</text>
+    <text x="76" y="441" font-size="26" fill="#bed0dd">Nine asset categories · Reusable profiles · Markdown + JSON</text>
+    <text x="76" y="600" font-size="23" fill="#9ee37d">DE / EN</text>
+    <text x="284" y="600" font-size="23">SELF-HOST WITH DOCKER COMPOSE</text>
+    <text x="1050" y="600" font-size="23" fill="#9ee37d">v1.0.0</text>
+  </g>
+</svg>

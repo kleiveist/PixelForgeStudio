@@ -37,3 +37,5 @@ React icons are hidden from assistive technology. Use the favicon at 16–64 px
 and the horizontal logo at 320 px or larger. Do not stretch either asset.
 
 Publication remains gated by the [v1.0.0 release issue](https://github.com/kleiveist/PixelForgeStudio/issues/9).
+
+Screenshot and social-preview sources: [public presentation](PUBLIC-PRESENTATION.md).
