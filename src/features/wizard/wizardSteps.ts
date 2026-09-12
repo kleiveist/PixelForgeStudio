@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../../schemas/validation";
 import {
   ASSET_CATEGORY_IDS,
   ASSET_SUBTYPES,

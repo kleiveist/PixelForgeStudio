@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../schemas/validation";
 import { BRAND, EXPORT_APPLICATION_ID } from "../config";
 import { jsonValuesEqual } from "../domain/json";
 import {

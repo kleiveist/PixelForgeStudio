@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./validation";
 import type { AssetCapability } from "../domain/assets";
 
 export const V2_SCHEMA_VERSION = 2 as const;

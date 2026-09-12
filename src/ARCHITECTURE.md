@@ -102,6 +102,9 @@ importieren.
 
 Importdaten beginnen als `unknown` und werden vor der Nutzung mit Zod
 validiert. Die öffentlichen Schemas werden über `schemas/index.ts` exportiert.
+Laufzeitimporte von Zod erfolgen über `schemas/validation.ts`. Diese Grenze
+deaktiviert optionale JIT-Codegenerierung vor der Schemaerzeugung; die App
+benötigt unter der ausgelieferten CSP weder `eval` noch `unsafe-eval`.
 Kategorieantworten sind additive Teile von Schema V2; irrelevante Antworten
 werden beim Kategorie- oder Untertypwechsel entfernt und gelangen nicht in
 die Prompt-Engine.

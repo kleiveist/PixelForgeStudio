@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./validation";
 import { LEGACY_V1_DEFAULT_STATE } from "../domain/legacy-v1";
 
 const legacyV1StateShape = {

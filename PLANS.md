@@ -16,7 +16,7 @@ Commits, a push after each commit, and closing each verified issue as Done.
 | #5 Documentation | Done / pushed / closed | `991f192`; 59 retired files removed, 54 checked links, 647 tests |
 | #6 Community | Done / pushed / closed | `722f152`, `30c742c`; fresh install, 647 tests, 16 browser smokes, GitHub health-file detection |
 | #7 Presentation | Prepared / pushed; deployment check pending | `a2a2b79`; About/topics, reviewed preview/screenshots, tag-only Pages workflow |
-| #8 Pipeline | Implemented; CI/dry run pending | 647 unit/UI tests, 20 production browser smokes; repeatable package checks; published-image criteria finalized in #9 |
+| #8 Pipeline | Implemented / pushed; CI/dry run pending | `ba2c5cc`; 648 unit/UI tests, 20 browser smokes under production CSP and a subpath; JIT disabled without weakening CSP; published-image criteria finalized in #9 |
 | #9 Publication | Open | [Release gate](https://github.com/kleiveist/PixelForgeStudio/issues/9); #7 live-HTTPS dependency is documented there |
 
 This short ledger is the only active work plan. Retired implementation

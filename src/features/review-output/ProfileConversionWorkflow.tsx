@@ -2,7 +2,7 @@ import { useI18n } from "../../i18n";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { z } from "zod";
+import { z } from "../../schemas/validation";
 import { Badge, Surface } from "../../components/ui";
 import {
   ProfileNameSchema,

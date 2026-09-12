@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./validation";
 import { profileValuesEqual, resolveProfile } from "../domain/profiles";
 import { AppSettingsSchema } from "./appSettings.schema";
 import { IsoDateTimeSchema, SchemaVersionSchema, StableIdSchema } from "./common.schema";

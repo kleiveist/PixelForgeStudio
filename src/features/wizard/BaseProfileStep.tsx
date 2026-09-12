@@ -9,7 +9,7 @@ import {
   type ReactNode
 } from "react";
 import { useForm, useWatch, type FieldError } from "react-hook-form";
-import { z } from "zod";
+import { z } from "../../schemas/validation";
 import {
   createDefaultBaseProfileLocks,
   createDefaultBaseProfileValues,

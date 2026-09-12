@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./validation";
 import { ASSET_SUBTYPES } from "../domain/assets";
 import {
   ArtworkAnswersSchema,

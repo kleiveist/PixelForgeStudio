@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./validation";
 import { EXPORT_APPLICATION_ID } from "../config";
 import { AppSettingsSchema } from "./appSettings.schema";
 import {

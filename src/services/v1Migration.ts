@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../schemas/validation";
 import {
   fingerprintLegacyText,
   transformLegacyV1Sources,

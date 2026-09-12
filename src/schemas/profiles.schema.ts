@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "./validation";
 import {
   ASSET_CAPABILITY_IDS,
   ASSET_SUBTYPES,
