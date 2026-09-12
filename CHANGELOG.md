@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 1.0.0 public release candidate
+
+- German and English interface with persistent language selection.
+- Canonical product name: PixelForge Prompt Studio; product version 1.0.0.
+- Consistent original SVG wordmark and favicon. Internal 3.0.0 was never a
+  public release; schema/export V2 and stored identifiers remain unchanged.
+
 - Animation Studio einschließlich Projektverwaltung, Workspace, Character
   Kits, Rigging, PNG-Part-Import, Rasterizer, Exporte und Prompt-Handoff aus
   Laufzeit, Navigation und aktiver Dokumentation entfernt

@@ -1,5 +1,13 @@
 # PixelForge Prompt Studio
 
+![PixelForge Prompt Studio logo](public/logo.svg)
+
+Local-first prompt studio for consistent pixel-art production.
+
+**v1.0.0 release candidate** · German / English · local-only data · MIT
+See [product identity and versioning](docs/BRANDING.md). Publication is pending
+the release checklist; schema and JSON export format remain V2.
+
 <!-- PYGINDEX:README START -->
 ## Dokumentation
 - [Dokumentationsübersicht](docs/index.md)

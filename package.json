@@ -1,9 +1,9 @@
 {
   "name": "pixelforge-studio",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Lokales Prompt Studio für konsistente Pixelart-Produktion.",
+  "description": "Local-first prompt studio for consistent pixel-art production.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kleiveist/PixelForgeStudio.git"

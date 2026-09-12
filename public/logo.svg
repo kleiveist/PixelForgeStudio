@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 128" role="img" aria-labelledby="title description">
+  <title id="title">PixelForge Prompt Studio</title>
+  <desc id="description">A pixel-grid P beside the PixelForge Prompt Studio wordmark.</desc>
+  <rect width="640" height="128" rx="16" fill="#111820"/>
+  <g transform="translate(20 24) scale(1.25)" fill="#9ee37d">
+    <path fill-rule="evenodd" d="M8 8h40v8h8v24h-8v8H32v8H16v-8H8V8Zm8 8v24h8V24h24v-8H16Zm16 16v8h16v-8H32Z"/>
+  </g>
+  <g font-family="system-ui, sans-serif" fill="#f4f7fb">
+    <text x="124" y="58" font-size="36" font-weight="700">PixelForge</text>
+    <text x="126" y="93" font-size="23" fill="#9ee37d">PROMPT STUDIO</text>
+  </g>
+</svg>

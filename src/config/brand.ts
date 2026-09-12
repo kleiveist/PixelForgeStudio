@@ -1,7 +1,10 @@
+import { version } from "../../package.json";
+
 export const BRAND = Object.freeze({
   productName: "PixelForge Prompt Studio",
   shortName: "PixelForge",
-  versionLabel: "V2",
+  version,
+  versionLabel: `v${version}`,
   tagline: "Lokale Prompt-Produktion für konsistente Pixelart-Assets",
   modules: Object.freeze({
     prompt: Object.freeze({
@@ -12,7 +15,7 @@ export const BRAND = Object.freeze({
 } as const);
 
 // Persisted prompt bundles use this stable protocol discriminator. Visual
-// branding and future animation formats must not change it.
+// branding and release versions must not change it.
 export const PROMPT_EXPORT_APPLICATION_ID = "PixelForge Prompt Studio" as const;
 
 // Backward-compatible public alias retained for existing consumers.

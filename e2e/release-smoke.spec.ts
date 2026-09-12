@@ -19,7 +19,7 @@ async function expectNoHorizontalPageOverflow(page: Page): Promise<void> {
 test("routes every Prompt Studio view with one labelled main heading", async ({ page }) => {
   for (const [route, heading] of releaseViews) {
     await page.goto(route);
-    await expect(page.getByRole("banner")).toContainText("V2");
+    await expect(page.getByRole("banner")).toContainText("v1.0.0");
     await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
     await expect(page.getByRole("main")).toHaveAttribute("aria-labelledby", /.+/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
