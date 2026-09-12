@@ -48,6 +48,8 @@ docker compose up --build -d --wait
 ```
 
 Öffnen: `http://127.0.0.1:8080`. Siehe [Produktionscontainer](deploy/README.md).
+Die [Self-Hosting-Anleitung](docs/SELF-HOSTING.md) beschreibt HTTPS, statisches
+Hosting ohne Docker, Updates, Rollback und JSON-Backups.
 Die Browserdaten bleiben lokal; es gibt kein Server-Datenvolume.
 
 ## Einstiegspunkte

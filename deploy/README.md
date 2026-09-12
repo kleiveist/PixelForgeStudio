@@ -1,5 +1,7 @@
 # Production container
 
+Full operator guide: [Self-hosting, HTTPS, backup, updates and rollback](../docs/SELF-HOSTING.md).
+
 Requires Docker Engine and Compose v2. Build from the repository root:
 
 ```bash

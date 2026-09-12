@@ -2,13 +2,14 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Issue #3 — Produktionscontainer und Docker Compose
-- **Nächste Aufgabe:** #4 Betriebsdokumentation, danach #5–#9
+- **Aktuelle Aufgabe:** Issue #4 — Self-Hosting und Betriebsdokumentation
+- **Nächste Aufgabe:** #5 Dokumentationsbereinigung, danach #6–#9
 - **Beauftragt:** alle neun GitHub-Issues umsetzen; je Issue ein separater
   englischer Conventional Commit mit vorangestelltem Emoji, danach Push und
   GitHub-Issue als erledigt schließen.
 - **Release-Fortschritt:** #1 abgeschlossen, gepusht (`ddd19f0`) und geschlossen;
-  #2 abgeschlossen, gepusht (`5afc54f`) und geschlossen; #3 in Arbeit.
+  #2 abgeschlossen, gepusht (`5afc54f`) und geschlossen; #3 abgeschlossen
+  (`bde4189`), Compose-CI [grün](https://github.com/kleiveist/PixelForgeStudio/actions/runs/34686091393).
 - **Umsetzung #2:** kanonisches Branding, zugängliche SVGs, Versionsanzeige
   aus Paketmetadaten und dokumentierte Trennung von Produktversion 1.0.0 und
   Datenschema V2. `npm run verify` (647 Tests), 16/16 Browser-Smokes,

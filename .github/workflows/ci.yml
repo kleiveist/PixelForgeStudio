@@ -26,3 +26,5 @@ jobs:
           node-version: "22"
       - name: Build and smoke test production Compose deployment
         run: bash scripts/smoke-compose.sh
+      - name: Validate HTTPS examples and smoke test direct static hosting
+        run: bash scripts/smoke-proxy.sh
