@@ -23,5 +23,5 @@ caddy_container=$(docker run -d --read-only --tmpfs /tmp --tmpfs /config --tmpfs
   --mount "type=bind,src=$proxy_test_dir/site,dst=/srv/pixelforge/current,readonly" \
   --mount "type=bind,src=$proxy_test_dir/Caddyfile,dst=/etc/caddy/Caddyfile,readonly" \
   "$caddy_image")
-curl --fail --retry 20 --retry-connrefused --retry-delay 1 http://127.0.0.1:18081/healthz
+curl --fail --silent --show-error --retry 20 --retry-all-errors --retry-delay 1 http://127.0.0.1:18081/healthz
 PIXELFORGE_TEST_URL=http://127.0.0.1:18081 node scripts/smoke-http.mjs
