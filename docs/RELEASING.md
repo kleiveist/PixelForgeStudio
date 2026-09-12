@@ -60,6 +60,10 @@ CI repeats the build/package steps and compares all checksums. The static
 archive has sorted paths, fixed ownership and commit-time timestamps. SBOM
 timestamps and identifiers are deterministic; local directory names are
 normalized. Build from the same commit, pinned Node/npm and lockfile. The
+runtime SBOM is selected from npm's full inventory using the production entries
+in the lockfile. This avoids npm's `--omit=dev` traversal dropping runtime React
+packages in this graph. Release checks require every runtime component and its
+dependency edges; malformed or incomplete inventories stop publication. The
 explicit `ALLOW_DIRTY_RELEASE=1` escape hatch is for local script tests only,
 never release evidence. Generated files stay in ignored `release/`.
 

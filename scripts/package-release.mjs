@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
+import { selectRuntimeSbom } from "./runtime-sbom.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 process.chdir(root);
@@ -30,7 +31,11 @@ try {
   writeFileSync(resolve(output, "release.json"), metadata);
   const tar = execFileSync("tar", ["--sort=name", `--mtime=@${epoch}`, "--owner=0", "--group=0", "--numeric-owner", "--format=gnu", "-cf", "-", "-C", staging, "."], { maxBuffer: 32 * 1024 * 1024 });
   writeFileSync(resolve(output, `pixelforge-prompt-studio-${version}.tar.gz`), gzipSync(tar, { level: 9 }));
-  const sbom = JSON.parse(execFileSync("npm", ["sbom", "--omit=dev", "--sbom-format=cyclonedx"], { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }));
+  // npm's --omit=dev SBOM traversal can lose runtime packages that are also
+  // reached through development dependencies. Select from the full inventory
+  // using production flags in the committed lockfile, then verify completeness.
+  const fullSbom = JSON.parse(execFileSync("npm", ["sbom", "--sbom-format=cyclonedx"], { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }));
+  const sbom = selectRuntimeSbom(fullSbom, JSON.parse(readFileSync("package-lock.json", "utf8")));
   const id = hash(revision).slice(0, 32);
   sbom.serialNumber = `urn:uuid:${id.slice(0, 8)}-${id.slice(8, 12)}-5${id.slice(13, 16)}-a${id.slice(17, 20)}-${id.slice(20)}`;
   sbom.metadata.timestamp = timestamp;

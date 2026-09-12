@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { assertRuntimeSbom } from "./runtime-sbom.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const output = resolve(root, "release");
@@ -37,4 +38,5 @@ assert.equal(sbom.bomFormat, "CycloneDX");
 assert.equal(sbom.metadata.component.version, version);
 assert.equal(sbom.metadata.component.name, "pixelforge-studio");
 assert(sbom.components.length > 0 && sbom.components.every((component) => component.scope !== "excluded"));
-console.log(`Release checks passed: ${expected.length} checksums, ${entries.length} safe archive entries, runtime SBOM and V2/version/revision metadata.`);
+assertRuntimeSbom(sbom, JSON.parse(readFileSync(resolve(root, "package-lock.json"), "utf8")));
+console.log(`Release checks passed: ${expected.length} checksums, ${entries.length} safe archive entries, ${sbom.components.length} complete runtime SBOM entries and V2/version/revision metadata.`);
