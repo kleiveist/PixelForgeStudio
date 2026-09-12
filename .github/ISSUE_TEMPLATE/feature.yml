@@ -1,0 +1,29 @@
+name: Feature proposal
+description: Describe a focused user problem and a compatible improvement.
+title: "feat: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What workflow is difficult? Use invented examples, not private project data.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior and alternatives
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Data, privacy and accessibility impact
+      description: Consider existing schema-V2 profiles, local-only data and both interface languages.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: I searched existing proposals and understand this is a prompt studio, not an image/animation renderer.
+          required: true

@@ -10,6 +10,8 @@
 - Digest-pinned, non-root production image and read-only Docker Compose stack.
 - Validated HTTPS/static hosting examples, operational guide and rollback procedures.
 - Current user/maintainer documentation, with obsolete planning archives removed.
+- Community guidance, contribution/support/security policies, safe issue forms
+  and dependency license notices.
 - Preserved schema/export V2, persisted application identifier, all six storage
   keys, migration backup behavior and compatibility-only settings.
 

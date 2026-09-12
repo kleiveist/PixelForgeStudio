@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a reproducible defect using invented, non-sensitive data.
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: "For security vulnerabilities, follow SECURITY.md instead. Never attach tokens, private hostnames or real workspace exports. Export a private backup before troubleshooting."
+  - type: input
+    id: version
+    attributes:
+      label: App version or image digest
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser/version, operating system, interface language
+      placeholder: "Firefox, Linux, English"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Published site
+        - Docker Compose
+        - Static hosting
+        - Local development
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Minimal reproduction
+      description: Numbered steps using invented profile names and data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence (optional)
+      description: Redact personal details, secrets, project text and private addresses.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Data safety
+      options:
+        - label: I searched existing issues and included no secrets or real workspace exports.
+          required: true

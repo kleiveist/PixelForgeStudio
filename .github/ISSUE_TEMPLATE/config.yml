@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security reporting
+    url: https://github.com/kleiveist/PixelForgeStudio/blob/main/SECURITY.md
+    about: Follow the private reporting process; never publish vulnerability details in an issue.
+  - name: Self-hosting and backups
+    url: https://github.com/kleiveist/PixelForgeStudio/blob/main/docs/SELF-HOSTING.md
+    about: Deployment, HTTPS, local data ownership, updates and rollback.

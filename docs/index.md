@@ -9,6 +9,9 @@
 
 ## Contributors and maintainers
 
+- [Contributing](../CONTRIBUTING.md) and [community governance](../COMMUNITY.md)
+- [Support](../SUPPORT.md), [security](../SECURITY.md) and [code of conduct](../CODE_OF_CONDUCT.md)
+
 - [Architecture and module boundaries](../src/ARCHITECTURE.md)
 - [Technical stack](TECHNOLOGIE-STACK-V2.md)
 - [Data compatibility and migration](COMPATIBILITY.md)

@@ -63,6 +63,15 @@ npm run test:browser
 [Changelog](CHANGELOG.md) · [Product identity](docs/BRANDING.md) ·
 [Release gate](https://github.com/kleiveist/PixelForgeStudio/issues/9)
 
+## Community
+
+[Contributing](CONTRIBUTING.md) · [Community and governance](COMMUNITY.md) ·
+[Support](SUPPORT.md) · [Security](SECURITY.md) · [Code of conduct](CODE_OF_CONDUCT.md)
+
+Use GitHub Issues and pull requests; no external chat account is required.
+Please share only invented, sanitized examples, never real workspace backups.
+
 ## License
 
 [MIT](LICENSE). The npm package is private and is not published to npm.
+Redistribution includes [third-party runtime notices](THIRD_PARTY_NOTICES.md).

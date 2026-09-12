@@ -1,0 +1,19 @@
+name: Usage question
+description: Ask a non-sensitive usage or deployment question.
+title: "question: "
+body:
+  - type: markdown
+    attributes:
+      value: "Please read SUPPORT.md first. Security findings must follow SECURITY.md. Do not share real exports, credentials or private hostnames."
+  - type: input
+    id: environment
+    attributes:
+      label: Version, browser/OS and deployment mode
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question and what you have tried
+    validations:
+      required: true

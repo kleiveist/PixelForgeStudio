@@ -19,7 +19,8 @@
     "test:browser": "playwright test",
     "test:browser:install": "playwright install chromium firefox",
     "check:docs": "node scripts/check-docs.mjs",
-    "verify": "npm run check:docs && npm run typecheck && npm run test:run && npm run build"
+    "check:licenses": "node scripts/license-notices.mjs --check",
+    "verify": "npm run check:docs && npm run check:licenses && npm run typecheck && npm run test:run && npm run build"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0",
