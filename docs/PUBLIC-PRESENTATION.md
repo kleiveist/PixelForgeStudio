@@ -24,7 +24,10 @@ gate, not by ordinary pushes to main.
 - [German Settings screenshot](assets/settings-de.png)
 
 The PNG is a direct browser render of the repository-native SVG, not a
-third-party illustration. The source has an accessible title/description;
+third-party illustration. Its illustrated rules → categories → output workflow
+is a presentation graphic, not a screenshot or a claim that the app renders
+images. The README displays it directly alongside two real UI screenshots.
+The source has an accessible title/description;
 README images and webpage Open Graph metadata provide text alternatives.
 Screenshots use a fresh browser with empty, invented data and no account,
 private hostname or real workspace export. All assets follow [branding](BRANDING.md).

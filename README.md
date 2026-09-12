@@ -1,6 +1,6 @@
 # PixelForge Prompt Studio
 
-![PixelForge Prompt Studio logo](public/logo.svg)
+![PixelForge Prompt Studio: local-first pixel-art prompts, reusable production rules, DE/EN and Docker Compose](public/social-preview.png)
 
 Local-first prompt studio for consistent pixel-art production.
 
