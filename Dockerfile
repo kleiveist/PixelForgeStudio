@@ -8,7 +8,7 @@ COPY src ./src
 COPY public ./public
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:stable-alpine@sha256:442753882674b49ae2c1de83ed67896131c0777f56df5005e356e62bc3f7e7ce AS runtime
+FROM nginxinc/nginx-unprivileged:stable-alpine-slim@sha256:3a4485bf084957d56674ee22db07d77d5a281418815c5852827419d6d629d440 AS runtime
 ARG VERSION=1.0.0
 ARG REVISION=unknown
 LABEL org.opencontainers.image.title="PixelForge Prompt Studio" \

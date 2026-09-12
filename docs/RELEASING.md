@@ -15,6 +15,18 @@ restarts the read-only Compose service, tests its real browser behavior and
 static Caddy configuration, boots the ARM64 image using QEMU, and rejects high
 or critical runtime-image vulnerabilities. No ignored finding is a release gate.
 
+The runtime uses the upstream unprivileged **Alpine slim** image: only NGINX
+and its required libraries, without the unused image-filter/TIFF modules in
+the larger variant. Scan both resulting architecture images, not just their base.
+
+The 2026-09-12 base scan reports **CVE-2025-60876** at medium severity in
+BusyBox-related packages (three matches for one advisory). It concerns control
+characters in URLs supplied to BusyBox wget. The studio's only wget invocation
+uses the fixed loopback `/healthz` URL, never user input; NGINX does not expose a
+shell or CGI endpoint. Keep this finding visible in reports and recheck upstream
+base updates; it is not suppressed or presented as fixed. See the
+[CVE record](https://github.com/CVEProject/cvelistV5/blob/main/cves/2025/60xxx/CVE-2025-60876.json).
+
 The release workflow reuses these checks before building the AMD64/ARM64 OCI
 index. Actions and Docker bases are pinned to reviewed hashes. Only the image
 job has `packages: write`; only final publication has `contents: write`, OIDC
