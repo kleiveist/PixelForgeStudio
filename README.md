@@ -4,7 +4,7 @@
 
 Local-first prompt studio for consistent pixel-art production.
 
-**1.0.0 release candidate** · German / English · browser-local data · MIT
+**Version 1.0.0** · German / English · browser-local data · MIT
 
 Create reusable production profiles, follow a category-aware wizard, and
 export main prompts, negative prompts, technical specifications or a combined
@@ -26,7 +26,7 @@ material, lighting and pixel-style rules. This app creates prompts, not images.
 
 ## Quick start
 
-Use Node.js 22 (22.12+) and npm 10:
+Use the Node.js version in [`.node-version`](.node-version) and its bundled npm:
 
 ```bash
 npm ci
