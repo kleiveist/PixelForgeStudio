@@ -30,6 +30,7 @@ const allowed = /^(?:\.\/|\.\/assets\/|\.\/(?:index\.html|favicon\.svg|logo\.svg
 assert(entries.every((name) => allowed.test(name)), "Unexpected file in static archive");
 const listing = execFileSync("tar", ["-tvzf", resolve(output, archive)], { encoding: "utf8" }).trim().split("\n");
 assert(listing.every((line) => /^[d-]/.test(line)), "Links/devices are not allowed in release artifacts");
+assert(listing.every((line) => /^(?:drwxr-xr-x|-rw-r--r--) /.test(line)), "Public site directories/files require normalized 755/644 permissions");
 for (const file of ["index.html", "release.json", "LICENSE", "THIRD_PARTY_NOTICES.md"]) assert(entries.includes(`./${file}`));
 const embedded = execFileSync("tar", ["-xOzf", resolve(output, archive), "./release.json"], { encoding: "utf8" });
 assert.deepEqual(JSON.parse(embedded), metadata);

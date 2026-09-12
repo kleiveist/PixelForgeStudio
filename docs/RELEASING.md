@@ -57,7 +57,9 @@ npm run check:release
 ```
 
 CI repeats the build/package steps and compares all checksums. The static
-archive has sorted paths, fixed ownership and commit-time timestamps. SBOM
+archive has sorted paths, fixed ownership, normalized 755/644 directory/file
+permissions and commit-time timestamps. Restrictive local umasks must not make
+an extracted site unreadable to the web server. SBOM
 timestamps and identifiers are deterministic; local directory names are
 normalized. Build from the same commit, pinned Node/npm and lockfile. The
 runtime SBOM is selected from npm's full inventory using the production entries

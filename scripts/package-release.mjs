@@ -29,7 +29,7 @@ try {
   }
   writeFileSync(resolve(staging, "release.json"), metadata);
   writeFileSync(resolve(output, "release.json"), metadata);
-  const tar = execFileSync("tar", ["--sort=name", `--mtime=@${epoch}`, "--owner=0", "--group=0", "--numeric-owner", "--format=gnu", "-cf", "-", "-C", staging, "."], { maxBuffer: 32 * 1024 * 1024 });
+  const tar = execFileSync("tar", ["--sort=name", `--mtime=@${epoch}`, "--owner=0", "--group=0", "--numeric-owner", "--mode=u=rwX,go=rX", "--format=gnu", "-cf", "-", "-C", staging, "."], { maxBuffer: 32 * 1024 * 1024 });
   writeFileSync(resolve(output, `pixelforge-prompt-studio-${version}.tar.gz`), gzipSync(tar, { level: 9 }));
   // npm's --omit=dev SBOM traversal can lose runtime packages that are also
   // reached through development dependencies. Select from the full inventory
