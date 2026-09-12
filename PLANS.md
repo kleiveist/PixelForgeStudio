@@ -2,13 +2,13 @@
 
 ## Status
 
-- **Aktuelle Aufgabe:** Issue #2 — Branding und Version 1.0.0
-- **Nächste Aufgabe:** #3 Docker und Compose, danach #4–#9
+- **Aktuelle Aufgabe:** Issue #3 — Produktionscontainer und Docker Compose
+- **Nächste Aufgabe:** #4 Betriebsdokumentation, danach #5–#9
 - **Beauftragt:** alle neun GitHub-Issues umsetzen; je Issue ein separater
   englischer Conventional Commit mit vorangestelltem Emoji, danach Push und
   GitHub-Issue als erledigt schließen.
 - **Release-Fortschritt:** #1 abgeschlossen, gepusht (`ddd19f0`) und geschlossen;
-  #2 umgesetzt und geprüft; #3–#9 offen.
+  #2 abgeschlossen, gepusht (`5afc54f`) und geschlossen; #3 in Arbeit.
 - **Umsetzung #2:** kanonisches Branding, zugängliche SVGs, Versionsanzeige
   aus Paketmetadaten und dokumentierte Trennung von Produktversion 1.0.0 und
   Datenschema V2. `npm run verify` (647 Tests), 16/16 Browser-Smokes,

@@ -41,6 +41,15 @@ npm ci
 npm run dev
 ```
 
+## Docker Compose
+
+```bash
+docker compose up --build -d --wait
+```
+
+Öffnen: `http://127.0.0.1:8080`. Siehe [Produktionscontainer](deploy/README.md).
+Die Browserdaten bleiben lokal; es gibt kein Server-Datenvolume.
+
 ## Einstiegspunkte
 
 | Pfad | Zweck |
